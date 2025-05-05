@@ -1,1 +1,2 @@
 # SWAXS_user_scripts
+This is the home of all custom user scripts for the NSLS-II SMi SWAXS beamline.  Historical naming conventions was to have 30-lastname.py, however having this as a seperate repo from the profile collection now, feel free to create a folder with the format of the form `lastname-xxxxxx/` where `xxxxxx` is the proposal ID for your beamtime. Within this directory you are free to have whatever naming scheme you choose, although a suggestion of the date and purpose of the scripts within are encouraged, i.e. `grazing_2025-2.py`
