@@ -4,7 +4,9 @@ We have moved all of these old files to the `legacy/` directory.
 
 Now that this is a separate repo from the profile collection, we encourage each user group to create a folder of the form 
 
-```lastname-xxxxxx/```
+```PIlastname-Institusion/```
 
-where `xxxxxx` is the proposal ID for your beamtime. 
+for example "Doe-NSA". 
 Within this directory, you are free to use whatever naming scheme you choose, although a suggestion of the date and purpose of the scripts within are encouraged, i.e. `grazing_2025-2.py`.
+
+within "templates" the beamline staff will keep up to date example scripts for common measurements.
