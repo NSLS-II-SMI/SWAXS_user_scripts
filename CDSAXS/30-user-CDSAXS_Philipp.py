@@ -472,20 +472,39 @@ def cd_saxs_new2(th_ini, th_fin, th_st, exp_t=1):
 
 
 
+# h = db[-1]
+# h = db[158]
+# pd = h.table()['pin_diode_current2_mean_value'].get(1)
 
-def cd_saxs_new(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil1M]):
+def cd_saxs_new(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2M, pin_diode]):
 
     det_exposure_time(exp_t, exp_t)
 
+
     for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
         yield from bps.mv(prs, theta)
-        name_fmt = "{sample}_9.2m_16.1keV_num{num}_{th}deg_bpm{bpm}"
-        sample_name = name_fmt.format(sample=sample, num="%5.2d"%num, th="%2.2d"%theta, bpm="%1.3f"%xbpm3.sumX.get()) # Philipp change, original: num="%2.2d"%num
+        name_fmt = "{sample}_num{num}_{th}deg_x{x}_y{y}_z{z}_bpm{bpm}{md}"
+        sample_name = name_fmt.format(sample=sample, num="%03d"%num, th="%2.2d"%theta, x = "%.2f" % (piezo.x.position), y = "%.2f" % (piezo.y.position), z = "%.2f" % (piezo.z.position), bpm="%1.3f"%xbpm3.sumX.get(), md = get_scan_md()) # Philipp change, original: num="%2.2d"%num
         #sample_id(user_name="PG", sample_name=sample_name)
         sample_id(sample_name=sample_name)
 
         print(f"\n\t=== Sample: {sample_name} ===\n")
         yield from bp.count(det, num=nume)
+
+
+def dose(exp_t=1, sample='test', nume=1000, det=[pil2M, pin_diode]):
+    det_exposure_time(exp_t, exp_t)
+
+
+    name_fmt = "{sample}_num{num}_{th}deg_x{x}_y{y}_z{z}_bpm{bpm}{md}"
+    sample_name = name_fmt.format(sample=sample, num="%03d"%nume, th="%2.2d"%(stage.th.position), x = "%.2f" % (piezo.x.position), y = "%.2f" % (piezo.y.position), z = "%.2f" % (piezo.z.position), bpm="%1.3f"%xbpm3.sumX.get(), md = get_scan_md()) # Philipp change, original: num="%2.2d"%num
+    #sample_id(user_name="PG", sample_name=sample_name)
+    sample_id(sample_name=sample_name)
+
+    print(f"\n\t=== Sample: {sample_name} ===\n")
+    yield from bp.count(det, num=nume)
+
+
 
 
 def sample_linqz(phi_min,phi_max,N):
@@ -500,7 +519,7 @@ def sample_linqz(phi_min,phi_max,N):
 
     return phi
 
-def cd_saxs_linqz(th_ini, th_fin, th_num, exp_t=1, sample='test', nume=1, det=[pil1M]):
+def cd_saxs_linqz(th_ini, th_fin, th_num, exp_t=0.1, sample='test', nume=1, det=[pil2M, pin_diode]):
 
     det_exposure_time(exp_t, exp_t)
 
@@ -508,8 +527,8 @@ def cd_saxs_linqz(th_ini, th_fin, th_num, exp_t=1, sample='test', nume=1, det=[p
 
     for num, theta in enumerate(th_ls):
         yield from bps.mv(prs, theta)
-        name_fmt = "{sample}_9.2m_16.1keV_num{num}_{th}deg_bpm{bpm}"
-        sample_name = name_fmt.format(sample=sample, num="%5.2d"%num, th="%2.2d"%theta, bpm="%1.3f"%xbpm3.sumX.get()) # Philipp change, original: num="%2.2d"%num
+        name_fmt = "{sample}_num{num}_{th}deg_x{x}_y{y}_z{z}_bpm{bpm}{md}"
+        sample_name = name_fmt.format(sample=sample, num="%03d"%num, th="%.2f"%theta, x = "%.2f" % (piezo.x.position), y = "%.2f" % (piezo.y.position), z = "%.2f" % (piezo.z.position), bpm="%1.3f"%xbpm3.sumX.get(), md = get_scan_md()) # Philipp change, original: num="%2.2d"%num
         #sample_id(user_name="PG", sample_name=sample_name)
         sample_id(sample_name=sample_name)
 
@@ -781,31 +800,31 @@ def cdsaxsstd_2025_1A_yager(t=1):
             yield from bp.count([pil1M], num=nume)
             yield from bps.mvr(pil1m_pos.y, -4.3)
 
-def cdsaxsstd_2025_1B_yager(t=1):
-    det = [pil1M]
+def cdsaxsstd_2025_IBM_1(t=1):
+    # det = [pil2M]
     det_exposure_time(t, t)
 
-    phi_offest = 1
+    phi_offest = 0 #prob -2.3?
 
-    names = ['samB_AlOx-2cyc_pos3', 'samB_AlOx-2cyc_pos3bg' ]
+    names = ['Sam144H_run2']
     
     ## with on-axis camera
     x =     [  
-                -3800,      -3800  #B
+                -15251 #-14764
                     ]
     y=      [  
-               -6100,           -6300 #B
+               -4316 #-4299
                     ]
     
     z=      [   
-                3600,           3600     #B
+                1095 #1955
                     ]
     
     ## with scattering pattern
     chi=    [  
-               -2.4,           -2.4    #B 
+               0.5
                  ]
-    th =    [     1.0,             1.0,     
+    th =    [     0
               ]
               
 
@@ -826,19 +845,75 @@ def cdsaxsstd_2025_1B_yager(t=1):
 
             # yield from bp
             # if 'bkg' not in name:
+
             yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-A%s'%(i+1), nume=1)
             yield from cd_saxs_new(60+phi_offest, -60+phi_offest, 121, exp_t=t, sample=name+'measureA%s'%(i+1), nume=1)
-            yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measureB%s'%(i+1), nume=1)
             yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
+        
+            yield from bps.mv(piezo.y, ys+100)
+            yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measureB%s'%(i+1), nume=1)
+            
+            yield from bps.mv(piezo.y, ys+200)
+            for j in range(1):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measureC%s'%(j+1), nume=1)
+
+            yield from bps.mv(piezo.y, ys+300)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 121, exp_t=t*0.1, sample=name+'measureD%s'%(j+1), nume=1)
+
+            yield from bps.mv(piezo.y, ys+400)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 121, exp_t=t*0.1, sample=name+'measureE%s'%(j+1), nume=1)
+                yield from bps.mvr(piezo.y, 20)
+
+ 
+    yield from bps.mvr(piezo.y, 100)    
+    dose(exp_t=1, sample=name+'measure_dose', nume=900)
+
+#Sam144H_run1_dose_num900_00deg_x-15251.01_y-4415.96_z1795.06_bpm1.158_16.10keV_wa20.0_sdd9.0m_id282_000247_SAXS2M.tif
+            
+            # yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
         
             # else:
             #     yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
 
     print("====== Done with CD-SAXS scan")
-    print("====== Doing detector y-stitch")
-    exp_t = t
-    nume = 2
-    det_exposure_time(exp_t, exp_t)
+
+def cdsaxsstd_2025_IBM_2(t=1):
+    # det = [pil2M]
+    det_exposure_time(t, t)
+
+    phi_offest = 0 #prob -2.3?
+
+    names = ['Sam36H_run1', 'Sam52H_run1']
+    
+    ## with on-axis camera
+    x =     [  
+                -10851,        -10851     #-14764
+                    ]
+    y=      [  
+               1600,            6600    #-4299
+                    ]
+    
+    z=      [   
+                2100,            2100     #1955
+                    ]
+    
+    ## with scattering pattern
+    chi=    [  
+               0.5,             0.5
+                 ]
+    th =    [     0,           0
+              ]
+              
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+
+    
     for i in range(1):
         for name, xs, ys, zs, chis, ths in zip(names, x, y, z, chi, th):
             yield from bps.mv(piezo.z, zs)
@@ -847,20 +922,246 @@ def cdsaxsstd_2025_1B_yager(t=1):
             yield from bps.mv(piezo.x, xs)
             yield from bps.mv(piezo.y, ys)
 
-            yield from bps.mv(prs, phi_offest)
+            # yield from bp
+            # if 'bkg' not in name:
 
-            name_fmt = "{sample}_up_sdd9200_16.1keV"
-            sample_name = name_fmt.format(sample=name)
-            print(sample_name)
-            sample_id(sample_name=sample_name)
-            yield from bp.count([pil1M], num=nume)
+            yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-A%s'%(i+1), nume=1)
+            yield from cd_saxs_new(60+phi_offest, -60+phi_offest, 121, exp_t=t, sample=name+'measureA%s'%(i+1), nume=1)
+            yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
+        
+            yield from bps.mv(piezo.y, ys+100)
+            yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measureB%s'%(i+1), nume=1)
+            
+            yield from bps.mv(piezo.y, ys+200)
+            for j in range(1):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measureC%s'%(j+1), nume=1)
 
-            yield from bps.mvr(pil1m_pos.y, 4.3)
-            name_fmt = "{sample}_down_sdd9200_16.1keV"
-            sample_name = name_fmt.format(sample=name)
-            sample_id(sample_name=sample_name)
-            yield from bp.count([pil1M], num=nume)
-            yield from bps.mvr(pil1m_pos.y, -4.3)
+            yield from bps.mv(piezo.y, ys+300)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 121, exp_t=t*0.1, sample=name+'measureD%s'%(j+1), nume=1)
+
+            yield from bps.mv(piezo.y, ys+400)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 121, exp_t=t*0.1, sample=name+'measureE%s'%(j+1), nume=1)
+                yield from bps.mvr(piezo.y, 20)
+
+ 
+    yield from bps.mvr(piezo.y, 100)    
+    dose(exp_t=1, sample=name+'measure_dose', nume=900)
+
+            
+            # yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
+        
+            # else:
+            #     yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
+
+    print("====== Done with CD-SAXS scan")
+
+def cdsaxsstd_2025May_Philipp1(t=1):
+    # det = [pil2M]
+    det_exposure_time(t, t)
+
+    phi_offest = 0 #prob -2.3?
+
+    names = ['Anoinf_80nm']
+    
+    ## with on-axis camera
+    x =     [  
+                -17250    #-14764
+                    ]
+    y=      [  
+               6800    #-4299
+                    ]
+    
+    z=      [   
+                -4800   #1955
+                    ]
+    
+    ## with scattering pattern
+    chi=    [  
+               0.3
+                 ]
+    th =    [     0
+              ]
+              
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+
+    
+    for i in range(1):
+        for name, xs, ys, zs, chis, ths in zip(names, x, y, z, chi, th):
+            yield from bps.mv(piezo.z, zs)
+            yield from bps.mv(piezo.ch, chis)
+            yield from bps.mv(piezo.th, ths)
+            yield from bps.mv(piezo.x, xs)
+            yield from bps.mv(piezo.y, ys)
+
+            yield from bps.mv(piezo.y, ys+0)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t*0.1, sample=name+'measureA%s'%(j+1), nume=1)
+
+            yield from bps.mv(piezo.y, ys+100)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t*0.1, sample=name+'measureB%s'%(j+1), nume=1)
+
+            yield from bps.mv(piezo.y, ys+200)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t*0.1, sample=name+'measureC%s'%(j+1), nume=1)
+
+            yield from bps.mv(piezo.y, ys+300)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t*0.1, sample=name+'measureD%s'%(j+1), nume=1)
+
+            yield from bps.mv(piezo.y, ys+400)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t*0.1, sample=name+'measureE%s'%(j+1), nume=1)
+
+            yield from bps.mv(piezo.y, ys+500)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t*0.1, sample=name+'measureF%s'%(j+1), nume=1)
+            
+            yield from bps.mv(piezo.y, ys+600)
+            for j in range(10):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t*0.1, sample=name+'measureG%s'%(j+1), nume=1)
+
+            yield from bps.mv(piezo.y, ys+700)
+            for j in range(20):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t*0.1, sample=name+'measureH%s'%(j+1), nume=1)
+                yield from bps.mvr(piezo.y, 20)
+
+            
+            # yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
+        
+            # else:
+            #     yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
+
+    print("====== Done with CD-SAXS scan")
+
+def cdsaxsstd_2025May_Philipp2(t=1):
+    # det = [pil2M]
+    det_exposure_time(t, t)
+
+    phi_offest = 0 #prob -2.3?
+
+    names = ['Anoinf_80nm_run2']
+    
+    ## with on-axis camera
+    x =     [  
+                -17250    #-14764
+                    ]
+    y=      [  
+               7150    #-4299
+                    ]
+    
+    z=      [   
+                -4800   #1955
+                    ]
+    
+    ## with scattering pattern
+    chi=    [  
+               0.3
+                 ]
+    th =    [     0
+              ]
+              
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+
+    
+    for i in range(1):
+        for name, xs, ys, zs, chis, ths in zip(names, x, y, z, chi, th):
+            yield from bps.mv(piezo.z, zs)
+            yield from bps.mv(piezo.ch, chis)
+            yield from bps.mv(piezo.th, ths)
+            yield from bps.mv(piezo.x, xs)
+            yield from bps.mv(piezo.y, ys)
+            
+            for j in range(5):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t, sample=name+'measureA%s'%(j+1), nume=1)
+                yield from cd_saxs_linqz(60+phi_offest, -60+phi_offest, 61, exp_t=t, sample=name+'measureA%sr'%(j+1), nume=1)
+                
+
+            yield from bps.mv(piezo.y, ys+100)
+            for j in range(20):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t*0.1, sample=name+'measureB%s'%(j+1), nume=1)
+                yield from bps.mvr(piezo.y, 20)
+
+            
+            # yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
+        
+            # else:
+            #     yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
+
+    print("====== Done with CD-SAXS scan")
+
+def cdsaxsstd_2025May_Philipp3(t=1):
+    # det = [pil2M]
+    det_exposure_time(t, t)
+
+    phi_offest = 0 #prob -2.3?
+
+    names = ['Anoinf_95nm',    'Anoinf_95nm',       'Anoinf_random',       'Anoinf_SuperC320'  ,  'Anoinf_SuperC240']
+    
+    ## with on-axis camera
+    x =     [  
+                -17250   ,         -17250 ,           -21250,           -21250,           -21250  #-14764
+                    ]
+    y=      [  
+               5151       ,           3100 ,         3150,                5150,                7152#-4299
+                    ]
+    
+    z=      [   
+                -4500   ,            -4500 ,         -4500,               -4500,               -4500#1955
+                    ]
+    
+    ## with scattering pattern
+    chi=    [  
+               0.3,                   0.3,           0.2,                   0.2,                0.2
+                 ]
+    th =    [     0.5,            0.5,                0.5,                  0.5,                0.5
+              ]
+              
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+
+    
+    for i in range(1):
+        for name, xs, ys, zs, chis, ths in zip(names, x, y, z, chi, th):
+            yield from bps.mv(piezo.z, zs)
+            yield from bps.mv(piezo.ch, chis)
+            yield from bps.mv(piezo.th, ths)
+            yield from bps.mv(piezo.x, xs)
+            yield from bps.mv(piezo.y, ys)
+            
+            for j in range(5):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t, sample=name+'measureA%s'%(j+1), nume=1)
+                #yield from cd_saxs_linqz(60+phi_offest, -60+phi_offest, 61, exp_t=t, sample=name+'measureA%sr'%(j+1), nume=1)
+                
+
+            yield from bps.mv(piezo.y, ys+100)
+            for j in range(20):
+                yield from cd_saxs_linqz(-60+phi_offest, 60+phi_offest, 61, exp_t=t*0.1, sample=name+'measureB%s'%(j+1), nume=1)
+                yield from bps.mvr(piezo.y, 20)
+
+            
+            # yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
+        
+            # else:
+            #     yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
+
+    print("====== Done with CD-SAXS scan")
 
 def cdsaxsstd_2025_1CD_yager(t=1):
     det = [pil1M]
