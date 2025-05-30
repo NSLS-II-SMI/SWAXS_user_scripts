@@ -5,11 +5,11 @@ from ophyd import Signal
 
 
 
-def NEXAFS_P_edge(t=0.5):
+def NEXAFS_P_edge(t=60):
 
-    dets = [pil900KW, pil2M, pin_diode]
-    name = "phosphate_buffer_50mM_pd{pin_diode_current2_mean}_"
-    energies = np.linspace(2140, 2200, 61)
+    dets = [pil900KW, pil2M, pin_diode, xbpm2, xbpm3]
+    name = "lipid_green_pd{pin_diode_current2_mean}_"
+    energies = np.linspace(2140, 2200, 31)
 
     det_exposure_time(t, t)
     yield from bps.mv(pin_diode.averaging_time, t)
@@ -28,7 +28,7 @@ def NEXAFS_P_edge(t=0.5):
             
             e=energy.energy.position
             sample_name = name_fmt.format(sample=name,energy="%6.2f"%e )
-            print(f"\n\t=== Sample: {sample_name} ===\n")
+            #print(f"\n\t=== Sample: {sample_name} ===\n")
             s.put(sample_name)
             yield from bps.trigger_and_read(dets + [s,energy])
         yield from bps.mv(energy, 2190)
