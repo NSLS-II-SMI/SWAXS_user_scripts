@@ -343,7 +343,7 @@ def alignment_off():
     yield from smi.modeMeasurement()
     yield from bps.mv(waxs, 0)
 
-def continous_run_change_xpos(sname='20250205_op_b_echem', t=2, wait=100, frames=5000,
+def continous_run_change_xpos(sname='20250630_op_a_echem', t=2, wait=100, frames=5000,
         x_off=[-150, -100, -50, 0, 50, 100,150]):
 
     """
@@ -537,7 +537,7 @@ def clear_md():
             print(f'No {k} key')
 
 
-def continous_run_prealigned_positions_2024_1(sname='20240408_op_Na_Cu_bar_a', t=2, wait=8, frames=1):
+def continous_run_prealigned_positions_2024_1(sname='20250630_op_a_interval', t=2, wait=0, frames=1):
     """
     WAXS at each prealigned point
 
@@ -551,11 +551,10 @@ def continous_run_prealigned_positions_2024_1(sname='20240408_op_Na_Cu_bar_a', t
         alignment = RE.md['alignment_LUT']
     except:
         alignment =  {
-                      '0': {'x': 814.46, 'y': 5918.27, 'z': 3400, 'th': 0.185},
-                        '-500': {'x': 314.373, 'y': 5899.3, 'z': 3400, 'th': 0.185},
-                        '-1000': {'x': -185.627, 'y': 5894.043, 'z': 3400, 'th': 0.185},
-                        '500': {'x': 1314.373, 'y': 5926.778, 'z': 3400, 'th': 0.185},
-                        '1000': {'x': 1814.373, 'y': 5938.7, 'z': 3400, 'th': 0.185}
+                      '0': {'x': 1850, 'y': 7372.68, 'z': 10801.3, 'th': 0.86},
+                        '-150': {'x': 1700, 'y': 7375.36, 'z': 10801.3, 'th': 0.78},
+                        '150': {'x': 2000, 'y': 7370.991, 'z': 10801.29, 'th': 0.78},
+                        
         }
         RE.md['alignment_LUT'] = alignment
 
@@ -589,10 +588,10 @@ def continous_run_prealigned_positions_2024_1(sname='20240408_op_Na_Cu_bar_a', t
         yield from bps.sleep(wait)
 
 def continous_run_change_xpos_thpos(
-        sname='20240524_operando_exp_b_echem',
-        t=2, wait=93, frames=5000,
-        x_off=[-600, -300, -250, 0, 250, 300, 600],
-        ai_off=[0.05, 0.10, 0.15, 0.20, 0.30],
+        sname='20250630_op_a_interval',
+        t=2, wait=100, frames=5000,
+        x_off=[-150, -100, -50, 0, 50, 100, 150],
+        ai_off=[0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5],
     ):
     """
     Take data continously
