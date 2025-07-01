@@ -34,21 +34,26 @@ def run_nist_temp_micro(name_base='test', t=1):
             yield from bps.mv(waxs, wa)
             if waxs.arc.position < 15:
                 dets = [pil900KW, LThermal.temperature_current,stage.x]
+                sample_id(user_name=name_base, sample_name=f'{name}_epoxyref_y{{stage_y}}_{get_scan_md()}')
+                
             else:
                 # move stage to the right by 50 microns
                 yield from bps.mvr(stage.x,0.05)
                 dets = [pil2M, pin_diode, pil900KW, LThermal.temperature_current,stage.x]
+                sample_id(user_name=name_base, sample_name=f'{name}_epoxyref_y{{stage_y}}_pd{{pin_diode_current2_mean_value}}_{get_scan_md()}')
+                
             if add_ref:
                 # take reference at the starting y position
                 yield from bps.mv(stage.y, y0 - 0.4)
-                sample_id(user_name=name_base, sample_name=f'{name}_wa{wa}_epoxyref_{{stage_y}}')
                 print(f"\n\n\n\t=== Sample: {RE.md['sample_name']} ===")
                 yield from bp.count(dets)
-
             # move stage to the starting y position
             yield from bps.mv(stage.y, y0)
+            if waxs.arc.position < 15:
+                sample_id(user_name=name_base, sample_name=f'{name}_microyscan_y{{stage_y}}_{get_scan_md()}')
+            else:
+                sample_id(user_name=name_base, sample_name=f'{name}_microyscan_y{{stage_y}}_pd{{pin_diode_current2_mean_value}}_{get_scan_md()}')
 
-            sample_id(user_name=name_base, sample_name=f'{name}_wa{wa}_microyscan_y{{stage_y}}')
             print(f"\n\n\n\t=== Sample: {RE.md['sample_name']} ===")
             yield from bp.rel_scan(dets, stage.y, -0.25, 0.25, 167)
 
@@ -57,7 +62,7 @@ def run_nist_temp_micro(name_base='test', t=1):
     sample_id(user_name=name_base, sample_name='epoxy_ref')
     project_set(name_base)
     yield from bp.count([pil2M, pin_diode])
-    yield from inner(y0, 'room_temp',add_ref=True)
+    yield from inner(y0, 'room_temp',add_ref=False)
 
     # move stage to the right by 50 microns
     yield from bps.mvr(stage.x,0.05)
@@ -68,7 +73,7 @@ def run_nist_temp_micro(name_base='test', t=1):
     LThermal.on()
     while LThermal.temperature() < 84:
         yield from bps.sleep(20)  # wait until the temperature is 80C
-        print(f"Waiting for temperature to reach 84C, current temperature: {LThermal.temperature()}C")
+        print(f'Waiting for temperature to reach 84C, current temperature: {LThermal.temperature()}C')
     # add equilibration time
     print('waiting for 120 seconds to ensure temperature equilibration')
     yield from bps.sleep(120)  # wait for 60 seconds to ensure temperature
