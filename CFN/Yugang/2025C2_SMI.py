@@ -180,13 +180,151 @@ Reactor Mark position = [143,140]
 20241024
 for 1M, X = -4.84, Y = -58.0, 5meter, beam center [ 458, 578 ], beamstop  [ 1.8, 289, 13 ]
 beamstop_save()
+
+E(alignment_off())
+RE.md["th0"] =piezo.th.position
+%run -i /home/xf12id/SWAXS_user_scripts/legacy/30-user-Karen.py
+RE(continous_run_change_xpos())
+project_set('20250630_op_a_echem')
+%run -i /home/xf12id/SWAXS_user_scripts/legacy/30-user-Karen.py
+RE(continous_run_change_xpos())
+RE.stop()
+project_set('20250630_op_a_interval')
+RE(alignment_on())
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+RE.stop()
+RE(alignment_on())
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(rel_scan([pil2M], piezo.th, -1, 1, 51))
+ps()
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(alignment_off())
+RE(continous_run_change_xpos(sname="20250630_op_a_interval", frames=1, x_off=[0]))
+RE(continous_run_change_xpos(sname="20250630_op_a_interval",wait=0, frames=1, x_off=[0]))
+RE(continous_run_change_xpos(sname="20250630_op_a_interval",wait=0, frames=1, x_off=[0]))
+RE(continous_run_change_xpos(sname="20250630_op_a_interval",wait=0, frames=1, x_off=[0]))
+RE(continous_run_change_xpos(sname="20250630_op_a_interval",wait=0, frames=1, x_off=[0]))
+RE(continous_run_change_xpos(sname="20250630_op_a_interval",wait=0, frames=1, x_off=[0]))
+RE(continous_run_change_xpos(sname="20250630_op_a_interval",wait=0, frames=1, x_off=[0]))
+RE(continous_run_change_xpos(sname="20250630_op_a_interval",wait=0, frames=1, x_off=[0]))
+RE(continous_run_change_xpos(sname="20250630_op_a_interval",wait=0, frames=1, x_off=[0]))
+RE(alignment_on())
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(rel_scan([pil2M], piezo.th, -1, 1, 51))
+ps()
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(alignment_off())
+RE.md["th0"] =piezo.th.position
+%run -i /home/xf12id/SWAXS_user_scripts/legacy/30-user-Karen.py
+RE(continous_run_change_xpos_thpos())
+RE(alignment_on())
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(rel_scan([pil2M], piezo.th, -1, 1, 51))
+ps()
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE.md["th0"] =piezo.th.position
+RE(continous_run_change_xpos_thpos())
+RE.stop()
+RE(alignment_off())
+RE(continous_run_change_xpos_thpos())
+RE(alignment_on())
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(rel_scan([pil2M], piezo.th, -1, 1, 51))
+ps()
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(rel_scan([pil2M], piezo.th, -1, 1, 51))
+ps()
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(rel_scan([pil2M], piezo.th, -1, 1, 51))
+ps()
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(rel_scan([pil2M], piezo.th, -1, 1, 51))
+ps()
+%run -i /home/xf12id/SWAXS_user_scripts/legacy/30-user-Karen.py
+RE(continous_run_prealigned_positions_2024_1())/
+clear_md()
+RE(continous_run_prealigned_positions_2024_1())
+RE.stop()
+RE(alignment_off())
+RE(continous_run_prealigned_positions_2024_1())
+%run -i /home/xf12id/SWAXS_user_scripts/legacy/30-user-Karen.py
+RE(continous_run_prealigned_positions_2024_1())
+RE.md["x0"] =piezo.x.position
+RE.md
+clear_md()
+RE.md
+RE.md["x0"] =piezo.x.position
+RE.md
+RE(alignment_on())
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(rel_scan([pil2M], piezo.th, -1, 1, 51))
+ps()
+RE(rel_scan([pil2M], piezo.y, -50, 50, 101))
+ps(der=True)
+RE(alignment_off())
+
+pil2M.active_beamstop.read()
+summarize_plan(pil2M.remove_beamstop())
+RE(pil2M.remove_pin())
+self.active_beamstop.get()
+pil2M.active_beamstop.get()
+pil2M.active_beamstop.get() == 'pin'
+pil2M.beamstop.x_pin.position
+pil2M.beamstop.x_pin.position - pil2M.pd_safe_pos.get()
+pil2M.beamstop.x_pin.position - pil2M.pd_safe_pos.get()
+abs(pil2M.beamstop.x_pin.position - pil2M.pd_safe_pos.get())
+self.pd_safe_pos.get()
+pil2M.pd_safe_pos.get()
+pil2M.rod_safe_pos.get()
+abs(pil2M.beamstop.x_rod.position - pil2M.rod_safe_pos.get())
+turn_off_suspenders()
+pil2M.active_beamstop.get()
+RE(pil2M.remove_pin())
+pil2M.active_beamstop.get()
+RE(pil2M.remove_pin())
+RE(pil2M.restore_pin())
+pil2M.active_beamstop.get()
+RE(pil2M.restore_pin())
+RE(pil2M.remove_beamstop())
+pil2M.active_beamstop.get()
+RE(pil2M.restore_beamstop())
+pil2M.active_beamstop.get()
+RE(SMI.modeMeasurement())
+RE(SMI.modeAlignment())
+RE(SMI.modeMeasurement())
+
+
 """
 
 '''
+
+pass-=316412
+saf: 315980
+
+proposal_swap(316412)
+
+turn_off_suspenders()
+RE(count([pil900KW]))
+RE(count([pil2M]))
+RE(pil2M.insert_beamstop('rod'))
+
+
 20250703
 SAXS: 2M ,5 meter
 16.1 kev, low-divergency, in air
 
+%run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/YZhang_SMI_Base.py
 %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2025C2_SMI.py
 
 
@@ -202,6 +340,16 @@ energy.move(16.1)
 
 
 we need to make the waxs  to >=16, otherwise, it will block the right side of the 2M
+
+
+
+Beamstop:
+Rod: [6.8, 289, 10 ]
+2M: [0,0]
+Beam center:
+WAXS: 16 deg 
+
+
 
 
 '''
@@ -468,7 +616,7 @@ class DropletReactor( ):
 
     def Run_Cu2O_synthesis( self, rxn_poss = None, sleep_time= 3, 
                                 new_batch_num = None, run_time= 60*60*10,
-                       extra='Fresh_batch38', verbosity=3, **md):
+                       extra='Fresh_batch39', verbosity=3, **md):
 
         '''
         sleep_time: time interval between measurements
