@@ -8,6 +8,9 @@ SAXS: 2M ,5 meter
 16.1 kev, low-divergency, in air
 
 %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2025C2_SZhang.py
+proposal_swap(316987)
+
+
 
 
 move_waxs(0)  #the waxs beamstop should go to -54.8

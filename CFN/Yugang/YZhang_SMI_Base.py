@@ -1,6 +1,17 @@
 """
 NOTES:
 
+20250707
+Restart the hexapod
+
+dzdo manage-iocs start hexapod
+[xf12id@xf12id2-ws1 profile_collection]$ telnet 10.67.90.125 6543
+
+
+
+
+
+
 # load this macro
 
  
