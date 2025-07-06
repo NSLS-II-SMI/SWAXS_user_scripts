@@ -180,10 +180,33 @@ Reactor Mark position = [143,140]
 20241024
 for 1M, X = -4.84, Y = -58.0, 5meter, beam center [ 458, 578 ], beamstop  [ 1.8, 289, 13 ]
 beamstop_save()
-
-
-
 """
+
+'''
+20250703
+SAXS: 2M ,5 meter
+16.1 kev, low-divergency, in air
+
+%run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2025C2_SMI.py
+
+
+move_waxs(0)  #the waxs beamstop should go to -54.8
+Otherwise, we need to do the following:
+1) go to the hutch, manually push the base of the WAXS beamstop to the inboard limit
+2) go to the smartAct, channel  to do home - forward
+3) open the beam, put att, check the waxs beam stop, and if needed put the beamstop - 54.8
+
+if gap messed up
+need to do 
+energy.move(16.1) 
+
+
+we need to make the waxs  to >=16, otherwise, it will block the right side of the 2M
+
+
+'''
+
+
 
 
 
@@ -234,7 +257,8 @@ class DropletReactor( ):
         self.L12, self.L13, self.L42, self.L43 = L12, L13, L42, L43
         self.loc_dict = self.get_hol_location()
         self.sample_pref = sample
-        self.sample_name = 'test'
+        #self.sample_name = 'test'
+        self.sample_name = sample
         self.new_batch_num = 0
         #self.base = '/nsls2/data/smi/legacy/results/data/2024_1/313765_YZhang2/Dropbox_Com/'
         self.base = '/nsls2/data/smi/legacy/results/data/2024_3/313765_Zhang/Dropbox_Com/'
@@ -406,8 +430,8 @@ class DropletReactor( ):
 
         
     def measure( self,sample_name=None,  t=1, take_camera = True ):
-        waxs_angle = 15 #if need change waxs angle, do     move_waxs(  waxs_angle ),  
-        dets = [  pil1M, pil900KW ]
+        waxs_angle = 16 #15 #if need change waxs angle, do     move_waxs(  waxs_angle ),  
+        dets = [  pil2M, pil900KW ]
         if sample_name is not None:
             sample = sample_name
         else:        
@@ -417,7 +441,7 @@ class DropletReactor( ):
             sample=sample,
             x=np.round(motorX.position, 2),
             y=np.round(motorZ.position, 2),            
-            saxs_z=np.round(pil1m_pos.z.position, 2),
+            saxs_z=np.round(pil2m_pos.z.position, 2),
             waxs_angle=waxs_angle,
             t=t,
             #scan_id=RE.md["scan_id"],
@@ -442,19 +466,22 @@ class DropletReactor( ):
 
 
 
-    def Run_Cu2O_synthesis( self, rxn_poss = None, sleep_time= 10, 
+    def Run_Cu2O_synthesis( self, rxn_poss = None, sleep_time= 3, 
                                 new_batch_num = None, run_time= 60*60*10,
-                       extra='Tube_V38', verbosity=3, **md):
+                       extra='Fresh_batch38', verbosity=3, **md):
 
         '''
-        25/07/02
+        sleep_time: time interval between measurements
+        extra: label for samples
+
+        25/07/03
         Cu2O Synthesis experiments
 
         for falcon tube measurements
         '''
         cts=0
         if new_batch_num is  None:
-            new_batch_num = self.new_batch_num #start 0
+            new_batch_num = 0# self.new_batch_num #start 0
         
 
         if rxn_poss == None:
@@ -462,7 +489,7 @@ class DropletReactor( ):
            #sam_name = self.sample_pref + extra + '_batch_'+ str(self.new_batch_num)
         else:
            rxn_poss = ['falcon']
-           self.goto_Pos( rxn_pos, extra = extra + '_batch_'+ str(self.new_batch_num) )
+           self.goto_Pos( rxn_pos, extra = extra + '_batch_'+ str(new_batch_num) )
                         
 
         t00 = time.time()
@@ -497,16 +524,16 @@ class DropletReactor( ):
                 except:
                     pass
 
-                if self.new_batch_num+1 in Batch_T_t_dict.keys():  
+                if new_batch_num+1 in Batch_T_t_dict.keys():  
                     measure = False
-                    print('We stop the X-ray measurements for Batch %s.'%(self.new_batch_num))
-                    self.new_batch_num+=1
+                    print('We stop the X-ray measurements for Batch %s.'%(new_batch_num))
+                    new_batch_num+=1
                     
             if measure:
                 t0 = time.time()
                 print('We can start the X-ray measurements for 10 min.')
                 tf = get_current_time()
-                sam_name = self.sample_pref + extra+ '_batch_'+ str(self.new_batch_num) + '%s_'%tf
+                sam_name = self.sample_pref + extra+ '_batch_'+ str(new_batch_num) + '%s_'%tf
                 self.measure(sample_name = sam_name)
                 time.sleep(sleep_time)
 
@@ -1054,7 +1081,7 @@ class DropletReactor( ):
         
 
 
-DR = DropletReactor()
+DR = DropletReactor( sample = 'Cu2O_')
 
 # For 1 straight glass tubing
 def Find_new_pos_fr(Target_time = 20, tube_type= 'glass', set_point= 'A1', push_flow = 80, flow_start='top', tube_row='C'):

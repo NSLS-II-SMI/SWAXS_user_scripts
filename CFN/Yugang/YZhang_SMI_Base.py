@@ -879,6 +879,10 @@ def name_sam(pos):
     RE.md["sample"] = sample    
     
 
+# def move_waxs( waxs_angle=10.0):
+#     '''    move waxs detector with beamstop to waxs_angle in degree   '''        
+#     yield from bps.mv(waxs, waxs_angle)    
+
 
 
 def move_waxs( waxs_angle=10.0):
