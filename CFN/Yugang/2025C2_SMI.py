@@ -350,7 +350,7 @@ Beam center:
 WAXS: 16 deg 
 
 
-
+then do     setthreshold energy 16100 autog 11000
 
 '''
 

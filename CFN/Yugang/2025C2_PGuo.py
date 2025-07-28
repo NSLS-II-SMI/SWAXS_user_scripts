@@ -3,6 +3,10 @@ pas =318132
 saf: 316677
 
 
+proposal_swap(318132)
+
+
+
 20250706
 SAXS: 2M ,5 meter
 16.1 kev, low-divergency, in air
@@ -31,28 +35,102 @@ WAXS: 16 deg
 
 
 
+#enable the WAXS
+go the terminal, select WAXS
+then enter Ctrl + X  --> to restart IOC for waxs detector, wait ~2 min, will * comes up
+
+
+mov_sam(1)  #will go to sample 1
+dir beam [ 746, 1106 ] 
+beam stop [ 6.2, 289 ]
+
+
+pass-318132 20250630_op_a_continous [572]: pil2M.rod_offset_x_mm.set(6.2)
+Out[572]: Status(obj=Signal(name='pil2M_rod_offset_x_mm', parent='pil2M', value=6.2, timestamp=1751912742.8448317), done=True, success=True)
+
+pass-318132 20250630_op_a_continous [573]: RE(pil2M.insert_beamstop( 'rod'))
+Out[573]: ()                                                                                                                                                                                   
+
+pass-318132 20250630_op_a_continous [574]: RE(SMI.modeAlignment())
+/nsls2/data1/smi/shared/config/bluesky/profile_collection/startup/smiclasses/pilatus.py:586: UserWarning: beamstop will be removed, run restore_beamstop to put it back
+  warn('beamstop will be removed, run restore_beamstop to put it back')
+Out[574]: ()                                                                                                                                                                                   
+
+pass-318132 20250630_op_a_continous [575]: RE(SMI.modeMeasurement())
+
+
 '''
 
+# username = 'PGuo'
+# user_name = 'PGuo'
 
-username = 'PGuo'
-user_name = 'PGuo'
+
+
+username = 'BW'
+user_name = 'BW'
 
 
 #########Change Sample name here
-sample_dict = {   1: 'S7A', 2: 'S7B', 3: 'S8A', 4: 'S8B'   } 
-pxy_dict = {    1:[ 48500, 0 ] , 2: [ 23000, 0  ]  , 3: [-1500, 0  ] , 4: [-24500, 0  ]   }
+sample_dict = {   1: 'FAPBBR3_G', 2: 'BAIn1_G', 3: 'BAFAIn2_G', 4: 'NPBDF_1' , 5: 'NPBDF_2' , 6: 'NPBDF_3' , 7: 'NPBDF_4' , 8: 'FAPbBr3_S' , 9: 'CuPc_q1'  } 
+pxy_dict = {    1:[ 47884, 2100 ] , 2: [ 35884, 2100  ]  , 3: [22884, 2000  ] , 
+            4: [10884, 1700  ] , 5: [-116, 1600  ] , 6: [-11116, 1400  ] ,
+              7: [-23116, 1300  ] , 8: [-37116, 1800  ] , 9: [-48116, 1800  ]  }
+
+
+
 
 
 ks = np.array(list((sample_dict.keys())))
 x_list = np.array(list((pxy_dict.values()))) [:, 0]
-y_list = np.array(list((pxy_dict.values()))) [:, 1]
+y_list = np.array(list((pxy_dict.values()))) [:, 1] #+ 1400
 sample_list = np.array(list((sample_dict.values())))
 
 
+# pxy_dict = {  k: [ pxy_dict[k][0], 1400   ]  for k in pxy_dict  }
+# pxy_dict.update( {  k: [ pxy_dict[k][0], 1725   ]  for k in  [ 4 ]  } ) 
+# pxy_dict.update( {  k: [ pxy_dict[k][0], 1725   ]  for k in  [ 5 ]  } ) 
+# pxy_dict.update( {  k: [ pxy_dict[k][0], 2600   ]  for k in  [ 10 ]  } ) 
+# #pxy_dict.update( {  k: [ pxy_dict[k][0], 2200   ]  for k in  [ 5, 6, 7 ]  } )
 
 
 
-def align_gix_loop_samples( inc_ang = 0.15,   ):      
+# Aligned_Dict = {}
+# Aligned_Dict[1] = [ 1.353715, 1544.857]
+# Aligned_Dict[2] = [ 1.798748, 1625.162 ]
+# Aligned_Dict[3] = [ 0.327192,  1623.413]
+
+# Aligned_Dict = {
+
+#     0: { 'th': 1.353715, 'y': 1544.857},
+# 1: { 'th': 1.798748, 'y': 1625.162},
+# 2: { 'th': 0.327192, 'y': 1623.413},
+
+# 3: {'th': 0.329494, 'y': 1829.588},
+ 
+#  4: {'th': 0.266078, 'y': 1939.25},
+#  5: {'th': -0.062271, 'y': 2063.779},
+#  6: {'th': 0.078281, 'y': 2178.608},
+#  7: {'th': -0.116335, 'y': 2244.538},
+#  8: {'th': 0.013467, 'y': 2347.518},
+#  9: {'th': 0.061605, 'y': 2572.846}}
+
+
+
+
+# Aligned_Dict[4] = [ 0.140732 , 1425.0 7]
+# Aligned_Dict[5] = [0.18900399999999998, 1070.096 ]
+# Aligned_Dict[6] = [-0.142403, 949.092]
+# Aligned_Dict[7] = 
+# Aligned_Dict[8] = 
+# Aligned_Dict[9] = 
+
+#Aligned_Dict=align_gix_loop_samples( ii_start = 2)
+
+
+#y_list = np.array(list((pxy_dict.values())))[:, 1] 
+#print( x_list, y_list )
+
+def align_gix_loop_samples( inc_ang = 0.15, ii_start = -1   ):      
     '''      
     Aligned_Dict =     align_gix_loop_samples(   )  
     #  0.48 -0.384     
@@ -65,23 +143,26 @@ def align_gix_loop_samples( inc_ang = 0.15,   ):
     print('here')   
     Aligned_Dict = {}
     for ii, (x, sample) in enumerate(zip(x_list,sample_list)):    #loop over samples on bar
-        if ii == N-1:
-            back_to_measureMode = True
-        else:
-            back_to_measureMode = False     
-        print('Do alignment for sample: %s'%sample )
-        RE( bps.mv(M.x, x) ) #move to next sample  
-        if motor == 'pizeo':             
-            RE( alignement_gisaxs(inc_ang , back_to_measureMode=back_to_measureMode ) ) #run alignment routine          
-        else:             
-            RE( alignement_gisaxs_hex(inc_ang ,back_to_measureMode=back_to_measureMode ) ) #run alignment routine  
-        M, TH, YH = get_motor(  )     
-        Aligned_Dict[ii]={}
-        Aligned_Dict[ii]['th']  = TH
-        Aligned_Dict[ii]['y']  = YH
-        print( ii, TH, YH )
-        RE( smi.modeMeasurement() ) 
-        print('THe alignment is DOne!!!')
+        if ii> ii_start:
+            if ii == N-1:
+                back_to_measureMode = True
+            else:
+                back_to_measureMode = False     
+            print('Do alignment for sample: %s'%sample )
+            RE( bps.mv(M.x, x) ) #move to next sample  
+            RE( bps.mv(M.y, y_list[ii]) ) #move to next sample  
+
+            if motor == 'pizeo':             
+                RE( alignement_gisaxs(inc_ang  ) ) #run alignment routine          
+            else:             
+                RE( alignement_gisaxs_hex(inc_ang  ) ) #run alignment routine  
+            M, TH, YH = get_motor(  )     
+            Aligned_Dict[ii]={}
+            Aligned_Dict[ii]['th']  = TH
+            Aligned_Dict[ii]['y']  = YH
+            print( ii, TH, YH )
+    RE( smi.modeMeasurement() ) 
+    print('THe alignment is DOne!!!')
     return Aligned_Dict
 
 
@@ -89,22 +170,23 @@ def align_gix_loop_samples( inc_ang = 0.15,   ):
 
  
 print('here@@@@@@@@@@')
-def run_gix_loop_wsaxs(t=1, mode = ['saxs', 'waxs' ],  
-                       angle_arc = np.array([ 0.08, 0.12, 0.15, 0.2, 0.25,  0.3, .5, 1  ]),
-                       waxs_angle_array = np.array( [  0, 10,  15     ] ) ,  
-                       x_shift_array =  np.array( [  -1000, 0, 1000 ]), #np.linspace(-1, 1, 5),                      
+def run_gix_loop_wsaxs(t=1, mode = [ 'waxs' ],  
+                       angle_arc = np.array([ 0.05, 0.1, 0.15, 0.3, 0.6  ]),
+                       waxs_angle_array = np.array( [  0, 10,  15      ] ) ,  
+                       x_shift_array =  np.array( [ -2000, -1000, 0, 1000, 2000 ]), #np.linspace(-1, 1, 5),                      
                        Aligned_Dict = None ):        
        
     '''      
-      Aligned_Dict =     align_gix_loop_samples( inc_ang = 0.15  )   
-
-      RE(  run_gix_loop_wsaxs(  Aligned_Dict = Aligned_Dict ) )
+      #RE( run_gix_loop_wsaxs()) 
 
 
+      Aligned_Dict=align_gix_loop_samples();RE(run_gix_loop_wsaxs(Aligned_Dict = Aligned_Dict))
 
-     '''    
 
-    assert len(x_list) == len(sample_list), f'Sample name/position list is borked' 
+
+    '''    
+    print( 'step--0' )
+    assert len(x_list) == len(sample_list), f'Sample name/position list is borked'     
     if Aligned_Dict is None:    
         Aligned_Dict = align_gix_loop_samples( inc_ang = 0.15 )  
     print( Aligned_Dict )  
@@ -127,7 +209,7 @@ def run_gix_loop_wsaxs(t=1, mode = ['saxs', 'waxs' ],
                 for i, th in enumerate(th_meas): #loop over incident angles
                     yield from bps.mv(M.th, th)  
                     name_fmt = "{sample}_{th:5.4f}deg_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
-                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil1m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,
+                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil2m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,
                     #scan_id=RE.md["scan_id"],
                 )
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
@@ -137,6 +219,264 @@ def run_gix_loop_wsaxs(t=1, mode = ['saxs', 'waxs' ],
             #print( 'HERE#############')
     sample_id(user_name='test', sample_name='test')
     det_exposure_time(0.5)
+
+def align_Linkam_sample():   
+    Aligned_Dict= {}                   
+    RE( alignement_gisaxs( 0.15  ) ) #run alignment routine          
+    M, TH, YH = get_motor(  )   
+    ii = 0   
+    Aligned_Dict[ii]={}
+    Aligned_Dict[ii]['th']  = TH
+    Aligned_Dict[ii]['y']  = YH
+    print( ii, TH, YH ) 
+    RE( smi.modeMeasurement() ) 
+    return    Aligned_Dict
+
+
+def _run( Aligned_Dict, 
+         sample_name = 'xxx',
+         mode = [ 'waxs' ],  
+        angle_arc = np.array([  0.15  ]),
+         waxs_angle_array = np.array( [  0     ] ) ,   ):
+    RE.md['sample_name'] = sample_name
+    RE.md['sample'] = sample_name
+     
+    M, _, _ = get_motor(   )  
+    for waxs_angle in waxs_angle_array: # loop through waxs angles        
+        yield from bps.mv(waxs, waxs_angle)     
+        dets = get_dets( waxs_angle = waxs_angle, mode = mode )                       
+        #det_exposure_time(t,t)  
+        ii = 0    
+        TH = Aligned_Dict[ii]['th']  
+        YH = Aligned_Dict[ii]['y']  
+        yield from bps.mv(M.y, YH)  
+        yield from bps.mv(M.th, TH)  
+        th_meas = angle_arc + TH #piezo.th.position 
+        th_real = angle_arc	 
+        for i, th in enumerate(th_meas): #loop over incident angles
+            yield from bps.mv(M.th, th)  
+            #lt = LThermal.temperature()
+            t=1
+            name_fmt = "{sample}_{th:5.4f}deg_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_T{lt:.2f}c_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
+            _sample_name = name_fmt.format(sample=sample_name,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,lt=LThermal.temperature(),saxs_z=np.round(pil2m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,)
+                    #scan_id=RE.md["scan_id"],                
+            sample_id(user_name=  user_name , sample_name=_sample_name)                     
+            print(f'\n\t=== Sample: {_sample_name} ===\n') 
+            yield from bp.count( dets, num=1)
+            det_exposure_time(t,t)    
+            #print( 'HERE#############')
+    RE.md['sample_name'] = 'test'
+    RE.md['sample'] = 'tes'
+
+def collect_data_atT(T, Aligned_Dict, sample_name = 'xxx', angle_arc = np.array([  0.15  ]),
+         waxs_angle_array = np.array( [  0     ] )  ):
+    '''
+    
+    collect_data_atT( 20, Aligned_Dict, sample_name = 'BAI_n1', angle_arc = np.array([  0.05, 0.1, 0.15, 0.3   ]),
+         waxs_angle_array = np.array( [  0,      ] )  )
+    
+    '''
+
+    #print('step...0 ')
+    LThermal.setTemperature(   T   )
+    LThermal.on() # turn on 
+
+    while abs( LThermal.temperature() - T )  > .5 :            
+        time.sleep( 3 ) 
+    RE( _run( Aligned_Dict, sample_name = sample_name,
+        mode = [ 'waxs' ], angle_arc = angle_arc, 
+        waxs_angle_array = waxs_angle_array,   ) ) 
+    
+
+
+
+
+def Temperature_Linkam_Fast_ThreeTs(
+                     Aligned_Dict, 
+                     sample_name = 'BAI_n1',
+                     T1= 300 - 273.15, #200 - 275.15
+                     T2= 220 - 273.15, 
+                     T3= 300 - 273.15,
+                     mode = [ 'waxs' ],  
+                     exp_time=1, 
+                     angle_arc = np.array([  0.15  ]),
+                     waxs_angle_array = np.array( [  0     ] ) ,  
+                     sleep_time = 3, 
+                     
+                     ):
+    ''' 
+    %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2025C2_PGuo.py
+
+    Aligned_Dict= align_Linkam_sample(); #run this alignment once
+
+
+    collect_data_atT( 140, Aligned_Dict, sample_name = 'NPB_4', 
+    angle_arc = np.array([  0.05, 0.1, 0.15, 0.3   ]),
+         waxs_angle_array = np.array( [  0,10    ] )  )
+    
+
+
+    Temperature_Linkam_Fast_ThreeTs(
+                     Aligned_Dict, 
+                     sample_name = 'NPB_Cont5',
+                     T1= 430 - 273.15, #200 - 275.15
+                     T2= 443 - 273.15, 
+                     T3= 445 - 273.15,
+                     mode = [ 'waxs' ],  
+                     exp_time=1, 
+                     angle_arc = np.array([  0.1  ]),
+                     waxs_angle_array = np.array( [  10     ] ) ,  
+                     sleep_time = 3,                      
+                     )
+     
+    '''
+
+    print('step...0 ')
+    LThermal.setTemperature(   T1   )
+    LThermal.on() # turn on
+    while abs( LThermal.temperature() - T1 )  > .5:            
+        time.sleep( 3 ) 
+
+    LThermal.setTemperature(   T2    )
+    # LThermal.setTemperatureRate(ramp)
+    LThermal.on() # turn on 
+    print('step...1 ')
+    while abs( LThermal.temperature() - T2 ) > .5:
+        RE( _run( Aligned_Dict,  sample_name = sample_name, 
+            mode = [ 'waxs' ], angle_arc = angle_arc, 
+            waxs_angle_array = waxs_angle_array,   ) )   
+        time.sleep( sleep_time ) 
+
+    LThermal.setTemperature(   T3    )
+    # LThermal.setTemperatureRate(ramp)
+    LThermal.on() # turn on 
+    while abs( LThermal.temperature() - T3 ) > .5:
+        RE( _run( Aligned_Dict, sample_name = sample_name, 
+            mode = [ 'waxs' ], angle_arc = angle_arc, 
+            waxs_angle_array = waxs_angle_array,   ) )  
+        time.sleep( sleep_time )    
+
+
+    LThermal.setTemperature(   25    )
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5)
+    LThermal.off()
+    RE.md["sample_name"] = 'test'
+
+
+
+
+
+
+
+
+
+
+
+def Temperature_Linkam_Step(
+                     Aligned_Dict, 
+                     sample_name = 'xxx',
+                     TL = 200 - 273.15,
+                     TH = 320 - 273.15,  
+                     Tnum = 30, 
+                     mode = [ 'waxs' ],  
+                     exp_time=1, 
+                     angle_arc = np.array([  0.05, 0.1, 0.15, 0.3  ]),
+                     waxs_angle_array = np.array( [  0, 10     ] ) ,  
+                     sleep_time = 3, 
+                     
+                     ):
+    ''' 
+    Aligned_Dict= align_Linkam_sample();
+    RE( Temperature_Linkam_Step( Aligned_Dict ) 
+     
+    '''
+    
+    Tlist = np.linspace( TH, TL, Tnum ) 
+    for T in Tlist:
+        collect_data_atT(T, Aligned_Dict, sample_name = sample_name,angle_arc = angle_arc, 
+            waxs_angle_array = waxs_angle_array,   ) 
+    Tlist = np.linspace( TL, TH, Tnum ) 
+    for T in Tlist:
+        collect_data_atT(T, Aligned_Dict, sample_name = sample_name, angle_arc = angle_arc, 
+            waxs_angle_array = waxs_angle_array,   ) 
+ 
+    LThermal.setTemperature(   25    )
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5)
+    LThermal.off()
+    RE.md["sample_name"] = 'test'
+
+
+
+
+# def Temperature_Linkam_Fast(
+#                      Aligned_Dict, 
+#                      name='temp',
+#                      TL = 200 - 273.15,
+#                      TH = 320 - 273.15,  
+#                      mode = [ 'waxs' ],  
+#                      exp_time=1, 
+#                      angle_arc = np.array([  0.15 ]),
+#                      waxs_angle_array = np.array( [  0     ] ) ,  
+#                      sleep_time = 3, 
+                     
+#                      ):
+#     ''' 
+#     Aligned_Dict= align_Linkam_sample(); 
+#     RE( Temperature_Linkam_Fast( Aligned_Dict ) 
+     
+#     '''
+
+#        # function loop to bring linkam to temp, hold and measure
+# # Function will begin at start_temp and take a SAXS measurement at every temperature given 
+
+#     def _do_Tfast():
+#         M, _, _ = get_motor(   )  
+#         for waxs_angle in waxs_angle_array: # loop through waxs angles        
+#             yield from bps.mv(waxs, waxs_angle)     
+#             dets = get_dets( waxs_angle = waxs_angle, mode = mode )                       
+#             #det_exposure_time(t,t)  
+#             ii = 0    
+#             TH = Aligned_Dict[ii]['th']  
+#             YH = Aligned_Dict[ii]['y']  
+#             yield from bps.mv(M.y, YH)  
+#             yield from bps.mv(M.th, TH)  
+#             th_meas = angle_arc + TH #piezo.th.position 
+#             th_real = angle_arc	 
+#             for i, th in enumerate(th_meas): #loop over incident angles
+#                 yield from bps.mv(M.th, th)  
+#                 #lt = LThermal.temperature()
+#                 name_fmt = "{sample}_{th:5.4f}deg_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_T{lt:.2f}c_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
+#                 sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,lt=LThermal.temperature(),saxs_z=np.round(pil2m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,)
+#                         #scan_id=RE.md["scan_id"],                
+#                 sample_id(user_name=  user_name , sample_name=sample_name)                     
+#                 print(f'\n\t=== Sample: {sample_name} ===\n') 
+#                 yield from bp.count( dets, num=1)
+#                 det_exposure_time(t,t)    
+#                 #print( 'HERE#############')
+            
+    
+#     LThermal.setTemperature(   TL    )
+#     # LThermal.setTemperatureRate(ramp)
+#     LThermal.on() # turn on 
+#     while LThermal.temperature() > TL + 1.0 :
+#         do_Tfast()
+#         time.sleep( sleep_time ) 
+
+
+#     LThermal.setTemperature(   TH    )
+#     # LThermal.setTemperatureRate(ramp)
+#     LThermal.on() # turn on 
+#     while LThermal.temperature() < TH - 1.0 :
+#         do_Tfast()    
+#         time.sleep( sleep_time )    
+
+#     LThermal.setTemperature(   25    )
+#     sample_id(user_name='test', sample_name='test')
+#     det_exposure_time(0.5)
+#     LThermal.off()
+#     RE.md["sample_name"] = 'test'
 
 
 
@@ -195,7 +535,7 @@ def insitu_tgix_samples(  Aligned_Dict,  run_time= 3600 * 1 , sleep_time = 5    
                 for i, th in enumerate(th_meas): #loop over incident angles
                     yield from bps.mv(M.th, th)  
                     name_fmt = "{sample}_{th:5.4f}deg_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
-                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil1m_pos.z.position, 2), waxs_angle=waxs_angle,t=t )
+                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil2m_pos.z.position, 2), waxs_angle=waxs_angle,t=t )
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
                     print(f'\n\t=== Sample: {sample_name} ===\n') 
                     yield from bp.count( dets, num=1)
@@ -217,7 +557,7 @@ def run_giwaxs_Kim(t=1, username=username):
     waxs_angle_array = np.array(
         [7, 27, 47]
     )  # 4*3.14/(12.39842/16.1)*np.sin((7*6.5+3.5)*3.14/360) = 6.760 A-1
-    # dets = [pil300KW, pil1M] # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    # dets = [pil300KW, pil2M] # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
     max_waxs_angle = np.max(waxs_angle_array)
     x_shift_array = np.linspace(-500, 500, 3)  # measure at a few x positions
     inverse_angle = False
@@ -245,7 +585,7 @@ def run_giwaxs_Kim(t=1, username=username):
                     pil900KW,
                     #pil300KW,
                     pil2M,
-                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
                 print("Meausre both saxs and waxs here for w-angle=%s" % waxs_angle)
             else:
                 dets = [pil900KW, pil300KW]
@@ -288,7 +628,7 @@ def temp_series_grid(name='temp',
                      temps = np.linspace(32,26,13),
                      exp_time=1, 
                      hold_delay=120, 
-                     dets=[pil1M], 
+                     dets=[pil2M], 
                      xs=np.linspace(-13,-12,11), 
                      ys=np.linspace(-2.3,-2.8,6)):
        # function loop to bring linkam to temp, hold and measure
@@ -328,7 +668,7 @@ def temp_series_grid(name='temp',
 
 
                 # Metadata
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2m_pos.z.position / 1000
 
                 # Sample name
                 name_fmt = ("{sample}_{energy}eV_sdd{sdd}m_temp{temp}_x{x}_y{y}")
@@ -347,6 +687,9 @@ def temp_series_grid(name='temp',
 
     LThermal.off()
     RE.md["sample_name"] = 'test'
+
+
+
 
 
 

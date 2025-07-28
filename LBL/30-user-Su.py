@@ -3966,7 +3966,7 @@ def blade_coating_2025_1_slowexp_withoutmotion(sample_name='bladecoating', coati
     det_exposure_time(0.5, 0.5)
     # det_exposure_time(0.5,300)
     #det_exposure_time(2, 600)
-    sample_id(user_name='ML', sample_name=sample_name)
+    sample_id(user_name='MG', sample_name=sample_name)
     yield from bps.mv(syringe_pu.go, 1) # start pump 
     yield from bps.sleep(2.5)
     yield from bps.mv(syringe_pu.stop_flow, 1) # stop pump

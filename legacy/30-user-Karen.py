@@ -16,6 +16,7 @@ def get_positions():
     z = str(np.round(float(z), 0)).zfill(5)
     th = str(np.round(float(th), 4)).zfill(0)
     temp = str(np.round(float(temp), 1)).zfill(5)
+    # f'_ai{str(np.round(0.02555, 3)).zfill(4)}'
    
     return f'x={x}_y={y}_z={z}_th={th}_temp{temp}degC'
 
@@ -330,7 +331,11 @@ def alignment_on():
     smi = SMI_Beamline()
     yield from smi.modeAlignment(technique="gisaxs")
     yield from smi.setDirectBeamROI(size=[48, 20])
+    beamstop_x = 6.2
+    print(f'Using hardcoded SAXS beamstop position {beamstop_x} mm due to smi.mode not working properly')
+    yield from bps.mv(pil2M.beamstop.x_rod, beamstop_x + 5)
     sample_id(user_name='test', sample_name='test')
+
     det_exposure_time(0.5, 0.5)
     print('\t\tALIGNMENT MODE ON')
 
@@ -341,6 +346,9 @@ def alignment_off():
     print('\t\tALIGNMENT MODE OFF and WAXS arc to 0 deg')
     smi = SMI_Beamline()
     yield from smi.modeMeasurement()
+    beamstop_x = 6.2
+    print(f'Using hardcoded SAXS beamstop position {beamstop_x} mm due to smi.mode not working properly')
+    yield from bps.mv(pil2M.beamstop.x_rod, beamstop_x)
     yield from bps.mv(waxs, 0)
 
 def continous_run_change_xpos(sname='20250630_op_a_echem', t=2, wait=100, frames=5000,
@@ -533,6 +541,7 @@ def clear_md():
     for k in keys:
         try:
             RE.md.pop(k)
+            print(f'Removed: {k}')
         except:
             print(f'No {k} key')
 
@@ -588,7 +597,7 @@ def continous_run_prealigned_positions_2024_1(sname='20250630_op_a_interval', t=
         yield from bps.sleep(wait)
 
 def continous_run_change_xpos_thpos(
-        sname='20250630_op_a_interval',
+        sname='20250709_op_a_pretest',
         t=2, wait=100, frames=5000,
         x_off=[-150, -100, -50, 0, 50, 100, 150],
         ai_off=[0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5],
@@ -646,7 +655,249 @@ def continous_run_change_xpos_thpos(
         yield from bps.sleep(wait)
 
 
+def continous_run_prealigned_positions_2025_2(sname='20250709_op_e_echem', t=2, wait=100, frames=5000):
+
+    """
+    At each prealigned region of interest, take a finer scan across x with several
+    incident angles.
+
+    Args:
+        sname (str): sample name,
+        t (float): exposure time,
+        wait (float): wait time after one series of scans is done,
+        frames (int): number of series of scans to be taken,
+        
+    """
+    # x_off (list of floats): offset values in um for x scans,
+    # ai_off (list of floats): values of incident angles to take scans at.
+    
+    x_off  = [-100, -50, 0, 50, 100]
+    ai_off = [0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5]
+
+    try:
+        alignment = RE.md['alignment_LUT']
+    except:
+        alignment =  {
+            '-2000': {'x': -2000, 'y': 7105.626, 'z': 2000, 'th': 0.4},
+                '0': {'x': -0, 'y': 7092.411, 'z': 2000, 'th': 0.4},
+             '2000': {'x':  2000, 'y': 7075.913, 'z': 2000, 'th': 0.4},
+                        
+        }
+        RE.md['alignment_LUT'] = alignment
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+
+    for i in range(frames):
+
+        print(f'Taking {i + 1} / {frames} frames for {len(alignment)} ROIs')
+
+        # Iterate over region of interest
+        for key, value in alignment.items():
+
+            # ROI alignment values
+            x0 = value['x']
+            y0 = value['y']
+            z0 = value['z']
+            th0 = value['th']
+
+            yield from bps.mv(
+                piezo.x, x0,
+                piezo.y, y0,
+                piezo.z, z0,
+                piezo.th, th0,
+            )
+
+            print(f'{key}, {value}')
+            
+
+            # Fine scan across x
+            for x_step in x_off:
+                print(f'{type(x_off)}')
+                print(f'{type(x_step)}')
+                print(f'{x_step}')
+                print(f'{type(x0)}')
+                #clo= x0+x_step
+                yield from bps.mv(piezo.x, x0 + x_step)
+                #yield from bps.mv(piezo.x, clo)
+
+                print(f'stag1')
+
+                # Go over incident angles
+                for ai in ai_off:
+                    yield from bps.mv(piezo.th, th0 + ai)
+
+                    print(f'stag2')
+
+                    name_sample(sname, tstamp)
+                    # Add incident angle to sample name
+                    ai_md = f'_ai_{ai:.3f}'
+                    print(f'Incident angle:\t{ai}')
+                    name = RE.md['sample_name']
+                    RE.md['sample_name'] = name + ai_md
+
+                    yield from bp.count([pil900KW])
+        
+        # wait
+        print(f'\nWaiting {wait} s')
+        yield from bps.sleep(wait)
+
 # Backup
+
+
+'''
+def continous_run_prealigned_positions_2025_2(sname='20250709_op_d_echem', t=2, wait=100, frames=5000):
+
+    """
+    At each prealigned region of interest, take a finer scan across x with several
+    incident angles.
+
+    Args:
+        sname (str): sample name,
+        t (float): exposure time,
+        wait (float): wait time after one series of scans is done,
+        frames (int): number of series of scans to be taken,
+        
+    """
+    # x_off (list of floats): offset values in um for x scans,
+    # ai_off (list of floats): values of incident angles to take scans at.
+    
+    x_off  = [-100, -50, 0, 50, 100]
+    ai_off = [0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5]
+
+    try:
+        alignment = RE.md['alignment_LUT']
+    except:
+        alignment =  {
+            '-2000': {'x': -2000, 'y': 6883.802, 'z': 2000, 'th': 0.18},
+                '0': {'x': -0, 'y': 6861.954, 'z': 2000, 'th': 0.18},
+             '2000': {'x':  2000, 'y': 6838.093, 'z': 2000, 'th': 0.18},
+                        
+        }
+        RE.md['alignment_LUT'] = alignment
+'''
+'''
+def continous_run_prealigned_positions_2025_2(sname='20250709_op_c_echem', t=2, wait=100, frames=5000):
+
+    """
+    At each prealigned region of interest, take a finer scan across x with several
+    incident angles.
+
+    Args:
+        sname (str): sample name,
+        t (float): exposure time,
+        wait (float): wait time after one series of scans is done,
+        frames (int): number of series of scans to be taken,
+        
+    """
+    # x_off (list of floats): offset values in um for x scans,
+    # ai_off (list of floats): values of incident angles to take scans at.
+    
+    x_off  = [-100, -50, 0, 50, 100]
+    ai_off = [0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5]
+
+    try:
+        alignment = RE.md['alignment_LUT']
+    except:
+        alignment =  {
+            '-2000': {'x': -2800, 'y': 6971.022, 'z': 2000, 'th': 1.06},
+                '0': {'x': -800, 'y': 6946.917, 'z': 2000, 'th': 1.06},
+             '2000': {'x':  1200, 'y': 6920.857, 'z': 2000, 'th': 1.02},
+                        
+'''
+
+'''
+def continous_run_prealigned_positions_2025_2(sname='20250709_op_b_echem', t=2, wait=100, frames=5000):
+
+    """
+    At each prealigned region of interest, take a finer scan across x with several
+    incident angles.
+
+    Args:
+        sname (str): sample name,
+        t (float): exposure time,
+        wait (float): wait time after one series of scans is done,
+        frames (int): number of series of scans to be taken,
+        
+    """
+    # x_off (list of floats): offset values in um for x scans,
+    # ai_off (list of floats): values of incident angles to take scans at.
+    
+    x_off  = [-100, -50, 0, 50, 100]
+    ai_off = [0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5]
+
+    try:
+        alignment = RE.md['alignment_LUT']
+    except:
+        alignment =  {
+            '-2000': {'x': -4000, 'y': 6853.836, 'z': 2000, 'th': 0.94},
+                '0': {'x': -2000, 'y': 6847.006, 'z': 2000, 'th': 0.8312},
+             '2000': {'x':  0,    'y': 6835.918,   'z': 2000, 'th':0.646},
+                        
+        }
+'''
+'''
+def continous_run_prealigned_positions_2025_2(sname='20250709_op_a_echem', t=2, wait=100, frames=5000):
+
+    """
+    At each prealigned region of interest, take a finer scan across x with several
+    incident angles.
+
+    Args:
+        sname (str): sample name,
+        t (float): exposure time,
+        wait (float): wait time after one series of scans is done,
+        frames (int): number of series of scans to be taken,
+        
+    """
+    # x_off (list of floats): offset values in um for x scans,
+    # ai_off (list of floats): values of incident angles to take scans at.
+    
+    x_off  = [-100, -50, 0, 50, 100]
+    ai_off = [0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5]
+
+    try:
+        alignment = RE.md['alignment_LUT']
+    except:
+        alignment =  {
+            '-2000': {'x': -2500, 'y': 7126, 'z': 2000, 'th': 0.54},
+                '0': {'x': -500, 'y': 7111, 'z': 2000, 'th': 0.59},
+             '2000': {'x':  1500, 'y': 7094.7,   'z': 2000, 'th': 0.57},
+                        
+        }
+        RE.md['alignment_LUT'] = alignment
+'''
+'''
+def continous_run_prealigned_positions_2025_2(sname='Pristine_Cu_in_cell', t=2, wait=50, frames=1):
+
+    """
+    At each prealigned region of interest, take a finer scan across x with several
+    incident angles.
+
+    Args:
+        sname (str): sample name,
+        t (float): exposure time,
+        wait (float): wait time after one series of scans is done,
+        frames (int): number of series of scans to be taken,
+        
+    """
+    # x_off (list of floats): offset values in um for x scans,
+    # ai_off (list of floats): values of incident angles to take scans at.
+    
+    x_off  = [-100, -50, 0, 50, 100]
+    ai_off = [0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5]
+
+    try:
+        alignment = RE.md['alignment_LUT']
+    except:
+        alignment =  {
+            '-2000': {'x': -4000, 'y': 6826.13, 'z': 2000, 'th': 1.18},
+                '0': {'x': -2000, 'y': 6819.9, 'z': 2000, 'th': 1.08},
+             '2000': {'x':  0,    'y': 6810,   'z': 2000, 'th': 0.88},
+'''
 ''' {'0': {'x': 3648.04, 'y': -1263.1, 'z': 799.8, 'th': 2.19},
  '-100': {'x': 3547.69, 'y': -1249.21, 'z': 799.82, 'th': 2.19},
  '-200': {'x': 3447.79, 'y': -1249.52, 'z': 799.82, 'th': 2.19},
