@@ -11,10 +11,10 @@ proposal_swap(318132)
 SAXS: 2M ,5 meter
 16.1 kev, low-divergency, in air
 
-%run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2025C2_PGuo.py
+%run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2025C2_Kim.py
 
 
-move_waxs(0)  #the waxs beamstop should go to -54.8
+move_waxs(0)  #the waxs beamstop should go to -54.8  (-58.4 ????)
 Otherwise, we need to do the following:
 1) go to the hutch, manually push the base of the WAXS beamstop to the inboard limit
 2) go to the smartAct, channel  to do home - forward
@@ -28,7 +28,7 @@ energy.move(16.1)
 we need to make the waxs  to >=16, otherwise, it will block the right side of the 2M
 
 Beamstop:
-Rod: [6.8, 289, 10 ]
+Rod: [6.8, 289, 10 ]   --> new pos 5.5
 2M: [0,0]
 Beam center:
 WAXS: 16 deg 
@@ -66,8 +66,8 @@ pass-318132 20250630_op_a_continous [575]: RE(SMI.modeMeasurement())
 
 
 
-username = 'BW'
-user_name = 'BW'
+username = 'Kim'
+user_name = 'Kim'
 
 
 #########Change Sample name here
@@ -99,36 +99,19 @@ sample_list = np.array(list((sample_dict.values())))
 # Aligned_Dict[2] = [ 1.798748, 1625.162 ]
 # Aligned_Dict[3] = [ 0.327192,  1623.413]
 
-# Aligned_Dict = {
 
-#     0: { 'th': 1.353715, 'y': 1544.857},
-# 1: { 'th': 1.798748, 'y': 1625.162},
-# 2: { 'th': 0.327192, 'y': 1623.413},
-
-# 3: {'th': 0.329494, 'y': 1829.588},
- 
-#  4: {'th': 0.266078, 'y': 1939.25},
-#  5: {'th': -0.062271, 'y': 2063.779},
-#  6: {'th': 0.078281, 'y': 2178.608},
-#  7: {'th': -0.116335, 'y': 2244.538},
-#  8: {'th': 0.013467, 'y': 2347.518},
-#  9: {'th': 0.061605, 'y': 2572.846}}
-
-
-
-
-# Aligned_Dict[4] = [ 0.140732 , 1425.0 7]
-# Aligned_Dict[5] = [0.18900399999999998, 1070.096 ]
-# Aligned_Dict[6] = [-0.142403, 949.092]
-# Aligned_Dict[7] = 
-# Aligned_Dict[8] = 
-# Aligned_Dict[9] = 
 
 #Aligned_Dict=align_gix_loop_samples( ii_start = 2)
 
 
 #y_list = np.array(list((pxy_dict.values())))[:, 1] 
 #print( x_list, y_list )
+
+
+
+#RE( smi.modeMeasurement() ) 
+
+
 
 def align_gix_loop_samples( inc_ang = 0.15, ii_start = -1   ):      
     '''      
@@ -162,10 +145,12 @@ def align_gix_loop_samples( inc_ang = 0.15, ii_start = -1   ):
             Aligned_Dict[ii]['y']  = YH
             print( ii, TH, YH )
     RE( smi.modeMeasurement() ) 
+    RE(bps.mv( pil2M.beamstop.x_rod, 5.5 ) )
+
     print('THe alignment is DOne!!!')
     return Aligned_Dict
 
-
+#bps.mv(self.beamstop.x_pin, self.pd_safe_pos.get())
 
 
  
@@ -191,6 +176,9 @@ def run_gix_loop_wsaxs(t=1, mode = [ 'waxs' ],
         Aligned_Dict = align_gix_loop_samples( inc_ang = 0.15 )  
     print( Aligned_Dict )  
     M, _, _ = get_motor(   )  
+    yield from bps.mv( pil2M.beamstop.x_rod, 5.5 ) 
+
+
     for waxs_angle in waxs_angle_array: # loop through waxs angles        
         yield from bps.mv(waxs, waxs_angle)     
         dets = get_dets( waxs_angle = waxs_angle, mode = mode )                       
@@ -219,6 +207,8 @@ def run_gix_loop_wsaxs(t=1, mode = [ 'waxs' ],
             #print( 'HERE#############')
     sample_id(user_name='test', sample_name='test')
     det_exposure_time(0.5)
+
+
 
 def align_Linkam_sample():   
     Aligned_Dict= {}                   

@@ -253,7 +253,7 @@ def setup_hex(   ):
 
 ##################################################
 # for Fang's in-situ measurement
-# move pil1M x to -4 mm, create sample_dict, three samples for examples
+# move pil2M x to -4 mm, create sample_dict, three samples for examples
 # align, using  
 ###   Aligned_Dict = RE(  align_gix_loop_samples(inc_ang = 0.15, motor='stage') ) 
 # 
@@ -277,7 +277,7 @@ help_dict = { 'align':
               'move':
               [],
               'scan':
-              [  "example1: rel_scan cslit height, using pil1M --> RE(bp.rel_scan([pil1M],cslit.h,-0.3,0.3,21)) " ,
+              [  "example1: rel_scan cslit height, using pil2M --> RE(bp.rel_scan([pil2M],cslit.h,-0.3,0.3,21)) " ,
                  "example2: scan waxs.waxs_arc, using dets -->   yield from bp.scan(dets, waxs, *waxs_arc) ) ",  
                   "example3: nscan, dets, traj, -->   bp.scan_nd(all_detectors, trajectory, md=base_md)",
 
@@ -287,7 +287,7 @@ help_dict = { 'align':
 }
 
 
-# RE(bp.rel_scan([pil1M], stage.y, -1,1,11))
+# RE(bp.rel_scan([pil2M], stage.y, -1,1,11))
 
 ############################################################################
 #Grzaing Incidence
@@ -321,7 +321,7 @@ def measure_one_gix( t=1,  mode = ['saxs'], waxs_angle=15, incident_angle=[0.1],
     print( YH, TH)  
     dets = []
     if 'saxs' in mode:
-        dets.append( pil1M )
+        dets.append( pil2M )
     if 'waxs' in mode:
         yield from bps.mv(waxs, waxs_angle)
         dets.append( pil900KW ) 
@@ -332,7 +332,7 @@ def measure_one_gix( t=1,  mode = ['saxs'], waxs_angle=15, incident_angle=[0.1],
     for i, th in enumerate(th_meas): #loop over incident angles
         yield from bps.mv(M.th, th)  
         name_fmt = "{sample}_{th:5.4f}deg_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
-        sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil1m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,
+        sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil2m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,
                 )  
         sample_id(user_name=  user_name , sample_name=sample_name)                     
         print(f'\n\t=== Sample: {sample_name} ===\n')  
@@ -363,7 +363,7 @@ def get_dets( waxs_angle = 15, mode = ['saxs', 'waxs' ] ):
         dets.append( pil900KW )
     if 'saxs' in mode:
         if waxs_angle >10:    
-            dets.append( pil1M )
+            dets.append( pil2M )
     return dets 
            
 
@@ -399,7 +399,7 @@ def run_gix_loop_waxs(t=1, mode = ['saxs', 'waxs' ],
                 for i, th in enumerate(th_meas): #loop over incident angles
                     yield from bps.mv(M.th, th)  
                     name_fmt = "{sample}_{th:5.4f}deg_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
-                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil1m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,
+                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil2m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,
                     #scan_id=RE.md["scan_id"],
                 )
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
@@ -454,7 +454,7 @@ def run_gix_loop_samples(t=1,  angle_arc = np.array([0.05, 0.08, 0.10, 0.15, 0.2
                 for i, th in enumerate(th_meas): #loop over incident angles
                     yield from bps.mv(M.th, th)  
                     name_fmt = "{sample}_{th:5.4f}deg_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
-                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil1m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,
+                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil2m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,
                     #scan_id=RE.md["scan_id"],
                 )
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
@@ -487,7 +487,7 @@ def do_line_trans_scan( sample = 'FF_AuCB', username = 'FLu'  ,   t=1,  scan_ran
     XH = piezo.x.position 
     #TH = piezo.th.position 
     if waxs_angle > 10:
-        dets = [ pil900KW,  pil1M ] #
+        dets = [ pil900KW,  pil2M ] #
     else:
         dets = [ pil900KW  ] #
     yield from bps.mv(waxs, waxs_angle)  
@@ -507,7 +507,7 @@ def do_line_trans_scan( sample = 'FF_AuCB', username = 'FLu'  ,   t=1,  scan_ran
         x=np.round(piezo.x.position, 2),
         y=np.round(piezo.y.position, 2),
         z_pos=piezo.z.position,
-        saxs_z=np.round(pil1m_pos.z.position, 2),
+        saxs_z=np.round(pil2m_pos.z.position, 2),
         waxs_angle=waxs_angle,
         t=t,
         #scan_id=RE.md["scan_id"],
@@ -555,7 +555,7 @@ def do_gix_line_scan( sample ='test',  t=1,  scan_range = [ -100, 100], scan_ste
     for waxs_angle in waxs_angle_array: # loop through waxs angles        
         yield from bps.mv(waxs, waxs_angle)            
         if waxs_angle == max_waxs_angle:
-            dets = [ pil900KW,  pil1M ] # waxs, maxs, saxs = [pil300KW, rayonix, pil1M] 
+            dets = [ pil900KW,  pil2M ] # waxs, maxs, saxs = [pil300KW, rayonix, pil2M] 
         #     print( 'Meausre both saxs and waxs here for w-angle=%s'%waxs_angle )
         else:
                 dets = [pil900KW ] 
@@ -587,7 +587,7 @@ def do_gix_line_scan( sample ='test',  t=1,  scan_range = [ -100, 100], scan_ste
 ############################################################################
 #Transimission  
 
-def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=15, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False):
+def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=20, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False):
     """RE( measure_transmission_xs( sample = 'test' ) )"""
     
     if user_name is None:        
@@ -601,7 +601,7 @@ def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=15, att="None", dx=
         yield from bps.mvr(piezo.x, dx)
     dets = []
     if 'saxs' in mode:
-        dets.append( pil1M )
+        dets.append( pil2M )
     #print( 'xxx'  )  
     if 'waxs' in mode:
         yield from bps.mv(waxs, waxs_angle)
@@ -615,7 +615,7 @@ def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=15, att="None", dx=
         x=np.round(piezo.x.position, 2),
         y=np.round(piezo.y.position, 2),
         z_pos=piezo.z.position,
-        saxs_z=np.round(pil1m_pos.z.position, 2),
+        saxs_z=np.round(pil2m_pos.z.position, 2),
         waxs_angle=waxs_angle,
         t=t,
         #scan_id=RE.md["scan_id"],
@@ -663,7 +663,7 @@ def snap_waxs(t=0.1):
     
 def snap_saxs(t=0.1):
     'test '
-    dets = [pil1M]
+    dets = [pil2M]
     sample_id(user_name="test", sample_name="")
     det_exposure_time(t,t )
     yield from bp.count(dets, num=1)
