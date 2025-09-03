@@ -2599,3 +2599,550 @@ def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
     sample_id(user_name='test', sample_name='test')
     det_exposure_time(0.5, 0.5)
 
+def andrew_mapping_2025_2(t=3.5):
+    """
+    Grid mapping on samples
+    """
+    names =   [    'Pre-sol-t',   'bkg-Pre-sol-t',     'Pre-sol-s', 'bkg-Pre-sol-s',          'Sol-s',     'bkg-Sol-s',          'Sol-t',     'bkg-Sol-t',         'Worker',    'bkg-Worker',         'Hornet',    'bkg-Hornet',         'Beetle', ]
+    piezo_x = [          38320,             38820,           29970,           30470,            21190,           20390,            11060,           11560,             3080,            3530,            -7370,           -7970,           -18830, ]
+    piezo_y = [           1680,              1680,            1410,            1710,              770,             870,              910,             910,             1290,            1290,             1430,            1160,              385, ]
+    piezo_z = [           1600,              1600,            1600,            1600,             1200,            1200,             1000,            1000,              800,             800,              800,             800,              600, ]
+
+    y_range = [[-225, 225, 151], [-100, 100,  5], [-300, 300, 201], [-100, 100,  5], [-426, 426, 285], [-100, 100,  5], [-225, 225, 151], [-100, 100,  5], [-261, 261, 175], [-100, 100,  5], [-135, 135,  91], [-100, 100,  5], [-180, 180, 121], ]
+    x_range = [[-150, 150,  11], [-100, 100,  5], [-270, 270,  19], [-100, 100,  5], [-255, 255,  18], [-100, 100,  5], [-105, 105,   8], [-100, 100,  5], [ -75,  75,   6], [-100, 100,  5], [-150, 150,  11], [-100, 100,  5], [ -90,  90,   7], ]
+    
+
+    msg = "Wrong number of coordinates"
+    assert len(piezo_x) == len(names), msg
+    assert len(piezo_x) == len(piezo_y), msg
+    assert len(piezo_x) == len(piezo_z), msg
+    assert len(piezo_x) == len(y_range), msg
+    assert len(piezo_x) == len(x_range), msg
+
+    waxs_arc = [ 0 ]
+    det_exposure_time(t, t)
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+
+        for name, x, y, z, y_r, x_r in zip(names, piezo_x, piezo_y, piezo_z, y_range, x_range):
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+            )
+
+            sample_name = f'{name}_{get_scan_md()}'
+            sample_id(user_name='AN', sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+            yield from bp.count([OAV_writing])
+            yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
+            
+            sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+
+
+def run_Paren_hard_2025_2(t=5):
+    """
+    """
+
+    names_1   = ['MNa0-ii',  'SNa12-1k-ii',   'SNa10-1k-ii',   'SNa5-1k-ii', 'MNa12-1k-ii', 'MNa10-1k-ii', 'MNa5-1k-ii']#] 'SNa0-0.5uL',  'SNa0-1uL',   'SNa0-2uL',     'MNa0',   'SNa12-1k',   'SNa10-1k',   'SNa5-1k']
+    piezo_x_1 = [    26800,          21400,           16800,          11600,          6400,          1200,       -4000,]#        41400,       36400,        31200,      26200,        21200,        16200,       10900]
+    #piezo_y_1 = [    -6450,          -6450,           -6450,          -6450,         -6450,         -6450,       -6450,]#   -1600,       -1600,        -1600,      -2000,        -1400,        -1800,       -1600]
+    piezo_y_1 = [ -5900 for n in names_1 ]
+
+    names_2   = [ ]#  'MNa12-1k',  'MNa10-1k',    'MNa5-1k', 'SNa12-2k',   'SNa10-2k',    'SNa5-2k',  'MNa12-2k']
+    piezo_x_2 = [ ]#        5500,         100,        -5300,     -10300,       -15300,       -20300,      -25700]
+    piezo_y_2 = [ ]#       -1600,       -1600,        -1600,      -1600,        -1400,        -1400,       -1400]
+
+    names_3   = [  ]#   'C8-Br-b',    'C8-NTf2-b',     'C8-PF6-b',    'C8-OTf-b'] # 'MNa10-2k',   'MNa5-2k',        'SiN', 
+    piezo_x_3 = [  ]#      -45100,         -40600,         -35600,      -30600] #    -30700,      -35700,       -41100,   
+    piezo_y_3 = [  ]#        -950,          -5300,          -5500,       -5500] #   -1800,       -1800,        -1800,  
+    
+    names_4   = [ ]#     'Vacuum'] 
+    piezo_x_4 = [ ]#       -32600]
+    piezo_y_4 = [ ]#        -5563]
+    
+
+    names   =   names_1 +   names_2 +   names_3 +   names_4
+    piezo_x = piezo_x_1 + piezo_x_2 + piezo_x_3 + piezo_x_4
+    piezo_y = piezo_y_1 + piezo_y_2 + piezo_y_3 + piezo_y_4
+    
+    piezo_z = [ 7200 for n in names ]
+    
+    waxs_arc = [ 0, 20, 40 ][::-1]
+
+    user = "BP"
+    det_exposure_time(t, t)
+
+    msg = "Wrong number of coordinates"
+    assert len(piezo_x) == len(names), msg
+    assert len(piezo_x) == len(piezo_y), msg
+    assert len(piezo_x) == len(piezo_z), msg
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+
+        for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
+
+            yield from bps.mv(
+                piezo.y, y,
+                piezo.x, x,
+                piezo.z, z,
+            )
+            loc = f'00'
+            sample_name = f'{name}_{get_scan_md()}_loc{loc}'
+            sample_id(user_name=user, sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+            yield from bp.count(dets)
+
+
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+
+
+
+def run_Paren_temperature_hard_2025_2(t=0.5):
+    """
+    """
+
+    names_1   = [ 'SNa0-0.5uL',  'SNa0-1uL',   'SNa0-2uL',     'SNa5-1k']
+    piezo_x_1 = [        41400,       36400,        31200,         10900]
+    piezo_y_1 = [        -1550,       -1550,        -1550,         -1550]
+
+    names_2   = [   ]
+    piezo_x_2 = [   ]
+    piezo_y_2 = [   ]
+
+    names_3   = [        'SiN',     'C8-Br-b',    'C8-NTf2-b',     'C8-PF6-b',    'C8-OTf-b']
+    piezo_x_3 = [       -41100,        -45100,         -40600,         -35000,        -30600]     
+    piezo_y_3 = [        -1750,         -1150,          -5300,          -5480,         -5300]   
+    
+    names_4   = [     ] 
+    piezo_x_4 = [     ]
+    piezo_y_4 = [     ]
+
+    names_5   = ['MNa0-ii',  'SNa12-1k-ii',   'SNa10-1k-ii',   'SNa5-1k-ii', 'MNa10-1k-ii',]
+    piezo_x_5 = [    26800,          21400,           16800,          11600,          1200,]
+    piezo_y_5 = [    -5880,          -5880,           -5880,          -5880,         -5880,]
+    
+
+    names   =   names_1 +   names_2 +   names_3 +   names_4 +   names_5
+    piezo_x = piezo_x_1 + piezo_x_2 + piezo_x_3 + piezo_x_4 + piezo_x_5
+    piezo_y = piezo_y_1 + piezo_y_2 + piezo_y_3 + piezo_y_4 + piezo_y_5
+    
+    piezo_z = [ 7200 for n in names ]
+    
+    waxs_arc = [ 0 ]
+
+    temperatures = [30, 50, 70, 90, 70, 50, 30]
+
+    user = "BP"
+    det_exposure_time(t, t)
+
+    msg = "Wrong number of coordinates"
+    assert len(piezo_x) == len(names), msg
+    assert len(piezo_x) == len(piezo_y), msg
+    assert len(piezo_x) == len(piezo_z), msg
+
+    for i, temperature in enumerate(temperatures):
+        
+        direction = 'temp_u' if i > temperatures.index(max(temperatures)) else 'temp_d'
+
+        t_kelvin = temperature + 273.15
+        yield from ls.output1.mv_temp(t_kelvin)
+
+        # Activate heating range in Lakeshore
+        if temperature < 50:
+            yield from bps.mv(ls.output1.status, 1)
+        else:
+            yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        print(f"Equalising temperature to {temperature:.0f} deg C")
+        start = time.time()
+        temp = ls.input_A.get()
+        while abs(temp - t_kelvin) > 3:
+            print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+            yield from bps.sleep(10)
+            temp = ls.input_A.get()
+            
+            # Escape the loop if too much time passes
+            if time.time() - start > 120 * 60:
+                temp = t_kelvin
+        
+        print("Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60))
+
+        # Wait extra time depending on temperature
+        if (25 < temperature) and (temperature <= 150):
+            wait_time = 60
+            print(f'Sleeping for {wait_time} seconds')
+            yield from bps.sleep(wait_time)
+
+        for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
+            yield from bps.mv(
+                piezo.y, y + i * 20,
+                piezo.x, x,
+                piezo.z, z,
+            )
+            loc = f'00'
+
+            # Shorter exposure for bulk samples
+            t = 0.5 if 'C8' in name else 5
+            det_exposure_time(t, t)
+
+            # Read T and convert to deg C
+            temp_degC = ls.input_A.get() - 273.15
+            temp = str(np.round(float(temp_degC), 1)).zfill(5)
+
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+
+                sample_name = f'{name}_{direction}{temp}degC{get_scan_md()}_loc{loc}'
+                sample_id(user_name=user, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+
+    # Cleanup
+    t_kelvin = 25 + 273.15
+    yield from ls.output1.mv_temp(t_kelvin)
+    yield from ls.output1.turn_off()
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+
+
+def run_Paren_tender_2025_2(t=2):
+    """
+    """
+
+    names_1   = ['SNa0-0.5uL-a', 'SNa0-0.5uL-b', 'SNa0-1uL',   'SNa0-2uL',       'SNa5-1k', ]
+    piezo_x_1 = [         41820,          42120,      36800,        32400,           11300, ]
+    piezo_y_1 = [         -1950,          -1950,      -2400,        -1900,           -2100, ]
+
+    names_2   = [   'SNa5-2k', ]
+    piezo_x_2 = [      -20100, ]
+    piezo_y_2 = [       -1600, ]
+
+    names_3   = [       'SiN',       'Vacuum', ]
+    piezo_x_3 = [      -40500,         -32600, ] 
+    piezo_y_3 = [       -1800,         -5560 , ]
+    
+    names_4   = [ 'flatfield-SNa0-0.5uL',  'flatfield-SiN', ]
+    piezo_x_4 = [                  42420,           -40500, ]
+    piezo_y_4 = [                  -1950,            -1800, ]
+    
+    names_5   = [   ]
+    piezo_x_5 = [   ]
+    piezo_y_5 = [   ]
+
+    names   =   names_1 +   names_2 +   names_3 +   names_4 +   names_5
+    piezo_x = piezo_x_1 + piezo_x_2 + piezo_x_3 + piezo_x_4 + piezo_x_5
+    piezo_y = piezo_y_1 + piezo_y_2 + piezo_y_3 + piezo_y_4 + piezo_y_5
+    
+    piezo_z = [ 7200 for n in names ]
+    
+    ## Fewer, 45 from 65
+    energies = np.concatenate((
+        np.arange(2460, 2475, 5),
+        np.arange(2475, 2480, 1),
+        np.arange(2480, 2490, 0.5),
+        np.arange(2490, 2510, 2),
+        np.arange(2510, 2520, 5),
+        np.arange(2520, 2565, 10),
+    ))
+
+    step_y = 15
+    user = "BP"
+    det_exposure_time(t, t)
+
+    waxs_arc = [ 0, 20, 40, 60, ]
+
+    msg = "Wrong number of coordinates"
+    assert len(piezo_x) == len(names), msg
+    assert len(piezo_x) == len(piezo_y), msg
+    assert len(piezo_x) == len(piezo_z), msg
+
+    # Read T and convert to deg C
+    temp_degC = ls.input_A.get() - 273.15
+    temp = str(np.round(float(temp_degC), 1)).zfill(5)
+
+    loc = f'00'
+    direction = 'temp_u'
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+
+        for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
+
+            # Skip angles for flatfield
+            if ('flatfield' in name) and (wa != 40):
+                continue
+
+            # Exposure time
+            if name == 'SNa0-0.5uL-b':
+                t = 5
+            elif 'flatfield' in name:
+                t = 30
+            else:
+                t = 2
+
+            det_exposure_time(t, t)
+
+            yield from bps.mv(
+                piezo.y, y,
+                piezo.x, x,
+                piezo.z, z,
+            )
+
+            e_down = np.arange(2460, 2500, 10)[::-1]
+            for e_step in e_down:
+                yield from bps.mv(energy, e_step)
+                yield from bps.sleep(2)
+
+            for i, nrg in enumerate(energies):
+                yield from bps.mv(energy, nrg)
+                yield from bps.mv(piezo.y, y + i * step_y)
+                yield from bps.sleep(2)
+                if xbpm3.sumX.get() < 10:
+                    yield from bps.sleep(2)
+                    yield from bps.mv(energy, nrg)
+                    yield from bps.sleep(2)
+
+                sample_name = f'{name}_{direction}{temp}degC{get_more_md()}_loc{loc}'
+                sample_id(user_name=user, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+
+    e_down = np.arange(2500, max(energies), 10)[::-1]
+    for e_step in e_down:
+        yield from bps.mv(energy, e_step)
+        yield from bps.sleep(2)
+
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+
+def go_to_temp(temperature=90):
+    """
+    """
+    t_kelvin = temperature + 273.15
+    yield from ls.output1.mv_temp(t_kelvin)
+
+    # Activate heating range in Lakeshore
+    if temperature < 50:
+        yield from bps.mv(ls.output1.status, 1)
+    else:
+        yield from bps.mv(ls.output1.status, 3)
+
+    # Equalise temperature
+    print(f"Equalising temperature to {temperature:.0f} deg C")
+    start = time.time()
+    temp = ls.input_A.get()
+    condition = True
+    while abs(temp - t_kelvin) > 3:
+        print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+        yield from bps.sleep(10)
+        temp = ls.input_A.get()
+        
+        # Escape the loop if too much time passes
+        if time.time() - start > 120 * 60:
+            temp = t_kelvin
+            condition = False
+
+    # Wait extra time depending on temperature
+    if condition:
+        wait_time = 15 * 50
+        print(f'Sleeping for {wait_time} seconds')
+        yield from bps.sleep(wait_time)
+    
+    print("Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60))
+
+
+def run_Paren_tender_hightemp_2025_2(t=2):
+    """
+    """
+
+    names_1   = ['SNa0-0.5uL-a', 'SNa0-0.5uL-b', 'SNa0-1uL',   'SNa0-2uL',       'SNa5-1k', ]
+    piezo_x_1 = [       41820,            42120,      36800,        32400,           11300, ]
+    piezo_y_1 = [       -1950,            -1950,      -2400,        -1900,           -2100, ]
+
+    names_2   = [   'SNa5-2k', ]
+    piezo_x_2 = [      -20100, ]
+    piezo_y_2 = [       -1600, ]
+
+    names_3   = [       'SiN',       'Vacuum', ]
+    piezo_x_3 = [      -40500,         -32600, ] 
+    piezo_y_3 = [       -1800,          -5560, ]
+    
+    names_4   = [  ]
+    piezo_x_4 = [  ]
+    piezo_y_4 = [  ]
+    
+    names_5   = [   ]
+    piezo_x_5 = [   ]
+    piezo_y_5 = [   ]
+
+    names   =   names_1 +   names_2 +   names_3 +   names_4 +   names_5
+    piezo_x = piezo_x_1 + piezo_x_2 + piezo_x_3 + piezo_x_4 + piezo_x_5
+    piezo_y = piezo_y_1 + piezo_y_2 + piezo_y_3 + piezo_y_4 + piezo_y_5
+    
+    piezo_z = [ 7200 for n in names ]
+    
+    ## Fewer, 45 from 65
+    energies = np.concatenate((
+        np.arange(2460, 2475, 5),
+        np.arange(2475, 2480, 1),
+        np.arange(2480, 2490, 0.5),
+        np.arange(2490, 2510, 2),
+        np.arange(2510, 2520, 5),
+        np.arange(2520, 2565, 10),
+    ))
+
+    step_y = 15
+    user = "BP"
+    det_exposure_time(t, t)
+
+    waxs_arc = [ 0, 20, 40, 60, ]
+
+    msg = "Wrong number of coordinates"
+    assert len(piezo_x) == len(names), msg
+    assert len(piezo_x) == len(piezo_y), msg
+    assert len(piezo_x) == len(piezo_z), msg
+
+    # Read T and convert to deg C
+    temp_degC = ls.input_A.get() - 273.15
+    temp = str(np.round(float(temp_degC), 1)).zfill(5)
+
+    loc = f'00'
+    direction = 'temp_u'
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+
+        for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
+
+            # Exposure time
+            if name == 'SNa0-0.5uL-b':
+                t = 5
+            else:
+                t = 2
+
+            det_exposure_time(t, t)
+
+            yield from bps.mv(
+                piezo.y, y,
+                piezo.x, x,
+                piezo.z, z,
+            )
+
+            e_down = np.arange(2460, 2500, 10)[::-1]
+            for e_step in e_down:
+                yield from bps.mv(energy, e_step)
+                yield from bps.sleep(2)
+
+            for i, nrg in enumerate(energies):
+                yield from bps.mv(energy, nrg)
+                yield from bps.mv(piezo.y, y + i * step_y)
+                yield from bps.sleep(2)
+                if xbpm3.sumX.get() < 10:
+                    yield from bps.sleep(2)
+                    yield from bps.mv(energy, nrg)
+                    yield from bps.sleep(2)
+
+                sample_name = f'{name}_{direction}{temp}degC{get_more_md()}_loc{loc}'
+                sample_id(user_name=user, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+
+    e_down = np.arange(2500, max(energies), 10)[::-1]
+    for e_step in e_down:
+        yield from bps.mv(energy, e_step)
+        yield from bps.sleep(2)
+
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+
+    t_kelvin = 25 + 273.15
+    yield from ls.output1.mv_temp(t_kelvin)
+    yield from ls.output1.turn_off()
+
+def run_Paren_overnight_2025_2():
+    """
+    RT and HT
+    """
+    yield from run_Paren_tender_2025_2(t=2)
+    yield from go_to_temp(temperature=90)
+    yield from run_Paren_tender_hightemp_2025_2(t=2)
+    
+def run_Paren_hard_2nd_2025_2(t=2):
+    """
+    """
+
+    names_1   = [ 'SNa0',         'MNa0', 'SNa12-1k', 'SNa10-1k', 'SNa5-1k',  ]
+    piezo_x_1 = [  42050,          39250,      35450,      31800,     27400,  ]
+    piezo_y_1 = [   5400,           5400,       5600,       5850,      5000,  ]
+
+    names_2   = [ 'MNa12-1k', 'MNa10-1k',  'MNa5-1k', 'SNa12-2k', 'SNa10-2k',  ]
+    piezo_x_2 = [      21600,      16200,      10200,       4600,        400,  ]
+    piezo_y_2 = [       5600,       5300,       5000,       5000,       5300,  ]
+
+    names_3   = [  'SNa5-2k', 'MNa12-2k', 'MNa10-2k',  'MNa5-2k',   'Vacuum',   ]
+    piezo_x_3 = [      -2000,     -10400,     -19000,     -25000,     -40000,   ]
+    piezo_y_3 = [       4800,       5300,       5000,       5000,       5000,   ]
+    
+    names_4   = [ 'C8-Br-autog15k', ]
+    piezo_x_4 = [  -37800, ]
+    piezo_y_4 = [    4600, ]
+    
+
+    names   =   names_1 +   names_2 +   names_3 +   names_4
+    piezo_x = piezo_x_1 + piezo_x_2 + piezo_x_3 + piezo_x_4
+    piezo_y = piezo_y_1 + piezo_y_2 + piezo_y_3 + piezo_y_4
+    
+    piezo_z = [ 4000 for n in names ]
+    
+    waxs_arc = [ 0, ]
+
+    user = "BP"
+    det_exposure_time(t, t)
+
+    msg = "Wrong number of coordinates"
+    assert len(piezo_x) == len(names), msg
+    assert len(piezo_x) == len(piezo_y), msg
+    assert len(piezo_x) == len(piezo_z), msg
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+        
+        if wa == waxs_arc[0]:
+            dets.append(OAV_writing)
+
+
+
+        for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
+
+            if 'C8' not in name:
+                continue
+            #t = 2 if 'C8' not in name else 0.1
+
+            yield from bps.mv(
+                piezo.y, y,
+                piezo.x, x,
+                piezo.z, z,
+            )
+            loc = f'00'
+            sample_name = f'{name}_{get_scan_md()}_loc{loc}'
+            sample_id(user_name=user, sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+            yield from bp.count(dets)
+
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)

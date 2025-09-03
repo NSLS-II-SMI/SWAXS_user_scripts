@@ -648,7 +648,7 @@ def measure_waxs( t=1, waxs_angle=15, att="None", dx=0, dy=0, user_name=None, sa
     """
     return measure_transmission_xs(t=t, waxs_angle = waxs_angle, mode = ['waxs'], att=att, dx=dx, dy=dy, user_name=user_name, sample=sample,  take_camera = take_camera) 
 
-def measure_wsaxs( t=1, waxs_angle=15, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False ):
+def measure_wsaxs( t=1, waxs_angle=20, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False ):
     """ 
     RE(  measure_wsaxs() )  # take default parameters
     """
@@ -972,6 +972,19 @@ def align_gix_loop_samples( x_list, sample_list, inc_ang = 0.15,   ):
     return Aligned_Dict
 
 
+
+import datetime 
+smi = SMI_Beamline()#
+def alignement_height(  ):        
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.3, 0.3)        
+    smi = SMI_Beamline()
+    yield from smi.modeAlignment(technique='gisaxs')        
+    # Set direct beam ROI
+    yield from smi.setDirectBeamROI()
+    # Scan theta and height
+    yield from align_gisaxs_height(150, 21, der=True)
+    
 
 #Grzaing incidence X-ray scattering
 ## From 37-Alignement

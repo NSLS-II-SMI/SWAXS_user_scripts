@@ -31,7 +31,7 @@ Beamstop:
 Rod: [6.8, 289, 10 ]   --> new pos 5.5
 2M: [0,0]
 Beam center:
-WAXS: 16 deg 
+WAXS: 20 deg 
 
 
 
@@ -42,10 +42,14 @@ then enter Ctrl + X  --> to restart IOC for waxs detector, wait ~2 min, will * c
 
 mov_sam(1)  #will go to sample 1
 dir beam [ 746, 1106 ] 
-beam stop [ 6.2, 289 ]
+beam stop [ 5.5, 289 ]
+SAXS 6 meters
+#for DUAN: pil2M.rod_offset_x_mm.set(6.0)
 
 
-pass-318132 20250630_op_a_continous [572]: pil2M.rod_offset_x_mm.set(6.2)
+
+
+pass-318132 20250630_op_a_continous [572]: pil2M.rod_offset_x_mm.set(5.5)
 Out[572]: Status(obj=Signal(name='pil2M_rod_offset_x_mm', parent='pil2M', value=6.2, timestamp=1751912742.8448317), done=True, success=True)
 
 pass-318132 20250630_op_a_continous [573]: RE(pil2M.insert_beamstop( 'rod'))
@@ -69,21 +73,57 @@ pass-318132 20250630_op_a_continous [575]: RE(SMI.modeMeasurement())
 username = 'Kim'
 user_name = 'Kim'
 
+username = 'Duan'
+user_name = 'Duan'
+
 
 #########Change Sample name here
-sample_dict = {   1: 'FAPBBR3_G', 2: 'BAIn1_G', 3: 'BAFAIn2_G', 4: 'NPBDF_1' , 5: 'NPBDF_2' , 6: 'NPBDF_3' , 7: 'NPBDF_4' , 8: 'FAPbBr3_S' , 9: 'CuPc_q1'  } 
-pxy_dict = {    1:[ 47884, 2100 ] , 2: [ 35884, 2100  ]  , 3: [22884, 2000  ] , 
-            4: [10884, 1700  ] , 5: [-116, 1600  ] , 6: [-11116, 1400  ] ,
-              7: [-23116, 1300  ] , 8: [-37116, 1800  ] , 9: [-48116, 1800  ]  }
+#sample_dict = {   1: 'RTA_400C_2', 2: 'RTA_450C_2', 3: 'RTA_500C_2' } 
+#pxy_dict = {    1:[ -39387, 4613 ] , 2: [ -34587, 4613  ]  , 3: [-27987, 4613  ]  }
+
+#sample_dict = {   1: 'Zr25_41_2Pr50' } 
+#pxy_dict = {   1: [-19305, 4600  ]  } # 1:[ -10530, 4400 ]   }
+
+sample_dict = {   1: '6nm_RTA_450C', 2: '6nm_RTA_400C', 3: '6nm_RTA_350C', 4: '6nm_RTA_AD' } 
+pxy_dict = {   1: [14438, 4796  ], 2: [7738, 4796  ], 3: [-5512, 4796], 4: [-12762, 4796] } 
+
+
+sample_dict = {   1: 'CsPbBr3_S', 2: 'CsPbBr3_L' , 3: 'Mica' } 
+pxy_dict = {   1: [ -13400, 5300  ], 2: [ -6000, 5300], 3:  [ 4600,  5300] } 
 
 
 
 
+sample_dict = {   1:  'Mica' ,  2: 'CsPbBr3_S',} 
+pxy_dict = {   1:   [ 4600,  5300] ,  2:  [ -14200, 5295  ] } 
+
+
+# pxy_dict = {   1: [-14407, 4668 ]  } 
 
 ks = np.array(list((sample_dict.keys())))
 x_list = np.array(list((pxy_dict.values()))) [:, 0]
 y_list = np.array(list((pxy_dict.values()))) [:, 1] #+ 1400
 sample_list = np.array(list((sample_dict.values())))
+
+
+#Aligned_Dict = {};Aligned_Dict[1] = [ 0.58, 4700 ]
+##  RE(SMI.modeAlignment())
+# manually change THETA to ~ 0.58 
+#RE(alignement_height())
+
+
+#Aligned_Dict = {};Aligned_Dict[0] = dict( th = 0.6564, y = 4946 ) 
+#Aligned_Dict = {};Aligned_Dict[0] =  dict( th = 0.785, y = 4841 )  
+#     RE(SMI.modeMeasurement())
+#     RE(run_gix_loop_wsaxs(Aligned_Dict = Aligned_Dict))
+
+
+
+#alignment for the long samples
+# pass-313483 test [239]: Aligned_Dict
+# Out[239]: {0: {'th': 0.52,  'y': 4595 }}
+
+
 
 
 # pxy_dict = {  k: [ pxy_dict[k][0], 1400   ]  for k in pxy_dict  }
@@ -156,18 +196,21 @@ def align_gix_loop_samples( inc_ang = 0.15, ii_start = -1   ):
  
 print('here@@@@@@@@@@')
 def run_gix_loop_wsaxs(t=1, mode = [ 'waxs' ],  
-                       angle_arc = np.array([ 0.05, 0.1, 0.15, 0.3, 0.6  ]),
-                       waxs_angle_array = np.array( [  0, 10,  15      ] ) ,  
-                       x_shift_array =  np.array( [ -2000, -1000, 0, 1000, 2000 ]), #np.linspace(-1, 1, 5),                      
+                       angle_arc = np.array([ 0.01, 0.05, 0.08, 0.1, 0.15, 0.2   ]),
+                       waxs_angle_array = np.array( [  0, 20     ] ) ,  
+                       #x_shift_array =  np.array( [ -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50 ]), #np.array( [-250, 0, 250]), #np.linspace(-1, 1, 5),                      
+                       #x_shift_array =  np.array( [ -50, 0, 50 ]) ,
+                       x_shift_array =  np.array( [ -1000, -500,  0, 500, 1000 ]) ,
                        Aligned_Dict = None ):        
        
     '''      
       #RE( run_gix_loop_wsaxs()) 
 
 
-      Aligned_Dict=align_gix_loop_samples();RE(run_gix_loop_wsaxs(Aligned_Dict = Aligned_Dict))
+    Aligned_Dict=align_gix_loop_samples();RE(run_gix_loop_wsaxs(Aligned_Dict = Aligned_Dict))
 
-
+     
+    RE(run_gix_loop_wsaxs(Aligned_Dict = Aligned_Dict))
 
     '''    
     print( 'step--0' )
