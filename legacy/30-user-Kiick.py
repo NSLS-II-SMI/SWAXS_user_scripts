@@ -1,7 +1,7 @@
 def run_caps_fastRPI(t=1):
     x_list = [6908, 13476, 19764, 26055]  #
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(0, 45.5, 8)
     samples = [
         "LC-O38-6-100Cto40C",
@@ -37,7 +37,7 @@ def run_saxs_linkamRPI(t=1):
     y_range = [-4.23, -3.15, 5]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     # waxs_range = np.linspace(45.5, 0, 8)
 
     name_fmt = "{sam}"
@@ -86,7 +86,7 @@ def run_saxs_cap_temp_2022_2(t=0.5, temp=25):
         yield from bps.sleep(1)
 
     det_exposure_time(t, t)
-    dets = [pil1M, pdcurrent1]
+    dets = [pil2M, pdcurrent1]
 
     # Metadata
     e = energy.position.energy / 1000
@@ -95,7 +95,7 @@ def run_saxs_cap_temp_2022_2(t=0.5, temp=25):
     # temp = ls.input_A.get() - 273.15
     # temp = 10
     temp = str(np.round(float(temp), 1)).zfill(5)
-    sdd = pil1m_pos.z.position / 1000
+    sdd = pil2M_pos.z.position / 1000
     scan_id = db[-1].start["scan_id"] + 1
     # bpm = xbpm3.sumX.get()
 
@@ -122,7 +122,7 @@ def run_saxs_cap_temp_2022_2(t=0.5, temp=25):
 def run_contRPI(t=1, numb=100, sleep=5):
 
     det_exposure_time(t, t)
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     # dets = [pil300Kw]
     for i in range(numb):
         yield from bp.count(dets, num=1)
@@ -132,7 +132,7 @@ def run_contRPI(t=1, numb=100, sleep=5):
 def acq_tem(t=0.2):
     sam = "0122A-11-lk5.5m-1s"
 
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
     temp = ls.ch1_read.value
     name_fmt = "{sam}_{temp}C"
@@ -144,7 +144,7 @@ def acq_tem(t=0.2):
 def acq_bd(t=0.2):
     sam = "0122A-10-lk5.5m-0.2s-4"
 
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
     temp = ls.ch1_read.value
     name_fmt = "{sam}_{temp}C"
@@ -160,7 +160,7 @@ def run_waxs_linkamRPI_2021_3(t=1):
     det_exposure_time(t, t)
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
 
     name_fmt = "{sam}"
     sample_name = name_fmt.format(sam=names[0])
@@ -182,7 +182,7 @@ def run_waxs_linkamRPI_2022_1(t=1):
     det_exposure_time(t, t)
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     t0 = time.time()
 

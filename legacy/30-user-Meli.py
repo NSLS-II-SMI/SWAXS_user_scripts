@@ -76,7 +76,7 @@ def K_edge_timescan_2023_3(t=1):
 
 
 def S_edge_measurments_2024_2_Jul3_night(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     # bottom left first
@@ -132,7 +132,7 @@ def S_edge_measurments_2024_2_Jul3_night(t=1):
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
                 # Do not take SAXS when WAXS detector in the way
-                dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+                dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
                 yield from bps.mv(piezo.x, xs)
                 counter = 0
@@ -182,7 +182,7 @@ def S_edge_measurments_2024_2_Jul3_night(t=1):
 
 
 def Cl_edge_measurments_2024_2_Jul3_night(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     # bottom left first
@@ -252,7 +252,7 @@ def Cl_edge_measurments_2024_2_Jul3_night(t=1):
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
                 # Do not take SAXS when WAXS detector in the way
-                dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+                dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
                 yield from bps.mv(piezo.x, xs)
                 counter = 0
@@ -302,7 +302,7 @@ def Cl_edge_measurments_2024_2_Jul3_night(t=1):
 
 
 def KClO4_edge_measurments_2023_2_sva(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     # names = ['MM460_KClO4_partialdoped0V']
@@ -340,7 +340,7 @@ def KClO4_edge_measurments_2023_2_sva(t=1):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             counter = 0
 
@@ -385,7 +385,7 @@ def KClO4_edge_measurments_2023_2_sva(t=1):
             yield from bps.mv(stage.th, ai0)
 
 def Fluo_standards_2024_2_Jul5_night(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     # bottom left first
@@ -497,7 +497,7 @@ def Fluo_standards_2024_2_Jul5_night(t=1):
 
 
 def Cl_edge_measurments_2024_3(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     # bottom left first
@@ -536,7 +536,7 @@ def Cl_edge_measurments_2024_3(t=1):
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
                 # Do not take SAXS when WAXS detector in the way
-                dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+                dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
                 yield from bps.mv(piezo.x, xs)
                 counter = 0
@@ -600,7 +600,7 @@ def Cl_edge_measurments_2024_3(t=1):
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
                 # Do not take SAXS when WAXS detector in the way
-                dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+                dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
                 yield from bps.mv(piezo.x, xs)
                 counter = 0
@@ -648,7 +648,7 @@ def Cl_edge_measurments_2024_3(t=1):
 
 
 def bpmvspindiode_Cledge_2024_3(t=1):
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     names = ['direct_beam_Cledge', 'direct_beam_Cledge_withatt1x9umAl']
@@ -685,7 +685,7 @@ def bpmvspindiode_Cledge_2024_3(t=1):
             sample_id(user_name="DM", sample_name=sample_name)
             print(f"\n\t=== Sample: {sample_name} ===\n")
 
-            yield from bp.count([pil1M], num=1)
+            yield from bp.count([pil2M], num=1)
 
     yield from bps.mv(energy, 2850)
     yield from bps.sleep(2)

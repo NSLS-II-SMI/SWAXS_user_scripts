@@ -32,8 +32,8 @@
 import numpy as np
 import sys, time
 
-# det = [pil1M, pdcurrent, pdcurrent1, pdcurrent2]
-# dets = [pil300KW, pil1M]
+# det = [pil2M, pdcurrent, pdcurrent1, pdcurrent2]
+# dets = [pil300KW, pil2M]
 # RE(measure_YQ(t=10, use_saxs=1, use_waxs=1, waxs_angle = 20, use_pdcurrent=0, name='sam4b_ref'))
 # RE(measure_YQ(t=10, use_saxs=0, use_waxs=1, waxs_angle = 0, use_pdcurrent=0, name='sam4b_ref'))
 

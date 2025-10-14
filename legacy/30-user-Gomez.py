@@ -77,7 +77,7 @@ def ex_situ_hardxray(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(13, 0, 3)
 
     ypos = [0, 400, 3]
@@ -134,7 +134,7 @@ def NEXAFS_Fe_edge(t=0.5, name="sample1"):
 
 
 def SAXS_Fe_edge(t=0.5):
-    dets = [pil1M]
+    dets = [pil2M]
     names = [
         "Ca10_2_SAXS_sdd5_1s_redo_",
         "Ca2_2_SAXS_sdd5_1s_redo_",
@@ -157,7 +157,7 @@ def SAXS_Fe_edge(t=0.5):
         yield from bps.mv(piezo.y, y)
 
         yield from NEXAFS_Fe_edge(t=1, name=name1)
-        dets = [pil1M]
+        dets = [pil2M]
 
         det_exposure_time(t, t)
         xsss = [x + 400, x + 900, x + 1200]
@@ -279,7 +279,7 @@ def GISAXS_Ca_edge(t=0.5):
 
 
 def SAXS_Ca_edge_hyd(t=0.5):
-    dets = [pil1M]
+    dets = [pil2M]
     name = "hyd_cell_blank"
 
     energies = [4030, 4050, 4055, 4075]
@@ -309,7 +309,7 @@ def SAXS_Ca_edge_hyd(t=0.5):
 
 
 def SAXS_Ca_edge_hyd_onespot(t=0.5):
-    dets = [pil1M]
+    dets = [pil2M]
     name = "hyd_cell_blank_onespot2"
 
     energies = [4030, 4040, 4050, 4055, 4075]
@@ -337,7 +337,7 @@ def SAXS_Ca_edge_hyd_onespot(t=0.5):
 
 
 def SAXS_Ca_edge_dry1(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     name = "hyd_cell_blank2"
 
     energies = [4030, 4040, 4050, 4055, 4075]
@@ -454,7 +454,7 @@ def SAXS_Ca_edge_dry_special1(t=1):
 
 
 def SAXS_Ca_edge_dry_special2(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     names = [
         "O5_ut_2",
         "O5_ut_3",
@@ -595,7 +595,7 @@ def nexafs_prep_multisample(t=1):
 
 
 def saxs_prep_multisample(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     names = [
         "xxt1xxt2_CH24_Ca_1_spot1",
         "xxt1xxt2_CH24_Ca_1_spot2",

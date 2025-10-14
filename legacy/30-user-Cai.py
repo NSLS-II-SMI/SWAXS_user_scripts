@@ -42,7 +42,7 @@ def mapping_saxs_Cai(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -76,7 +76,7 @@ def saxs_cap_cai(t=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(13, 0, 3)
 
     # x_off = [-1000, 0, 1000]
@@ -136,7 +136,7 @@ def saxs_cai_2020_3(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(names)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(0, 32.5, 6)
     # waxs_range = np.linspace(32.5, 32.5, 1)
 
@@ -196,7 +196,7 @@ def saxs_cai_2021_1(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(names)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(0, 32.5, 6)
 
     ypos = [-200, 200, 3]
@@ -248,7 +248,7 @@ def saxs_cai(t=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(32.5, 0, 6)
 
     x_off = [-500, 0, 500]
@@ -307,7 +307,7 @@ def gisaxs_cai(t=1):
     angle = [0.08, 0.125, 0.2]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
 
     assert len(x_list) == len(
         samples
@@ -315,9 +315,9 @@ def gisaxs_cai(t=1):
 
     for x, sample in zip(x_list, samples):
         yield from bps.mv(piezo.x, x)
-        yield from bps.mv(pil1m_pos.x, -2.3)
+        yield from bps.mv(pil2M_pos.x, -2.3)
         yield from alignement_gisaxs(0.08)
-        yield from bps.mv(pil1m_pos.x, 0.8)
+        yield from bps.mv(pil2M_pos.x, 0.8)
 
         det_exposure_time(t, t)
         name_fmt = "{sample}_ai{angle}deg_wa{wax}"
@@ -339,11 +339,11 @@ def gisaxs_cai(t=1):
 
 def run_giwaxs_cai(t=1):
     # run with WAXS
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     waxs_arc = [13, 0, 3]
 
     # run with SAXS only
-    # dets = [pil1M]
+    # dets = [pil2M]
     # redo this but subtract another 800 um from X
     xlocs1 = [-51000, -40200, -24800, -14200, -3600, 6600, 16400, 24000, 35600, 50000]
     names1 = [
@@ -446,10 +446,10 @@ def run_giwaxs_cai(t=1):
     for x, name in zip(curr_tray, curr_names):
         yield from bps.mv(piezo.x, x)
         yield from bps.mv(piezo.th, 0.5)
-        yield from bps.mv(pil1m_pos.x, -2.3)
+        yield from bps.mv(pil2M_pos.x, -2.3)
         # yield from bps.sleep(2)
         yield from alignement_gisaxs(0.1)
-        yield from bps.mv(pil1m_pos.x, 0.7)
+        yield from bps.mv(pil2M_pos.x, 0.7)
         # yield from bps.sleep(2)
         plt.close("all")
         angle_offset = [0.125, 0.2]
@@ -472,11 +472,11 @@ def run_giwaxs_cai(t=1):
 
 def run_trans_cai(t=1):
     # run with WAXS
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     waxs_arc = [0, 6.5, 13]
 
     # run with SAXS only
-    # dets = [pil1M]
+    # dets = [pil2M]
 
     x_list = [
         34000,
@@ -556,7 +556,7 @@ def run_trans_cai(t=1):
 
 def run_saxs_cai_2021_2(t=1):
     # run with WAXS
-    dets = [pil300KW, pil900KW, pil1M]
+    dets = [pil300KW, pil900KW, pil2M]
     waxs_arc = [0, 2, 19.5, 21.5, 39, 41]
 
     # x_list  = [    46000,   45700,   40800,   33800,   26900,   21500,   14800,    8000,    2100,   -4500]
@@ -597,7 +597,7 @@ def run_saxs_cai_2021_2(t=1):
 
 
 def run_giwaxs_cai_temp(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     xlocs1 = [2800, -8600]
 
     names1 = ["BzMA_3.0_M11_80mgmL", "BzMA_5.5_M11_80mgmL"]
@@ -612,10 +612,10 @@ def run_giwaxs_cai_temp(t=1):
     for x, name in zip(curr_tray, curr_names):
         yield from bps.mv(piezo.x, x)
         yield from bps.mv(piezo.th, 0)
-        yield from bps.mv(pil1m_pos.x, -2.3)
+        yield from bps.mv(pil2M_pos.x, -2.3)
         # yield from bps.sleep(2)
         yield from alignement_gisaxs_shorter(0.1)
-        yield from bps.mv(pil1m_pos.x, 0.7)
+        yield from bps.mv(pil2M_pos.x, 0.7)
         # yield from bps.sleep(2)
         plt.close("all")
         angle_offset = [0.125, 0.2]
@@ -649,7 +649,7 @@ def run_giwaxs_cai_temp(t=1):
 def gisaxsCaiTempOLD(meas_t=1):
     temperatures = [190]
     waxs_arc = [8, 8, 1]
-    dets = [pil1M, pil300KW, xbpm3.sumY]
+    dets = [pil2M, pil300KW, xbpm3.sumY]
     # glob_xoff = 1000
     xlocs1 = [-39000, -28000, -18000, -7000, 2000, 13000, 24000, 35000, 46000]
     xlocs2 = [-44000, -33000, -22000, -11000, 0, 11000, 22000, 33000, 44000]
@@ -808,7 +808,7 @@ def saxs_cai_2021_2(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(names)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(32.5, 0, 6)
     # waxs_range = np.linspace(32.5, 32.5, 1)
 
@@ -885,7 +885,7 @@ def saxs_cai_2021_3(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(names)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     waxs_range = [40, 20, 0]
 
     ypos = [-200, 200, 3]
@@ -910,7 +910,7 @@ def saxs_cai_2021_3(t=1):
 
 
 def Cai_saxs_tensile_hard(t=0.2):
-    dets = [pil1M]
+    dets = [pil2M]
     names = "sample142_3"
 
     t0 = time.time()
@@ -971,14 +971,14 @@ def cai_tensile_continous_hard_2022_2(t=0.2):
             yield from bps.mv(waxs, wa)
 
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
             t1 = time.time()
 
             # Metadata
             step = str(i).zfill(3)
             td = str(np.round(t1 - t0, 1)).zfill(6)
             e = energy.position.energy / 1000
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
             scan_id = db[-1].start["scan_id"] + 1
 
             # Sample name
@@ -1069,7 +1069,7 @@ def cai_transmission_hard__2022_2(t=1, xoff=0, yoff=0):
     for i, wa in enumerate(waxs_range):
         yield from bps.mv(waxs, wa, piezo.x, piezo_x[0], piezo.y, piezo_y[0])
         # Do not read SAXS if WAXS is in the way
-        dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+        dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
         det_exposure_time(t, t)
 
         for name, xs, ys in zip(names, piezo_x, piezo_y):
@@ -1077,7 +1077,7 @@ def cai_transmission_hard__2022_2(t=1, xoff=0, yoff=0):
 
             # Metadata
             e = energy.position.energy / 1000
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
             scan_id = db[-1].start["scan_id"] + 1
 
             # Sample name
@@ -1167,19 +1167,19 @@ def cai_giswaxs_temperature_scan_2022_2(t=0.5):
             yield from bps.mv(piezo.x, xs)
 
             # Align the sample
-            yield from bps.mv(pil1m_pos.x, -2.3)
+            yield from bps.mv(pil2M_pos.x, -2.3)
             try:
                 yield from alignement_gisaxs()
             except:
                 yield from alignement_gisaxs(0.4)
-            yield from bps.mv(pil1m_pos.x, 0.7)
+            yield from bps.mv(pil2M_pos.x, 0.7)
 
             # Sample flat at ai0
             ai0 = piezo.th.position
 
             for i, wa in enumerate(waxs_range):
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+                dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
                 det_exposure_time(t, t)
 
                 yield from bps.mvr(piezo.x, (i + 1) * step_across_sample)
@@ -1189,7 +1189,7 @@ def cai_giswaxs_temperature_scan_2022_2(t=0.5):
 
                     # Metadata
                     e = energy.position.energy / 1000
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
                     scan_id = db[-1].start["scan_id"] + 1
                     temp = str(np.round(float(temp_degC), 1)).zfill(5)
 
@@ -1268,7 +1268,7 @@ def run_swaxs_Cai_2022_3(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, hy in zip(names, piezo_x, piezo_y, hexa_y):
@@ -1286,7 +1286,7 @@ def run_swaxs_Cai_2022_3(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -1353,7 +1353,7 @@ def run_swaxs_capillaries_Cai_2022_3(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, hy in zip(names, piezo_x, piezo_y, hexa_y):
@@ -1371,7 +1371,7 @@ def run_swaxs_capillaries_Cai_2022_3(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -1401,7 +1401,7 @@ def cai_printing(xpos, ypos, sample_name='test'):
 
     dets = [pil900KW, OAV_writing]
     if waxs.arc.position > 15:
-        dets.append(pil1M)
+        dets.append(pil2M)
 
     for yy,y in enumerate(range(ypos[1])):
         if np.mod(yy,2) == 0:
@@ -1416,7 +1416,7 @@ def cai_printing_vertical(ypos,reps=1,sleep_time=0,x_step=-.1):
     ypos=[start, stop, npoints]
     """
     for r in range(reps):
-        yield from bp.scan([pil1M,pil900KW,OAV_writing],stage.y,ypos[0],ypos[1],ypos[2])
+        yield from bp.scan([pil2M,pil900KW,OAV_writing],stage.y,ypos[0],ypos[1],ypos[2])
         yield from bps.mvr(stage.x,x_step)
     yield from bps.mvr(stage.x,-(r+1)*x_step)
 
@@ -1427,29 +1427,29 @@ def cai_printing_horizontal(speed=.25,time_step=.5,total_time=20):
     ypos=[start, stop, npoints]
     """
     
-    pil1M.cam.acquire_period.set(pil1M.cam.acquire_time.get())
+    pil2M.cam.acquire_period.set(pil2M.cam.acquire_time.get())
     OAV.cam.acquire_period.set(OAV.cam.acquire_time.get())
     pil900KW.cam.acquire_period.set(pil900KW.cam.acquire_time.get())
-    pil1M.cam.num_images.set(1);OAV.cam.num_images.set(1);pil900KW.cam.num_images.set(1)
+    pil2M.cam.num_images.set(1);OAV.cam.num_images.set(1);pil900KW.cam.num_images.set(1)
     
     step_size=speed*time_step
     nsteps = int((total_time/time_step)+1)
     cur_x=stage.x.user_readback.get()
     RE.md['x_start']=cur_x
-    yield from bp.scan([pil1M,pil900KW,OAV_writing],stage.x,cur_x,cur_x-nsteps*step_size,nsteps)
+    yield from bp.scan([pil2M,pil900KW,OAV_writing],stage.x,cur_x,cur_x-nsteps*step_size,nsteps)
     
 def cai_printing_time_evolution_horizontal(total_points=15,sleep_time=12,xstep=.05):
     # take 2 images / point and use acquire period to make up sleep time
-    st=np.max([sleep_time-pil1M.cam.acquire_time.get(),0])
-    pil1M.cam.acquire_period.set(st);OAV.cam.acquire_period.set(st);pil900KW.cam.acquire_period.set(st)
-    pil1M.cam.num_images.set(2);OAV.cam.num_images.set(2);pil900KW.cam.num_images.set(2)
+    st=np.max([sleep_time-pil2M.cam.acquire_time.get(),0])
+    pil2M.cam.acquire_period.set(st);OAV.cam.acquire_period.set(st);pil900KW.cam.acquire_period.set(st)
+    pil2M.cam.num_images.set(2);OAV.cam.num_images.set(2);pil900KW.cam.num_images.set(2)
     cur_x=stage.x.user_readback.get()
-    yield from bp.scan([pil1M,pil900KW,OAV_writing],stage.x,cur_x,cur_x-total_points*xstep,total_points)
+    yield from bp.scan([pil2M,pil900KW,OAV_writing],stage.x,cur_x,cur_x-total_points*xstep,total_points)
     # set acquire time back to exposure time:
-    pil1M.cam.acquire_period.set(pil1M.cam.acquire_time.get())
+    pil2M.cam.acquire_period.set(pil2M.cam.acquire_time.get())
     OAV.cam.acquire_period.set(OAV.cam.acquire_time.get())
     pil900KW.cam.acquire_period.set(pil900KW.cam.acquire_time.get())
-    pil1M.cam.num_images.set(1);OAV.cam.num_images.set(1);pil900KW.cam.num_images.set(1)
+    pil2M.cam.num_images.set(1);OAV.cam.num_images.set(1);pil900KW.cam.num_images.set(1)
 
 
 def cai_tensile_continous_hard_2022_3(t=0.2):
@@ -1495,14 +1495,14 @@ def cai_tensile_continous_hard_2022_3(t=0.2):
             yield from bps.mv(waxs, wa)
 
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
             t1 = time.time()
 
             # Metadata
             step = str(i).zfill(3)
             td = str(np.round(t1 - t0, 1)).zfill(6)
             e = energy.position.energy / 1000
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
 
             # Sample name
             name_fmt = (
@@ -1539,7 +1539,7 @@ def give_sample_name(sample='test', user_name='DR'):
     RE.md['sample'] = sample
 
     e = energy.position.energy / 1000
-    sdd = pil1m_pos.z.position / 1000
+    sdd = pil2M_pos.z.position / 1000
     wa = waxs.arc.position + 0.001
     wa = str(np.round(float(wa), 1)).zfill(4)
 
@@ -1607,7 +1607,7 @@ def run_swaxs_capillary_overnight_Cai_2022_3(t=1):
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
                 # Detectors, disable SAXS when WAXS in the way
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
                 det_exposure_time(t, t)
 
                 for yy, y_of in enumerate(y_off):
@@ -1617,7 +1617,7 @@ def run_swaxs_capillary_overnight_Cai_2022_3(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
                     temp = str(temp).zfill(3)
                     tm = str(np.round(float(ti), 0)).zfill(5)
 
@@ -1686,7 +1686,7 @@ def cai_tensile_continous_hard_2023_2(t=0.2):
             yield from bps.mv(waxs, wa)
 
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if waxs.arc.position < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 10 else [pil2M, pil900KW]
 
             if waxs.arc.position > 10:
                 dets.append(pdcurrent)
@@ -1785,7 +1785,7 @@ def run_swaxs_Cai_2023_2(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
         
 
@@ -1899,7 +1899,7 @@ def cai_giswaxs_temperature_scan_2023_2(t=0.5):
 
             for i, wa in enumerate(waxs_range):
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
                 
                 yield from bps.mvr(piezo.x, (i + 1) * step_across_sample)
 
@@ -1984,7 +1984,7 @@ def cai_temperature_scan_2023_2(t=0.5):
 
             for i, wa in enumerate(waxs_range):
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
                 
                 temp = str(np.round(float(temp_degC), 1)).zfill(5)
                 sample_name = f'{name}_ai0.2_{temp}degC{get_scan_md()}'
@@ -2069,7 +2069,7 @@ def cai_temperature_trans_scan_2023_2(t=0.5):
 
             for i, wa in enumerate(waxs_range):
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
                 
                 temp = str(np.round(float(temp_degC), 1)).zfill(5)
                 sample_name = f'{name}_{temp}degC{get_scan_md()}'
@@ -2127,7 +2127,7 @@ def engage_detectors():
     yield from atten_move_in()
     sample_id(user_name='test', sample_name='test')
     print(f"\n\n\n\t=== Making sure detectores are engaged and ready ===")
-    yield from bp.count([pil900KW, pil1M])
+    yield from bp.count([pil900KW, pil2M])
     yield from atten_move_out()
 
 def run_swaxs_Cai_2023_3(t=0.5):
@@ -2189,7 +2189,7 @@ def run_swaxs_Cai_2023_3(t=0.5):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
 
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         
 
         condition = (
@@ -2199,14 +2199,14 @@ def run_swaxs_Cai_2023_3(t=0.5):
 
         if condition:
             yield from atten_move_in()
-            yield from bps.mv(pil1m_bs_rod.x, bs_pos + 5)
+            yield from bps.mv(pil2M_bs_rod.x, bs_pos + 5)
             yield from bps.mv(piezo.x, dbeam_x,
                               piezo.y, dbeam_y)
 
             sample_id(user_name='test', sample_name='test')
-            yield from bp.count([pil1M])
-            stats1_direct = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
-            yield from bps.mv(pil1m_bs_rod.x, bs_pos)
+            yield from bp.count([pil2M])
+            stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
+            yield from bps.mv(pil2M_bs_rod.x, bs_pos)
             yield from atten_move_out()
 
         for name, x, y, z, hx in zip(names, piezo_x, piezo_y, piezo_z, hexa_x):
@@ -2228,16 +2228,16 @@ def run_swaxs_Cai_2023_3(t=0.5):
                     yield from atten_move_in()
 
                     # Sample
-                    yield from bps.mv(pil1m_bs_rod.x, bs_pos + 5)
+                    yield from bps.mv(pil2M_bs_rod.x, bs_pos + 5)
                     sample_id(user_name='test', sample_name='test')
-                    yield from bp.count([pil1M])
-                    stats1_sample = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                    yield from bp.count([pil2M])
+                    stats1_sample = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                     # Transmission
                     trans = np.round( stats1_sample / stats1_direct, 5)
 
                     # Revert configuraton
-                    yield from bps.mv(pil1m_bs_rod.x, bs_pos)
+                    yield from bps.mv(pil2M_bs_rod.x, bs_pos)
                     yield from atten_move_out()
                 
                 if not condition:
@@ -2298,7 +2298,7 @@ def cai_tensile_continous_hard_2023_3(t=0.2):
             yield from bps.mv(waxs, wa)
 
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if waxs.arc.position < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 10 else [pil2M, pil900KW]
 
             t1 = time.time()
 
@@ -2408,7 +2408,7 @@ def cai_giswaxs_temp_scan_2023_3(t=0.5):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
  
                 for ai in incident_angles:
                     yield from bps.mv(piezo.th, ai0 + ai)
@@ -2491,7 +2491,7 @@ def cai_printing_2023_3(xpos, ypos, sample_name='test'):
 
     dets = [pil900KW, OAV_writing]
     if waxs.arc.position > 14:
-        dets.append(pil1M)
+        dets.append(pil2M)
 
     for yy,y in enumerate(range(ypos[2])):
         if np.mod(yy, 2) == 0:
@@ -2538,7 +2538,7 @@ def run_swaxs_Cai_2024_1(t=0.5):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
 
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         
         condition = (
             ( 19 < waxs.arc.position )
@@ -2547,14 +2547,14 @@ def run_swaxs_Cai_2024_1(t=0.5):
 
         if condition:
             yield from atten_move_in()
-            yield from bps.mv(pil1m_bs_pd.x, bs_pos + 10)
+            yield from bps.mv(pil2M_bs_pd.x, bs_pos + 10)
             yield from bps.mv(piezo.x, dbeam_x,
                               piezo.y, dbeam_y)
 
             sample_id(user_name='test', sample_name='test')
-            yield from bp.count([pil1M])
-            stats1_direct = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
-            yield from bps.mv(pil1m_bs_pd.x, bs_pos)
+            yield from bp.count([pil2M])
+            stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
+            yield from bps.mv(pil2M_bs_pd.x, bs_pos)
             yield from atten_move_out()
 
         for name, x, y, z, hx in zip(names, piezo_x, piezo_y, piezo_z, hexa_x):
@@ -2576,16 +2576,16 @@ def run_swaxs_Cai_2024_1(t=0.5):
                     yield from atten_move_in()
 
                     # Sample
-                    yield from bps.mv(pil1m_bs_pd.x, bs_pos + 5)
+                    yield from bps.mv(pil2M_bs_pd.x, bs_pos + 5)
                     sample_id(user_name='test', sample_name='test')
-                    yield from bp.count([pil1M])
-                    stats1_sample = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                    yield from bp.count([pil2M])
+                    stats1_sample = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                     # Transmission
                     trans = np.round( stats1_sample / stats1_direct, 5)
 
                     # Revert configuraton
-                    yield from bps.mv(pil1m_bs_pd.x, bs_pos)
+                    yield from bps.mv(pil2M_bs_pd.x, bs_pos)
                     yield from atten_move_out()
                 
                 if not condition:

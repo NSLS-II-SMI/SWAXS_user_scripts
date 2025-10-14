@@ -18,13 +18,13 @@ def giwaxs_collins_2020_3(t=1):
     y_0 = []
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
 
     assert len(x_list) == len(
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
-    yield from bps.mv(pil1m_pos.x, -2.3)
+    yield from bps.mv(pil2M_pos.x, -2.3)
 
     for x, sample in zip(x_list, samples):
         yield from bps.mv(piezo.x, x)
@@ -119,7 +119,7 @@ def giwaxs_collins_2021_2(t=1):
     angle = [0.08, 0.15, 0.20]
 
     # Detectors, motors:
-    dets = [pil300KW, pil900KW, pil1M]
+    dets = [pil300KW, pil900KW, pil2M]
 
     assert len(x_piezo) == len(
         samples
@@ -172,13 +172,13 @@ def giwaxs_collins(t=1):
     y_0 = []
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
 
     assert len(x_list) == len(
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
-    yield from bps.mv(pil1m_pos.x, -2.3)
+    yield from bps.mv(pil2M_pos.x, -2.3)
 
     for x, sample in zip(x_list, samples):
         yield from bps.mv(piezo.x, x)
@@ -293,7 +293,7 @@ def waxs_S_edge_terry(t=1):
 
 
 def waxs_S_edge_terry1(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = [
         "p3HT_1_saxs",
@@ -378,7 +378,7 @@ def waxs_S_edge_terry1(t=1):
 
 
 def giwaxs_S_edge_terry(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = ["pedotpss_1_gisaxs"]
     x = [0]
@@ -430,7 +430,7 @@ def giwaxs_S_edge_terry(t=1):
 
 
 def WAXS_S_edge_Gomez_night(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     names = ["PA1-3"]
     x_s = [41200]
     y_s = [1300]
@@ -527,7 +527,7 @@ def NEXAFS_S_edge_Gomez_night(t=0.5, name="test"):
 
 
 def WAXS_S_edge_rad_dmg_test(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     names = ["PA1-3_rad_dmg_test"]
 
     det_exposure_time(t, t)
@@ -563,7 +563,7 @@ def night_collns():
 
 
 def waxs_S_edge_few_energies(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     # names = ['P3t', 'P3N2t', 'P3d', 'ITICd', 'P3N2CNt', 'HTAZd', 'PB1t', 'PB0t', 'PBp25t', 'PBp5t', 'PBp75n', 'PB3t', 'FTAZd', 'PBCBd', 'PBCN3d', 'N2d', 'PCDDd',
     # 'P3n', 'P3N2n', 'PB0n', 'PBp25n', 'PBp5n', 'PB1n', 'PB3n', 'P3N2CNn', 'PCPDd', 'PBp75t', 'PBDCBd', 'Si3N4']
@@ -745,7 +745,7 @@ def giwaxs_S_edge_collins(t=1):
 
 
 def waxs_S_edge_all_energies(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = ["P3N2t", "P3N2CNt"]
     x = [37500, 22800]

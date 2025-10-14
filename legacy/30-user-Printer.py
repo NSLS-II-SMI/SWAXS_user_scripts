@@ -355,8 +355,8 @@ def start_acq_across_beam(exp_time, N_imgs, dwell=0):
         name (str): sample name,
         sleep (float): delay in seconds between start of the script and data
             aquisition.
-    For SAXS data, add Pil1M detector to dets
-    dets = [pil900KW] if waxs.arc.position < 10 else [pil1M, pil900KW]
+    For SAXS data, add pil2M detector to dets
+    dets = [pil900KW] if waxs.arc.position < 10 else [pil2M, pil900KW]
 
     """
 

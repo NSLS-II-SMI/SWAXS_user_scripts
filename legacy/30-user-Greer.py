@@ -16,7 +16,7 @@ def mapping_saxs_Greer(t=5):
     y_range = [[0, -60, 31], [0, -60, 31], [0, -60, 31], [0, -60, 31]]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW, amptek]  # dets = [pil1M,pil300KW]
+    dets = [pil2M, pil300KW, amptek]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -63,7 +63,7 @@ def mapping_saxs_test(t=0.1):
     y_range = [[0, 0, 1]]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW, amptek]  # dets = [pil1M,pil300KW]
+    dets = [pil2M, pil300KW, amptek]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(

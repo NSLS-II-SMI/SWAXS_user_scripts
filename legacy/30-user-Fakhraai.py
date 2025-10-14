@@ -1,5 +1,5 @@
 def run_giwaxs_Fak(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     xlocs1 = [-22000, 3000, 21500]
     names1 = ["TPD_52nm", "TPD_42nm", "TPD_32nm"]
 
@@ -36,7 +36,7 @@ def gFak1(meas_t=1):
     username = "AZ"
     names1 = "aaA_20190926_OG_hot"
 
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     angle_offset = [0.1]
     length = 17000
     x_edge = 31000  # make sure to define the edge as a top border of the sample on the camera using SmarAct X
@@ -80,7 +80,7 @@ def gFak2(meas_t=1):
     username = "YJ"
     names1 = "aaA_20190926_OG_middle"
 
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     angle_offset = [0.1]
     length = 21000
     x_edge = 11000  # make sure to define the edge as a top border of the sample on the camera using SmarAct X
@@ -124,7 +124,7 @@ def gFak3(meas_t=1):
     username = "AZ"
     names1 = "aaA_20190926_OG_cold"
 
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     angle_offset = [0.1]
     length = 17000
     x_edge = (
@@ -229,14 +229,14 @@ def grazing_Luo_2022_2(t=0.5, incident_angle=0.1):
         # Scan sample across angles
         for i, wa in enumerate(angles):
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
             yield from bps.mvr(piezo.x, (i + 1) * step_across_sample)
 
             # Metadata
             name_fmt = "{sample}_{energy}keV_{sdd}m_wa{wax}_ai{ai}_bpm{xbpm}"
             bpm = xbpm2.sumX.get()
             e = energy.energy.position / 1000
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
 
             sample_name = name_fmt.format(
                 sample=name,
@@ -322,7 +322,7 @@ def grazing_gradient_Luo_2022_2(t=0.5, incident_angle=0.1):
 
             for wa in angles:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+                dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
 
                 # Metadata
                 name_fmt = (
@@ -330,7 +330,7 @@ def grazing_gradient_Luo_2022_2(t=0.5, incident_angle=0.1):
                 )
                 bpm = xbpm2.sumX.get()
                 e = energy.energy.position / 1000
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 sample_name = name_fmt.format(
                     sample=name,
@@ -382,7 +382,7 @@ def engage_detectors():
     yield from atten_move_in()
     sample_id(user_name='test', sample_name='test')
     print(f"\n\n\n\t=== Making sure detectores are engaged and ready ===")
-    yield from bp.count([pil900KW, pil1M])
+    yield from bp.count([pil900KW, pil2M])
     yield from atten_move_out()
 
 
@@ -448,7 +448,7 @@ def grazing_Kritika_2023_3(t=0.5):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
             # problems with the beamstop
             yield from bps.mv(waxs.bs_y, -3)
@@ -528,7 +528,7 @@ def grazing_Kritika_2024_1(t=0.5):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
             # problems with the beamstop
             yield from bps.mv(waxs.bs_y, -3)
@@ -1135,7 +1135,7 @@ def grazing_Peng_2024_2(t=0.5):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
             # problems with the beamstop
             yield from bps.mv(waxs.bs_y, -3)

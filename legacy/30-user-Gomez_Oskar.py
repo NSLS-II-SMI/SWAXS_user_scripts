@@ -77,7 +77,7 @@ def ex_situ_hardxray(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(13, 0, 3)
 
     ypos = [0, 400, 3]
@@ -182,7 +182,7 @@ def ex_situ_hardxray_2020_3(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(0, 32.5, 6)
 
     ypos = [0, 400, 3]
@@ -286,7 +286,7 @@ def ex_situ_hardxray_2020_3(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(0, 32.5, 6)
 
     ypos = [0, 400, 3]
@@ -323,7 +323,7 @@ def ex_situ_hardxray_2020_3(t=1):
     #     z_list =  [ 2700,  2700,  2700,  2700,  2700,  2700,  2700,  2700,  2700,  2700,   2700,   2700,   2700,   2700,   2700,   2700]
 
     #     # Detectors, motors:
-    #     dets = [pil1M, pil300KW]
+    #     dets = [pil2M, pil300KW]
     #     waxs_range = np.linspace(0, 32.5, 6)
 
     #     ypos = [0, 400, 3]
@@ -355,7 +355,7 @@ def ex_situ_hardxray_2020_3(t=1):
     #     z_list =  [ 4200,  4200,  4200,  4200,  4200,  4200,  4200,  4200,  4200,  4200,   4200,   4200,   4200,   4200,   4200,   4200]
 
     #     # Detectors, motors:
-    #     dets = [pil1M, pil300KW]
+    #     dets = [pil2M, pil300KW]
     #     waxs_range = np.linspace(0, 32.5, 6)
 
     #     ypos = [0, 400, 3]
@@ -471,7 +471,7 @@ def ex_situ_hardxray_2021_1(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(0, 32.5, 6)
 
     ypos = [0, 400, 3]
@@ -529,7 +529,7 @@ def run_saxs_nexafs(t=1):
 
 
 def saxs_prep_multisample_nov(t=1):
-    dets = [pil1M]
+    dets = [pil2M]
     energies = [4030, 4040, 4050, 4055, 4065, 4075, 4105]
     det_exposure_time(t, t)
     name_fmt = "{sample}_{energy}eV_pos{posi}_wa{wa}_xbpm{xbpm}"

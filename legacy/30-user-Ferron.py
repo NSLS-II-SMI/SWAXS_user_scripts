@@ -490,7 +490,7 @@ def xrr_spol_saxs(t=1):
         z_piezo
     ), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(z_piezo)})"
 
-    dets = [pil1M]
+    dets = [pil2M]
     waxs_arc = [13]
 
     # #List of incident angles clustured in subsection for attenuators

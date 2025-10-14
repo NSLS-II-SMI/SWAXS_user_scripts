@@ -6,7 +6,7 @@ def run_saxs_SChan(t=1):
     name = "SC_"
     x_list = [20800, 5800, -7700, -22700]  #
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     y_range = [-500, 500, 11]  # [2.64, 8.64, 2]
     x_range = [-500, 500, 6]
     samples = ["nPS_97k", "SC1-11_WD", "SC1-12_PS", "SC1-13_CS"]
@@ -30,7 +30,7 @@ def run_saxs_kraus_1(t=1):
     x_list = [41000, 30000, 20400, 6650, -6750]  #
     y_list = [-2500, -500, -3500, -2000, -1000]
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     y_range = [
         [-4000, 4000, 161],
         [-3500, 3500, 141],
@@ -75,7 +75,7 @@ def run_saxs_kraus_2(t=1):
     x_list = [21450, 6450, -7950, -23950, -39350]  #
     y_list = [-2500, -1500, -3500, -6500, -4000]
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     y_range = [
         [-2500, 2500, 101],
         [-2500, 2500, 101],
@@ -120,7 +120,7 @@ def run_saxs_kraus_3(t=1):
     x_list = [40600, 24200, 10600, -4600, -14200, -25800, -35800]  #
     y_list = [-4000, -3500, -4500, -4500, -3500, -4500, -4500]
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     y_range = [
         [-2500, 2500, 67],
         [-2500, 2500, 67],
@@ -171,7 +171,7 @@ def run_saxs_kraus_4(t=1):
     x_list = [41800, 30500, 17100, 1400, -17300, -38600]  #
     y_list = [3000, 3500, 1500, 1500, 3000, 3000]
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     y_range = [
         [-2500, 2500, 51],
         [-2500, 2500, 51],
@@ -219,7 +219,7 @@ def run_saxs_kraus_5(t=1):
     x_list = [40700, 27900, 8600, -9500, -27400, -42800]  #
     y_list = [4000, 4000, 4000, 5000, 4000, 4000]
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     y_range = [
         [-3500, 3500, 71],
         [-3500, 3500, 11],
@@ -267,7 +267,7 @@ def run_saxs_kraus_RZA(t=1):
     x_list = [800, -17800]  #
     y_list = [-5500, 4500]
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     y_range = [[1000, 2000, 14], [-4500, 4500, 121]]
     x_range = [[-8000, 8000, 65], [-7000, 7000, 57]]  # [2.64, 8.64, 2]
     samples = ["08-12core_Akron_top", "08-12core_Akron_bottom"]
@@ -294,7 +294,7 @@ def run_saxs_kraus_RZA2(t=1):
     x_list = [-36400, 32800, 17000]  #
     y_list = [500, -500, -500]
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     y_range = [[-2000, 2000, 4], [-5000, 5000, 81], [-5000, 5000, 21]]
     x_range = [
         [-2000, 2000, 4],
@@ -325,7 +325,7 @@ def run_saxs_kraus_micro(t=0.5):
     x_list = [40370, 19170, 4270, -13630]  #
     y_list = [-3500, -3000, -3000, -4500]
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     y_range = [[-225, 225, 151], [-225, 225, 151], [-225, 225, 151], [-225, 225, 151]]
     x_range = [
         [-750, 750, 41],
@@ -357,7 +357,7 @@ def run_saxs_kraus_micro2(t=0.5):
     x_list = [4270, -30230, -13630]  #
     y_list = [-3000, 2000, -4500]
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     y_range = [[-225, 225, 151], [-225, 225, 151], [-225, 225, 151]]
     x_range = [[-750, 750, 41], [-750, 750, 41], [-750, 750, 41]]  # [2.64, 8.64, 2]
     samples = ["76-10core_0p25", "76-8core_0p25", "76-6core_0p025"]
@@ -408,5 +408,5 @@ def run_waxsRPI(t=1):
 
 def linkam_fast(n=6):
     yield from bps.mv(attn_shutter, "Retract")
-    yield from bp.scan([pil1M], stage.y, 0.1, 0.9, n)
+    yield from bp.scan([pil2M], stage.y, 0.1, 0.9, n)
     yield from bps.mv(attn_shutter, "Insert")

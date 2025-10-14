@@ -1,4 +1,4 @@
-def measure(det=[pil1M], sample='test',  t=1):
+def measure(det=[pil2M], sample='test',  t=1):
     det_exposure_time(t, t)
     sample_name = "{sample}".format(sample=sample)
     sample_id(user_name="JK", sample_name=sample_name)
@@ -6,7 +6,7 @@ def measure(det=[pil1M], sample='test',  t=1):
     yield from bp.count(det, num=1)
 
 
-def cd_saxs(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil1M]):
+def cd_saxs(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2M]):
     det_exposure_time(exp_t, exp_t*nume)
 
     for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
@@ -23,7 +23,7 @@ def cd_saxs(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil1M]):
 
 
 def cdsaxs_2024_1(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     phi_offest = -2
@@ -87,7 +87,7 @@ def cdsaxs_2024_1(t=1):
 
 
 def cdsaxs_2025_1(t=0.2):
-    det = [pil1M]
+    det = [pil2M]
     phi_offest = 0
 
     # names = [ 'B305-L50p100', 'B305-L52p104', 'B305-L55p110', 'B305-L57p115', 'B305-L60p120']
@@ -136,7 +136,7 @@ def cdsaxs_2025_1(t=0.2):
                 yield from cd_saxs(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
 
 def cdsaxs_2025_1_Karen(t=10):
-    det = [pil1M]
+    det = [pil2M]
     phi_offest = 0
 
     # names = [ 'B305-L50p100', 'B305-L52p104', 'B305-L55p110', 'B305-L57p115', 'B305-L60p120']
@@ -187,7 +187,7 @@ def cdsaxs_2025_1_Karen(t=10):
                 yield from cd_saxs(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
             
 def cdsaxs_2025_1_Matt(t=5):
-    det = [pil1M]
+    det = [pil2M]
     phi_offest = 0
 
     # names = [ 'B305-L50p100', 'B305-L52p104', 'B305-L55p110', 'B305-L57p115', 'B305-L60p120']
@@ -247,7 +247,7 @@ def cdsaxs_2025_1_Matt(t=5):
 
 
 def cdsaxs_2025_1_scan(t=0.2, scan= [1, 1, 1, 1, 1]):
-    det = [pil1M]
+    det = [pil2M]
     phi_offest = 0
 
     # names = [ 'B305-L50p100', 'B305-L52p104', 'B305-L55p110', 'B305-L57p115', 'B305-L60p120']
@@ -419,7 +419,7 @@ def cdsaxs_2025_1_scan(t=0.2, scan= [1, 1, 1, 1, 1]):
 def cd_gisaxs(t=1):
     prs_offset = -1.854
 
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     names = ['sam2_g1',  'sam2_g2',  'sam2_g3',  'sam2_g4', 'sam2_g5', 'sam2_g6']

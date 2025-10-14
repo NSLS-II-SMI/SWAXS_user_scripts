@@ -24,7 +24,7 @@ def patryk_saxs_overnight(t=1):
     # Move WAXS out of the way
     if waxs.arc.position < 19.5:
         yield from bps.mv(waxs, 20)
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
@@ -47,10 +47,10 @@ def patryk_saxs_overnight(t=1):
         x_range = [-3000, 3000, 31] if 'ORF7A-D-50um' not in name else [-2000, 2000, 21]
 
         if 'bkg' not in name:
-            yield from rel_grid_scan([pil1M], piezo.y, *y_range, piezo.x, *x_range)
+            yield from rel_grid_scan([pil2M], piezo.y, *y_range, piezo.x, *x_range)
 
         else:
-            yield from rel_grid_scan([pil1M], piezo.y, -500, 500, 5, piezo.x, -500, 500, 5)
+            yield from rel_grid_scan([pil2M], piezo.y, -500, 500, 5, piezo.x, -500, 500, 5)
 
 
 def run_swaxs_Dominik_2023_1(t=0.1):
@@ -92,7 +92,7 @@ def run_swaxs_Dominik_2023_1(t=0.1):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, hex_y in zip(names, piezo_x, piezo_y, stage_y):
@@ -157,8 +157,8 @@ def run_swaxs_fibres_2023_1(t=1):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         
-        #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
-        dets = [pil1M]
+        #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+        dets = [pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, hex_y in zip(names, piezo_x, piezo_y, stage_y):
@@ -217,8 +217,8 @@ def run_swaxs_textile_2023_2(t=0.5):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
 
-        #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
-        dets = [pil1M]
+        #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+        dets = [pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, hex_y in zip(names, piezo_x, piezo_y, stage_y):
@@ -279,8 +279,8 @@ def run_swaxs_workaround_2023_2(t=0.5):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
 
-        #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
-        dets = [pil1M]
+        #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+        dets = [pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, hex_y in zip(names, piezo_x, piezo_y, stage_y):
@@ -369,7 +369,7 @@ def test_DI(t=1):
 
             # Metadata
             bpm = xbpm3.sumX.get()
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
             wa = str(np.round(float(wa), 1)).zfill(4)
 
             # Detector file name
@@ -406,7 +406,7 @@ def test_example_SWAXS_2023_3(t=0.5):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             
         for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
             yield from bps.mv(piezo.x, x,
@@ -467,7 +467,7 @@ def take_energy_temp_scan(name='test', temp=25):
         np.arange(e + 2 + 1 , e + 2 + 2 + 1, 1),
     ))
 
-    dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
     for nrg in energies:
         yield from bps.mv(energy, nrg)
@@ -525,7 +525,7 @@ def run_Linkam_temp_run(name, t=0.5, td= 4 * 60, frames=600):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil2M, pil900KW]
 
             t_measurement = time.time()
             time_sname = str(np.round(t_measurement - tstamp, 0)).zfill(7)
@@ -577,7 +577,7 @@ def run_swaxs_2024_1_slk(t=1):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         dets.append(OAV_writing)
 
         for name, x, y in zip(names, piezo_x, piezo_y):
@@ -635,7 +635,7 @@ def run_swaxs_2024_1_par(t=1):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         dets.append(OAV_writing)
 
         for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
@@ -703,7 +703,7 @@ def take_energy_scan_2024_1(t=1):
     
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] # if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] # if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
             yield from bps.mv(piezo.y, y,
@@ -755,7 +755,7 @@ def run_swaxs_2024_1_par2(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         #dets.append(OAV_writing)
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
@@ -807,7 +807,7 @@ def run_swaxs_2024_1_par2tender(t=5):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         #dets.append(OAV_writing)
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
@@ -865,7 +865,7 @@ def run_swaxs_2024_1_par2tender_energy(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         #dets.append(OAV_writing)
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
@@ -920,7 +920,7 @@ def run_swaxs_2024_1_par3(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         #dets.append(OAV_writing)
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
@@ -1001,7 +1001,7 @@ def grazing_brsc_zinc_2024_2(t=3):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
             # problems with the beamstop
             yield from bps.mv(waxs.bs_y, -3)
@@ -1070,7 +1070,7 @@ def grazing_brsc_2024_2(t=1):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
             # problems with the beamstop
             yield from bps.mv(waxs.bs_y, -3)
@@ -1131,7 +1131,7 @@ def run_swaxs_2024_2_Paren_tender(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         #dets.append(OAV_writing)
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
@@ -1207,7 +1207,7 @@ def run_swaxs_2024_2_Paren_tender_long_exposure(t=7):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         #dets.append(OAV_writing)
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
@@ -1286,7 +1286,7 @@ def run_swaxs_2024_2_Paren_tender_nexafs(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
             
@@ -1371,7 +1371,7 @@ def run_swaxs_2024_2_Paren_hard(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
             
@@ -1437,7 +1437,7 @@ def run_swaxs_2024_2_Paren_tender_long_exposure2(t=10):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         #dets.append(OAV_writing)
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
@@ -1511,7 +1511,7 @@ def run_Paren_tender_initial_nexafs(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
 
@@ -1577,7 +1577,7 @@ def run_Paren_tender_2024_3(t=1):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
 
@@ -1630,7 +1630,7 @@ def run_Paren_tender_darks_2024_3(t=1):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name in names:
             for i, nrg in enumerate(energies):
@@ -1692,7 +1692,7 @@ def run_Paren_tender_overnight_2024_3(t=3):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
 
@@ -1814,10 +1814,10 @@ def run_Paren_hard_2024_3(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
 
         if saxs_only and waxs.arc.position > 14.9:
-            dets = [pil1M]
+            dets = [pil2M]
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
 
@@ -1939,11 +1939,11 @@ def grazing(t=0.5):
 
         # Sample flat at ai0
         ai0 = piezo.th.position
-        yield from bps.mv(pil1m_bs_rod.x, bp_pos_x)
+        yield from bps.mv(pil2M_bs_rod.x, bp_pos_x)
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
             # problems with the beamstop
             yield from bps.mv(waxs.bs_y, -3)
@@ -2002,7 +2002,7 @@ def overnight_mapping(t=0.5):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
             dets.append(OAV_writing)
             sample_name = f'{name}{get_scan_md()}'
             sample_id(user_name='PW', sample_name=sample_name)
@@ -2041,7 +2041,7 @@ def overday_mapping(t=2):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
             
             sample_name = f'{name}_{get_scan_md()}'
             sample_id(user_name='PW', sample_name=sample_name)
@@ -2083,7 +2083,7 @@ def overnight_mapping(t=1):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
             
             sample_name = f'{name}_{get_scan_md()}'
             sample_id(user_name='PW', sample_name=sample_name)
@@ -2104,7 +2104,7 @@ def take_bkg(name='bkg4-N2', t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
         
         sample_name = f'{name}_{get_scan_md()}'
         sample_id(user_name='PW', sample_name=sample_name)
@@ -2157,7 +2157,7 @@ def run_Ray_swaxs_2024_3(t=1):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
 
             sample_name = f'{name}{rh_val}{get_scan_md()}'
             sample_id(user_name='RT', sample_name=sample_name)
@@ -2202,7 +2202,7 @@ def run_Ray_swaxs_2024_3_single(t=1):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
 
             sample_name = f'{name}{rh_val}{get_scan_md()}'
             sample_id(user_name='RT', sample_name=sample_name)
@@ -2238,7 +2238,7 @@ def andrew_mapping_2025_1(t=3):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
 
         for name, x, y, z, y_r, x_r in zip(names, piezo_x, piezo_y, piezo_z, y_range, x_range):
 
@@ -2294,7 +2294,7 @@ def run_Paren_tender_overnight_2025_1(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
 
@@ -2420,7 +2420,7 @@ def run_Paren_hard_2025_1(t=5):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
 
         for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
 
@@ -2451,7 +2451,7 @@ def run_Paren_flatfield_hard_2025_1(t=30):
 
     wa = 50
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     user = "BP"
     det_exposure_time(t, t)
@@ -2500,7 +2500,7 @@ def overnight_mapping_Das_2025_1(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
         
         # Get xbpm3
         dets.append(xbpm3.sumX)
@@ -2550,7 +2550,7 @@ def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
         
         # Get xbpm3
         dets.append(xbpm3.sumX)
@@ -2579,7 +2579,7 @@ def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
             yield from bps.mv(waxs, wa)
             yield from bps.mv(piezo.x, x + x_offset)
 
-            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
             dets.append(xbpm3.sumX)
 
             sample_name = f'{name}-single{get_scan_md()}'
@@ -2624,7 +2624,7 @@ def andrew_mapping_2025_2(t=3.5):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
 
         for name, x, y, z, y_r, x_r in zip(names, piezo_x, piezo_y, piezo_z, y_range, x_range):
 
@@ -3081,6 +3081,12 @@ def run_Paren_overnight_2025_2():
     yield from go_to_temp(temperature=90)
     yield from run_Paren_tender_hightemp_2025_2(t=2)
     
+
+
+# function to take a scan
+
+
+
 def run_Paren_hard_2nd_2025_2(t=2):
     """
     """

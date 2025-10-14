@@ -12,7 +12,7 @@
     wa = str(np.round(float(wa), 1)).zfill(4)
     temp = ls.input_A.get() - 273.15                # Lakeshore temp controller, deg C
     temp = str(np.round(float(temp), 1)).zfill(5)
-    sdd = pil1m_pos.z.position / 1000               # SAXS detector distance
+    sdd = pil2M_pos.z.position / 1000               # SAXS detector distance
     scan_id = db[-1].start['scan_id'] + 1           # transient scan ID
     bpm = xbpm3.sumX.get()                          # XBPM reading
 """
@@ -97,7 +97,7 @@ def turn_off_heating(temp=23):
 # Detectors
 """
     # Do not read SAXS if WAXS is in the way
-    dets = [pil900KW] if waxs.arc.position < 10 else [pil1M, pil900KW]
+    dets = [pil900KW] if waxs.arc.position < 10 else [pil2M, pil900KW]
 """
 
 # Images as tests and standard exposure
@@ -244,7 +244,7 @@ def saxs_S_edge_temperature_Hoang_2022_2(t=0.5):
                 yield from bps.mv(waxs, wa)
                 # yield from bps.mv(piezo.x, xs + i * 200)
                 # Do not read SAXS if WAXS is in the way
-                dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+                dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
                 det_exposure_time(t, t)
 
                 # Cover a range of 1.5 mm in y to avoid damage
@@ -258,7 +258,7 @@ def saxs_S_edge_temperature_Hoang_2022_2(t=0.5):
 
                     # Metadata
                     bpm = xbpm3.sumX.get()
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
                     wa = str(np.round(float(wa), 1)).zfill(4)
 
                     sample_name = name_fmt.format(
@@ -320,7 +320,7 @@ def song_waxs_hard_2022_2(t=1, strain=0):
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             yield from bps.mv(stage.y, ys + i * 0.05)
             det_exposure_time(t, t)
             name_fmt = (
@@ -328,7 +328,7 @@ def song_waxs_hard_2022_2(t=1, strain=0):
             )
 
             # Metadata
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
             e = energy.position.energy / 1000
             scan_id = db[-1].start["scan_id"] + 1
 

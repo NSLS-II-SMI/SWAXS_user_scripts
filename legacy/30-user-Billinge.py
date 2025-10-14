@@ -38,7 +38,7 @@ def nexafs_Br_edge_2023_3(t=1):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             name_fmt = "{sample}_pos1_{energy}eV_wa{wax}_bpm{xbpm}"
 
@@ -107,7 +107,7 @@ def nexafs_Rb_edge_2023_3(t=1):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             name_fmt = "{sample}_pos1_{energy}eV_wa{wax}_bpm{xbpm}"
 
@@ -139,8 +139,8 @@ def nexafs_Rb_edge_2023_3(t=1):
 
 
 def swaxs_Br_edge_2023_3(t=1):
-    dets = [pil1M, pil900KW]
-    # dets = [pil1M]
+    dets = [pil2M, pil900KW]
+    # dets = [pil2M]
 
     det_exposure_time(t, t)
 
@@ -239,7 +239,7 @@ def swaxs_Br_edge_2023_3(t=1):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             name_fmt = "{sample}_pos1_{energy}eV_wa{wax}_bpm{xbpm}"
 
@@ -270,8 +270,8 @@ def swaxs_Br_edge_2023_3(t=1):
 
 
 def swaxs_Rb_edge_2023_3(t=1):
-    dets = [pil1M, pil900KW]
-    # dets = [pil1M]
+    dets = [pil2M, pil900KW]
+    # dets = [pil2M]
 
     det_exposure_time(t, t)
 
@@ -341,7 +341,7 @@ def swaxs_Rb_edge_2023_3(t=1):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            # dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            # dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             name_fmt = "{sample}_pos1_{energy}eV_wa{wax}_bpm{xbpm}"
 

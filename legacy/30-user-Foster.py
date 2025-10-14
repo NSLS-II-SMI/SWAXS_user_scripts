@@ -28,7 +28,7 @@ def run_swaxs_Foster_2023_2(t=15):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, hy, pts in zip(names, piezo_x, piezo_y, hexa_y, points):
             yield from bps.mv(piezo.y, y,
@@ -53,25 +53,25 @@ def run_swaxs_Foster_2023_2(t=15):
                         yield from bps.sleep(1)
 
                     # Sample
-                    yield from bps.mv(pil1m_bs_rod.x, bs_pos_x + 5)
+                    yield from bps.mv(pil2M_bs_rod.x, bs_pos_x + 5)
                     sample_name = f'{name}-attn-sample'
                     sample_id(user_name='test', sample_name=sample_name)
-                    yield from bp.count([pil1M])
-                    stats1_sample = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                    yield from bp.count([pil2M])
+                    stats1_sample = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                     # Direct beam
                     yield from bps.mv(piezo.x, x + dx)
                     sample_name = f'{name}-attn-direct'
                     sample_id(user_name='test', sample_name=sample_name)
-                    yield from bp.count([pil1M])
-                    stats1_direct = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                    yield from bp.count([pil2M])
+                    stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                     # Transmission
                     trans = np.round( stats1_sample / stats1_direct, 5)
 
                     # Revert configuraton
                     det_exposure_time(t, t)
-                    yield from bps.mv(pil1m_bs_rod.x, bs_pos_x)
+                    yield from bps.mv(pil2M_bs_rod.x, bs_pos_x)
                     while att1_7.status.get() != 'Not Open':
                         yield from bps.mv(att1_7.close_cmd, 1)
                         yield from bps.sleep(1)
@@ -152,7 +152,7 @@ def run_swaxs_Foster_2023_3(t=12.5):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y in zip(names, piezo_x, piezo_y):
             yield from bps.mv(piezo.y, y,
@@ -180,25 +180,25 @@ def run_swaxs_Foster_2023_3(t=12.5):
                         yield from atten_move_in(x4=True, x2=False)
 
                         # Sample
-                        yield from bps.mv(pil1m_bs_rod.x, bs_pos_x + 5)
+                        yield from bps.mv(pil2M_bs_rod.x, bs_pos_x + 5)
                         sample_name = f'{name}-attn-sample_loc{loc}'
                         sample_id(user_name='test', sample_name=sample_name)
-                        yield from bp.count([pil1M])
-                        stats1_sample = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                        yield from bp.count([pil2M])
+                        stats1_sample = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                         # Direct beam
                         yield from bps.mv(piezo.x, x + dx)
                         sample_name = f'{name}-attn-direct'
                         sample_id(user_name='test', sample_name=sample_name)
-                        yield from bp.count([pil1M])
-                        stats1_direct = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                        yield from bp.count([pil2M])
+                        stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                         # Transmission
                         trans = np.round( stats1_sample / stats1_direct, 5)
 
                         # Revert configuraton
                         det_exposure_time(t, t)
-                        yield from bps.mv(pil1m_bs_rod.x, bs_pos_x)
+                        yield from bps.mv(pil2M_bs_rod.x, bs_pos_x)
                         yield from atten_move_out()
                         yield from bps.mv(piezo.x, x + x_of,
                                             piezo.y, y + y_of)

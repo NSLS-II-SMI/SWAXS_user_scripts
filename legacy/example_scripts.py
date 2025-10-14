@@ -19,8 +19,8 @@ def single_scan_test(t=1, name="Test", ai_list: list[int]|None = None, xstep=10,
 
     ai0 = piezo.th.position
     xs = piezo.x.position
-    dets = [pil900KW, pil1M]
-    dets = [pil1M]
+    dets = [pil900KW, pil2M]
+    dets = [pil2M]
 
     s = Signal(name='target_file_name', value='', kind=3)
 

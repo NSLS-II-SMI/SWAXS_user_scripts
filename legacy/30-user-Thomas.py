@@ -4,7 +4,7 @@
 # RE.md['SAF_number'] = 311336
 # RE.md['SAXS_setup'] = {'sdd': 9200, 'beam_centre': [395, 558], 'bs': 'rod', 'energy': 16100}
 # 
-# RE(rel_scan([pil1M], stage.y, -2, 2, 15)); ps()
+# RE(rel_scan([pil2M], stage.y, -2, 2, 15)); ps()
 # ---------------------------------------------------------------
 # ---------------------------------------------------------------
 # *Auto Evac (click), wait until in vac, yellow turns green, open valves before and after WAXS chamber, 
@@ -42,7 +42,7 @@ def run_measure1(t=0.5, user_name='VS', sam_name='PS-PDMS_5033'):
     for waxs_angle in waxs_angles:  # loop through waxs angles
         yield from bps.mv(waxs, waxs_angle)
         if waxs_angle >= 15: # WAXS, SAXS
-            dets = [pil900KW, pil1M]
+            dets = [pil900KW, pil2M]
         else:                # WAXS
             dets = [pil900KW]
 
@@ -71,7 +71,7 @@ def run_isothermal(t=0.5, Nmax=1000, user_name='VS', sam_name='test', time_sleep
     det_exposure_time(t, t)
     waxs_angle = 15
     yield from bps.mv(waxs, waxs_angle)
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     for nn in range(Nmax):
         yield from bps.mvr(stage.y, y_step)
@@ -97,9 +97,9 @@ def run_isothermal(t=0.5, Nmax=1000, user_name='VS', sam_name='test', time_sleep
 
 
 # Need to select det & specify WAXs angle
-# SAXS: RE(run_test(t=0.5, dets = [pil1M], waxs_angle=15, user_name='test', sam_name='test'))
+# SAXS: RE(run_test(t=0.5, dets = [pil2M], waxs_angle=15, user_name='test', sam_name='test'))
 # WAXS: RE(run_test(t=0.5, dets = [pil900KW], waxs_angle=0, user_name='test', sam_name='test'))
-def run_test(t=0.5, dets = [pil1M], waxs_angle=15, user_name='VS', sam_name='test'):
+def run_test(t=0.5, dets = [pil2M], waxs_angle=15, user_name='VS', sam_name='test'):
     det_exposure_time(t, t)
     yield from bps.mv(waxs, waxs_angle)
     x = stage.x.position
@@ -151,7 +151,7 @@ def run_Thomas_temp2(
     y_list = [0.81]  #z=-7.257
 
     # Detectors, motors:
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     assert len(x_list) == len(
         samples
@@ -168,7 +168,7 @@ def run_Thomas_temp2(
     for waxs_angle in waxs_angles:  # loop through waxs angles
         yield from bps.mv(waxs, waxs_angle)
         if waxs_angle >= 15:
-            dets = [pil900KW, pil1M, pil300KW]
+            dets = [pil900KW, pil2M, pil300KW]
         else:
             dets = [pil900KW, pil300KW]
         print("Meausre saxs and/or waxs here for w-angle=%s" % waxs_angle)
@@ -222,7 +222,7 @@ def run_tswaxs_single(t=10, user_name='StaticT', sam_name='PS-PDMS', waxs_angles
     for waxs_angle in waxs_angles:  # loop through waxs angles
         yield from bps.mv(waxs, waxs_angle)
         if waxs_angle >= 15:
-            dets = [pil900KW, pil1M] #, pil300KW]
+            dets = [pil900KW, pil2M] #, pil300KW]
         else:
             dets = [pil900KW] #, pil300KW]
         print("Meausre saxs and/or waxs here for w-angle=%s" % waxs_angle)
@@ -294,7 +294,7 @@ def run_tswaxs(t=10, name="T", grid=0, Nmax=1):
     for waxs_angle in waxs_angles:  # loop through waxs angles
         yield from bps.mv(waxs, waxs_angle)
         if waxs_angle >= 15:
-            dets = [pil900KW, pil1M] #, pil300KW]
+            dets = [pil900KW, pil2M] #, pil300KW]
         else:
             dets = [pil900KW] #, pil300KW]
         print("Meausre saxs and/or waxs here for w-angle=%s" % waxs_angle)
@@ -396,7 +396,7 @@ def run_giswaxs(t=0.5, flag_align=1, flag_reflect=1, piezo_y_init=7200):
 
             yield from bps.mv(waxs, waxs_angle)
             if waxs_angle >= 15:
-                dets = [pil900KW, pil1M] #, pil300KW]
+                dets = [pil900KW, pil2M] #, pil300KW]
             else:
                 dets = [pil900KW] #, pil300KW]
 
@@ -433,7 +433,7 @@ def run_Thomas_temp(t=1, name="HarvPoly"):
     samples = ["thermal1", "thermal2"]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
 
     assert len(x_list) == len(
         samples
@@ -476,7 +476,7 @@ def saxs_cryo(t=0.5, tem=25, num_max=100):
     # Slowest cycle:
     name = "ET"
     # Detectors, motors:
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     # sample = 'PDMS_sdd8.3m'
     sample = "bkg_sdd8.3m"
 
@@ -513,7 +513,7 @@ def gisaxs_Thomas(t=1):
     angle = [0.12, 0.16, 0.2]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -737,7 +737,7 @@ def waxs_Thomas(t=1, x_off=0, user="NT"):
     waxs_arc = np.linspace(0, 13, 3)
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -780,7 +780,7 @@ def saxs_cryo_2021_1(t=0.5, tem=25, num_max=100):
     name = "ET"
 
     # Detectors, motors:
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     sample = "kapton"
 
     waxs_range = np.linspace(0, 13, 3)
@@ -814,7 +814,7 @@ def saxs_2021_1(t=0.5, tem=25, num_max=100):
     name = "ET"
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     sample = "PS_PDMS_50.33dg_sdd8.3m_loop2"
 
     waxs_range = np.linspace(0, 13, 3)
@@ -847,7 +847,7 @@ def waxs_2021_1(t=0.5, tem=25, num_max=1000):
     name = "ET"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     sample = "PS_PDMS_50.33dg_sdd8.3m_isotherm"
 
     waxs_range = np.linspace(0, 13, 3)
@@ -1022,7 +1022,7 @@ def saxs_Thomas(t=1, x_off=0, user="NT"):
     xpos = [-500, 500, 5]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for x, y, z, sample in zip(x_list, y_list, z_list, samples):
@@ -1060,7 +1060,7 @@ def rotscan_Thomas(t=1):
     ), f"Number of X coordinates ({len(z_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for x, y, z, sample in zip(x_list, y_list, z_list, samples):

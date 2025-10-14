@@ -60,7 +60,7 @@ def song_waxs_S_edge_new(t=1):
 
 
 def song_waxs_S_edge_2022_1(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     energies = (
         np.arange(2445, 2470, 5).tolist()
@@ -112,7 +112,7 @@ def song_waxs_S_edge_2022_1(t=1):
 
 def song_waxs_S_edge_2022_1(t=0.5):
     # single energy scan in tensile stage
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     energies = (
         np.arange(2445, 2470, 5).tolist()
@@ -163,7 +163,7 @@ def song_waxs_S_edge_2022_1(t=0.5):
 
 
 def song_saxs_tensile_hard(t=1):
-    dets = [pil1M]
+    dets = [pil2M]
 
     names = "P3BT_loop2"
 
@@ -184,7 +184,7 @@ def song_saxs_tensile_hard(t=1):
 
 
 def song_saxs_waxs_tensile_hard(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = "P3BT_loop2"
     t0 = time.time()
@@ -210,7 +210,7 @@ def song_saxs_waxs_tensile_hard(t=1):
 
 def song_tensile_tender_loop(t=1):
     # infinite time loop for contonuous data taking
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     names = "P77_loop1"
     t0 = time.time()
@@ -248,7 +248,7 @@ def song_tensile_tender_loop(t=1):
 
 def song_tensile_tender(t=0.4):
     # infinite time loop for contonuous data taking
-    # dets = [pil1M, pil900KW]
+    # dets = [pil2M, pil900KW]
 
     names = "P75_7_3_thickSEBS_50strain_cycle100_2"
     det_exposure_time(t, t)
@@ -260,7 +260,7 @@ def song_tensile_tender(t=0.4):
         wa = [0, 20]
 
     for wax in wa:
-        dets = [pil900KW] if wax < 10 else [pil1M, pil900KW]
+        dets = [pil900KW] if wax < 10 else [pil2M, pil900KW]
 
         if energy.energy.position > 2475:
             ener = energies[::-1]
@@ -272,7 +272,7 @@ def song_tensile_tender(t=0.4):
             yield from bps.mv(energy, ene)
 
             yield from bps.mv(waxs, wax)
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
 
             sample_name = name_fmt.format(
                 sample=names, energy="%6.2f" % ene, sdd="%.1f" % sdd, wa="%1.1f" % wax
@@ -283,7 +283,7 @@ def song_tensile_tender(t=0.4):
 
 
 def song_saxs_waxs_tensile_hard1(t=1, names="test"):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     det_exposure_time(t, t)
 
@@ -302,7 +302,7 @@ def song_saxs_waxs_tensile_hard1(t=1, names="test"):
 
 
 def song_waxs_new(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     # yield from bps.mv(GV7.close_cmd, 1 )
     # yield from bps.sleep(5)
@@ -415,7 +415,7 @@ def song_waxs_new(t=1):
 
 
 def song_waxs_2020_3(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     waxs_arc = np.linspace(19.5, 19.5, 1)
     del_y = [-500, 500, 3]
@@ -753,7 +753,7 @@ def waxs_zhang(t=2):
 
 
 def mapping_S_edge_zhang(t=2):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = ["F3map", "C4map"]
     xx = [19200, 8800]
@@ -923,7 +923,7 @@ def song_nexafs_S_2021_2(t=1):
 
 
 def song_waxs_2021_2(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     waxs_arc = np.linspace(0, 19.5, 4)
 
@@ -962,8 +962,8 @@ def song_waxs_2021_2(t=1):
 
 
 def song_waxs_Sedge_2021_1(t=1):
-    # dets = [pil1M]
-    dets = [pil300KW, pil1M]
+    # dets = [pil2M]
+    dets = [pil300KW, pil2M]
 
     waxs_arc = np.linspace(0, 32.5, 6)
 
@@ -1074,8 +1074,8 @@ def song_waxs_Sedge_2021_1(t=1):
 
 
 def song_waxs_2021_2(t=1):
-    # dets = [pil1M]
-    dets = [pil300KW, pil1M]
+    # dets = [pil2M]
+    dets = [pil300KW, pil2M]
 
     waxs_arc = np.linspace(26, 26, 1)
 
@@ -1239,7 +1239,7 @@ def song_waxs_S_edge_2022_2(t=1, strain=0):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
             name_fmt = (
                 "{sample}_{energy}eV_strain{strain}_wa{wax}_sdd{sdd}m_id{scan_id}"
@@ -1253,7 +1253,7 @@ def song_waxs_S_edge_2022_2(t=1, strain=0):
                 yield from bps.mv(stage.x, xsss)
 
                 # Metadata
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 scan_id = db[-1].start["scan_id"] + 1
 
                 sample_name = name_fmt.format(
@@ -1298,7 +1298,7 @@ def song_waxs_hard_2022_2(t=1, strain=0):
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             yield from bps.mv(stage.y, ys + i * 0.05)
             det_exposure_time(t, t)
             name_fmt = (
@@ -1306,7 +1306,7 @@ def song_waxs_hard_2022_2(t=1, strain=0):
             )
 
             # Metadata
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
             e = energy.position.energy / 1000
             scan_id = db[-1].start["scan_id"] + 1
 
@@ -1326,7 +1326,7 @@ def song_waxs_hard_2022_2(t=1, strain=0):
 
 
 def waxs_S_edge_song_2022_3(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     # names = [   'A1',      'A2',      'A3',  'A4_par',  'A4_per',  'A5_per',  'A5_par',      'B1',   'B3',
     #             'B4',  'B5_par',  'B5_per',      'C1',      'C2',      'C3',  'C4_par',  'C4_per']
@@ -1363,7 +1363,7 @@ def waxs_S_edge_song_2022_3(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1397,7 +1397,7 @@ def waxs_S_edge_song_2022_3(t=1):
 
 
 def hardxray_song_2022_3(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     names = [ 'AM_01', 'AM_02', 'AM_03', 'AM_04', 'AM_05',  'AM_06',  'AM_07',  'AM_08', 
@@ -1439,7 +1439,7 @@ def hardxray_song_2022_3(t=1):
 
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             yield from bps.mv(piezo.x, xs)
             for k, ais in enumerate(ai_list):

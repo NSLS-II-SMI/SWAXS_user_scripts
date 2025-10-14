@@ -31,7 +31,7 @@ def zihan_giwaxs_2023_1(t=0.5, name='test', dist='unspecified'):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         
-        dets = [pil900KW] #if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] #if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for ai in incident_angles:
@@ -39,7 +39,7 @@ def zihan_giwaxs_2023_1(t=0.5, name='test', dist='unspecified'):
 
             # Metadata
             e = energy.position.energy / 1000
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
             wa = waxs.arc.position + 0.001
             wa = str(np.round(float(wa), 1)).zfill(4)
 
@@ -76,7 +76,7 @@ def turn_off_heating(temp=23):
 
 def align_gisaxs_th_zihan(rang=0.3, point=31):
     th0 = piezo.th.position
-    yield from bp.rel_scan([pil1M], piezo.th, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], piezo.th, -rang, rang, point)
     ps(plot=False)
     yield from bps.mv(piezo.th, ps.peak)
 
@@ -233,7 +233,7 @@ def zihan_temperature_giwaxs_2023_1(t=0.5):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                 det_exposure_time(t, t)
 
                 for ai in incident_angles:
@@ -247,7 +247,7 @@ def zihan_temperature_giwaxs_2023_1(t=0.5):
                         temp = str(np.round(float(temp_degC), 1)).zfill(5)
                         wa = waxs.arc.position + 0.001
                         wa = str(np.round(float(wa), 1)).zfill(4)
-                        sdd = pil1m_pos.z.position / 1000
+                        sdd = pil2M_pos.z.position / 1000
 
 
                         name_fmt = "{sample}_{temp}degC_pos{pos}_{energy}eV_wa{wax}_sdd{sdd}m_ai{ai}"
@@ -311,7 +311,7 @@ def zihan_giwaxs_2023_1(t=0.5):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             for ai in incident_angles:
@@ -326,7 +326,7 @@ def zihan_giwaxs_2023_1(t=0.5):
                     temp = str(np.round(float(temp), 1)).zfill(5)
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
 
                     name_fmt = "{sample}_{temp}degC_pos{pos}_{energy}eV_wa{wax}_sdd{sdd}m_ai{ai}"
@@ -378,17 +378,17 @@ def alignment_stage_Zihan_2023_2(angle=1.5, sample_name='test'):
     yield from smi.setDirectBeamROI()
 
     # Scan height direct
-    yield from bp.rel_scan([pil1M], stage.y, -0.3, 0.1, 41)
+    yield from bp.rel_scan([pil2M], stage.y, -0.3, 0.1, 41)
     ps(der=True)
     yield from bps.mv(stage.y, ps.peak)
 
     # Scan theta direct
-    yield from bp.rel_scan([pil1M], stage.th, -3, 3, 31)
+    yield from bp.rel_scan([pil2M], stage.th, -3, 3, 31)
     ps()
     yield from bps.mv(stage.th, ps.cen)
 
     # Scan x direct (sample centre)
-    yield from bp.rel_scan([pil1M], stage.x, -2, 2, 21)
+    yield from bp.rel_scan([pil2M], stage.x, -2, 2, 21)
     ps()
     yield from bps.mv(stage.th, ps.cen)
 
@@ -399,17 +399,17 @@ def alignment_stage_Zihan_2023_2(angle=1.5, sample_name='test'):
     yield from smi.setReflectedBeamROI(total_angle=angle, technique="gisaxs")
 
     # Scan theta reflected
-    yield from bp.rel_scan([pil1M], stage.th, -0.2, 2, 21)
+    yield from bp.rel_scan([pil2M], stage.th, -0.2, 2, 21)
     ps()
     yield from bps.mv(stage.th, ps.peak)
 
     # Scan height reflected
-    yield from bp.rel_scan([pil1M], stage.y, -0.05, 0.05, 21)
+    yield from bp.rel_scan([pil2M], stage.y, -0.05, 0.05, 21)
     ps(der=True)
     yield from bps.mv(stage.y, ps.peak)
 
     # Scan theta reflected
-    yield from bp.rel_scan([pil1M], stage.th, -0.05, 0.05, 21)
+    yield from bp.rel_scan([pil2M], stage.th, -0.05, 0.05, 21)
     ps()
     yield from bps.mv(stage.th, ps.peak)
 
@@ -477,7 +477,7 @@ def zihan_giwaxs_2023_2(t=0.5, name='test', dist='unspecified'):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for ai in incident_angles:
@@ -502,28 +502,28 @@ def zihan_giwaxs_2023_2(t=0.5, name='test', dist='unspecified'):
     RE(alignment_start())
 
     do y scan
-    RE(rel_scan([pil1M], stage.y, -0.3, 0.3, 21))
+    RE(rel_scan([pil2M], stage.y, -0.3, 0.3, 21))
     RE(mv(stage.y, TOPINFLECTION))
 
     do theta scan
-    RE(rel_scan([pil1M], stage.th, -0.5, 0.5, 21)) 
+    RE(rel_scan([pil2M], stage.th, -0.5, 0.5, 21)) 
     (larger range for inverted sample)
     RE(mv(stage.th, PEAKCENT))
 
     do x scan
     RE(mvr(stage.y, 0.05)) 
     (not needed for inverted sample)
-    RE(rel_scan([pil1M], stage.x, -1.5, 1.5, 21))
+    RE(rel_scan([pil2M], stage.x, -1.5, 1.5, 21))
     RE(mv(stage.x, NEGPEAKCENT)) 
     #sometimes there will be two adjacent neg peak, go in the center between them
     RE(mvr(stage.y, -0.05))
 
     do y scan
-    RE(rel_scan([pil1M], stage.y, -0.3, 0.3, 21))
+    RE(rel_scan([pil2M], stage.y, -0.3, 0.3, 21))
     RE(mv(stage.y, TOPINFLECTION))
 
     do theta scan
-    RE(rel_scan([pil1M], stage.th, -0.2, 0.2, 21))
+    RE(rel_scan([pil2M], stage.th, -0.2, 0.2, 21))
     RE(mv(stage.th, PEAK))
 
     optional if you see reflected peak (I think you should):
@@ -532,7 +532,7 @@ def zihan_giwaxs_2023_2(t=0.5, name='test', dist='unspecified'):
     
     RE(alignment_start_angle(angle=0.2))
     RE(mvr(stage.th, 0.2))
-    RE(rel_scan([pil1M], stage.th, -0.2, 0.2, 21))
+    RE(rel_scan([pil2M], stage.th, -0.2, 0.2, 21))
     RE(mv(stage.th, PEAK))
     p
 
@@ -630,7 +630,7 @@ def zihan_giwaxs_samplebar_2023_2(t=0.5):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             for ai in incident_angles:
@@ -670,7 +670,7 @@ def zihan_giwaxs_2024_1(t=0.5, name='Z1-pvsk_on_ito_2', dist='unspecified'):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for ai in incident_angles:
@@ -696,28 +696,28 @@ def zihan_giwaxs_2024_1(t=0.5, name='Z1-pvsk_on_ito_2', dist='unspecified'):
     RE(alignment_start())
 
     do y scan
-    RE(rel_scan([pil1M], stage.y, -0.3, 0.3, 21))
+    RE(rel_scan([pil2M], stage.y, -0.3, 0.3, 21))
     RE(mv(stage.y, TOPINFLECTION))
 
     do theta scan
-    RE(rel_scan([pil1M], stage.th, -0.5, 0.5, 21)) 
+    RE(rel_scan([pil2M], stage.th, -0.5, 0.5, 21)) 
     (larger range for inverted sample)
     RE(mv(stage.th, PEAKCENT))
 
     do x scan
     RE(mvr(stage.y, 0.05)) 
     (not needed for inverted sample)
-    RE(rel_scan([pil1M], stage.x, -2, 2, 31))
+    RE(rel_scan([pil2M], stage.x, -2, 2, 31))
     RE(mv(stage.x, NEGPEAKCENT)) 
     #sometimes there will be two adjacent neg peak, go in the center between them
     RE(mvr(stage.y, -0.05))
 
     do y scan
-    RE(rel_scan([pil1M], stage.y, -0.3, 0.3, 21))
+    RE(rel_scan([pil2M], stage.y, -0.3, 0.3, 21))
     RE(mv(stage.y, TOPINFLECTION))
 
     do theta scan
-    RE(rel_scan([pil1M], stage.th, -0.2, 0.2, 31))
+    RE(rel_scan([pil2M], stage.th, -0.2, 0.2, 31))
     RE(mv(stage.th, PEAK))
 
     optional if you see reflected peak (I think you should):
@@ -728,12 +728,12 @@ def zihan_giwaxs_2024_1(t=0.5, name='Z1-pvsk_on_ito_2', dist='unspecified'):
     check for stage.z to move sample back to the beam
 
     Do the stage.y scan, could be broad
-    RE(rel_scan([pil1M], stage.y, -0.3, 0.3, 21))
+    RE(rel_scan([pil2M], stage.y, -0.3, 0.3, 21))
     RE(mv(stage.y, TOPINFLECTION))
     
     RE(alignment_start_angle(angle=angle))
     RE(mvr(stage.th, angle))
-    RE(rel_scan([pil1M], stage.th, -0.2, 0.2, 31)) # could use -1, 1, 31 for larger angles to start with
+    RE(rel_scan([pil2M], stage.th, -0.2, 0.2, 31)) # could use -1, 1, 31 for larger angles to start with
     RE(mv(stage.th, PEAK))
     RE(mvr(stage.th, -angle))
 
@@ -760,7 +760,7 @@ def zihan_giwaxs_single_2024_1(t=0.5, name='Z1-pvsk_on_ito_2', dist='unspecified
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for ai in incident_angles:
@@ -777,7 +777,7 @@ def zihan_giwaxs_single_2024_1(t=0.5, name='Z1-pvsk_on_ito_2', dist='unspecified
 
 
 def S_edge_measurments_2024_1_Toney(t=4):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     # names =   ['', '50-blank-redo', '50-teacl-redo', '255-blank-redo', '255-teacl-redo']          
@@ -853,7 +853,7 @@ def S_edge_measurments_2024_1_Toney(t=4):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             yield from bps.mv(piezo.x, xs)
             counter = 0
@@ -902,7 +902,7 @@ def S_edge_measurments_2024_1_Toney(t=4):
         
 
 def Cl_edge_measurments_2024_1_Toney(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     names =   ['180-teacl', '50-teacl',  '255-teacl']          
@@ -942,7 +942,7 @@ def Cl_edge_measurments_2024_1_Toney(t=1):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             yield from bps.mv(piezo.x, xs)
             counter = 0
@@ -989,7 +989,7 @@ def Cl_edge_measurments_2024_1_Toney(t=1):
 
 
 def waxs_S_edge_chaney_variousprs_2024_1_march(t=8):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     prs0 = -1
     yield from bps.mv(prs, prs0)
@@ -1041,7 +1041,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march(t=8):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1107,7 +1107,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march(t=8):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1174,7 +1174,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march(t=8):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1206,7 +1206,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march(t=8):
 
 
 def S_edge_measurments_2024_1_Toney_shortened(t=4):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     # names =   ['Si-6', 'Si-7', 'Si-8', 'Si-9', 'Si-10', 'Si-11']          
@@ -1251,7 +1251,7 @@ def S_edge_measurments_2024_1_Toney_shortened(t=4):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             yield from bps.mv(piezo.x, xs)
             counter = 0
@@ -1300,7 +1300,7 @@ def S_edge_measurments_2024_1_Toney_shortened(t=4):
 
 
 def waxs_S_edge_chaney_variousprs_2024_1_march_shortened(t=8):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     prs0 = -1
     yield from bps.mv(prs, prs0)
@@ -1352,7 +1352,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march_shortened(t=8):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1418,7 +1418,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march_shortened(t=8):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1485,7 +1485,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march_shortened(t=8):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1647,7 +1647,7 @@ def NEXAFS_P_edge(t=0.5):
 
 
 def P_edge_measurments_2024_1_Toney(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     names =   [ '180-tbapf6-th9.24' ]          
@@ -1701,7 +1701,7 @@ def P_edge_measurments_2024_1_Toney(t=1):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             yield from bps.mv(piezo.x, xs)
             counter = 0
@@ -1793,7 +1793,7 @@ def grazing_swaxs_2024_2(t=1):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
             # problems with the beamstop
             yield from bps.mv(waxs.bs_y, -3)
@@ -1855,7 +1855,7 @@ def grazing_swaxs_2024_2_bg(t=1):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
             # problems with the beamstop
             yield from bps.mv(waxs.bs_y, -3)
@@ -1929,7 +1929,7 @@ def zihan_giwaxs_line_samplebar_2024_3(t=0.5):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
             for xx, x_of in enumerate(x_off):
                 yield from bps.mv(piezo.x, x + x_of)

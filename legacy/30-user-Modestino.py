@@ -6,7 +6,7 @@
 #
 # RE.md['SAXS_setup'] = {'sdd': 9200, 'beam_centre': [450, 554], 'bs': 'rod', 'energy': 16100}
 # 
-# RE(rel_scan([pil1M], stage.y, -2, 2, 15)); ps()
+# RE(rel_scan([pil2M], stage.y, -2, 2, 15)); ps()
 # ---------------------------------------------------------------
 # ---------------------------------------------------------------
 # 1. [Search hutch and close]
@@ -34,7 +34,7 @@ def measure_saxs(t=1, user_name="MM", sample='Bar1sam1', xr_list = [0], yr_list 
     x0 = piezo.x.position
     y0 = -4500 #piezo.y.position
     #y0 = piezo.y.position
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     for xr in xr_list:
@@ -64,7 +64,7 @@ def measure_saxs(t=1, user_name="MM", sample='Bar1sam1', xr_list = [0], yr_list 
 # RE(measure_saxs_bar(t=5, user_name="MM_Bar3", xr_list = [-200, 0], yr_list = [400, 0]))
 def measure_saxs_bar(t=1, user_name="MM_Bar2", y0=-6000, xr_list = [-200, 0], yr_list = [400, 0]):
     #z -3000
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)   
 
     x_list = [41000, -400, -42000]
@@ -106,7 +106,7 @@ def measure_insitu(tstatic=5, t=0.2, t2=5, t0=None, syringe=False, user_name="In
     x0 = piezo.x.position #30800 #piezo.x.position
     y0 = piezo.y.position #-600 #piezo.y.position
     #z0 = 17500
-    dets = [pil1M] #, pil900KW]
+    dets = [pil2M] #, pil900KW]
 
     yield from bps.mv(piezo.x, x0)
     yield from bps.mv(piezo.y, y0)
@@ -239,7 +239,7 @@ def measure_scan(t=0.2, t0=None, step=[100, 30], syringe=False, user_name="Insit
     x0 = piezo.x.position #30800 #piezo.x.position
     y0 = piezo.y.position #-600 #piezo.y.position
     #z0 = 17500
-    dets = [pil1M] #, pil900KW]
+    dets = [pil2M] #, pil900KW]
 
     yield from bps.mv(piezo.x, x0)
     yield from bps.mv(piezo.y, y0)
@@ -314,7 +314,7 @@ def measure_scan(t=0.2, t0=None, step=[100, 30], syringe=False, user_name="Insit
 def measure_series(tstatic=5, t=0.2, t2=5, burst=1, t0=None, user_name="Insitu", sample='test1', n0=0, Nmax=999, time_period_sec=200, time_sleep_sec=15):
     x0 = piezo.x.position #30800 #piezo.x.position
     y0 = piezo.y.position #-600 #piezo.y.position
-    dets = [pil1M] #, pil900KW]
+    dets = [pil2M] #, pil900KW]
 
     if t0==None:
         t0 = time.time()
@@ -386,7 +386,7 @@ def measure_series(tstatic=5, t=0.2, t2=5, burst=1, t0=None, user_name="Insitu",
     #yield from bp.count(dets, num=1)
 
 ####
-def test_measure(t=1, waxs_angle=0, user_name="test", sample_name='EmptyKapton', dets = [pil1M, pil900KW]):
+def test_measure(t=1, waxs_angle=0, user_name="test", sample_name='EmptyKapton', dets = [pil2M, pil900KW]):
     yield from bps.mv(waxs, waxs_angle)
     sample_id(user_name=user_name, sample_name=sample_name)
     det_exposure_time(t, t)

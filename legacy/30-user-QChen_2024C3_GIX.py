@@ -112,7 +112,7 @@ def insitu_tgix_samples(  Aligned_Dict,  run_time= 3600 * 1 , sleep_time = 5    
 
 
     t=1
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     incident_angle=[      0.15   ]  
     angle_arc = np.array( incident_angle )
     x_shift_array = np.array( [ -400, 0, 400 ])
@@ -152,7 +152,7 @@ def insitu_tgix_samples(  Aligned_Dict,  run_time= 3600 * 1 , sleep_time = 5    
                 for i, th in enumerate(th_meas): #loop over incident angles
                     yield from bps.mv(M.th, th)  
                     name_fmt = "{sample}_{th:5.4f}deg_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
-                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil1m_pos.z.position, 2), waxs_angle=waxs_angle,t=t )
+                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil2M_pos.z.position, 2), waxs_angle=waxs_angle,t=t )
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
                     print(f'\n\t=== Sample: {sample_name} ===\n') 
                     yield from bp.count( dets, num=1)
@@ -239,7 +239,7 @@ def run_gix_loop_wsaxs(t=1, mode = ['saxs', 'waxs' ],
                 for i, th in enumerate(th_meas): #loop over incident angles
                     yield from bps.mv(M.th, th)  
                     name_fmt = "{sample}_{th:5.4f}deg_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
-                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil1m_pos.z.position, 2), waxs_angle=waxs_angle,t=t,
+                    sample_name = name_fmt.format(sample=sample,th=th_real[i],x=np.round(M.x.position, 2),y=np.round(M.y.position, 2), z_pos=M.z.position,saxs_z=np.round(pil2M_pos.z.position, 2), waxs_angle=waxs_angle,t=t,
                     #scan_id=RE.md["scan_id"],
                 )
                     sample_id(user_name=  user_name , sample_name=sample_name)                     

@@ -23,7 +23,7 @@ def run_simple_energy(t=1):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for i, nrg in enumerate(energies):
             yield from bps.mv(energy, nrg)
@@ -95,7 +95,7 @@ def continous_run(sname='test', t=2, wait=8, frames=2160):
         name_sample(sname, tstamp)
 
         # take one fram
-        yield from bp.count([pil900KW, pil1M])
+        yield from bp.count([pil900KW, pil2M])
 
         # wait
         print(f'\nWaiting {wait} s')

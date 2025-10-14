@@ -34,7 +34,7 @@ def run_saxsRPI(t=1):
     name = "LC"
     x_list = [-18.63, -12.2, -5.85, 0.7, 6.9, 12.95]  #
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     y_range = [-3, -6, 11]
     samples = ["LC-O38-6", "LC-O37-6", "LC-O35-7", "LC-O36-6", "LC-O35-6", "LC-O35-8"]
     #    param   = '16.1keV'
@@ -72,7 +72,7 @@ def run_saxs_caps_temp_Bolm(name="DB"):
     ]
     e_list = [13450, 13475, 13520]
     # Detectors, motors:
-    dets = [pil1M, rayonix, pil300KW, ls.ch1_read, xbpm3.sumY]
+    dets = [pil2M, rayonix, pil300KW, ls.ch1_read, xbpm3.sumY]
     y_range = [-2700, -6000, 30]
     waxs_arc = [3, 17, 2]
     samples = [

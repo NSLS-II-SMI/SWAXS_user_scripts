@@ -2,7 +2,7 @@ import numpy as np
 
 
 def saxs_waxs_yuchung(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     # waxs_arc = np.linspace(13, 26, 3)
 
@@ -68,7 +68,7 @@ def saxs_waxs_yuchung(t=1):
 def saxs_waxs_yuchung_2021_1(t=1):
     det_exposure_time(t, t)
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     waxs_arc = np.linspace(0, 26, 5)
 
@@ -225,12 +225,12 @@ def timeresolved(name="test", t=0.2, tt=60):
     """
     # for 2022_1  cycle
     det_exposure_time(t, tt)
-    dets = [pil300KW, pil1M, pil900KW]
+    dets = [pil300KW, pil2M, pil900KW]
     wa = 14.5
     yield from bps.mv(waxs, wa)
 
     e = energy.energy.position / 1000
-    sdd = pil1m_pos.z.position / 1000
+    sdd = pil2M_pos.z.position / 1000
 
     name_fmt = "{sample}_{energy}keV_sdd{sdd}m_wa{wax}"
     sample_name = name_fmt.format(
@@ -262,10 +262,10 @@ def postprint_yscan(name="test", t=0.5, ystart=2.8, ystop=5, npoint=111):
         yield from bps.mv(waxs, wa)
 
         # remove SAXS detector reading if WAXS is in the way
-        dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+        dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
         e = energy.energy.position / 1000
-        sdd = pil1m_pos.z.position / 1000
+        sdd = pil2M_pos.z.position / 1000
         name_fmt = "{sample}_full_{energy}eV_sdd{sdd}m_wa{wax}"
         sample_name = name_fmt.format(
             sample=name, energy="%.1f" % e, sdd="%.1f" % sdd, wax=wa
@@ -280,6 +280,6 @@ def postprint_yscan(name="test", t=0.5, ystart=2.8, ystop=5, npoint=111):
 
 def trigger_alldet(tt=0.2, t=2):
     det_exposure_time(tt, t)
-    pil1M.cam.acquire.put(1)
+    pil2M.cam.acquire.put(1)
     pil900KW.cam.acquire.put(1)
     pil300KW.cam.acquire.put(1)

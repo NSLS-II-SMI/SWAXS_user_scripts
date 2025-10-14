@@ -23,8 +23,8 @@ def run_tsaxs_ST(t=0.1):
         pil300KW,
         ls.ch1_read,
         rayonix,
-        pil1M,
-    ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+        pil2M,
+    ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
 
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
 
@@ -73,7 +73,7 @@ def run_harv_temp(tim=1, name="HarvTempRe"):
     samples = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "SH2", "SH3", "SH4"]
     # samples = ['S29']
     # Detectors, motors:
-    # dets = [pil1M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
+    # dets = [pil2M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
     dets = [pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE
     x_offset = [0, 200, 400, 600, 800]
     waxs_arc = [0, 30, 6]
@@ -150,7 +150,7 @@ def run_harv_micro(tim=3, name="HarvMicro_2_25C"):
     samples = ["SC10", "SC11", "SC12", "SC13", "SC14", "SC15", "SC16", "SC17"]
     # samples = ['S29']
     # Detectors, motors:
-    # dets = [pil1M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
+    # dets = [pil2M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
     dets = [pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE
     x_offset = [-704, -352, 0, 352, 704]
     y_range = [20, -20, 3]

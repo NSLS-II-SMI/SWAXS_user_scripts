@@ -15,7 +15,7 @@ def run_giwaxs_2020_3(t=0.5):  # 2020C1
     # if 12, 3: up to q=2.199
     # if 18, 4: up to q=3.04
 
-    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
 
         yield from bps.mv(piezo.x, x)  # move to next sample
@@ -73,7 +73,7 @@ def run_giwaxs(t=0.5):  # 2020C1
     )  # (0, 18, 4)   # q=4*3.14/0.77*np.sin((max angle+3.5)/2*3.14159/180)
     # if 12, 3: up to q=2.199
     # if 18, 4: up to q=3.04
-    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
 
         yield from bps.mv(piezo.x, x)  # move to next sample
@@ -139,7 +139,7 @@ def do_twaxs_scanx(meas_t=1):  # 2019_2
     # x_list = [-38280, -23279, 34719]
     # sample_list = ['mechanically_exfoliated_mxene_1', 'mechanically_exfoliated_mxene_2', 'mechanically_exfoliated_on_glass']
 
-    dets = [pil300KW]  # , pil1M, rayonix]
+    dets = [pil300KW]  # , pil2M, rayonix]
 
     # waxs_angle_array = np.linspace(0, 24, 5)
     waxs_angle_array = np.linspace(0, 12, 1)

@@ -220,7 +220,7 @@ def snap_waxs(t=0.1):
 
 
 def snap_saxs(t=0.1):
-    dets = [pil1M]
+    dets = [pil2M]
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(t)
     yield from (bp.count(dets, num=1))
@@ -331,7 +331,7 @@ def measure_saxs_map(
 ):
     if sample is None:
         sample = RE.md["sample"]
-    dets = [pil1M]
+    dets = [pil2M]
     for px in xlist:
         yield from bps.mv(piezo.x, px)
         for py in ylist:
@@ -341,7 +341,7 @@ def measure_saxs_map(
                 sample=sample,
                 x_pos=np.round(piezo.x.position, 2),
                 y_pos=np.round(piezo.y.position, 2),
-                saxs_z=np.round(pil1m_pos.z.position, 2),
+                saxs_z=np.round(pil2M_pos.z.position, 2),
                 expt=t,
                 att=att,
                 scan_id=RE.md["scan_id"],
@@ -360,14 +360,14 @@ def measure_saxs_scany(
 ):
     if sample is None:
         sample = RE.md["sample"]
-    dets = [pil1M]
+    dets = [pil2M]
     for i in range(N):
         name_fmt = "{sample}_x{x_pos}_y{y_pos}_det{saxs_z}m_expt{expt}s_att{att}_sid{scan_id:08d}"
         sample_name = name_fmt.format(
             sample=sample,
             x_pos=np.round(piezo.x.position, 2),
             y_pos=np.round(piezo.y.position, 2),
-            saxs_z=np.round(pil1m_pos.z.position, 2),
+            saxs_z=np.round(pil2M_pos.z.position, 2),
             expt=t,
             att=att,
             scan_id=RE.md["scan_id"],
@@ -390,7 +390,7 @@ def measure_pindiol_current():
 def measure_saxs(t=1, att="None", dy=0, user_name="XZ", sample=None):
     if sample is None:
         sample = RE.md["sample"]
-    dets = [pil1M]
+    dets = [pil2M]
     # att_in( att )
     if dy:
         yield from bps.mvr(piezo.y, dy)
@@ -401,7 +401,7 @@ def measure_saxs(t=1, att="None", dy=0, user_name="XZ", sample=None):
         sample=sample,
         x_pos=np.round(piezo.x.position, 2),
         y_pos=np.round(piezo.y.position, 2),
-        saxs_z=np.round(pil1m_pos.z.position, 2),
+        saxs_z=np.round(pil2M_pos.z.position, 2),
         expt=t,
         att=att,
         scan_id=RE.md["scan_id"],
@@ -449,7 +449,7 @@ def measure_wsaxs(t=1, waxs_angle=20, att="None", dy=0, user_name="XZ", sample=N
     if sample is None:
         sample = RE.md["sample"]
     yield from bps.mv(waxs, waxs_angle)
-    dets = [pil900KW, pil300KW, pil1M]
+    dets = [pil900KW, pil300KW, pil2M]
     # att_in( att )
     if dy:
         yield from bps.mvr(piezo.y, dy)
@@ -459,7 +459,7 @@ def measure_wsaxs(t=1, waxs_angle=20, att="None", dy=0, user_name="XZ", sample=N
         x_pos=piezo.x.position,
         y_pos=piezo.y.position,
         z_pos=piezo.z.position,
-        saxs_z=np.round(pil1m_pos.z.position, 2),
+        saxs_z=np.round(pil2M_pos.z.position, 2),
         waxs_angle=waxs_angle,
         expt=t,
         scan_id=RE.md["scan_id"],
@@ -549,9 +549,9 @@ def measure_waxs_multi_angles(
         if saxs_on:
             if waxs_angle == max_waxs_angle:
                 dets = [
-                    pil1M,
+                    pil2M,
                     pil300KW,
-                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
             else:
                 dets = [pil300KW]
 
@@ -572,7 +572,7 @@ def snap_waxs(t=0.1):
 
 
 def snap_saxs(t=0.1):
-    dets = [pil1M]
+    dets = [pil2M]
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(t)
     yield from (bp.count(dets, num=1))

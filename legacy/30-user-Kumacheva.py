@@ -105,7 +105,7 @@ def morozova_giswaxs_temp_2023_2(t=1):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
                 
                 for ai in incident_angles:
                     yield from bps.mv(piezo.th, ai0 + ai)

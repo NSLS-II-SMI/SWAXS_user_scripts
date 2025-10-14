@@ -62,7 +62,7 @@ def alignement_herzig_2020_3():
 def run_Herzi_short_2020_3(t=1):
 
     waxs_range = np.linspace(0, 13, 3)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for name, xs, zs, aiss, ys, xs_hexa, ys_hexa in zip(
         names, x_piezo, z_piezo, incident_angles, y_piezo_aligned, x_hexa, y_hexa
@@ -128,7 +128,7 @@ def run_Herzi_2020_3(t=1):
     x_list = [-1000, 27000, 47000]
 
     waxs_range = np.linspace(0, 13, 3)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for x, name in zip(x_list, samples):
         yield from bps.mv(piezo.x, x)
@@ -214,7 +214,7 @@ def run_Herzi_2020_2(t=1):
     x_list = [-45000, -19000, 8000, 33000]
 
     waxs_range = np.linspace(0, 19.5, 4)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for x, name in zip(x_list, samples):
         yield from bps.mv(piezo.x, x)
@@ -452,7 +452,7 @@ def S_edge_measurments_Herzig(t=1):
         yield from bps.mv(energy, 2450)
         yield from bps.mv(piezo.th, ai0 + 0.8)
 
-        dets = [pil1M, pil300KW]
+        dets = [pil2M, pil300KW]
         det_exposure_time(0.2, 0.2)
 
         xss = np.linspace(xs, xs + 1 * 4500, 26)
@@ -497,7 +497,7 @@ def S_edge_measurments_Herzig(t=1):
             2500.0,
         ]
         det_exposure_time(t, t)
-        dets = [pil1M, pil300KW]
+        dets = [pil2M, pil300KW]
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -580,7 +580,7 @@ def run_Herzi_Sedge_2021_1(t=1):
         x_hexa
     ), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     waxs_arc = np.linspace(0, 19.5, 4)
     ai_list = [0.5, 0.8]
 
@@ -600,7 +600,7 @@ def run_Herzi_Sedge_2021_1(t=1):
         yield from bps.mv(waxs, 0)
         yield from bps.mv(energy, 2450)
 
-        dets = [pil1M, pil300KW]
+        dets = [pil2M, pil300KW]
         det_exposure_time(0.2, 0.2)
         name_fmt = "{sample}_xscan_{energy}eV_ai{ai}_pos{pos}"
 
@@ -657,7 +657,7 @@ def run_Herzi_Sedge_2021_1(t=1):
             2500.0,
         ]
         det_exposure_time(t, t)
-        dets = [pil1M, pil300KW]
+        dets = [pil2M, pil300KW]
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -720,7 +720,7 @@ def run_Herzi_2021_1(t=1):
     ), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
 
     waxs_range = np.linspace(0, 13, 3)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for x, y, x_hexa, name in zip(x_piezo, y_piezo, x_hexa, samples):
         yield from bps.mv(piezo.x, x)
@@ -813,7 +813,7 @@ def run_test_Herzi_2021_1(t=1):
     ), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
 
     waxs_range = np.linspace(0, 13, 3)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for x, y, x_hexa, name in zip(x_piezo, y_piezo, x_hexa, samples):
         yield from bps.mv(piezo.x, x)

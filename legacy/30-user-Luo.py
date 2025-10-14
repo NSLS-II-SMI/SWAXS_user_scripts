@@ -68,7 +68,7 @@ def mapping_Luo(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(wa_range)})"
 
     # Detectors, motors:
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for num, (x, y, sample, x_r, y_r, wax_ra) in enumerate(
         zip(xlocs, ylocs, names, x_range, y_range, wa_range)
@@ -78,7 +78,7 @@ def mapping_Luo(t=1):
         else:
             proposal_id("2121_1", "307948_Luo2")
 
-        pil1M.cam.file_path.put(
+        pil2M.cam.file_path.put(
             "/nsls2/xf12id2/data/images/users/2021_1/307948_Luo2/1M/%s" % sample
         )
         pil300KW.cam.file_path.put(

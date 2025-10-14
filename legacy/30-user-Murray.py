@@ -48,8 +48,8 @@ def ex_situ(meas_t=1):
     ]
 
     # waxs_arc = [0, 13, 3]
-    dets = [pil1M]
-    # dets = [pil300KW, pil1M]
+    dets = [pil2M]
+    # dets = [pil300KW, pil2M]
 
     for x, sample in zip(x_list_E, sample_list_E):  # loop over samples on bar
         yield from bps.mv(piezo.x, x)
@@ -60,7 +60,7 @@ def ex_situ(meas_t=1):
             sample=sample,
             x_pos=np.round(piezo.x.position, 2),
             y_pos=np.round(piezo.y.position, 2),
-            saxs_z=np.round(pil1m_pos.z.position, 2),
+            saxs_z=np.round(pil2M_pos.z.position, 2),
             meas_t=meas_t,
             scan_id=RE.md["scan_id"],
         )
@@ -84,7 +84,7 @@ def in_situ(meas_t=1, t0=0):
     # sample_list = ['xtestgreen32', 'xtestyellow31', 'xtestred30', 'xtestblue29']
     # sample_list = ['green', 'yellow', 'red', 'blue']
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     if t0 < 10:
         t0 = time.time()
 
@@ -104,7 +104,7 @@ def in_situ(meas_t=1, t0=0):
                 sample=sample,
                 x_pos=np.round(piezo.x.position, 2),
                 y_pos=np.round(piezo.y.position, 2),
-                saxs_z=np.round(pil1m_pos.z.position, 2),
+                saxs_z=np.round(pil2M_pos.z.position, 2),
                 meas_t=meas_t,
                 t=np.round(time.time() - t0, 0),
                 scan_id=scan_id0 + count,
@@ -112,7 +112,7 @@ def in_situ(meas_t=1, t0=0):
             count = count + 1
 
             # name_fmt = '{sample}_{scan_id}_t{t}s_x{x_pos}_y{y_pos}_sax{saxs_z}m_{meas_t}s'
-            # sample_name = name_fmt.format(sample=sample, scan_id=scan_id0+count, t=np.round(time.time()-t0, 0), x_pos=np.round(piezo.x.position,2), y_pos=np.round(piezo.y.position,2), saxs_z=np.round(pil1m_pos.z.position,2), meas_t=meas_t)
+            # sample_name = name_fmt.format(sample=sample, scan_id=scan_id0+count, t=np.round(time.time()-t0, 0), x_pos=np.round(piezo.x.position,2), y_pos=np.round(piezo.y.position,2), saxs_z=np.round(pil2M_pos.z.position,2), meas_t=meas_t)
 
             sample_id(user_name="EM_insitu", sample_name=sample_name)
             print(f"\n\t=== Sample: {sample_name} ===\n")

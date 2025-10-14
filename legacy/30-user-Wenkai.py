@@ -102,7 +102,7 @@ def nexafs_S_edge_wenkai(t=1):
 
 
 def hardxray_wenkai2020_1(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = [
         "PFSA_LSC",
@@ -200,7 +200,7 @@ def hardxray_wenkai2020_1(t=1):
 
 def waxs_S_edge_wenkai_2021_1(t=1):
 
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
 
     # names = ['PFSA_LSC', 'PFSA_SSC', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'D1', 'D2', 'A3', 'B3', 'C3', 'D3']
     # x = [41000, 28000,  43300, 37600, 32700, 27500, 21700, 16600, 11300, 5900, -17600, -22600, -28100, -33100]
@@ -294,7 +294,7 @@ def waxs_S_edge_wenkai_2021_1(t=1):
 
 def wenkai_waxs_tensile_tender_2021_2(t=1):
     # 85s to do the loop
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = "SSC_loop4_waxs"
     t0 = time.time()
@@ -355,7 +355,7 @@ def wenkai_waxsonly_tensile_tender_2021_2(t=1):
 
 def wenkai_saxsonly_tensile_tender_2021_2(t=1):
     # 85s to do the loop
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = "SSC_loop3_saxs"
     t0 = time.time()
@@ -382,7 +382,7 @@ def wenkai_saxsonly_tensile_tender_2021_2(t=1):
 
 
 def wenkai_saxs_waxs_tensile_hard(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = "PF-T2PO1_loop1"
     t0 = time.time()
@@ -433,7 +433,7 @@ def wenkai_waxs_tensile_2021_3(t=0.5):
 def wenkai_saxs_tensile_2021_3(t=0.5):
     names = "LSC_RT_loop6_samesample"
 
-    dets = [pil1M]
+    dets = [pil2M]
     wa = [20]
     yield from bps.mv(stage.y, -0.3)
     t0 = time.time()
@@ -457,7 +457,7 @@ def wenkai_saxs_tensile_2021_3(t=0.5):
 
 
 def S_edge_measurments_2022_3(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     # names = [    'A1',   'A2',   'A3',   'A4',  'A5',  'A6',  'B1',  'B2',  'B3',  
@@ -512,7 +512,7 @@ def S_edge_measurments_2022_3(t=1):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             yield from bps.mv(piezo.x, xs)
             counter = 0
@@ -550,7 +550,7 @@ def S_edge_measurments_2022_3(t=1):
 
 
 def waxs_S_edge_wenkai_2022_3(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = [   'A1',  'A2',  'A3',  'A4',  'A5',  'A6',  'A7',  'A8',  'B1',  'B2',  'B3',  'B4',  'B5',  'B6',  'B7',  'B8',
                 'C1',  'C2',  'C3',  'C4',  'C5',  'C6',  'C7',  'C8',  'F1',  'F2',  'F3',  'F4',  'F5',  'F6',  'F7',  'F8']
@@ -582,7 +582,7 @@ def waxs_S_edge_wenkai_2022_3(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -600,7 +600,7 @@ def waxs_S_edge_wenkai_2022_3(t=1):
 
                 bpm = xbpm2.sumX.value
 
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 sample_name = name_fmt.format(sample=name, sdd="%.1f"%sdd, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
 
                 sample_id(user_name="GF", sample_name=sample_name)
@@ -620,7 +620,7 @@ def waxs_S_edge_wenkai_2022_3(t=1):
 
 
 def hardxray_wenkai_2022_3(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     # names = [ 'ZM_01', 'ZM_02', 'ZM_03', 'ZM_04', 'ZM_05', 'ZM_06', 'ZM_07', 'ZM_08', 
@@ -695,7 +695,7 @@ def hardxray_wenkai_2022_3(t=1):
 
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             yield from bps.mv(piezo.x, xs)
             for k, ais in enumerate(ai_list):

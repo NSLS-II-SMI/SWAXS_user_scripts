@@ -16,7 +16,7 @@ def run_continous_Zhang(name='test', t=1, td=10):
     t_initial = time.time()
 
     yield from bps.mv(waxs, wa)
-    dets = [pil900KW] if waxs.arc.position < 14.9 else [pil1M, pil900KW]
+    dets = [pil900KW] if waxs.arc.position < 14.9 else [pil2M, pil900KW]
 
     
     for i in range(99999):
@@ -59,7 +59,7 @@ def run_continous_pindiode_Zhang(name='test', t=1, td=10):
     t_initial = time.time()
 
     yield from bps.mv(waxs, wa)
-    dets = [pil900KW] if waxs.arc.position < 14.9 else [pil1M, pil900KW]
+    dets = [pil900KW] if waxs.arc.position < 14.9 else [pil2M, pil900KW]
     dets.append(pdcurrent1)
 
     
@@ -115,7 +115,7 @@ def run_standard_swaxs_Zhang_2023_3(t=2):
 
         condition = waxs.arc.position < 15
 
-        dets = [pil900KW] if condition else [pil1M, pil900KW]
+        dets = [pil900KW] if condition else [pil2M, pil900KW]
             
         for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
             yield from bps.mv(piezo.x, x,

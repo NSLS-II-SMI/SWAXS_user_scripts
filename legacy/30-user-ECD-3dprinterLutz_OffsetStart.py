@@ -10,7 +10,7 @@ waxs_arc = 13
 # 0 or 6.5 or 13g
 
 # No need to be modify
-det = [pil300KW, pil1M]
+det = [pil300KW, pil2M]
 
 import sys
 import time
@@ -94,7 +94,7 @@ def track_printer_timeRes(exp_t=0.1, meas_t=8, trigger_num=1):
             t0 = time.time()
             t1 = time.time()
             waxs_arc = [0, 13, 3]
-            dets = [pil300KW, pil1M]
+            dets = [pil300KW, pil2M]
             meas_t = 1
             det_exposure_time(meas_t, meas_t)
             loopNum = 0
@@ -173,7 +173,7 @@ def sample_alignment():
 
 def align_height_hexa(rang=0.3, point=31, der=False):
     det_exposure_time(0.5, 0.5)
-    yield from bp.rel_scan([pil1M], stage.y, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], stage.y, -rang, rang, point)
     ps(der=der)
     yield from bps.mv(stage.y, ps.cen)
     plt.close("all")
@@ -181,14 +181,14 @@ def align_height_hexa(rang=0.3, point=31, der=False):
 
 def align_x_hexa(rang=0.3, point=31, der=False):
     det_exposure_time(0.5, 0.5)
-    yield from bp.rel_scan([pil1M], stage.x, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], stage.x, -rang, rang, point)
     # yield from bps.mv(stage.y, ps.cen)
 
 
 """       
 def align_theta_hexa(rang = 0.1, point = 20, der=False):   
         det_exposure_time(0.5)
-        yield from bp.rel_scan([pil1M], stage.th, 0, rang, point )
+        yield from bp.rel_scan([pil2M], stage.th, 0, rang, point )
         ps(der=der)
         #yield from bps.mv(stage.y, ps.cen)
         #plt.close('all')
@@ -254,7 +254,7 @@ def ex_situ(meas_t=1):
     sample = "B"
     y_range = [-700, 700, 36]
     waxs_arc = np.linspace(39, 0, 7)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     det_exposure_time(meas_t, meas_t)
     name_fmt = "{sample}_{po}_wa{waxs}"  # Sample name _ positions
     for wa in waxs_arc:
@@ -291,7 +291,7 @@ def ex_situ_printer(meas_t=1):
     # assert len(x_list) == len(sample_list), f'Sample name/position list is borked'
 
     waxs_arc = [0, 26, 5]
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     # for x, sample in zip(x_list,sample_list): #loop over samples on bar
     # yield from bps.mv(piezo.x, x)
@@ -325,7 +325,7 @@ def ex_situ_printer_height_profile(meas_t=1):
     # assert len(x_list) == len(sample_list), f'Sample name/position list is borked'
 
     waxs_arc = [0, 13, 3]
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for y, sample in zip(y_list, sample_list):  # loop over samples on bar
         yield from bps.mv(stage.y, y)
@@ -343,7 +343,7 @@ def bkg_bar(meas_t=1):
     sample_list = ["bar23_background"]
 
     waxs_ar = [0, 13, 3]
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     det_exposure_time(meas_t, meas_t)
 

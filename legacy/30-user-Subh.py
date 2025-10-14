@@ -5,7 +5,7 @@
 def align_gisaxs_height_subh(rang=0.3, point=31, der=False):
     det_exposure_time(0.5)
     sample_id(user_name="test", sample_name="test")
-    yield from bp.rel_scan([pil1M, pil1mroi1, pil1mroi2], piezo.y, -rang, rang, point)
+    yield from bp.rel_scan([pil2M, pil2Mroi1, pil2Mroi2], piezo.y, -rang, rang, point)
     ps(der=der)
     yield from bps.mv(piezo.y, ps.cen)
 
@@ -13,7 +13,7 @@ def align_gisaxs_height_subh(rang=0.3, point=31, der=False):
 def align_gisaxs_th_subh(rang=0.3, point=31):
     det_exposure_time(0.5)
     sample_id(user_name="test", sample_name="test")
-    yield from bp.rel_scan([pil1M], piezo.th, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], piezo.th, -rang, rang, point)
     ps()
     yield from bps.mv(piezo.th, ps.peak)
 
@@ -33,14 +33,14 @@ def alignmentmodesubh():
     yield from bps.mv(att1_3, "Insert")
     yield from bps.sleep(1)
     yield from bps.mv(GV7.open_cmd, 1)
-    yield from bps.mv(pil1m_bs_rod.x, alignbspossubh)
+    yield from bps.mv(pil2M_bs_rod.x, alignbspossubh)
     if waxs.arc.position < 12:
         yield from bps.mv(waxs, 12)
     sample_id(user_name="test", sample_name="test")
 
 
 def measurementmodesubh():
-    yield from bps.mv(pil1m_bs_rod.x, measurebspossubh)
+    yield from bps.mv(pil2M_bs_rod.x, measurebspossubh)
     yield from bps.sleep(1)
     # Att_Align1.set("Retract")
     # yield from bps.sleep(1)
@@ -61,14 +61,14 @@ def alignquick():
     yield from bps.mv(att1_3, "Insert")
     yield from bps.sleep(1)
     yield from bps.mv(GV7.open_cmd, 1)
-    yield from bps.mv(pil1m_bs_rod.x, alignbspossubh)
+    yield from bps.mv(pil2M_bs_rod.x, alignbspossubh)
     if waxs.arc.position < 8:
         yield from bps.mv(waxs, 8)
     sample_id(user_name="test", sample_name="test")
 
 
 def meas_after_alignquick():
-    yield from bps.mv(pil1m_bs_rod.x, measurebspossubh)
+    yield from bps.mv(pil2M_bs_rod.x, measurebspossubh)
     yield from bps.sleep(1)
     yield from bps.mv(att1_2, "Retract")
     yield from bps.sleep(1)
@@ -81,9 +81,9 @@ def alignsubhgi():
     det_exposure_time(0.5)
     sample_id(user_name="test", sample_name="test")
     yield from alignmentmodesubh()
-    yield from bps.mv(pil1M.roi1.min_xyz.min_y, 863)
-    yield from bps.mv(pil1M.roi1.size.y, 100)
-    yield from bps.mv(pil1M.roi1.size.x, 100)
+    yield from bps.mv(pil2M.roi1.min_xyz.min_y, 863)
+    yield from bps.mv(pil2M.roi1.size.y, 100)
+    yield from bps.mv(pil2M.roi1.size.x, 100)
 
     yield from align_gisaxs_height_subh(1000, 16, der=True)
     yield from align_gisaxs_th_subh(1000, 11)
@@ -91,8 +91,8 @@ def alignsubhgi():
     yield from align_gisaxs_th_subh(500, 11)
 
     yield from bps.mv(piezo.th, ps.peak - 100)
-    yield from bps.mv(pil1M.roi1.min_xyz.min_y, 783)
-    yield from bps.mv(pil1M.roi1.size.y, 10)
+    yield from bps.mv(pil2M.roi1.min_xyz.min_y, 783)
+    yield from bps.mv(pil2M.roi1.size.y, 10)
     yield from align_gisaxs_th_subh(300, 31)
     yield from align_gisaxs_height_subh(200, 21)
     yield from align_gisaxs_th_subh(100, 21)

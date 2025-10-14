@@ -1,4 +1,4 @@
-# pil300KW for waxs, pil1M for saxs
+# pil300KW for waxs, pil2M for saxs
 
 
 def cd_saxs(th_ini, th_fin, th_st, exp_t=1):
@@ -11,7 +11,7 @@ def cd_saxs(th_ini, th_fin, th_st, exp_t=1):
               "cdsaxs_ech11b_defectivity_pitch118","cdsaxs_ech11b_defectivity_pitch115","cdsaxs_ech11b_defectivity_pitch112"]
     x = [-41100,-38550,-34050,-29550,-25050,-20550,-16050,-11150,-9650,-5150,-650,3850,8350,12850,17000,18500,23000,27500,32000,36500, 41000]
     y = [  2000,  2000,  2000,  2000,  2000,  2000,  2000,2000,2000,2000,2000,2000,2000,2000,3900,3900,3900,3900,3900,3900,3900,    ]    
-    det = [pil1M]
+    det = [pil2M]
 
     det_exposure_time(exp_t, exp_t)
     for xs, ys, sample in zip(x, y, sample):
@@ -30,7 +30,7 @@ def cd_saxs(th_ini, th_fin, th_st, exp_t=1):
 
 
 def cd_saxs_old(sample, x, y, num=1, exp_t=1, step=121):
-    det = [pil1M]
+    det = [pil2M]
 
     det_exposure_time(exp_t, exp_t)
     yield from bps.mv(piezo.x, x)
@@ -63,7 +63,7 @@ def cdsaxs_all_pitch(sample, x, y, num=1, exp_t=1, step=121):
 
 def night_patrice(exp_t=1):
     numero = 6
-    det = [pil1M]
+    det = [pil2M]
 
     # names = ['champs00', 'bkg_champs00','champs05','bkg_champs05','champs0-4','bkg_champs0-4','champs0-3', 'bkg_champs0-3']
     # xs = [-41100, -41100, 14100, 14100, -36450, -36550, -10250, -10250]
@@ -141,7 +141,7 @@ def scan_boite_pitch(exp_t=1):
     sample = ["Echantillon03_defectivity","Echantillon04_defectivity","Echantillon11b_defectivity"]
     x = [-40050, -11150, 17000]
     y = [2000, 2000, 3900]
-    det = [pil1M]
+    det = [pil2M]
 
     pitches = np.linspace(128, 112, 17)
 
@@ -196,7 +196,7 @@ def NEXAFS_Ti_edge(t=0.5):
 
 def NEXAFS_SAXS_Ti_edge(t=0.5):
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     name = "NEXAFS_SAXS_echantillon13realign_ai1p75_Tiedge"
     # x = [8800]
 
@@ -226,7 +226,7 @@ def GISAXS_scan_boite(t=1):
     sample = "Echantillon13realign_gisaxs_scanpolyperiod_e4950eV_ai1p75"
     x = np.linspace(55900, 31900, 81)
 
-    det = [pil1M]
+    det = [pil2M]
 
     det_exposure_time(t, t)
     for k, xs in enumerate(x):
@@ -261,7 +261,7 @@ def fly_scan_ai(det, motor, cycle=1, cycle_t=10, phi=-0.6):
 
 def sample_patrice_2020_3(exp_t=1):
     numero = 1
-    det = [pil1M]
+    det = [pil2M]
     # wafer = 'wafer16'
     # names = ['champs5', 'champs5_bkg', 'champs4', 'champs4_bkg', 'champs3', 'champs3_bkg']
     # names = ['champs-1', 'champs-1_bkg', 'champs-2', 'champs-2_bkg', 'champs-3', 'champs-3_bkg']
@@ -303,7 +303,7 @@ def sample_patrice_2020_3(exp_t=1):
         else:
             yield from mesure_rugo(sample_name, x, y, num=100, exp_t=exp_t)
 
-    yield from bps.mvr(pil1m_pos.x, -5)
+    yield from bps.mvr(pil2M_pos.x, -5)
     smi = SMI_Beamline()
     yield from smi.modeAlignment(technique="gisaxs")
 
@@ -315,7 +315,7 @@ def sample_patrice_2020_3(exp_t=1):
         yield from mesure_db(sample_name, x, y, num=1, exp_t=1)
 
     yield from smi.modeMeasurement()
-    yield from bps.mvr(pil1m_pos.x, 5)
+    yield from bps.mvr(pil2M_pos.x, 5)
 
 
 def cdsaxs_important_pitch(sample, x, y, num=1, exp_t=1):
@@ -361,18 +361,18 @@ def mesure_rugo(sample, x, y, num=200, exp_t=1):
         print(sample_name)
         sample_id(user_name="PG", sample_name=sample_name)
 
-        yield from bp.count([pil1M], num=num)
+        yield from bp.count([pil2M], num=num)
 
-    yield from bps.mvr(pil1m_pos.y, 4.3)
+    yield from bps.mvr(pil2M_pos.y, 4.3)
     for x_of, y_of, pitch in zip(x_off, y_off, pitches):
         yield from bps.mv(piezo.x, x + x_of)
         yield from bps.mv(piezo.y, y + y_of)
         name_fmt = "{sample}_rugo_{pit}_down"
         sample_name = name_fmt.format(sample=sample, pit=pitch)
         sample_id(user_name="PG", sample_name=sample_name)
-        yield from bp.count([pil1M], num=num)
+        yield from bp.count([pil2M], num=num)
 
-    yield from bps.mvr(pil1m_pos.y, -4.3)
+    yield from bps.mvr(pil2M_pos.y, -4.3)
 
 
 def mesure_db(sample, x, y, num=1, exp_t=1):
@@ -394,7 +394,7 @@ def mesure_db(sample, x, y, num=1, exp_t=1):
         sample_name = name_fmt.format(sample=sample, pit=pitch)
         sample_id(user_name="PG", sample_name=sample_name)
 
-        yield from bp.count([pil1M], num=1)
+        yield from bp.count([pil2M], num=1)
 
 
 def NEXAFS_P_edge(t=0.5):
@@ -433,7 +433,7 @@ def NEXAFS_P_edge(t=0.5):
 
 def cd_saxs_new2(th_ini, th_fin, th_st, exp_t=1):
     sample = "sample-33"
-    det = [pil1M]
+    det = [pil2M]
     yield from bps.mv(piezo.y, 1000)
 
     det_exposure_time(exp_t, exp_t)
@@ -473,7 +473,7 @@ def cd_saxs_new2(th_ini, th_fin, th_st, exp_t=1):
 
 def rugo_contact(exp_t=1):
     sample = "sample-10_rugo_8.3m_16.1keV_5s"
-    det = [pil1M]
+    det = [pil2M]
 
     det_exposure_time(exp_t, exp_t)
     sample_id(user_name="PG", sample_name=sample)
@@ -481,7 +481,7 @@ def rugo_contact(exp_t=1):
     yield from bp.count(det, num=50)
 
 
-def cd_saxs_new(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil1M]):
+def cd_saxs_new(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2M]):
 
     det_exposure_time(exp_t, exp_t)
 
@@ -497,7 +497,7 @@ def cd_saxs_new(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil1
 
 
 def night_1_cdsaxs(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     names = ['w08_-3-1', 'w08_-3-1_bkg', 'w08_1-1', 'w08_1-1_bkg', 'w08_2-1', 'w08_2-1_bkg', 
@@ -541,7 +541,7 @@ def night_1_cdsaxs(t=1):
 
 
 def cdsaxs_echolivier(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     # names = ['w03_c0_p113', 'w03_c0_p113_bkg', 'w03_c0_p118', 'w03_c0_p118_bkg', 'w03_c0_p100', 'w03_c0_p100_bkg',
@@ -651,7 +651,7 @@ def cdsaxs_echolivier(t=1):
 #bs_pos=[1.7, 1.7, 1.5, 1.5, 1.9, 2.1, 2.1, 2.1, 2.1]
 
 def rugo(t=1, sdd='8.30', num=10, name='test', ys=[0, 0], th=0):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     yield from bps.mv(piezo.y, ys[0])
@@ -659,7 +659,7 @@ def rugo(t=1, sdd='8.30', num=10, name='test', ys=[0, 0], th=0):
     sample_name = name_fmt.format(name=name, sdd=sdd, th="%1.1f"%th)
     sample_id(user_name="PG", sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
-    yield from bps.mv(pil1m_pos.y, -3.7)
+    yield from bps.mv(pil2M_pos.y, -3.7)
     yield from bp.count(det, num=num)
 
 
@@ -667,7 +667,7 @@ def rugo(t=1, sdd='8.30', num=10, name='test', ys=[0, 0], th=0):
     sample_name = name_fmt.format(name=name, sdd=sdd, th="%1.1f"%th)
     sample_id(user_name="PG", sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
-    yield from bps.mv(pil1m_pos.y, -8.0)
+    yield from bps.mv(pil2M_pos.y, -8.0)
     yield from bp.count(det, num=num)
 
 
@@ -677,7 +677,7 @@ def rugo(t=1, sdd='8.30', num=10, name='test', ys=[0, 0], th=0):
     sample_name = name_fmt.format(name=name, sdd=sdd, th="%1.1f"%th)
     sample_id(user_name="PG", sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
-    yield from bps.mv(pil1m_pos.y, -8.0)
+    yield from bps.mv(pil2M_pos.y, -8.0)
     yield from bp.count(det, num=num)
     
 
@@ -685,7 +685,7 @@ def rugo(t=1, sdd='8.30', num=10, name='test', ys=[0, 0], th=0):
     sample_name = name_fmt.format(name=name, sdd=sdd, th="%1.1f"%th)
     sample_id(user_name="PG", sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
-    yield from bps.mv(pil1m_pos.y, -3.7)
+    yield from bps.mv(pil2M_pos.y, -3.7)
     yield from bp.count(det, num=num)
 
 
@@ -746,8 +746,8 @@ def run_day2(t=1):
     sdds=   [8.3, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.6]
     bs_pos=[1.7, 1.7, 1.5, 1.5, 1.9, 2.1, 2.1, 2.1, 2.1]
     for sdd, bs in zip(sdds, bs_pos):
-        yield from bps.mv(pil1m_pos.z, 1000*sdd)
-        yield from bps.mv(pil1m_bs_rod.x, bs)
+        yield from bps.mv(pil2M_pos.z, 1000*sdd)
+        yield from bps.mv(pil2M_bs_rod.x, bs)
 
 
         yield from bps.mv(prs, -5.25)
@@ -764,7 +764,7 @@ def run_day2(t=1):
 
 
 def measure_nicolas2(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
     
     # name_fmt = "ech1_14.5keV_ai_7.0deg_l{ligne}_c{colone}_wa{wax}deg"
@@ -790,7 +790,7 @@ def measure_nicolas2(t=1):
 
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+        dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
         for yy, (y1, y2) in enumerate(zip(ys1, ys2)):
             # y1, y2 = ys1[::-1][xx], ys2[::-1][xx]
@@ -811,7 +811,7 @@ def measure_nicolas2(t=1):
 
 
 def measure_nicolas_bkg(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
     
     name_fmt = "ech1_14.5keV_ai_7.0deg_bkg_wa{wax}deg"
@@ -819,7 +819,7 @@ def measure_nicolas_bkg(t=1):
 
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+        dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
         sample_name = name_fmt.format(wax='%2.2d'%wa)
         print(sample_name)
@@ -840,7 +840,7 @@ def measure_nicolas_bkg(t=1):
 
 def cd_gisaxs_phi(phi0, phi_ini, phi_fin, phi_st, ai0, ai, exp_t=1, sample='test', nume=1):
     sample = sample+'phiscan'
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(exp_t, exp_t)
 
     yield from bps.mv(stage.th, ai0+ai)
@@ -856,7 +856,7 @@ def cd_gisaxs_phi(phi0, phi_ini, phi_fin, phi_st, ai0, ai, exp_t=1, sample='test
 
 def cd_gisaxs_alphai(ai0, ai_ini, ai_fin, ai_st, phi0, phi, exp_t=1, sample='test', nume=1):
     sample = sample+'aiscan'
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(exp_t, exp_t)
 
     yield from bps.mv(prs, phi0+phi)
@@ -922,7 +922,7 @@ def nigh_cdgisaxs(t=0.5):
 
 
 def cdsaxs_echPaul_2023_2(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     names = ['E1_001', 'E1_001_bkg', 'E1_010', 'E1_010-bkg','E1_100', 'E1_100_bkg', 'E2_001', 'E2_001_bkg', 'E2_010', 'E2_010_bkg', 'E2_100', 'E2_100_bkg']
@@ -966,7 +966,7 @@ def cdsaxs_echPaul_2023_2(t=1):
 
 
 def cdsaxs_ocd_2023_2(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     # names = ['w25_cm4', 'w25_cm4_bkg', 'w25_cm3', 'w25_cm3_bkg', 'w25_cm2', 'w25_cm2_bkg', 'w25_cm1', 'w25_cm1_bkg']
@@ -1025,7 +1025,7 @@ def cdsaxs_ocd_2023_2(t=1):
     
 
 def cdsaxs_ovl_2023_2(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
 
@@ -1166,7 +1166,7 @@ def cdwaxs_echPaulSophie_2023_2(t=1):
 
 
 def cdsaxs_ovl_2023_3(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     names = ['ech1_p128', 'ech1_bkg_p128', 'ech2_p128', 'ech2_bkg_p128', 'ech3_p128', 'ech3_bkg_p128', 'ech4_p128', 'ech4_bkg_p128', 'ech5_p128','ech5_bkg_p128']
@@ -1239,7 +1239,7 @@ def cdsaxs_ovl_2023_3(t=1):
 
 
 def cdsaxs_ovl_2024_1(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     phi_offest = -1.52
@@ -1285,7 +1285,7 @@ def cdsaxs_ovl_2024_1(t=1):
 
 
 def cdsaxs_IBM_2024_1(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     phi_offest = -1.52
@@ -1377,7 +1377,7 @@ def cdsaxs_IBM_2024_1(t=1):
 
 
 def cdsaxsG_2024_2(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
 
@@ -1547,20 +1547,20 @@ def mesure_rugo(exp_t=1, nume=100):
         sample_name = name_fmt.format(sample=name)
         print(sample_name)
         sample_id(user_name="PG", sample_name=sample_name)
-        yield from bp.count([pil1M], num=nume)
+        yield from bp.count([pil2M], num=nume)
 
-        yield from bps.mvr(pil1m_pos.y, 4.3)
+        yield from bps.mvr(pil2M_pos.y, 4.3)
         name_fmt = "{sample}_rugo_down_sdd8p30"
         sample_name = name_fmt.format(sample=name)
         sample_id(user_name="PG", sample_name=sample_name)
-        yield from bp.count([pil1M], num=nume)
-        yield from bps.mvr(pil1m_pos.y, -4.3)
+        yield from bp.count([pil2M], num=nume)
+        yield from bps.mvr(pil2M_pos.y, -4.3)
 
 
 
 
 def cdsaxsstd_2024_2(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     phi_offest = -2
@@ -1640,23 +1640,23 @@ def mesure_rugo_2024_16(exp_t=1, nume=100):
             sample_name = name_fmt.format(sample=name)
             print(sample_name)
             sample_id(user_name="PG", sample_name=sample_name)
-            yield from bp.count([pil1M], num=1)
+            yield from bp.count([pil2M], num=1)
 
 
 
-            # yield from bps.mvr(pil1m_pos.y, 4.3)
+            # yield from bps.mvr(pil2M_pos.y, 4.3)
             # name_fmt = "{sample}_rugo_down_sdd9p20_16.1keV"
             # sample_name = name_fmt.format(sample=name)
             # sample_id(user_name="PG", sample_name=sample_name)
-            # yield from bp.count([pil1M], num=nume)
-            # yield from bps.mvr(pil1m_pos.y, -4.3)
+            # yield from bp.count([pil2M], num=nume)
+            # yield from bps.mvr(pil2M_pos.y, -4.3)
 
 
 
 
 
 def cdsaxsstd_2025_1(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     phi_offest = -2
@@ -1703,7 +1703,7 @@ def cdsaxsstd_2025_1(t=1):
 
 
 def cdsaxsstd_2025_1_nischal(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     phi_offest = 1
@@ -1774,14 +1774,14 @@ def mesure_rugo_2025_1(exp_t=1, nume=100):
             sample_name = name_fmt.format(sample=name)
             print(sample_name)
             sample_id(sample_name=sample_name)
-            yield from bp.count([pil1M], num=nume)
+            yield from bp.count([pil2M], num=nume)
 
-            yield from bps.mvr(pil1m_pos.y, 4.3)
+            yield from bps.mvr(pil2M_pos.y, 4.3)
             name_fmt = "{sample}_rugo_down_sdd9p20_16.1keV"
             sample_name = name_fmt.format(sample=name)
             sample_id(sample_name=sample_name)
-            yield from bp.count([pil1M], num=nume)
-            yield from bps.mvr(pil1m_pos.y, -4.3)
+            yield from bp.count([pil2M], num=nume)
+            yield from bps.mvr(pil2M_pos.y, -4.3)
 
 
 
@@ -1789,7 +1789,7 @@ def mesure_rugo_2025_1(exp_t=1, nume=100):
 
 
 def cdsaxsstd_2025_1_nischal_all(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     phi_offest = 1
@@ -1848,14 +1848,14 @@ def cdsaxsstd_2025_1_nischal_all(t=1):
             sample_name = name_fmt.format(sample=name)
             print(sample_name)
             sample_id(sample_name=sample_name)
-            yield from bp.count([pil1M], num=nume)
+            yield from bp.count([pil2M], num=nume)
 
-            yield from bps.mvr(pil1m_pos.y, 4.3)
+            yield from bps.mvr(pil2M_pos.y, 4.3)
             name_fmt = "{sample}_rugo_down_sdd9p20_16.1keV"
             sample_name = name_fmt.format(sample=name)
             sample_id(sample_name=sample_name)
-            yield from bp.count([pil1M], num=nume)
-            yield from bps.mvr(pil1m_pos.y, -4.3)
+            yield from bp.count([pil2M], num=nume)
+            yield from bps.mvr(pil2M_pos.y, -4.3)
 
 
 
@@ -1863,7 +1863,7 @@ def cdsaxsstd_2025_1_nischal_all(t=1):
 
 
 def cdsaxsstd_2025_1_db(t=1):
-    det = [pil1M]
+    det = [pil2M]
     det_exposure_time(t, t)
 
     phi_offest = 1
@@ -1892,4 +1892,188 @@ def cdsaxsstd_2025_1_db(t=1):
             sample_name = name_fmt.format(sample=name)
             print(sample_name)
             sample_id(sample_name=sample_name)
-            yield from bp.count([pil1M], num=nume)
+            yield from bp.count([pil2M], num=nume)
+
+
+
+
+
+
+def cdsaxsstd_2025_3_nischal_all(t=1):
+    det = [pil2M]
+    det_exposure_time(t, t)
+
+    phi_offest = -1
+
+    #slot 04 is slot02
+    # names = [     'slot04_cm01',   'slot04_cm01_bkg',      'slot04_cm02',  'slot04_cm02_bkg',  'slot04_cm03',  'slot04_cm03_bkg',  'slot04_cm04',  'slot04_cm04_bkg',  'slot04_cm05',  'slot04_cm05_bkg']
+    # x =     [            -40500,             -33600,             -20000,             -12800,           -900,               6100,          14100,              22100,          29800,              37600]
+    # y=      [             -6000,              -7150,              -6000,              -7350,          -6000,              -7250,          -6000,              -7200,          -6000,              -7350]
+    # z=      [                19,                 19,                319,                319,            619,                619,            619,                619,           219,                 219]
+    # chi=    [               0.7,                0.7,                0.1,               -0.1,           -0.8,               -0.8,           -0.5,               -0.5,           -0.1,               -0.1]
+
+
+    names = [     'slot24_cm01',   'slot24_cm01_bkg',      'slot24_cm02',  'slot24_cm02_bkg',  'slot24_cm03',  'slot24_cm03_bkg',  'slot24_cm04',  'slot24_cm04_bkg',  'slot24_cm05',  'slot24_cm05_bkg']
+    x =     [            -39000,              -32100,             -19000,             -12800,          -2000,               4900,          16900,              23800,          33200,              40100]
+    y=      [             -6000,               -6650,              -6000,              -7650,          -6000,              -7700,          -6000,              -7200,          -6000,              -6700]
+    z=      [               100,                 100,                300,                300,            450,                450,            650,                650,            700,                700]
+    chi=    [               1.7,                 1.7,               0.15,               0.15,              0,                  0,          -0.85,              -0.85,           -0.9,               -0.9]
+
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of y ({len(chi)}) is different from number of samples ({len(names)})"
+    
+    # for i in range(1):
+    #     for name, xs, ys, zs, chis in zip(names, x, y, z, chi):
+    #         yield from bps.mv(piezo.z, zs,
+    #                           piezo.th, chis, 
+    #                           piezo.x, xs,
+    #                           piezo.y, ys)
+            
+    #         # yield from bp
+    #         if 'bkg' not in name:
+    #             yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-A%s'%(i+1), nume=1)
+    #             yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measure%s'%(i+1), nume=2)
+    #             yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
+    #         else:
+    #             yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
+
+
+    # names = [     'slot04_cm01',  'slot04_cm01_bkg',      'slot04_cm02',  'slot04_cm02_bkg',  'slot04_cm03',  'slot04_cm03_bkg',  'slot04_cm04',  'slot04_cm04_bkg',  'slot04_cm05',  'slot04_cm05_bkg']
+    # x =     [            -40500,             -33600,             -20000,             -12800,           -900,               6100,          14100,              22100,          29800,              37600]
+    # y=      [             -6000,              -6850,              -6000,              -7350,          -6000,              -7250,          -6000,              -7200,          -6000,              -7350]
+    # z=      [                19,                 19,                319,                319,            619,                619,            619,                619,           219,                 219]
+    # chi=    [               0.7,                0.7,                0.1,               -0.1,           -0.8,               -0.8,           -0.5,               -0.5,           -0.1,               -0.1]
+
+    names = [     'slot24_cm01',   'slot24_cm01_bkg',      'slot24_cm02',  'slot24_cm02_bkg',  'slot24_cm03',  'slot24_cm03_bkg',  'slot24_cm04',  'slot24_cm04_bkg',  'slot24_cm05',  'slot24_cm05_bkg']
+    x =     [            -39000,              -32100,             -19000,             -12800,          -2000,               4900,          16900,              23800,          33200,              40100]
+    y=      [             -6000,               -6650,              -6000,              -7650,          -6000,              -7700,          -6000,              -7200,          -6000,              -6700]
+    z=      [               100,                 100,                300,                300,            450,                450,            650,                650,            650,                700]
+    chi=    [               1.7,                 1.7,               0.15,               0.15,              0,                  0,          -0.85,              -0.85,           -0.9,               -0.9]
+
+
+
+    det_exposure_time(2, 2)
+    nume = 200
+
+    for i in range(1):
+        for name, xs, ys, zs, chis in zip(names, x, y, z, chi):
+
+            yield from bps.mv(piezo.z, zs,
+                              piezo.th, chis, 
+                              piezo.x, xs, 
+                              piezo.y, ys, 
+                              prs, phi_offest)
+
+            name_fmt = "{sample}_rugo_up_sdd9p20_16.1keV"
+            sample_name = name_fmt.format(sample=name)
+            print(sample_name)
+            sample_id(sample_name=sample_name)
+            yield from bp.count([pil2M], num=nume)
+
+            yield from bps.mvr(pil2m_pos.y, 4.3)
+            name_fmt = "{sample}_rugo_down_sdd9p20_16.1keV"
+            sample_name = name_fmt.format(sample=name)
+            sample_id(sample_name=sample_name)
+            yield from bp.count([pil2M], num=nume)
+            yield from bps.mvr(pil2m_pos.y, -4.3)
+
+
+
+def cdsaxsstd_2025_3_ulysse_all(t=1):
+    det = [pil2M]
+    det_exposure_time(t, t)
+
+    phi_offest = -1
+
+    # names = [ 'Nil_2000rpm_A1','Nil_2000rpm_B1','Nil_2000rpm_C1','Nil_2000rpm_D1','Nil_2000rpm_E1',
+    #           'Nil_2000rpm_E9','Nil_2000rpm_E8','Nil_2000rpm_E7','Nil_2000rpm_E6','Nil_2000rpm_E5','Nil_2000rpm_E4','Nil_2000rpm_E3','Nil_2000rpm_E2']
+    # x =     [            10170,           10170,           10170,           10170,           10170,
+    #                       8420,            8670,            8920,            9170,            9420,            9670,            9920,           10170]
+    # y=      [            -6000,           -5750,           -5500,           -5250,           -5000,
+    #                      -5000,           -5000,           -5000,           -5000,           -5000,           -5000,           -5000,           -5000]
+    # z=      [             -130,            -130,            -130,            -130,            -130, 
+    #                       -130,            -130,            -130,            -130,            -130,            -130,            -130,            -130]
+    # chi=    [                0,               0,               0,               0,               0,
+    #                          0,               0,               0,               0,               0,               0,               0,               0]
+
+    #NIL1000 rpm plus flou
+    names = [ 'Nil_1000rpm_A1','Nil_1000rpm_B1','Nil_1000rpm_C1','Nil_1000rpm_D1','Nil_1000rpm_E1',
+              'Nil_1000rpm_E9','Nil_1000rpm_E8','Nil_1000rpm_E7','Nil_1000rpm_E6','Nil_1000rpm_E5','Nil_1000rpm_E4','Nil_1000rpm_E3','Nil_1000rpm_E2']
+    x =     [            -9580,           -9580,           -9580,           -9580,           -9580,
+                         -9830,          -10080,          -10330,          -10580,          -10830,          -11080,          -11330,          -11580]
+    y=      [            -6300,           -6050,           -5800,           -5550,           -5300,
+                         -5300,           -5300,           -5300,           -5300,           -5300,           -5300,           -5300,           -5300]
+    z=      [             -310,            -310,            -310,            -310,            -310, 
+                          -310,            -310,            -310,            -310,            -310,            -310,            -310,            -310]
+    chi=    [              0.5,             0.5,             0.5,             0.5,             0.5,
+                           0.5,             0.5,             0.5,             0.5,             0.5,             0.5,             0.5,             0.5]
+
+
+    names = [ 
+              'Nil_1000rpm_E9','Nil_1000rpm_E8','Nil_1000rpm_E7','Nil_1000rpm_E6','Nil_1000rpm_E5','Nil_1000rpm_E4','Nil_1000rpm_E3','Nil_1000rpm_E2']
+    x =     [            
+                         -9830,          -10080,          -10330,          -10580,          -10830,          -11080,          -11330,          -11580]
+    y=      [            
+                         -5300,           -5300,           -5300,           -5300,           -5300,           -5300,           -5300,           -5300]
+    z=      [              
+                          -310,            -310,            -310,            -310,            -310,            -310,            -310,            -310]
+    chi=    [              
+                           0.5,             0.5,             0.5,             0.5,             0.5,             0.5,             0.5,             0.5]
+
+
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of y ({len(chi)}) is different from number of samples ({len(names)})"
+    
+    for i in range(1):
+        for name, xs, ys, zs, chis in zip(names, x, y, z, chi):
+            yield from bps.mv(piezo.z, zs,
+                              piezo.th, chis, 
+                              piezo.x, xs,
+                              piezo.y, ys)
+            
+            # yield from bp
+            if 'bkg' not in name:
+                yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-A%s'%(i+1), nume=1)
+                yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 61, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
+                yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
+            else:
+                yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 61, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
+
+
+    # names = [ 'cesta_4000rpm','cesta_3000rpm','cesta_2000rpm','cesta_1000rpm']
+    # x =     [           21000,          -2400,         -17400,         -30400]
+    # y=      [           -6000,          -6000,          -6000,          -6000]
+    # z=      [             650,            450,            300,            100]
+    # chi=    [            -1.5,           2.20,           -0.1,            1.3]
+
+    # det_exposure_time(1, 1)
+    # nume = 200
+
+    # for i in range(1):
+    #     for name, xs, ys, zs, chis in zip(names, x, y, z, chi):
+
+    #         yield from bps.mv(piezo.z, zs,
+    #                           piezo.th, chis, 
+    #                           piezo.x, xs, 
+    #                           piezo.y, ys, 
+    #                           prs, phi_offest)
+
+    #         name_fmt = "{sample}_rugo_up_sdd9p20_16.1keV"
+    #         sample_name = name_fmt.format(sample=name)
+    #         print(sample_name)
+    #         sample_id(sample_name=sample_name)
+    #         yield from bp.count([pil2M], num=nume)
+
+    #         yield from bps.mvr(pil2m_pos.y, 4.3)
+    #         name_fmt = "{sample}_rugo_down_sdd9p20_16.1keV"
+    #         sample_name = name_fmt.format(sample=name)
+    #         sample_id(sample_name=sample_name)
+    #         yield from bp.count([pil2M], num=nume)
+    #         yield from bps.mvr(pil2m_pos.y, -4.3)
+

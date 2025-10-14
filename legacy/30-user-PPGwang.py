@@ -15,7 +15,7 @@ def capillaries_saxs_PPG(t=0.2):
     z_list = [5400, 5400, 5400, 5400, 5400]
 
     # Detectors, motors:
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -41,7 +41,7 @@ def slide_linkam_PPG(t=0.3):
     hexa_y = -0.25
 
     # Detectors, motors:
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     # assert len(x_list) == len(samples), f'Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})'
@@ -71,7 +71,7 @@ def PPG_temp_2022_1(tim=0.2):
     ), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
 
     # Detectors, motors:
-    dets = [pil1M]  # ALL detectors
+    dets = [pil2M]  # ALL detectors
 
     name_fmt = "{sample}_{temperature}C_6.51keV_8.3m"
 
@@ -162,7 +162,7 @@ def capillaries_saxs_ppg_2022_1(t=0.2):
     z_list = [2500, 2500, 2500, 2500, 2500]
 
     # Detectors, motors:
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -212,7 +212,7 @@ def capillaries_saxs_PPG_2022_3(t=0.3):
     # Move WAXS out of the way
     if waxs.arc.position < 19.5:
         yield from bps.mv(waxs, 20)
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for name, x, y, z in zip(samples, piezo_x, piezo_y, piezo_z):
@@ -229,7 +229,7 @@ def capillaries_saxs_PPG_2022_3(t=0.3):
             e = energy.position.energy / 1000
             wa = waxs.arc.position + 0.001
             wa = str(np.round(float(wa), 1)).zfill(4)
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
 
             # Sample name
             name_fmt = '{sample}_posy{pos}_{energy}keV_wa{wax}_sdd{sdd}m'
@@ -267,7 +267,7 @@ def films_PPG_2022_3(t=0.3):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Do not read SAXS if WAXS is in the way
-        dets = [pil900KW] if waxs.arc.position < 10 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 10 else [pil2M, pil900KW]
         det_exposure_time(t, t)
 
         for name, x, y, z in zip(samples, piezo_x, piezo_y, piezo_z):
@@ -279,7 +279,7 @@ def films_PPG_2022_3(t=0.3):
             e = energy.position.energy / 1000
             wa = waxs.arc.position + 0.001
             wa = str(np.round(float(wa), 1)).zfill(4)
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
 
             # Sample name
             name_fmt = '{sample}_{energy}keV_wa{wax}_sdd{sdd}m'
@@ -308,7 +308,7 @@ def in_situ_waxs_ppg(t=0.3):
     # Move WAXS out of the way
     if waxs.arc.position < 19.5:
         yield from bps.mv(waxs, 20)
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
     
     for i in range(999):
@@ -319,7 +319,7 @@ def in_situ_waxs_ppg(t=0.3):
         e = energy.position.energy / 1000
         wa = waxs.arc.position + 0.001
         wa = str(np.round(float(wa), 1)).zfill(4)
-        sdd = pil1m_pos.z.position / 1000
+        sdd = pil2M_pos.z.position / 1000
 
         name_fmt = "{sample}_step{step}_time{td}s_{energy}eV_wa{wax}_sdd{sdd}m"
         sample_name = name_fmt.format(sample=name, step=step, td=td, energy='%.2f'%e, wax=wa,
@@ -365,7 +365,7 @@ def capillaries_PPG_2023_2(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Do not read SAXS if WAXS is in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         det_exposure_time(t, t)
 
         for name, x, y, z in zip(samples, piezo_x, piezo_y, piezo_z):
@@ -402,7 +402,7 @@ def saxs_only_PPG_2023_2(t=1):
     waxs_arc = [ 20 ]
     offset_y = 0  # in um
 
-    dets = [ pil1M ]
+    dets = [ pil2M ]
     det_exposure_time(t, t)
 
     for i, wa in enumerate(waxs_arc):

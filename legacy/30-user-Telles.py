@@ -341,7 +341,7 @@ def sample_bar_2022_1(meas_t=1):
     y_range = y_range7 + y_range8 + y_range9 + y_range10
 
     waxs_arc = [1, 20]
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(meas_t, meas_t)
 
     assert len(x_list) == len(
@@ -358,7 +358,7 @@ def sample_bar_2022_1(meas_t=1):
     ), f"Number of Y hexap coordinates ({len(y_hexa)}) is different from number of Y ranges ({len(y_range)})"
     for wa in waxs_arc:
 
-        dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
 
         yield from bps.mv(waxs, wa)
         for x, y, hy, sample, y_r in zip(x_list, y_list, y_hexa, sample_names, y_range):
@@ -485,7 +485,7 @@ def sample_bar(meas_t=1):  # older version
     #   [0,400,41],  [0,350,36],  [0,300,31],  [0,350,36],  [0,350,36],  [0,350,36],  [0,350,36]]
 
     waxs_arc = [0, 2, 20]
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(meas_t, meas_t)
 
     assert len(x_list) == len(
@@ -502,7 +502,7 @@ def sample_bar(meas_t=1):  # older version
         if wa != 20:
             dets = [pil900KW]
         else:
-            dets = [pil900KW, pil1M]
+            dets = [pil900KW, pil2M]
 
         yield from bps.mv(waxs, wa)
         for x, y, sample, y_r in zip(x_list, y_list, sample_names, y_range):
@@ -567,7 +567,7 @@ def rodrigo_yscans_2022_2(t=0.5):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
 
-        dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, y_r in zip(names, piezo_x, piezo_y, y_range):
@@ -576,7 +576,7 @@ def rodrigo_yscans_2022_2(t=0.5):
             e = energy.position.energy / 1000  # energy keV
             wa = waxs.arc.position + 0.001  # WAXS arc angle, deg
             wa = str(np.round(float(wa), 1)).zfill(4)
-            sdd = pil1m_pos.z.position / 1000  # SAXS detector distance
+            sdd = pil2M_pos.z.position / 1000  # SAXS detector distance
             scan_id = db[-1].start["scan_id"] + 1  # transient scan ID
 
             name_fmt = (
@@ -627,7 +627,7 @@ def alice_grid_scans_2022_2(t=0.5):
     ), f"Number of X coordinates ({len(piezo_x)}) is different from number of Y coordinates ({len(piezo_y)})"
 
     yield from bps.mv(waxs, 20)
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for name, x, y in zip(names, piezo_x, piezo_y):
@@ -635,7 +635,7 @@ def alice_grid_scans_2022_2(t=0.5):
 
         # Metadata
         e = energy.position.energy / 1000  # energy keV
-        sdd = pil1m_pos.z.position / 1000  # SAXS detector distance
+        sdd = pil2M_pos.z.position / 1000  # SAXS detector distance
         scan_id = db[-1].start["scan_id"] + 1  # transient scan ID
 
         name_fmt = "{sample}_{energy}keV_sdd{sdd}m_id{scan_id}_dy10um_dx25um"
@@ -794,7 +794,7 @@ def alice_filament_yscans_2022_2(t=0.5):
     # assert len(y_hexa) == len(y_range), f'Number of Y hexap coordinates ({len(y_hexa)}) is different from number of Y ranges ({len(y_range)})'
 
     yield from bps.mv(waxs, 20)
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for name, x, y, y_r in zip(names, piezo_x, piezo_y, y_range):
@@ -802,7 +802,7 @@ def alice_filament_yscans_2022_2(t=0.5):
 
         # Metadata
         e = energy.position.energy / 1000  # energy keV
-        sdd = pil1m_pos.z.position / 1000  # SAXS detector distance
+        sdd = pil2M_pos.z.position / 1000  # SAXS detector distance
         scan_id = db[-1].start["scan_id"] + 1  # transient scan ID
 
         name_fmt = "{sample}_{energy}keV_sdd{sdd}m_id{scan_id}_dy10um"

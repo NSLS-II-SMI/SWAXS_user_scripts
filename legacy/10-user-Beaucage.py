@@ -26,7 +26,7 @@ def alignmentmodeBoc():
     # #for 13.5 keV
     #     yield from bps.mv(att1_12,"Insert")
     #     yield from bps.sleep(1)
-    yield from bps.mv(pil1m_bs_rod.x, alignbspos)  # move beamstop out of the way
+    yield from bps.mv(pil2M_bs_rod.x, alignbspos)  # move beamstop out of the way
     sample_id(user_name="test", sample_name="test")  # don't overwrite user data
     det_exposure_time(0.5)
 
@@ -35,7 +35,7 @@ def measurementmodeBoc():
     """Move gate valves, attenutators, and beamtop into GI measurement mode"""
     # yield from bps.mv(att2_8,"Retract") # (for 7.5keV)
     yield from SMIBeam().insertFoils(0)  # (for >11keV)
-    yield from bps.mv(pil1m_bs_rod.x, measurebspos)
+    yield from bps.mv(pil2M_bs_rod.x, measurebspos)
     yield from bps.sleep(1)
     # uncomment to close SAXS gate valve during measurements
     yield from bps.mv(GV7.close_cmd, 1)
@@ -43,13 +43,13 @@ def measurementmodeBoc():
 
 
 def align_gisaxs_height_Boc(rang=0.3, point=31, der=False):
-    yield from bp.rel_scan([pil1M], piezo.y, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], piezo.y, -rang, rang, point)
     ps(der=der)
     yield from bps.mv(piezo.y, ps.cen)
 
 
 def align_gisaxs_th_Boc(rang=0.3, point=31):
-    yield from bp.rel_scan([pil1M], piezo.th, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], piezo.th, -rang, rang, point)
     ps()
     yield from bps.mv(piezo.th, ps.peak)
 
@@ -60,14 +60,14 @@ def alignBoc(align_height=5000):
     sample_id(user_name="test", sample_name="test")
     yield from alignmentmodeBoc()
     yield from bps.mv(piezo.y, align_height)
-    yield from bps.mv(pil1M.roi1.min_xyz.min_y, 883)
+    yield from bps.mv(pil2M.roi1.min_xyz.min_y, 883)
     yield from align_gisaxs_height_Boc(600, 16, der=True)
     yield from align_gisaxs_th_Boc(1, 11)
     yield from align_gisaxs_height_Boc(300, 11, der=True)
     yield from align_gisaxs_th_Boc(0.5, 11)
     yield from bps.mv(piezo.th, ps.peak + 0.2)
     yield from bps.mv(
-        pil1M.roi1.min_xyz.min_y, 883 - 336
+        pil2M.roi1.min_xyz.min_y, 883 - 336
     )  # 336 offset = 0.4*3.14/180*8287/0.172
     yield from align_gisaxs_th_Boc(0.3, 31)
     yield from align_gisaxs_height_Boc(200, 21)
@@ -82,7 +82,7 @@ def alignBocBulk(align_height=5000):
     sample_id(user_name="test", sample_name="test")
     yield from alignmentmodeBoc()
     yield from bps.mv(piezo.y, align_height)
-    yield from bps.mv(pil1M.roi1.min_xyz.min_y, 883)
+    yield from bps.mv(pil2M.roi1.min_xyz.min_y, 883)
     yield from align_gisaxs_height_Boc(600, 16, der=True)
     yield from align_gisaxs_th_Boc(1, 11)
     yield from align_gisaxs_height_Boc(300, 11, der=True)
@@ -153,7 +153,7 @@ def run_giwaxsBoc(t=0.5, th_step=0.001, x_list_offset=0, tag=""):
     glob_walk_length = 2000  # microns
     glob_xstep = int(glob_walk_length / th_array.shape[0])
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
         yield from bps.mv(piezo.x, x)  # move to next sample
         yield from bps.mv(piezo.th, 0.05)  # set stage angle to ~0
@@ -289,7 +289,7 @@ def giwaxsTempSingleWaxsSeries(
             )  # move the waxs dectector to the measurement position
             waxs_arc = [waxspos]
             temp = ls.ch1_read.value
-            dets = [pil300KW, pil1M]
+            dets = [pil300KW, pil2M]
             det_exposure_time(t, t)
             sample_name = (
                 "{sample}_inc{th:5.4f}deg_waxs{waxspos:5.4f}_{temp:5.4f}C_{num}".format(
@@ -539,7 +539,7 @@ def run_giwaxsEnergyBoc(x_list, sample_list, energy_arc_waxs, t=5, tag=""):
     energy_arc_nexafs_Br = np.linspace(13450, 13500, 51)
     energy_arc_nexafs_Rb = np.linspace(15150, 15250, 51)
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
         yield from bps.mv(piezo.x, x)  # move to next sample
 
@@ -556,14 +556,14 @@ def run_giwaxsEnergyBoc(x_list, sample_list, energy_arc_waxs, t=5, tag=""):
 
         # yield from bps.mv(waxs,2.9) #move the waxs dectector to the measurement position
         # det_exposure_time(ct_nexafs, ct_nexafs)
-        # yield from nexafs_scan([pil1M], energy_arc_nexafs_Rb, 0.10, ct_nexafs)
+        # yield from nexafs_scan([pil2M], energy_arc_nexafs_Rb, 0.10, ct_nexafs)
 
         # yield from remove_suspender( susp_xbpm2_sum)
         # yield from bps.mv(energy, 15200)
         # yield from bps.sleep(10)
         # yield from install_suspender( susp_xbpm2_sum)
         #
-        # yield from nexafs_scan([pil1M], energy_arc_nexafs_Rb, 0.10, ct_nexafs)
+        # yield from nexafs_scan([pil2M], energy_arc_nexafs_Rb, 0.10, ct_nexafs)
 
         yield from bps.mv(
             waxs, 2.9
@@ -620,7 +620,7 @@ def run_gisaxsAngleBoc(x_list, sample_list, angle_arc, waxs_arc, t=5, tag=""):
     # waxs_arc = [2.9, 20.9, 4]
     # energy_arc_waxs = [13480,13485,13490,13480]
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
         yield from bps.mv(piezo.x, x)  # move to next sample
 
@@ -633,14 +633,14 @@ def run_gisaxsAngleBoc(x_list, sample_list, angle_arc, waxs_arc, t=5, tag=""):
 
         # yield from bps.mv(waxs,2.9) #move the waxs dectector to the measurement position
         # det_exposure_time(ct_nexafs, ct_nexafs)
-        # yield from nexafs_scan([pil1M], energy_arc_nexafs_Rb, 0.10, ct_nexafs)
+        # yield from nexafs_scan([pil2M], energy_arc_nexafs_Rb, 0.10, ct_nexafs)
 
         # yield from remove_suspender( susp_xbpm2_sum)
         # yield from bps.mv(energy, 15200)
         # yield from bps.sleep(10)
         # yield from install_suspender( susp_xbpm2_sum)
         #
-        # yield from nexafs_scan([pil1M], energy_arc_nexafs_Rb, 0.10, ct_nexafs)
+        # yield from nexafs_scan([pil2M], energy_arc_nexafs_Rb, 0.10, ct_nexafs)
 
         yield from bps.mv(
             waxs, 2.9
@@ -696,7 +696,7 @@ def run_saxswaxsEnergyBoc(
     # energy_arc_nexafs_Br = np.linspace(13450, 13500, 51)
     # energy_arc_nexafs_Rb = np.linspace(15150,15250,51)
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
         yield from bps.mv(piezo.x, x)  # move to next sample
 
@@ -709,7 +709,7 @@ def run_saxswaxsEnergyBoc(
         yield from bps.sleep(10)
         yield from install_suspender(susp_xbpm2_sum)
 
-        yield from nexafs_scan([pil1M], energy_arc_nexafs, 0.10, ct_nexafs)
+        yield from nexafs_scan([pil2M], energy_arc_nexafs, 0.10, ct_nexafs)
 
         yield from bps.mv(
             waxs, 2.9
@@ -759,7 +759,7 @@ def run_saxsmapBoc(
     # Detectors, motors:
 
     yield from bps.mv(waxs, 8.9)
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
 
     assert len(x_list) == len(
         samples
@@ -790,7 +790,7 @@ def run_saxsBoc(x_list, samples, energies, t=1):
     name = "PB"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]  # dets = [pil1M,pil300KW]
+    dets = [pil2M, pil300KW]  # dets = [pil2M,pil300KW]
     x_range = [-500, 500, 11]
     y_range = [-250, 250, 11]
 

@@ -1,5 +1,5 @@
 def run_waxs_IC(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = [
         "2um_725_7m",

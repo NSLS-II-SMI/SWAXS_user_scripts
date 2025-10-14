@@ -77,7 +77,7 @@ def netzkeall(meas_t=0.6):
 
 def gisaxsquick(meas_t=0.3):
     waxs_arc = np.linspace(0, 45.5, 8)  # (2th_min 2th_max steps)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     phi = -20
     xlocs = [25500]
     names = ["RY26n"]
@@ -187,7 +187,7 @@ def gisaxsnetzke2(meas_t=1):
 # DONT USE!!!! realignement of tyhe sampl at each phi
 def gisaxsnetzke3(meas_t=0.6):
     waxs_arc = np.linspace(0, 45.5, 8)  # (2th_min 2th_max steps)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     xlocs = [-44500, -34800, -25700, -15500, -5000, 6900, 15200, 25500, 35500, 46800]
     names = [
         "RY13_phioffset",

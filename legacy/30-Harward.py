@@ -16,7 +16,7 @@ def run_harv_temp(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]  # ALL detectors
+    dets = [pil2M, pil300KW]  # ALL detectors
     # dets = [pil300KW,ls.ch1_read, xbpm3.sumY] # WAXS detector ALONE
 
     x_offset = [0, 0, 400, 400]
@@ -94,7 +94,7 @@ def run_harv_temp_all_2022_1(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]  # ALL detectors
+    dets = [pil2M, pil300KW]  # ALL detectors
     # dets = [pil300KW,ls.ch1_read, xbpm3.sumY] # WAXS detector ALONE
 
     x_offset = [0, 0, 400, 400]
@@ -177,7 +177,7 @@ def temp_2021_3(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]  # ALL detectors
+    dets = [pil2M, pil900KW]  # ALL detectors
 
     x_offset = [0, 0, 400, 400, 800, 800, 1200, 1200]
     y_offset = [0, 50, 0, 50, 0, 50, 0, 50]
@@ -271,7 +271,7 @@ def temp_xscan_2022_1(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]  # ALL detectors
+    dets = [pil2M, pil900KW]  # ALL detectors
     det_exposure_time(tim, tim)
     waxs_arc = [0, 20]
     name_fmt = "{sample}_16.1keV_1.6m_pos{offset}_{temperature}C_wa{waxs}"
@@ -354,7 +354,7 @@ def temp_yscan_2022_1(tim=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]  # ALL detectors
+    dets = [pil2M, pil900KW]  # ALL detectors
 
     waxs_arc = [0, 20]
     name_fmt = "{sample}_16.1keV_1.6m_pos{offset}_{temperature}C_wa{waxs}"
@@ -427,7 +427,7 @@ def hydrogel_2021_1(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]  # ALL detectors
+    dets = [pil2M, pil300KW]  # ALL detectors
 
     x_offset = [0, 0, 0]
     y_offset = [-200, 0, 200]
@@ -485,7 +485,7 @@ def run_harv_temp_all(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]  # ALL detectors
+    dets = [pil2M, pil300KW]  # ALL detectors
     # dets = [pil300KW,ls.ch1_read, xbpm3.sumY] # WAXS detector ALONE
 
     x_offset = [0, 0, 400, 400]
@@ -528,7 +528,7 @@ def run_linkam_cooling(t=0.15, tim=0.15):
     sample = "insitu_b-7"
     offset = 300  # microns
     # Detectors, motors:
-    # dets = [pil900KW, pil1M]
+    # dets = [pil900KW, pil2M]
     waxs_arc = [0, 20]
     name_fmt = "{sample}_wa{waxs}_time{ctime}s"
     now = time.time()
@@ -537,7 +537,7 @@ def run_linkam_cooling(t=0.15, tim=0.15):
         yield from bps.mvr(piezo.x, offset)
         for j, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
             ctime = time.time() - now
             sample_name = name_fmt.format(
                 sample=sample, waxs="%2.1f" % wa, ctime="%.0f" % ctime
@@ -584,7 +584,7 @@ def run_harv_linkam_saxs(t=0.2, tim=20):
     sample = "InSitu_AzoSideonspot2"
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     wa = 20
     name_fmt = "{sample}_{temperature}C"
 
@@ -596,7 +596,7 @@ def run_harv_linkam_saxs(t=0.2, tim=20):
     print(f"\n\t=== Sample: {sample_name} ===\n")
     sample_id(user_name=name, sample_name=sample_name)
     # yield from bp.count(dets, num=1)
-    pil1M.cam.acquire.put(1)
+    pil2M.cam.acquire.put(1)
     yield from bps.sleep(tim + 1)
 
 
@@ -620,7 +620,7 @@ def run_harv_linkam_both(t=0.3, tim=0.3):
     piezo_y = [-3349, -3349, -3349, -3349, -3349, -3349, -3349]
     # sample = 'InSitu_AzoSideon_spot2'
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     wa = 20
     name_fmt = "{sample}_{temperature}C"
 
@@ -636,7 +636,7 @@ def run_harv_linkam_both(t=0.3, tim=0.3):
         print(f"\n\t=== Sample: {sample_name} ===\n")
         sample_id(user_name=name, sample_name=sample_name)
         yield from bp.count(dets, num=1)  # for singleshot
-        # pil1M.cam.acquire.put(1) #next 2 lines for burst shots
+        # pil2M.cam.acquire.put(1) #next 2 lines for burst shots
         # yield from bps.sleep(tim+1)
 
     offset = 600  # microns
@@ -668,7 +668,7 @@ def run_harv_temp_time(tim=0.2):
     sample = "InSitu_EndOn_NoCross_PhaseDia_40C_v3_UVlvl_0.5V"
     timegaps = [10] * 4 + [30] * 2 + [60] * 3
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     waxs_arc = [19.5]
     name_fmt = "{sample}_{temperature}C_wa{waxs}"
 
@@ -712,7 +712,7 @@ def run_harv_temp_time(tim=0.2):
 
 def harvphi(meas_t=0.5):
     waxs_arc = np.linspace(0, 32.5, 6)  # (2th_min 2th_max steps)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     names = ["DDDA5_vert_100C"]
     # phis = np.linspace(-90, 90, 13)
     phis = np.linspace(-75, 75, 11)
@@ -760,7 +760,7 @@ def run_harv_poly(tim=1, name="HarvPoly"):
     y_list = [-4400]
 
     # Detectors, motors:
-    # dets = [pil1M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
+    # dets = [pil2M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
     dets = [pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE
     waxs_arc = [0, 30, 6]
     name_fmt = "{sample}_{xoffset}um_{temperature}C"
@@ -797,7 +797,7 @@ def run_harv_micro(tim=3, name="HarvMicro_2_25C"):
     samples = ["SC10", "SC11", "SC12", "SC13", "SC14", "SC15", "SC16", "SC17"]
     # samples = ['S29']
     # Detectors, motors:
-    # dets = [pil1M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
+    # dets = [pil2M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
     dets = [pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE
     x_offset = [-704, -352, 0, 352, 704]
     y_range = [20, -20, 3]
@@ -843,7 +843,7 @@ def run_harv_pos(tim=5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]  # ALL detectors
+    dets = [pil2M, pil300KW]  # ALL detectors
 
     waxs_arc = [13]
     name_fmt = "{sample}_pos{offset}_wa{waxs}"
@@ -871,7 +871,7 @@ def run_harv_pos(tim=5):
 def mesh_milan_2022_2(t=0.5):
     waxs_range = [0, 20]
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     # these samples are very large areas and 3rd priority (lowest) except for the 1st teeth12.
@@ -943,10 +943,10 @@ def mesh_milan_2022_2(t=0.5):
 
         for wa in waxs_range:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
             e = energy.position.energy / 1000  # energy keV
-            sdd = pil1m_pos.z.position / 1000  # SAXS detector distance
+            sdd = pil2M_pos.z.position / 1000  # SAXS detector distance
             scan_id = db[-1].start["scan_id"] + 1  # transient scan ID
             proposal_id("2022_2", "310149_Wilborn/%s" % name)
 
@@ -973,7 +973,7 @@ def mesh_milan_2022_2(t=0.5):
 def mesh_milan_temp_2022_2(t=0.5):
     waxs_range = [0, 20]
     temperatures = [100, 150]
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     # second load, heated stage
@@ -1087,10 +1087,10 @@ def mesh_milan_temp_2022_2(t=0.5):
 
             for wa in waxs_range:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+                dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
 
                 e = energy.position.energy / 1000  # energy keV
-                sdd = pil1m_pos.z.position / 1000  # SAXS detector distance
+                sdd = pil2M_pos.z.position / 1000  # SAXS detector distance
                 scan_id = db[-1].start["scan_id"] + 1  # transient scan ID
                 temp = str(np.round(float(temp_degC), 1)).zfill(5)
                 proposal_id("2022_2", "310149_Wilborn1/%s" % name)
@@ -1176,11 +1176,11 @@ def linescan_milan_temp_2022_3(t=0.5):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                 det_exposure_time(t, t)
 
                 e = energy.position.energy / 1000  # energy keV
-                sdd = pil1m_pos.z.position / 1000  # SAXS detector distance
+                sdd = pil2M_pos.z.position / 1000  # SAXS detector distance
                 temp = str(np.round(float(temp_degC), 1)).zfill(5)
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
@@ -1259,7 +1259,7 @@ def milan_temp_2023_1(tim=0.2):
 
         yield from bps.mv(waxs, wa)
         
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         det_exposure_time(tim, tim)
 
         for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
@@ -1276,7 +1276,7 @@ def milan_temp_2023_1(tim=0.2):
                 e = energy.position.energy / 1000
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 #t_celsius = str(np.round(float(t_celsius), 1)).zfill(5)
 
 
@@ -1361,11 +1361,11 @@ def grid_milan_temp_2023_1(t=0.2):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                 det_exposure_time(t, t)
 
                 e = energy.position.energy / 1000
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 temp = str(np.round(float(temp_degC), 1)).zfill(5)
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
@@ -1434,7 +1434,7 @@ def run_harv_linkam_swaxs_2023_2(t=0.2, t_tot=20, temp=25):
         for i in range(waxs_rounds):
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 14 else [pil900KW, pil1M]
+                dets = [pil900KW] if waxs.arc.position < 14 else [pil900KW, pil2M]
 
                 # Metadata
                 step = str(i).zfill(3)
@@ -1512,7 +1512,7 @@ def grid_milan_temp_2023_2(t=0.5):
 
     #         for wa in waxs_arc:
     #             yield from bps.mv(waxs, wa)
-    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
     
     #             sample_name = f'{name}_{temp}degC{get_scan_md()}'
     #             sample_name = sample_name.translate(
@@ -1533,7 +1533,7 @@ def grid_milan_temp_2023_2(t=0.5):
 
         for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                 
                 sample_name = f'{name}_150degC{get_scan_md()}'
                 sample_name = sample_name.translate(
@@ -1612,7 +1612,7 @@ def linescan_milan_temp_2023_2(t=0.5):
             
     #         for wa in waxs_arc:
     #             yield from bps.mv(waxs, wa)
-    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
     #             sample_name = f'{name}_{temp}degC{get_scan_md()}'
     #             sample_name = sample_name.translate(
@@ -1631,7 +1631,7 @@ def linescan_milan_temp_2023_2(t=0.5):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
                 sample_name = f'{name}_150degC{get_scan_md()}'
                 sample_name = sample_name.translate(
@@ -1680,7 +1680,7 @@ def linescan_milan_notemp_2023_3(t=0.5):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
         for name, x, y, z, scan_pts_x in zip(names, piezo_x, piezo_y, piezo_z, x_range):
 
@@ -1738,7 +1738,7 @@ def run_linkam_temp_run_linescan_2023_3(t=0.5, temp=80, delay=60):
         
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
             sample_name = f'{name}_temp{temp}degC{get_scan_md()}'
             sample_id(user_name="MW", sample_name=sample_name)
@@ -1820,7 +1820,7 @@ def milan_temp_2023_3(tim=0.2):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
                 for yy, y_of in enumerate(y_offsets):
                     yield from bps.mv(piezo.y, y + y_of)
@@ -1903,11 +1903,11 @@ def grid_milan_temp_2023_2(t=0.5):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                 det_exposure_time(t, t)
 
                 e = energy.position.energy / 1000
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 temp = str(np.round(float(temp_degC), 1)).zfill(5)
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
@@ -1976,7 +1976,7 @@ def run_linkam_temp_run_linescan_2024_1(t=0.5, temp=40, run=0, points=50):
         
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
             sample_name = f'{name}_temp{temp}degC{get_scan_md()}'
             sample_id(user_name='MW', sample_name=sample_name)
@@ -2057,7 +2057,7 @@ def milan_temp_2024_1(tim=0.5):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
                 for yy, y_of in enumerate(y_offsets):
                     yield from bps.mv(piezo.y, y + y_of)
@@ -2148,7 +2148,7 @@ def milan_temp_2024_1_1(tim=0.2):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                                                                                                                                                                                                            
                 for yy, y_of in enumerate(y_offsets):
                     yield from bps.mv(piezo.y, y + y_of)
@@ -2241,7 +2241,7 @@ def milan_temp_grid_2024_1(tim=0.5):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
                 sample_name = f'{name}_temp{temp}degC{get_scan_md()}'
                 sample_id(user_name=user_name, sample_name=sample_name)
@@ -2327,7 +2327,7 @@ def milan_temp_grid_2024_1_1(tim=0.5):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
                 sample_name = f'{name}_temp{temp}degC{get_scan_md()}'
                 sample_id(user_name=user_name, sample_name=sample_name)
@@ -2412,7 +2412,7 @@ def milan_Jacopo(tim=0.5):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
                 sample_name = f'{name}_temp{temp}degC{get_scan_md()}'
                 sample_id(user_name=user_name, sample_name=sample_name)
@@ -2494,7 +2494,7 @@ def milan_temp_2024_1_fix(tim=0.2):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                                                                                                                                                                                                            
                 for yy, y_of in enumerate(y_offsets):
                     yield from bps.mv(piezo.y, y + y_of)
@@ -2529,7 +2529,7 @@ def milan_single_measurement_2024_2(name='FT_I_01_90C_1', t_frame=0.2, t_tot=0.2
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
         sample_name = f'{name}_{get_scan_md()}_loc00'
         sample_id(user_name='MW', sample_name=sample_name)
@@ -2607,7 +2607,7 @@ def milan_temp_2024_3_fix(tim=0.2):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                                                                                                                                                                                                            
                 for yy, y_of in enumerate(y_offsets):
                     yield from bps.mv(piezo.y, y + y_of)
@@ -2696,7 +2696,7 @@ def milan_temp_2024_3_fixed(tim=0.2):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                                                                                                                                                                                                            
                 for yy, y_of in enumerate(y_offsets):
                     yield from bps.mv(piezo.y, y + y_of)
@@ -2792,7 +2792,7 @@ def milan_temp_2024_3_highrestemp(tim=0.2):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                                                                                                                                                                                                            
                 for yy, y_of in enumerate(y_offsets):
                     yield from bps.mv(piezo.y, y + y_of)
@@ -2883,7 +2883,7 @@ def milan_temp_grid_2024_1_1(tim=0.2):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
                 sample_name = f'{name}_temp{temp}degC{get_scan_md()}'
                 sample_id(user_name=user_name, sample_name=sample_name)
@@ -2911,7 +2911,7 @@ def milan_single_measurement_2024_3(name='', t_frame=0.1, t_tot=10):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
         sample_name = f'{name}_{get_scan_md()}_loc00'
         sample_id(user_name='MW', sample_name=sample_name)
@@ -2933,7 +2933,7 @@ def milan_single_measurement_2024_3(name='FT_I_01-90C', t_frame=0.2, t_tot=0.2):
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
-    dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
     sample_name = f'{name}_{get_scan_md()}_loc00'
     sample_id(user_name='MW', sample_name=sample_name)
@@ -3019,7 +3019,7 @@ def milan_temp_2024_3_highrestemp(tim=0.2):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                                                                                                                                                                                                            
                 for yy, y_of in enumerate(y_offsets):
                     yield from bps.mv(piezo.y, y + y_of)
@@ -3099,7 +3099,7 @@ def linescan_milan_temp_2023_2(t=0.5):
             
     #         for wa in waxs_arc:
     #             yield from bps.mv(waxs, wa)
-    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
     #             sample_name = f'{name}_{temp}degC{get_scan_md()}'
     #             sample_name = sample_name.translate(
@@ -3118,7 +3118,7 @@ def linescan_milan_temp_2023_2(t=0.5):
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
                 sample_name = f'{name}_150degC{get_scan_md()}'
                 sample_name = sample_name.translate(
@@ -3197,7 +3197,7 @@ def linescan_milan_temp_2024_3(t=0.2):
             
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
                 sample_name = f'{name}_{temp}degC{get_scan_md()}'
                 sample_name = sample_name.translate(
@@ -3216,7 +3216,7 @@ def linescan_milan_temp_2024_3(t=0.2):
 
     #         for wa in waxs_arc:
     #             yield from bps.mv(waxs, wa)
-    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
     #             sample_name = f'{name}_150degC{get_scan_md()}'
     #             sample_name = sample_name.translate(
@@ -3249,7 +3249,7 @@ def milan_single_measurement_2025_1(name='FS_A_02_40-2', t_frame=0.05, t_tot=3):
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
-    dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
     sample_name = f'{name}_{get_scan_md()}_loc00'
     sample_id(user_name='MW', sample_name=sample_name)
     print(f"\n\n\n\t=== Sample: {sample_name} ===")
@@ -3380,7 +3380,7 @@ def milan_temp_2025_1_highrestemp(tim=0.2):
                     print(msg, fail_count)
                     pass
 
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                                                                                                                                                                                                            
                 for yy, y_of in enumerate(y_offsets):
                     yield from bps.mv(piezo.y, y + y_of)
@@ -3462,8 +3462,8 @@ def linescan_milan_temp_2025_1(t=0.5):
         #    yield from bps.sleep(120)
         #for wa in waxs_arc:
         #    yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
-        # dets = [pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+        # dets = [pil2M]
         for name, x, y, z, scan_pts_x in zip(names, piezo_x, piezo_y, piezo_z, x_range):
             yield from bps.mv(piezo.x, x,
                             piezo.y, y,
@@ -3539,7 +3539,7 @@ def linescan_milan_tempy_2025_1(t=0.5):
         #    yield from bps.sleep(120)
         #for wa in waxs_arc:
         #    yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         for name, x, y, z, scan_pts_y in zip(names, piezo_x, piezo_y, piezo_z, y_range):
             yield from bps.mv(piezo.x, x,
                             piezo.y, y,
@@ -3576,7 +3576,7 @@ def milan_single_measurement_2025_1(name='FT_A_03', t_frame=0.5, t_tot=0.5):
     # det_exposure_time(t_frame, t_tot)
     yield from bps.sleep(1)
 
-    dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
     sample_name = f'{name}_{get_scan_md()}_loc00'
     sample_id(user_name='MW', sample_name=sample_name)
     print(f"\n\n\n\t=== Sample: {sample_name} ===")
@@ -3593,7 +3593,7 @@ def test_shot(name='test'):#, t_frame=0.5, t_tot=0.5):
     This one is working, above does not at the moment
     """
 
-    dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
     sample_name = f'{name}_{get_scan_md()}_loc00'
     sample_id(user_name='MW', sample_name=sample_name)
     print(f"\n\n\n\t=== Sample: {sample_name} ===")
@@ -3642,7 +3642,7 @@ def milan_puck4pt_2025_1(tim=0.5,temp=200):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         
         for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
             yield from bps.mv(piezo.x, x,
@@ -3683,7 +3683,7 @@ def milan_single_measurement_2025_1(name='RP_E_01_35C', t_frame=0.5, t_tot=0.5):
     # # det_exposure_time_old(t_frame, t_tot)
     # yield from bps.sleep(1)
 
-    dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
     sample_name = f'{name}_{get_scan_md()}_loc00'
     sample_id(user_name='MW', sample_name=sample_name)
     print(f"\n\n\n\t=== Sample: {sample_name} ===")
@@ -3745,7 +3745,7 @@ def milan_puck4pt2_2025_1(tim=0.2,temp=300):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         
         for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
             yield from bps.mv(piezo.x, x,
@@ -3785,7 +3785,7 @@ def milan_single_measurement2_2025_1(name='MW_X_01', t_frame=1, t_tot=100):
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
-    dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
     sample_name = f'{name}_{get_scan_md()}_loc00'
     sample_id(user_name='MW', sample_name=sample_name)
     print(f"\n\n\n\t=== Sample: {sample_name} ===")
@@ -3913,7 +3913,7 @@ def linescan_milan_temp_2025_2(t=0.5):
             
     #         for wa in waxs_arc:
     #             yield from bps.mv(waxs, wa)
-    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
     #             sample_name = f'{name}_{temp}degC{get_scan_md()}'
     #             sample_name = sample_name.translate(
@@ -4013,7 +4013,7 @@ def linescan_milan_temp_2025_3(t=0.5):
             
     #         for wa in waxs_arc:
     #             yield from bps.mv(waxs, wa)
-    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
     #             sample_name = f'{name}_{temp}degC{get_scan_md()}'
     #             sample_name = sample_name.translate(
@@ -4562,7 +4562,7 @@ def linescan_reena_2025_2(t=0.5):
             
     #         for wa in waxs_arc:
     #             yield from bps.mv(waxs, wa)
-    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
     #             sample_name = f'{name}_{temp}degC{get_scan_md()}'
     #             sample_name = sample_name.translate(

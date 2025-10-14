@@ -38,7 +38,7 @@ def alignement_gordon_2021_1():
 def run_gordon_2021_1(t=1):
 
     waxs_range = np.linspace(0, 26.0, 5)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for name, xs, zs, aiss, ys in zip(
         names, x_piezo, z_piezo, incident_angles, y_piezo_aligned
@@ -149,7 +149,7 @@ def waxs_S_edge_gordon_2021_2(t=1):
 
 
 def gordon_saxswaxs_2021_2(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     waxs_arc = np.linspace(0, 32.5, 6)
 
@@ -220,7 +220,7 @@ def gisaxs1_gordon_2021_2(t=1):
     waxs_arc = [0, 2, 19.5, 21.5, 39, 41]
     angle = [0.1, 0.15, 0.2]
 
-    dets = [pil1M, pil900KW, pil300KW]
+    dets = [pil2M, pil900KW, pil300KW]
     det_exposure_time(t, t)
 
     for name, xs, zs, ys, xs_hexa in zip(names, x_piezo, z_piezo, y_piezo, x_hexa):
@@ -285,7 +285,7 @@ def gisaxs2_gordon_2021_2(t=1):
     waxs_arc = [0, 2, 19.5, 21.5, 39, 41]
     angle = [0.1, 0.15, 0.2]
 
-    dets = [pil1M, pil900KW, pil300KW]
+    dets = [pil2M, pil900KW, pil300KW]
     det_exposure_time(t, t)
 
     for name, xs, zs, ys, xs_hexa in zip(names, x_piezo, z_piezo, y_piezo, x_hexa):
@@ -382,7 +382,7 @@ def gisaxs_gordon_2021_3(t=1):
     waxs_arc = [0, 2, 20, 22, 40, 42]
     angle = [0.1, 0.15, 0.2]
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     for name, xs, zs, ys, xs_hexa in zip(names, x_piezo, z_piezo, y_piezo, x_hexa):
@@ -440,7 +440,7 @@ def temp_2021_3(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     angle = [0.1, 0.15, 0.2]
 
     waxs_arc = [0, 20, 40]
@@ -647,7 +647,7 @@ def gisaxs_gordon_2022_1(t=1):
     waxs_arc = [0, 2, 20, 22]
     angle = [0.1, 0.15, 0.2]
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     for name, xs, zs, ys, xs_hexa in zip(names, x_piezo, z_piezo, y_piezo, x_hexa):
@@ -679,7 +679,7 @@ def gisaxs_gordon_2022_1(t=1):
                 yield from bps.mv(piezo.th, ai0 + an)
 
                 e = energy.energy.position / 1000  # in keV
-                sdd = pil1m_pos.z.position / 1000  # in m
+                sdd = pil2M_pos.z.position / 1000  # in m
 
                 name_fmt = "{sample}_{sdd}m_{energy}keV_ai{angl}deg_wa{waxs}"
                 sample_name = name_fmt.format(

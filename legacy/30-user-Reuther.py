@@ -32,7 +32,7 @@ def run_swaxs_reuther_2023_cap(t=1):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, hy in zip(names, piezo_x, piezo_y, hexa_y):
@@ -51,7 +51,7 @@ def run_swaxs_reuther_2023_cap(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{xx}{yy}")
@@ -104,7 +104,7 @@ def run_swaxs_reuther_2023_slide(t=1):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, hy in zip(names, piezo_x, piezo_y, hexa_y):
@@ -123,7 +123,7 @@ def run_swaxs_reuther_2023_slide(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{xx}{yy}")
@@ -145,7 +145,7 @@ def run_swaxs_reuther_2023_slide(t=1):
 
 def align_gisaxs_th_zihan(rang=0.3, point=31):
     th0 = piezo.th.position
-    yield from bp.rel_scan([pil1M], piezo.th, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], piezo.th, -rang, rang, point)
     try:
         ps(plot=False)
         yield from bps.mv(piezo.th, ps.peak)
@@ -233,7 +233,7 @@ def reuter_giwaxs_2023_1(t=0.5):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             for ai in incident_angles:
@@ -247,7 +247,7 @@ def reuter_giwaxs_2023_1(t=0.5):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
 
                     # Sample name

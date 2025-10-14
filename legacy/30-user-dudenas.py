@@ -5,7 +5,7 @@ def run_night_Pete(t=1):
 
 
 def giwaxs_multiprsangles_2020_3(t=1):
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
 
     names = ["DDP_50", "DDP_25", "DDP_10", "DDP_100", "SEBS"]
     x = [-45000, -25000, -3000, 17000, 43000]
@@ -22,7 +22,7 @@ def giwaxs_multiprsangles_2020_3(t=1):
     ai_list = [round(1000 * x, 4) for x in ai_list]
     ai_list = np.asarray(ai_list) / 1000
 
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
 
     for name, xs, zs, chi_pi, chi_hexa, th_pi, th_hexa in zip(
         names, x, z, chi_piezo, chi_hexa, th_piezo, th_hexa
@@ -44,7 +44,7 @@ def giwaxs_multiprsangles_2020_3(t=1):
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil1M, pil300KW]
+            dets = [pil2M, pil300KW]
 
             for k, ais in enumerate(ai_list):
                 yield from bps.mv(stage.th, th_hexa + ais)
@@ -68,7 +68,7 @@ def giwaxs_multiprsangles_2020_3(t=1):
         yield from bps.mv(prs, -70)
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil1M, pil300KW]
+            dets = [pil2M, pil300KW]
 
             for k, ais in enumerate(ai_list):
                 yield from bps.mv(stage.th, th_hexa + ais)
@@ -88,7 +88,7 @@ def giwaxs_multiprsangles_2020_3(t=1):
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil1M, pil300KW]
+            dets = [pil2M, pil300KW]
 
             for k, prss in enumerate(prs_list):
                 yield from bps.mv(prs, prss)
@@ -108,7 +108,7 @@ def giwaxs_multiprsangles_2020_3(t=1):
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil1M, pil300KW]
+            dets = [pil2M, pil300KW]
 
             for k, prss in enumerate(prs_list):
                 yield from bps.mv(prs, prss)
@@ -127,7 +127,7 @@ def giwaxs_multiprsangles_2020_3(t=1):
 
 
 def giwaxs_S_edge_Pete(t=1):
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
 
     # names = ['100_DDP_0deg','100_DDP_90deg','75_DDP_0deg''75_DDP_90deg','50_DDP_0deg','50_DDP_90deg','25_DDP_0deg','25_DDP_90deg']
     # x = [-48098, -29098, -21098, -2098, 9901, 52901, 28901, 39900 ]
@@ -174,7 +174,7 @@ def giwaxs_S_edge_Pete(t=1):
         yield from alignement_special(angle=0.15)
         ai0 = piezo.th.position
 
-        dets = [pil1M, pil300KW]
+        dets = [pil2M, pil300KW]
         yield from bps.mv(att2_9, "Insert")
         yield from bps.sleep(1)
         yield from bps.mv(att2_9, "Insert")
@@ -210,7 +210,7 @@ def giwaxs_S_edge_Pete(t=1):
 
 
 def giwaxs_S_edge_Pete_2121_2(t=1):
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
 
     # names =   ['sample1a', 'sample1b', 'sample2a', 'sample2b', 'sample3a', 'sample3b', 'sample4a', 'sample4b', 'sample5a', 'sample5b', 'sample6a',
     # 'sample6b','sample7a', 'sample7b']
@@ -247,7 +247,7 @@ def giwaxs_S_edge_Pete_2121_2(t=1):
         z_piezo
     ), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(z_piezo)})"
 
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_arc = [15, 0]
 
     for name, xs_piezo, xs_hexa, zs_piezo in zip(names, x_piezo, x_hexa, z_piezo):
@@ -365,7 +365,7 @@ def giwaxs_S_edge_Pete_2121_2(t=1):
 
 
 def giwaxs_ai_S_edge_Pete(t=1):
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
 
     names = [
         "75_DDP_0deg",
@@ -390,7 +390,7 @@ def giwaxs_ai_S_edge_Pete(t=1):
     ai_list = [round(1000 * x, 4) for x in ai_list]
     ai_list = np.asarray(ai_list) / 1000
 
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
 
     for name, xs, zs in zip(names, x, z):
         print(zs)
@@ -406,7 +406,7 @@ def giwaxs_ai_S_edge_Pete(t=1):
             yield from bps.mv(waxs, wa)
 
             if i == 0:
-                dets = [pil1M, pil300KW]
+                dets = [pil2M, pil300KW]
                 yield from bps.mv(att2_9, "Insert")
                 yield from bps.sleep(1)
                 yield from bps.mv(att2_9, "Insert")
@@ -546,7 +546,7 @@ def giwaxs_Dudenas(t=1):
         x_hexa
     ), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     waxs_arc = [1, 7.5]
 
     ai0 = 0
@@ -591,7 +591,7 @@ def giwaxs_Dudenas(t=1):
 
 
 def giwaxs_S_edge_Pete_2121_3(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     names = ["N22as", "N22an", "SG", "PTB_OTS", "PTB_Ox", "PTB_UVO"]
     x_piezo = [51700, 49500, 34000, 19000, 6000, -6500]
@@ -608,7 +608,7 @@ def giwaxs_S_edge_Pete_2121_3(t=1):
         z_piezo
     ), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(z_piezo)})"
 
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     waxs_arc = [20, 0]
 
     for name, xs_piezo, xs_hexa, zs_piezo in zip(names, x_piezo, x_hexa, z_piezo):
@@ -726,7 +726,7 @@ def giwaxs_S_edge_Pete_2121_3(t=1):
 
 
 def S_edge_measurments_2021_3_Lee(t=1):
-    dets = [pil1M, pil900KW, pil300KW]
+    dets = [pil2M, pil900KW, pil300KW]
     det_exposure_time(t, t)
 
     # names = ['P3C5T_1','P3C5T_2','P3C5T_3', 'PDOT']

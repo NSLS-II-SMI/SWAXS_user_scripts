@@ -41,7 +41,7 @@ import numpy as np
 
 
 def align_gisaxs_th_stage(rang=0.3, point=31):
-    yield from bp.rel_scan([pil1M], stage.th, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], stage.th, -rang, rang, point)
     ps()
     yield from bps.mv(stage.th, ps.peak)
 
@@ -88,7 +88,7 @@ def run_scan_ET(t=1):
     waxs_angle_array = np.array([10])
     print('{}'.format(waxs_angle_array))
 
-    dets = [pil900KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    dets = [pil900KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
 
     '''
     sample = "Sam5p4_scan_prs-90"
@@ -177,7 +177,7 @@ def run_tomo_ET(t=0.5):  # 2020C1
     )  # (0, 18, 4)   # q=4*3.14/0.77*np.sin((max angle+3.5)/2*3.14159/180)
     prs_angles_zig = [-90, 90.1, 120]
     prs_angles_zag = [90, -90 - 0.1, 120]
-    dets = [pil300KW, pil1M]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    dets = [pil300KW, pil2M]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
 
     # yield from bps.mv(piezo.th, 0)
     # yield from alignement_gisaxs(0.1) #run alignment routine
@@ -235,7 +235,7 @@ def run_gisaxsAngle_ET(t=1):  # 2020C1
     )  # (0, 18, 4)   # q=4*3.14/0.77*np.sin((max angle+3.5)/2*3.14159/180)
     # if 12, 3: up to q=2.199
     # if 18, 4: up to q=3.04
-    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
 
     # for x, sample in zip(x_list,sample_list): #loop over samples on bar
     if 1:

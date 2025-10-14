@@ -22,7 +22,7 @@ def crazy_mapping(x_top, x_range, x_step, y_top, y_range, y_step, angle):
 def mapping2_waxs_ucol(t=1):
     waxs_range = [13, 6.5, 0]
     name = "NC"
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     # samples = ['GTAC_smcap']
@@ -68,7 +68,7 @@ def mapping2_waxs_ucol(t=1):
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
     for x, y, sample, x_r, y_r in zip(x_list, y_list, samples, x_range, y_range):
-        pil1M.cam.file_path.put(
+        pil2M.cam.file_path.put(
             f"/nsls2/xf12id2/data/images/users/2020_2/305363_Clark2/1M/%s" % sample
         )
         pil300KW.cam.file_path.put(
@@ -92,12 +92,12 @@ def mapping2_waxs_ucol(t=1):
 def mapping1_waxs_ucol(t=1):
     waxs_range = [13, 6.5, 0]
     name = "NC"
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
     """
     sample = 'Bag1_S2_inner'
     
-    pil1M.cam.file_path.put(f"/ramdisk/images/users/2020_2/305363_Clark1/1M/%s"%sample)
+    pil2M.cam.file_path.put(f"/ramdisk/images/users/2020_2/305363_Clark1/1M/%s"%sample)
     pil300KW.cam.file_path.put(f"/nsls2/xf12id2/data/images/users/2020_2/305363_Clark1/300KW/%s"%sample)
 
     samples = ['Bag1S2_in_midleft','Bag1S2_in_botleft', 'Bag1S2_in_bot', 'Bag1S2_in_midright',
@@ -130,7 +130,7 @@ def mapping1_waxs_ucol(t=1):
     """
     sample = "Bag1_S3"
 
-    pil1M.cam.file_path.put(
+    pil2M.cam.file_path.put(
         f"/ramdisk/images/users/2020_2/305363_Clark1/1M/%s" % sample
     )
     pil300KW.cam.file_path.put(
@@ -197,7 +197,7 @@ def mapping1_waxs_ucol(t=1):
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
     for x, y, sample, x_r, y_r in zip(x_list, y_list, samples, x_range, y_range):
-        pil1M.cam.file_path.put(
+        pil2M.cam.file_path.put(
             f"/ramdisk/images/users/2020_2/305363_Clark1/1M/%s" % sample
         )
         pil300KW.cam.file_path.put(
@@ -234,7 +234,7 @@ def mapping_waxs_ucol(t=1):
 
     waxs_range = [13, 6.5, 0]
     # Detectors, motors:
-    dets = [pil1M, pil300KW]  # dets = [pil1M,pil300KW]
+    dets = [pil2M, pil300KW]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -334,7 +334,7 @@ def saxs_waxs_temps_Ucol(t=0.5):
     name = "VM"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix, ls.ch1_read]
+    dets = [pil2M, pil300KW, rayonix, ls.ch1_read]
     y_range = [5.6, 5.6, 1]
     sample = "W1013ITO"
     waxs_range = [0, 13, 3]
@@ -357,7 +357,7 @@ def saxs_waxs_temps_Ucol(t=0.5):
 
 def run_contRPI(t=1, numb=100, sleep=5):
     det_exposure_time(t, t)
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     # dets = [pil300Kw]
     for i in range(numb):
         yield from bp.count(dets, num=1)
@@ -365,7 +365,7 @@ def run_contRPI(t=1, numb=100, sleep=5):
 
 
 def instec_insitu_hard_xray(t=0.4):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     det_exposure_time(t, t)
 
     name = "DIO_loop3"
@@ -423,7 +423,7 @@ def instec_insitu_hard_xray(t=0.4):
 
 
 def instec_insitu_t_step_hard_xray(t=0.4):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     det_exposure_time(t, t)
 
     name = "RM734_loop1"
@@ -472,7 +472,7 @@ def instec_insitu_t_step_hard_xray(t=0.4):
 
 def instec_insitu_hard_xray_fixT(t=0.4):
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     det_exposure_time(t, t)
 
     name = "RM734__edgeglass"
@@ -499,7 +499,7 @@ def instec_insitu_hard_xray_fixT(t=0.4):
 
 def hard_xray_greg(t=0.5):
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     det_exposure_time(t, t)
 
     name = "glass"
@@ -524,7 +524,7 @@ def hard_xray_greg(t=0.5):
 
 
 def instec_insitu_hard_xray_2021_3(t=0.4):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     name = "7-N_"
@@ -581,7 +581,7 @@ def instec_insitu_hard_xray_2021_3(t=0.4):
 
 
 def instec_oneshot_hard_xray_2021_3(t=0.4):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     name = "7-N_RT_120deg"

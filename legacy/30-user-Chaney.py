@@ -69,7 +69,7 @@ def giwaxs_chaney_2021_3(t=1):
 
 
 def swaxs_S_edge_2024_1(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = [ "Si3N4_membrane",  "To",    "CB", "PM7_10mg_To"]
     x = [                38900, 21600,    -400,        -19400]
@@ -104,7 +104,7 @@ def swaxs_S_edge_2024_1(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -168,7 +168,7 @@ def swaxs_S_edge_2024_1(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -225,7 +225,7 @@ def swaxs_S_edge_2024_1(t=1):
 
 
 def swaxs_S_edge_2024_liquidcell_1(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = [ "PM7_1mg_CB_1", "PM7_10mg_CB_3", "PM6_10mg_CB_2", "PM7_1mg_CB_1"]
     x = [               36450,           17300,          -3830,         -35000]
@@ -264,7 +264,7 @@ def swaxs_S_edge_2024_liquidcell_1(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -325,7 +325,7 @@ def swaxs_S_edge_2024_liquidcell_1(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             name_fmt = "{sample}_sdd1.8m_{energy}eV_wa{wax}_bpm{xbpm}"
             for e, xsss, ysss in zip(energies, xss, yss):
@@ -357,7 +357,7 @@ def swaxs_S_edge_2024_liquidcell_1(t=1):
 
 
 def waxs_S_edge_chris_2024_1(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = ["A1_08", "W2_04"]
     x = [      38500,   32800]
@@ -388,7 +388,7 @@ def waxs_S_edge_chris_2024_1(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -421,7 +421,7 @@ def waxs_S_edge_chris_2024_1(t=1):
 
 
 def waxs_S_edge_chaney_2024_1(t=2):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = ["Trmsn_14", "Trmsn_17", "Trmsn_18", "Trmsn_21", "Trmsn_22", "Trmsn_23", "Trmsn_26",  "Trmsn_29",  "Trmsn_30", "Trmsn_33", "Trmsn_34", "Trmsn_35","Trmsn_01", "Trmsn_03"]
     x = [         43300,      37000,      31400,      25400,      19500,      13900,       7300,        1000,       -5000,     -11000,     -17300,     -23300,    -29500,     -35800]
@@ -452,7 +452,7 @@ def waxs_S_edge_chaney_2024_1(t=2):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -538,7 +538,7 @@ def run_2024_11_13_night(t=1):
 
 # example script from Eliot
 # to run, in bluesky, it's RE(temp_snapshot(name_base='something')) for example
-def temp_series(name_base='temp',temps = np.linspace(25,40,16),ramp=1, num=10, pump_delay=1,exp_time=1, hold_delay=120, dets=[pil900KW,pil1M]):   # function loop to bring linkam to temp, hold and measure
+def temp_series(name_base='temp',temps = np.linspace(25,40,16),ramp=1, num=10, pump_delay=1,exp_time=1, hold_delay=120, dets=[pil900KW,pil2M]):   # function loop to bring linkam to temp, hold and measure
 # Function will begin at start_temp and take a SAXS measurement at every temperature given 
     LThermal.setTemperature(temps[0])
     LThermal.setTemperatureRate(ramp)
@@ -563,7 +563,7 @@ def temp_series(name_base='temp',temps = np.linspace(25,40,16),ramp=1, num=10, p
         yield from SMIBeam().insertFoils("Alignement")
 
         # Move beamstop
-        yield from pil1m_bs_rod.mv_in(x_pos=bsx_pos + 5)
+        yield from pil2M_bs_rod.mv_in(x_pos=bsx_pos + 5)
 
         #setimagename
         sample_id(user_name='Chaney', sample_name=f'{name_base}_scanDirect_{int(temp)}degC')
@@ -571,8 +571,8 @@ def temp_series(name_base='temp',temps = np.linspace(25,40,16),ramp=1, num=10, p
         yield from bp.count(dets)
 
         # Move beamstop
-        yield from pil1m_bs_rod.mv_in(x_pos=bsx_pos)
-        # yield from bps.mv(pil1m_bs_rod.x, bsx_pos) #2 for 4000 mm, 1.2 for 6500
+        yield from pil2M_bs_rod.mv_in(x_pos=bsx_pos)
+        # yield from bps.mv(pil2M_bs_rod.x, bsx_pos) #2 for 4000 mm, 1.2 for 6500
 
         # Remove attenuators
         yield from SMIBeam().insertFoils("Measurement")
@@ -644,7 +644,7 @@ def temp_series(name_base='temp',temps = np.linspace(25,40,16),ramp=1, num=10, p
 
     LThermal.off()
 
-def snap_series(name_base='series', num=10, temp=25, exp_time=1, dets=[pil900KW,pil1M]):
+def snap_series(name_base='series', num=10, temp=25, exp_time=1, dets=[pil900KW,pil2M]):
     LThermal.setTemperature(temp)
     LThermal.on() # turn on 
     yield from bps.sleep(1) #status code takes a second to change
@@ -666,7 +666,7 @@ def snap_series(name_base='series', num=10, temp=25, exp_time=1, dets=[pil900KW,
 
 
 
-def temp_snapshop(name_base="temp",num=1,delay=0, exp_time=1,dets=[pil900KW,pil1M],pump_time=2.5):
+def temp_snapshop(name_base="temp",num=1,delay=0, exp_time=1,dets=[pil900KW,pil2M],pump_time=2.5):
     det_exposure_time(exp_time,exp_time)
     # move sample in
     yield from bps.mv(syringe_pu.x3, 1) # start pump
@@ -691,7 +691,7 @@ def set_pump_vol(vol):
 
 
 def swaxs_S_edge_2024_liquidcell_chris(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = ["L1_01", "L1_02", "L1_03"]
     x = [      35370,   16450,   -3250]
@@ -764,7 +764,7 @@ def swaxs_S_edge_2024_liquidcell_chris(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M, pdcurrent2]
+                dets = [pil900KW, pil2M, pdcurrent2]
 
             det_exposure_time(t, t)
 
@@ -799,7 +799,7 @@ def swaxs_S_edge_2024_liquidcell_chris(t=1):
 
 
 def swaxs_S_edge_2024_liquidcell1ener_chris(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     #Long energy range
     names = ["L1_01d"]
@@ -832,7 +832,7 @@ def swaxs_S_edge_2024_liquidcell1ener_chris(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M, pdcurrent2]
+                dets = [pil900KW, pil2M, pdcurrent2]
 
             det_exposure_time(t, t)
             
@@ -858,7 +858,7 @@ def waxs_S_edge_chaney_variousprs_2024_1(t=1):
     '''
     setthreshold energy 2450 uhighg 1600
     '''
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     prs0 = -1
     # yield from bps.mv(prs, prs0)
@@ -895,7 +895,7 @@ def waxs_S_edge_chaney_variousprs_2024_1(t=1):
     #         if wa == 0:
     #             dets = [pil900KW]
     #         else:
-    #             dets = [pil900KW, pil1M]
+    #             dets = [pil900KW, pil2M]
 
     #         det_exposure_time(t, t)
 
@@ -959,7 +959,7 @@ def waxs_S_edge_chaney_variousprs_2024_1(t=1):
     #         if wa == 0:
     #             dets = [pil900KW]
     #         else:
-    #             dets = [pil900KW, pil1M]
+    #             dets = [pil900KW, pil2M]
 
     #         det_exposure_time(t, t)
 
@@ -1024,7 +1024,7 @@ def waxs_S_edge_chaney_variousprs_2024_1(t=1):
     #         if wa == 0:
     #             dets = [pil900KW]
     #         else:
-    #             dets = [pil900KW, pil1M]
+    #             dets = [pil900KW, pil2M]
 
     #         det_exposure_time(t, t)
 
@@ -1098,7 +1098,7 @@ def waxs_S_edge_chaney_variousprs_2024_1(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1129,7 +1129,7 @@ def waxs_S_edge_chaney_variousprs_2024_1(t=1):
             yield from bps.mv(energy, 2445)
 
 def waxs_S_edge_chaney_variousprs_2024_1_march(t=2):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     prs0 = -1
     yield from bps.mv(prs, prs0)
@@ -1163,7 +1163,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march(t=2):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1224,7 +1224,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march(t=2):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1286,7 +1286,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march(t=2):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1331,7 +1331,7 @@ def waxs_S_edge_chaney_variousprs_2024_1_march(t=2):
 
     
 def waxs_S_edge_chaney_2024_3(name, x, y, t=1, pump=False):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     # names = ["PM7_TO1"]
     # x = [          0]
@@ -1356,7 +1356,7 @@ def waxs_S_edge_chaney_2024_3(name, x, y, t=1, pump=False):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M] 
+                dets = [pil900KW, pil2M] 
 
             det_exposure_time(t, t)
 
@@ -1393,7 +1393,7 @@ def waxs_S_edge_chaney_2024_3(name, x, y, t=1, pump=False):
     
 
 def waxs_S_edge_chaney_2024_3_coarse(name, t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     # names = ["PM7_TO1"]
     x = [          2000]
@@ -1420,7 +1420,7 @@ def waxs_S_edge_chaney_2024_3_coarse(name, t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1456,7 +1456,7 @@ def waxs_S_edge_chaney_2024_3_coarse(name, t=1):
 
 
 def waxs_S_edge_chaney_variousprs_2024_3(t=2):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     prs0 = -1
     yield from bps.mv(prs, prs0)
@@ -1495,7 +1495,7 @@ def waxs_S_edge_chaney_variousprs_2024_3(t=2):
     #         if wa == 7:
     #             dets = [pil900KW]
     #         else:
-    #             dets = [pil900KW, pil1M]
+    #             dets = [pil900KW, pil2M]
 
     #         det_exposure_time(t, t)
 
@@ -1553,7 +1553,7 @@ def waxs_S_edge_chaney_variousprs_2024_3(t=2):
             if wa == 7:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1614,7 +1614,7 @@ def waxs_S_edge_chaney_variousprs_2024_3(t=2):
             if wa == 7:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1672,7 +1672,7 @@ def waxs_S_edge_chaney_variousprs_2024_3(t=2):
             if wa == 7:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1733,7 +1733,7 @@ def waxs_S_edge_chaney_variousprs_2024_3(t=2):
             if wa == 7:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1795,7 +1795,7 @@ def waxs_S_edge_chaney_variousprs_2024_3(t=2):
             if wa == 7:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -1867,7 +1867,7 @@ def giwaxs_S_edge_chaney_2024_3(t=1):
             if wa ==7:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             # Do not take SAXS when WAXS detector in the way
 

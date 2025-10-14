@@ -88,7 +88,7 @@ def Rb_tswaxs(
             )  # move the waxs dectector to the measurement position
             waxs_arc = [waxspos]
             # temp = ls.ch1_read.value
-            dets = [pil300KW, pil1M]
+            dets = [pil300KW, pil2M]
             det_exposure_time(t, t)
             # yield from bp.scan(dets, waxs, *waxs_arc)# should just be a single point "scan"
 
@@ -116,7 +116,7 @@ def run_saxsmapPT(t=1):
     y_range = [[-19550, 950, 83], [-13250, 7250, 83], [-10250, 10250, 83]]
 
     # Detectors, motors:
-    dets = [pil1M]  # ,pil300KW] #dets = [pil1M]#
+    dets = [pil2M]  # ,pil300KW] #dets = [pil2M]#
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -262,7 +262,7 @@ def tswaxs(t=15, waxs_arc=[26, 19.5, 13, 6.5, 0]):
             )  # move the waxs dectector to the measurement position
             waxs_arc = [waxspos]
             # temp = ls.ch1_read.value
-            dets = [pil300KW]  # ,pil1M]
+            dets = [pil300KW]  # ,pil2M]
             det_exposure_time(t, t)
             sample_name = "{sample}_nosaxs_waxs{waxspos:5.4f}".format(
                 sample=sample, waxspos=waxspos
@@ -277,7 +277,7 @@ def tswaxs(t=15, waxs_arc=[26, 19.5, 13, 6.5, 0]):
 
 
 def giwaxs_S_edge(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = [
         "P3HT_CF",
@@ -350,7 +350,7 @@ def giwaxs_S_edge(t=1):
 
 
 def waxs_S_edge(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = ["saxs_S_edge_ech2"]
     x = [-41000]
@@ -420,7 +420,7 @@ def giwaxsTempSingleWaxsSeries(
             )  # move the waxs dectector to the measurement position
             waxs_arc = [waxspos]
             temp = ls.ch1_read.value
-            dets = [pil300KW, pil1M]
+            dets = [pil300KW, pil2M]
             det_exposure_time(t, t)
             sample_name = (
                 "{sample}_inc{th:5.4f}deg_waxs{waxspos:5.4f}_{temp:5.4f}C_{num}".format(

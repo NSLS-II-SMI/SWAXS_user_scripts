@@ -98,8 +98,8 @@ speed: 2.5 mm/sec
 #do scan to find the hole location
 1) move 1M X -5 mm (from  0.64 to -4.36 )
 2) RE(smi.modeAlignment())
-3) RE(rel_scan([pil1M], MDrive.m1, -3, 3, 31))  #for the left top hole (  34.3, 36.9  ) --> Cx = 35.6
-4) RE(rel_scan([pil1M], MDrive.m3, -3, 3, 31))  #for the left top hole (  -12.6, -10  )  --> Cy = -11.35
+3) RE(rel_scan([pil2M], MDrive.m1, -3, 3, 31))  #for the left top hole (  34.3, 36.9  ) --> Cx = 35.6
+4) RE(rel_scan([pil2M], MDrive.m3, -3, 3, 31))  #for the left top hole (  -12.6, -10  )  --> Cy = -11.35
 #for the glass capillary ( -12.3, -10.2 )
 
 for the top left hole (  35.6, -11.35  )
@@ -1483,10 +1483,10 @@ sample_id(user_name="test", sample_name="test_CFN")
 
 RE(smi.modeAlignment())
 det_exposure_time(0.3, 0.3)
- RE(count([pil1M])) 
+ RE(count([pil2M])) 
  smi.setDirectBeamROI()
-RE(rel_scan([pil1M], stage.x, -2, 2, 40))  #find the X range [-1.3, 1.2 ] --> [-1, +1]
-RE(rel_scan([pil1M], stage.y, -2, 2, 40))  #find the y range, [-1.2, 1.5] --> [-0.6, +1.2]
+RE(rel_scan([pil2M], stage.x, -2, 2, 40))  #find the X range [-1.3, 1.2 ] --> [-1, +1]
+RE(rel_scan([pil2M], stage.y, -2, 2, 40))  #find the y range, [-1.2, 1.5] --> [-0.6, +1.2]
 
 
 
@@ -1734,8 +1734,8 @@ def run(    sample,  exposure_time=1, maxTime=12 * 3600 + 1, interval= 20,  came
 
     ''' 
 
-    dets = [ pil1M, pil900KW  ]
-    #dets = [ pil1M   ]
+    dets = [ pil2M, pil900KW  ]
+    #dets = [ pil2M   ]
     #waxs_angle = 15    #   move_waxs(15)
     det_exposure_time(exposure_time, exposure_time) 
     t0 = time.time()
@@ -1780,8 +1780,8 @@ def run_nobeam(    sample,  exposure_time=1, maxTime=12 * 3600 + 1, interval= 20
     run(  'SMI_CuSyn_161Rec_105C_40ulM'  )  #Cu, interval=20,  #20221029 nite, 1:30 am     
     ''' 
 
-    #dets = [ pil1M, pil900KW  ]
-    #dets = [ pil1M   ]
+    #dets = [ pil2M, pil900KW  ]
+    #dets = [ pil2M   ]
     #waxs_angle = 15    #   move_waxs(15)
     det_exposure_time(exposure_time, exposure_time) 
     t0 = time.time()
@@ -1815,7 +1815,7 @@ def collect_one_data(    sample,  exposure_time=1,   camera=False, fid=0    ):
 
     ''' 
 
-    dets = [ pil1M, pil900KW  ]
+    dets = [ pil2M, pil900KW  ]
     det_exposure_time(exposure_time, exposure_time) 
     tf = get_current_time()
     extra =  '%s_'%tf + '%06d_'%fid   
@@ -1836,7 +1836,7 @@ def collect_wsaxs(  t=1, sample=None, waxs_angle = 20  ):
 
     yield from bps.mv(waxs, waxs_angle)
     if waxs_angle !=0:
-        dets = [ pil900KW,  pil1M ] 
+        dets = [ pil900KW,  pil2M ] 
     else:
         dets = [ pil900KW ] 
     name_fmt = "{sample}_x{x:05.2f}_y{y:05.2f}_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
@@ -1844,7 +1844,7 @@ def collect_wsaxs(  t=1, sample=None, waxs_angle = 20  ):
         sample=sample,
         x=np.round(stage.x.position, 2),
         y=np.round(stage.y.position, 2),         
-        saxs_z=np.round(pil1m_pos.z.position, 2),
+        saxs_z=np.round(pil2M_pos.z.position, 2),
         waxs_angle=waxs_angle,
         t=t,
         #scan_id=RE.md["scan_id"],

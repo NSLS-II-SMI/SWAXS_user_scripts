@@ -12,14 +12,14 @@ def grid_scan_xpcs():
 
     xxs, yys = np.meshgrid(xs, ys)
 
-    dets = [pil1M]
+    dets = [pil2M]
     for name in names:
         for ener, xof, yof in zip(energies, x_off, y_off):
             yield from bps.mv(energy, ener)
             yield from bps.sleep(10)
             for i, (x, y) in enumerate(zip(xxs.ravel(), yys.ravel())):
 
-                pil1M.cam.file_path.put(
+                pil2M.cam.file_path.put(
                     f"/ramdisk/images/users/2019_3/%s/1M/%s_pos%s" % (folder, name, i)
                 )
 
@@ -35,7 +35,7 @@ def grid_scan_xpcs():
 
                 print(f"\n\t=== Sample: {sample_name} ===\n")
 
-                pil1M.cam.acquire.put(1)
+                pil2M.cam.acquire.put(1)
                 yield from bps.sleep(5)
                 pv = EpicsSignal("XF:12IDC-ES:2{Det:1M}cam1:Acquire", name="pv")
 
@@ -83,7 +83,7 @@ def grid_scan_static():
     energies = np.linspace(2500, 2450, 51)
     xxs, yys = np.meshgrid(x_off, y_off)
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     for name in names:
         for i, (x, y) in enumerate(zip(xxs.ravel(), yys.ravel())):
             yield from bps.mv(piezo.x, x)
@@ -137,7 +137,7 @@ def nexafs_S_edge_chen(t=1):
 
 
 def waxs_S_edge_chen_2020_3(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = [
         "sampleA1",

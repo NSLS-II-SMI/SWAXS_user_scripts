@@ -14,18 +14,18 @@ setthreshold energy 11500 autog 7500
 
 sample_id(user_name = 'YZhang', sample_name = 'test' )
 RE(bps.mv(waxs, 0))
-RE(bp.count([pil1M, amptek, pil900KW ]))
+RE(bp.count([pil2M, amptek, pil900KW ]))
 
 
 
 
 
 In [1617]: sample_id(user_name = 'WL', sample_name = 'B0500_Ir_Edge' )
-In [1618]: RE(bp.count([pil1M, amptek, pil900KW ]))
+In [1618]: RE(bp.count([pil2M, amptek, pil900KW ]))
 In [1621]: RE(bps.mv(waxs, 0))
-In [1622]: RE(bp.count([pil1M, amptek, pil900KW ]))
+In [1622]: RE(bp.count([pil2M, amptek, pil900KW ]))
 In [1623]: RE(bps.mv(waxs, 20))
-In [1624]: RE(bp.count([pil1M, amptek, pil900KW ]))
+In [1624]: RE(bp.count([pil2M, amptek, pil900KW ]))
 
 np.arange( 11150,11185, 5)
 np.arange( 11185, 11195,  2 )
@@ -38,7 +38,7 @@ np.arange(   11345, 11400, 2 )
 
 RUN1: 
 B0500_IrE_FB_Bpst2s
-Full beam, dets = [pil1M, pil900KW,  amptek ]
+Full beam, dets = [pil2M, pil900KW,  amptek ]
 Sleep 2S between each energy
 Scan E, E_reverse 
 
@@ -47,7 +47,7 @@ RE( Ir_edge_measurments_2024_7_12(t=1, sample = 'B0500_IrE_FB_Bpst2s'  ) )
 
 RUN2: 
 B0500_IrE_FB
-Full beam, dets = [pil1M, pil900KW,  amptek ]
+Full beam, dets = [pil2M, pil900KW,  amptek ]
 Sleep 0 between each energy
 Scan E #, E_reverse 
 
@@ -75,7 +75,7 @@ RE( Ir_edge_measurments_2024_7_12(t=1, sample = 'Emp_IrE_AB_NoBpst', reverse=Tru
 
 
 sample_id(user_name = 'YZhang', sample_name = 'test' )
-RE(bp.count([pil1M, amptek, pil900KW ]))
+RE(bp.count([pil2M, amptek, pil900KW ]))
 
  
 
@@ -138,7 +138,7 @@ def S_edge_one_sample(t=1, sample = None, reverse=False, bps_sleep_time=2,  ):
 
     '''
 
-    dets = [pil1M ] #, pil900KW,  amptek ]
+    dets = [pil2M ] #, pil900KW,  amptek ]
     det_exposure_time(t, t)
     Elist = np.arange( 2460, 2480.2, .2) #[:2]
 

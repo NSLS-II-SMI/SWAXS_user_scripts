@@ -5,22 +5,22 @@ def aaron_rot(t=8):
     sample_id(user_name="AM", sample_name="tetrahedral")
     det_exposure_time(t)
     yield from bp.inner_product_scan(
-        [pil1M], 24, prs, 45, 22, stage.x, 0.23, 0.15, piezo.y, -1792.6, -1792.6
+        [pil2M], 24, prs, 45, 22, stage.x, 0.23, 0.15, piezo.y, -1792.6, -1792.6
     )
     yield from bp.inner_product_scan(
-        [pil1M], 22, prs, 21, 0, stage.x, 0.15, 0.11, piezo.y, -1792.6, -1792.6
+        [pil2M], 22, prs, 21, 0, stage.x, 0.15, 0.11, piezo.y, -1792.6, -1792.6
     )
     yield from bp.inner_product_scan(
-        [pil1M], 11, prs, -1, -11, stage.x, 0.11, 0.1, piezo.y, -1792.6, -1792.1
+        [pil2M], 11, prs, -1, -11, stage.x, 0.11, 0.1, piezo.y, -1792.6, -1792.1
     )
     yield from bp.inner_product_scan(
-        [pil1M], 11, prs, -12, -22, stage.x, 0.1, 0.1, piezo.y, -1792.1, -1791.6
+        [pil2M], 11, prs, -12, -22, stage.x, 0.1, 0.1, piezo.y, -1792.1, -1791.6
     )
     yield from bp.inner_product_scan(
-        [pil1M], 11, prs, -23, -33, stage.x, 0.1, 0.114, piezo.y, -1791.6, -1790.9
+        [pil2M], 11, prs, -23, -33, stage.x, 0.1, 0.114, piezo.y, -1791.6, -1790.9
     )
     yield from bp.inner_product_scan(
-        [pil1M], 12, prs, -34, -45, stage.x, 0.114, 0.134, piezo.y, -1790.9, -1790.9
+        [pil2M], 12, prs, -34, -45, stage.x, 0.114, 0.134, piezo.y, -1790.9, -1790.9
     )
 
 
@@ -53,7 +53,7 @@ def brian_caps(t=1):
         "LC-O37-9",
     ]
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     y_range = [0, 0, 1]
     #    param   = '16.1keV'
     assert len(x_list) == len(
@@ -194,7 +194,7 @@ def brian_caps_2020_3(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     assert len(x_list) == len(
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
@@ -372,7 +372,7 @@ def brian_caps_damage_2021_1(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     assert len(x_list) == len(
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
@@ -437,7 +437,7 @@ def brian_caps_2021_2(t=1):
     #               10300,    10300,    10300,    10300,    10300,    10300,    10300,    10300,    10300,    10300,    10300,    10300,    10300]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     assert len(x_list) == len(
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
@@ -467,7 +467,7 @@ def brian_caps_2021_2(t=1):
 
 def run_mesh_aaron_2021(t=1):
     name = "AM"
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     samples = ["sample_fe1"]
@@ -481,7 +481,7 @@ def run_mesh_aaron_2021(t=1):
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
-    yield from bps.mv(pil1m_pos.y, -60.0)
+    yield from bps.mv(pil2M_pos.y, -60.0)
     for x, y, sample, x_r, y_r in zip(x_list, y_list, samples, x_range, y_range):
         yield from bps.mv(piezo.x, x)
         yield from bps.mv(piezo.y, y)
@@ -502,7 +502,7 @@ def run_mesh_aaron_2021(t=1):
 
                 i += 1
 
-    yield from bps.mv(pil1m_pos.y, -55.7)
+    yield from bps.mv(pil2M_pos.y, -55.7)
     for x, y, sample, x_r, y_r in zip(x_list, y_list, samples, x_range, y_range):
         yield from bps.mv(piezo.x, x)
         yield from bps.mv(piezo.y, y)
@@ -547,7 +547,7 @@ def brian_caps(t=1):
     z_list = [9600, 9600, 9600, 9600, 9600, 9600, 9600, 9600, 2600]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     assert len(x_list) == len(
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
@@ -574,7 +574,7 @@ def brian_caps(t=1):
 
 def run_mesh_aaron(t=1):
     name = "AM"
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     # samples = ['sample_b1_area1', 'sample_b1_area2']

@@ -903,7 +903,7 @@ def run_gisaxs_in_situSVP(
     td = time.gmtime()
     ts = time.strftime("%Y-%m-%d-%H-%M-%S", td)
     print(ts)
-    dets = [pil900KW, pil1M, pil300KW]
+    dets = [pil900KW, pil2M, pil300KW]
     YPOS = {}
     ThPOS = {}
     th_real = inc_angles
@@ -943,7 +943,7 @@ def run_gisaxs_in_situSVP(
                         x=np.round(piezo.x.position, 2),
                         y=np.round(piezo.y.position, 2),
                         z=np.round(piezo.z.position, 2),
-                        saxs_z=np.round(pil1m_pos.z.position, 2),
+                        saxs_z=np.round(pil2M_pos.z.position, 2),
                         t=expt,
                         scan_id=RE.md["scan_id"],
                     )
@@ -976,7 +976,7 @@ def run_gisaxs_in_situ_evap(
     td = time.gmtime()
     ts = time.strftime("%Y-%m-%d-%H-%M-%S", td)
     print(ts)
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     YPOS = {}
 
     th_meas = inc_angles + piezo.th.position
@@ -1011,7 +1011,7 @@ def run_gisaxs_in_situ_evap(
                         x=np.round(piezo.x.position, 2),
                         y=np.round(piezo.y.position, 2),
                         z=np.round(piezo.z.position, 2),
-                        saxs_z=np.round(pil1m_pos.z.position, 2),
+                        saxs_z=np.round(pil2M_pos.z.position, 2),
                         t=t,
                         scan_id=RE.md["scan_id"],
                     )
@@ -1045,7 +1045,7 @@ def run_gisaxs_in_situHT(
     td = time.gmtime()
     ts = time.strftime("%Y-%m-%d-%H-%M-%S", td)
     print(ts)
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     YPOS = {}
 
     for i in range(N):
@@ -1080,7 +1080,7 @@ def run_gisaxs_in_situHT(
                         x=np.round(piezo.x.position, 2),
                         y=np.round(piezo.y.position, 2),
                         z=np.round(piezo.z.position, 2),
-                        saxs_z=np.round(pil1m_pos.z.position, 2),
+                        saxs_z=np.round(pil2M_pos.z.position, 2),
                         t=t,
                         scan_id=RE.md["scan_id"],
                     )
@@ -1249,7 +1249,7 @@ def run_gisaxs(
     inc_angles = np.array(inc_angles)  # incident angles
     # 4*3.14/(12.39842/16.1)*np.sin((7*6.5+3.5)*3.14/360) = 6.760 A-1
     x_shift_array = np.array(x_shift_array)
-    dets = [pil1M]
+    dets = [pil2M]
     for ii, (x, sample) in enumerate(
         zip(x_list, sample_list)
     ):  # loop over samples on bar
@@ -1272,7 +1272,7 @@ def run_gisaxs(
                     x=np.round(piezo.x.position, 2),
                     y=np.round(piezo.y.position, 2),
                     z=np.round(piezo.z.position, 2),
-                    saxs_z=np.round(pil1m_pos.z.position, 2),
+                    saxs_z=np.round(pil2M_pos.z.position, 2),
                     t=t,
                     scan_id=RE.md["scan_id"],
                 )
@@ -1326,7 +1326,7 @@ def run_giwaxs(
             yield from bps.mv(waxs, waxs_angle)
             if waxs_angle == max_waxs_angle:
                 if saxs_on:
-                    dets = [pil900KW, pil1M, pil300KW]
+                    dets = [pil900KW, pil2M, pil300KW]
                 else:
                     dets = [pil900KW, pil300KW]
                 print("Meausre both saxs and waxs here for w-angle=%s" % waxs_angle)
@@ -1347,7 +1347,7 @@ def run_giwaxs(
                         x=np.round(piezo.x.position, 2),
                         y=np.round(piezo.y.position, 2),
                         z=np.round(piezo.z.position, 2),
-                        saxs_z=np.round(pil1m_pos.z.position, 2),
+                        saxs_z=np.round(pil2M_pos.z.position, 2),
                         t=t,
                         scan_id=RE.md["scan_id"],
                     )
@@ -1420,7 +1420,7 @@ def snap_waxs(t=0.1):
 
 
 def snap_saxs(t=0.1):
-    dets = [pil1M]
+    dets = [pil2M]
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(t)
     yield from (bp.count(dets, num=1))
@@ -1438,7 +1438,7 @@ def measure_pindiol_current():
 def measure_saxs(t=1, att="None", dx=0, dy=0, user_name=username, sample=None):
     if sample is None:
         sample = RE.md["sample"]
-    dets = [pil1M]
+    dets = [pil2M]
     if dy:
         yield from bps.mvr(piezo.y, dy)
     if dx:
@@ -1449,7 +1449,7 @@ def measure_saxs(t=1, att="None", dx=0, dy=0, user_name=username, sample=None):
         x=np.round(piezo.x.position, 2),
         y=np.round(piezo.y.position, 2),
         z_pos=piezo.z.position,
-        saxs_z=np.round(pil1m_pos.z.position, 2),
+        saxs_z=np.round(pil2M_pos.z.position, 2),
         t=t,
         scan_id=RE.md["scan_id"],
     )
@@ -1499,7 +1499,7 @@ def measure_wsaxs(
     if sample is None:
         sample = RE.md["sample"]
     yield from bps.mv(waxs, waxs_angle)
-    dets = [pil900KW, pil300KW, pil1M]
+    dets = [pil900KW, pil300KW, pil2M]
     if dx:
         yield from bps.mvr(piezo.x, dx)
     if dy:
@@ -1510,7 +1510,7 @@ def measure_wsaxs(
         x_pos=piezo.x.position,
         y_pos=piezo.y.position,
         z_pos=piezo.z.position,
-        saxs_z=np.round(pil1m_pos.z.position, 2),
+        saxs_z=np.round(pil2M_pos.z.position, 2),
         waxs_angle=waxs_angle,
         expt=t,
         scan_id=RE.md["scan_id"],
@@ -1600,9 +1600,9 @@ def measure_waxs_multi_angles(
         if saxs_on:
             if waxs_angle == max_waxs_angle:
                 dets = [
-                    pil1M,
+                    pil2M,
                     pil300KW,
-                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
             else:
                 dets = [pil300KW]
 
@@ -1623,7 +1623,7 @@ def snap_waxs(t=0.1):
 
 
 def snap_saxs(t=0.1):
-    dets = [pil1M]
+    dets = [pil2M]
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(t)
     yield from (bp.count(dets, num=1))

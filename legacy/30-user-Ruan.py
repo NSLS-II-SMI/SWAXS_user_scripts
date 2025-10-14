@@ -53,7 +53,7 @@ def NEXAFS_Cl_edge(t=0.5):
 
 
 def SAXS_Cl_edge(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     name = "7_Le_13_Cl_saxs_solution"
     energies = [2810, 2820, 2826, 2827, 2829, 2832, 2850]
     # energies = [2470]
@@ -123,7 +123,7 @@ def NEXAFS_Br_edge(t=0.5):
 
 
 def SAXS_Br_edge(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     name = "5_Le_15_Br_saxs"
     energies = [13450, 13465, 13469, 13471, 13478, 13500]
     # energies = [13450]

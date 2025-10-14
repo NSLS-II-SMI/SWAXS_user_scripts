@@ -1,5 +1,5 @@
 def Nafion_waxs_S_edge(t=1):
-    dets = [pil1M]
+    dets = [pil2M]
 
     energies = 7 + np.asarray(
         np.arange(2445, 2470, 5).tolist()
@@ -96,7 +96,7 @@ def Nafion_waxs_S_edge(t=1):
 
 
 def Su_nafion_waxs_hard(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     waxs_arc = np.linspace(0, 32.5, 6)
 
@@ -144,7 +144,7 @@ def Su_nafion_waxs_hard(t=1):
 
 
 def sara_nafion_waxs_hard(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     waxs_arc = np.linspace(0, 32.5, 6)
 

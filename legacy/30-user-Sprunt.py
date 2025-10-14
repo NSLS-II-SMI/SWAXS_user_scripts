@@ -1,6 +1,6 @@
 def waxs_S_edge_cherun(t=1):
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     # yield from bps.mv(stage.th, 0)
     # yield from bps.mv(stage.y, 6)
@@ -166,7 +166,7 @@ def nexafs_S_edge_cherun(t=1):
 
 def instec_insitu_hard_xray(t=0.5):
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     name = "sampleA"
@@ -212,7 +212,7 @@ def instec_insitu_hard_xray(t=0.5):
 
 def instec_insitu_tender_xray(t=0.5):
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     det_exposure_time(t, t)
 
     energies = [2460, 2475]
@@ -302,13 +302,13 @@ def single_scan_instec_insitu_hard_2022_2(t=0.5):
 
     for wa in waxs_angles:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
 
         # Metadata
         e = energy.position.energy / 1000
         temp = str(np.round(float(temp_degC), 1)).zfill(5)
         wa = str(np.round(float(wa), 1)).zfill(4)
-        sdd = pil1m_pos.z.position / 1000
+        sdd = pil2M_pos.z.position / 1000
         scan_id = db[-1].start["scan_id"] + 1
         # bpm = xbpm3.sumX.get()
 
@@ -356,13 +356,13 @@ def tender_single_scan_instec_insitu_2022_2(t=0.5):
 
     for wa in waxs_angles:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
 
         # Metadata
         e = energy.position.energy
         temp = str(np.round(float(temp_degC), 1)).zfill(5)
         wa = str(np.round(float(wa), 1)).zfill(4)
-        sdd = pil1m_pos.z.position / 1000
+        sdd = pil2M_pos.z.position / 1000
         scan_id = db[-1].start["scan_id"] + 1
         # bpm = xbpm3.sumX.get()
 

@@ -1,7 +1,7 @@
 def run_simple(exp=0.05, t=10):
     name = "JW"
     sample = "recheck_90c_0.1mms"
-    pil1M.cam.file_path.put(
+    pil2M.cam.file_path.put(
         f"/ramdisk/images/users/2019_3/304549_Headrick/1M/%s" % sample
     )
     pil300KW.cam.file_path.put(
@@ -14,7 +14,7 @@ def run_simple(exp=0.05, t=10):
     print(f"\n\t=== Sample: {sample_name} ===\n")
     sample_id(user_name=name, sample_name=sample_name)
     yield from bps.mv(waxs, 12)
-    yield from bp.count([pil1M, pil300KW], num=1)
+    yield from bp.count([pil2M, pil300KW], num=1)
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(0.3, 0.3)
 
@@ -22,7 +22,7 @@ def run_simple(exp=0.05, t=10):
 def run_fullgiwaxs(t=0.5):
     name = "JW"
     sample = "recheck_90c_0.1mms"
-    pil1M.cam.file_path.put(
+    pil2M.cam.file_path.put(
         f"/ramdisk/images/users/2019_3/304549_Headrick/1M/%s" % sample
     )
     pil300KW.cam.file_path.put(
@@ -36,7 +36,7 @@ def run_fullgiwaxs(t=0.5):
     sample_name = name_fmt.format(samp=sample, temperature=temp)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     sample_id(user_name=name, sample_name=sample_name)
-    yield from bp.scan([pil1M, pil300KW], waxs, *waxs_range)
+    yield from bp.scan([pil2M, pil300KW], waxs, *waxs_range)
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(0.3, 0.3)
 
@@ -45,7 +45,7 @@ def run_BD(t=0.2):
     num = 300
     name = "JW"
     sample = "60c_0.2mms"
-    pil1M.cam.file_path.put(
+    pil2M.cam.file_path.put(
         f"/ramdisk/images/users/2019_3/304549_Headrick/1M/%s" % sample
     )
     pil300KW.cam.file_path.put(
@@ -252,7 +252,7 @@ def giwaxs_headrick_2022_1(t=0.5):
     angle = [0.1]
     # angle = [5]
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     for name, xs, zs, ys, xs_hexa in zip(names, x_piezo, z_piezo, y_piezo, x_hexa):
@@ -347,7 +347,7 @@ def giwaxs_headrick_2022_2(t=0.5):
         for wa in waxs_angles:
 
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
 
             for ai in inc_angles:
                 # yield from bps.mv(piezo.x, xs)
@@ -357,7 +357,7 @@ def giwaxs_headrick_2022_2(t=0.5):
                 name_fmt = "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_bpm{xbpm}_ai{ai}"
                 bpm = xbpm3.sumX.get()
                 e = energy.energy.position / 1000
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 sample_name = name_fmt.format(
                     sample=name,
@@ -410,7 +410,7 @@ def giwaxs_insitu_roll_cooling_2022_2(t=0.1, tim=180):
     name_fmt = "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_bpm{xbpm}_ai{ai}"
     bpm = xbpm3.sumX.get()
     e = energy.energy.position / 1000
-    sdd = pil1m_pos.z.position / 1000
+    sdd = pil2M_pos.z.position / 1000
     wa = waxs.arc.user_readback.value
     wa = str(np.round(wa, 1)).zfill(4)
 
@@ -454,7 +454,7 @@ def giwaxs_insitu_roll_2022_2(t=0.1, tim=600):
     name_fmt = "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_bpm{xbpm}_ai{ai}"
     bpm = xbpm3.sumX.get()
     e = energy.energy.position / 1000
-    sdd = pil1m_pos.z.position / 1000
+    sdd = pil2M_pos.z.position / 1000
     wa = waxs.arc.user_readback.value
     wa = str(np.round(wa, 1)).zfill(4)
 

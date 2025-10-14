@@ -32,9 +32,9 @@
 import numpy as np
 import sys, time
 
-# det = [pil1M, pdcurrent, pdcurrent1, pdcurrent2]
-# dets = [pil300KW, pil1M]
-def ct(dets=[pil1M], t=1):
+# det = [pil2M, pdcurrent, pdcurrent1, pdcurrent2]
+# dets = [pil300KW, pil2M]
+def ct(dets=[pil2M], t=1):
     det_exposure_time(t, t)
     bp.count(dets, num=1)
 
@@ -105,7 +105,7 @@ def test_pdcurrent(Natt=2, add_att1_9=1, add_att1_10=0, add_att1_11=0, add_att1_
 def measure_EM(t=1, name='in-situ', extra='check'):
     det_exposure_time(t, t)
 
-    dets = [pil1M]
+    dets = [pil2M]
     curr_tempC = LThermal.temperature()
     print("---------  Current temperature (degC)\n {}".format(curr_tempC))
 
@@ -140,17 +140,17 @@ def insitu_EM(
     interval_waxs=5,
 ):
 
-    dets = [pil1M, pdcurrent, pdcurrent1, pdcurrent2]
+    dets = [pil2M, pdcurrent, pdcurrent1, pdcurrent2]
     det_exposure_time(t, t)
 
     t0 = time.time()
     number = number_start
 
-    # pil1M.cam.file_path.put(
+    # pil2M.cam.file_path.put(
     #     f"/nsls2/xf12id2/data/images/users/2024_3/315975_Gonzalez/1M/EM_%s" % name
     # )
 
-    # pil1M.cam.file_path.put(
+    # pil2M.cam.file_path.put(
     #     f"/nsls2/data/smi/legacy/results/data/2024_3/315975_Gonzalez/1M/EM_%s" % name
     # )
     while number < 9000:
@@ -222,7 +222,7 @@ def insitu_EM(
                 yield from bps.mv(att1_12.close_cmd, 1)
                 yield from bps.sleep(1)
 
-        dets = [pil1M]
+        dets = [pil2M]
 
         #### Get temperature reading
         # curr_tempC = ls.input_A_celsius.value
@@ -241,7 +241,7 @@ def insitu_EM(
                 dets = [pil300KW]
             else:
                 yield from bps.mv(waxs, 13)
-                dets = [pil1M]
+                dets = [pil2M]
             det_exposure_time(t, t)
 
         #### Define sample name & Measure
@@ -364,7 +364,7 @@ def exsitu_EM(t=1, x_range_um=0, Nx=1, Nrep=3, add_att=1, more_scans=0, use_waxs
                     yield from bps.mv(att1_11.close_cmd, 1)
                     yield from bps.sleep(1)
 
-            dets = [pil1M]
+            dets = [pil2M]
 
             if more_scans == 1:
                 Nscan = np.ceil(pd_curr_ref / pd_curr)

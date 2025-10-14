@@ -56,7 +56,7 @@ def run_giwaxs_Kim(t=1):
     # if 24, 5: up to q=3.87
     # if 30, 6: up to q=4.70
     # 52/6.5 +1 =8
-    dets = [pil300KW, pil1M]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    dets = [pil300KW, pil2M]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
 
     x_shift_array = np.linspace(-500, 500, 3)  # measure at a few x positions
 

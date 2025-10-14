@@ -41,7 +41,7 @@ def nexafs_S_edge(t=1):
 
 
 def S_edge_SAXSWAXS_2021_3(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = ["cholesteric_film_20nm"]  #'BPI_20nm_LCE']#
     x = [-15900]  # , -5900]
@@ -195,7 +195,7 @@ def saxs_S_edge_Hoang_2022_2(t=0.5):
             yield from bps.mv(waxs, wa)
             yield from bps.mv(piezo.x, xs + i * 200)
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             # Cover a range of 1.5 mm in y to avoid damage
@@ -209,7 +209,7 @@ def saxs_S_edge_Hoang_2022_2(t=0.5):
 
                 # Metadata
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 # wa = waxs.arc.user_readback.value
                 wa = str(np.round(wa, 1)).zfill(4)
 
@@ -351,7 +351,7 @@ def saxs_S_edge_temperature_Hoang_2022_2(t=0.5):
                 yield from bps.mv(waxs, wa)
                 # yield from bps.mv(piezo.x, xs + i * 200)
                 # Do not read SAXS if WAXS is in the way
-                dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+                dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
                 det_exposure_time(t, t)
 
                 # Cover a range of 1.5 mm in y to avoid damage
@@ -365,7 +365,7 @@ def saxs_S_edge_temperature_Hoang_2022_2(t=0.5):
 
                     # Metadata
                     bpm = xbpm3.sumX.get()
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
                     wa = str(np.round(float(wa), 1)).zfill(4)
 
                     sample_name = name_fmt.format(
@@ -419,7 +419,7 @@ def tensile_continous_Hoang_2022_2(t=0.5):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
             t1 = time.time()
 
             # Metadata
@@ -427,7 +427,7 @@ def tensile_continous_Hoang_2022_2(t=0.5):
             td = str(np.round(t1 - t0, 1)).zfill(6)
             e = energy.position.energy
             wa = str(np.round(float(wa), 1)).zfill(4)
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
             bpm = xbpm3.sumX.get()
 
             # Sample name
@@ -506,7 +506,7 @@ def tensile_single_Hoang_2022_2(t0, t=0.5):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             yss = np.linspace(y, y + 0.09, len(energies))  # in mm now
 
@@ -522,7 +522,7 @@ def tensile_single_Hoang_2022_2(t0, t=0.5):
                 td = str(np.round(t1 - t0, 1)).zfill(6)
                 # e = energy.position.energy
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 bpm = xbpm3.sumX.get()
 
                 # Sample name

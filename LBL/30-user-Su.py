@@ -5,7 +5,7 @@ def run_saxs_nexafs_greg(t=1):
 
 
 def Su_nafion_nexafs_S_edge(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     waxs_arc = [0, 20, 40]
     energies = 7 + np.asarray(
@@ -146,7 +146,7 @@ def Su_nafion_swaxs_S_edge(t=1):
     #         if wa ==0:
     #             dets = [pil900KW]
     #         else:
-    #             dets = [pil900KW, pil1M]
+    #             dets = [pil900KW, pil2M]
 
     #         det_exposure_time(t,t)
     #         name_fmt = '{sample}_{energy}eV_sdd1.7m_wa{wax}_bpm{xbpm}'
@@ -202,7 +202,7 @@ def Su_nafion_swaxs_S_edge(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
             name_fmt = "{sample}_{energy}eV_sdd1.7m_wa{wax}_bpm{xbpm}"
@@ -232,7 +232,7 @@ def Su_nafion_swaxs_S_edge(t=1):
 
 
 def Su_nafion_waxs_S_edge(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     yield from bps.mv(GV7.open_cmd, 1)
     yield from bps.sleep(5)
@@ -373,7 +373,7 @@ def nexafs_Su(t=1):
 
 
 def waxs_S_edge_greg_2021_2(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     yield from bps.mv(prs, 1)
 
     names = ["sampleA", "sampleB", "sampleC", "sampleD"]
@@ -427,7 +427,7 @@ def waxs_S_edge_greg_2021_2(t=1):
 
 
 def humidity_experiment(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     # ai_aligned = [1.931, 1.788, 1.666, 1.817]
     # ys_aligned = [3.2, 3.189, 3.122, 3.053]
@@ -501,7 +501,7 @@ def waxs_Se_edge_greg(t=1):
     x = [23700, 17600, 11300, 5400]
     y = [-8300, -8400, -8200, -8600]
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     energies = (
         np.arange(12620, 12640, 5).tolist()
         + np.arange(12640, 12660, 0.5).tolist()
@@ -551,7 +551,7 @@ def waxs_Se_edge_greg(t=1):
 
 
 def Su_nafion_swaxs_K_edge(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     waxs_arc = [0, 20, 40]
     energies = np.asarray(
@@ -587,7 +587,7 @@ def Su_nafion_swaxs_K_edge(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
             name_fmt = "{sample}_{energy}eV_sdd3m_wa{wax}_bpm{xbpm}"
@@ -668,7 +668,7 @@ def Su_nafion_nexafs_K_edge(t=1):
 
 
 def Su_nafion_swaxs_Co_edge(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     waxs_arc = [0, 20, 40]
     energies = np.asarray(
@@ -709,7 +709,7 @@ def Su_nafion_swaxs_Co_edge(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
             name_fmt = "{sample}_{energy}eV_sdd3m_wa{wax}_bpm{xbpm}"
@@ -735,7 +735,7 @@ def Su_nafion_swaxs_Co_edge(t=1):
 
 
 def Su_nafion_swaxs_hard(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     waxs_arc = [0, 20, 40]
     yield from bps.mv(stage.th, 0)
@@ -779,7 +779,7 @@ def Su_nafion_swaxs_hard(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
             name_fmt = "{sample}_16.1keV_sdd5m_wa{wax}"
@@ -793,7 +793,7 @@ def Su_nafion_swaxs_hard(t=1):
 
 
 def Su_nafion_swaxs_S_edge_SVA_2021_3(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     waxs_arc = [0, 20]
     energies = 7 + np.asarray(
@@ -835,7 +835,7 @@ def Su_nafion_swaxs_S_edge_SVA_2021_3(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
             name_fmt = "{sample}_{energy}eV_sdd1.7m_wa{wax}_bpm{xbpm}_hum0per"
@@ -897,7 +897,7 @@ def Su_nafion_swaxs_S_edge_SVA_2021_3(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
             name_fmt = "{sample}_{energy}eV_sdd1.7m_wa{wax}_bpm{xbpm}_hum100per"
@@ -959,7 +959,7 @@ def Su_nafion_swaxs_S_edge_SVA_2021_3(t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
             name_fmt = (
@@ -995,7 +995,7 @@ def waxs_S_edge_greg_2022_1(t=1):
     307830_Su Feb 2, 2022
     """
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     # names = ['M725', 'M825', 'M1000', 'TF725T', 'TF825T', 'TF1000T', 'TF30T', 'TF50T', 'TF70T', 'TF90T', 'TF725', 'TF825', 'TF1000',
     #          'TF30', 'TF50',  'TF70',   'TF90',   'DT20',    'DT35',  'DT50', 'BLANK',   'M30',   'M50',   'M70',   'M90']
@@ -1133,7 +1133,7 @@ def saxs_S_edge_greg_2022_1(t=1):
     """
     proposal_id("2022_1", "307830_Su2")
 
-    dets = [pil1M]
+    dets = [pil2M]
 
     # names = ['M725', 'M825', 'M1000', 'TF725T', 'TF825T', 'TF1000T', 'TF30T', 'TF50T', 'TF70T', 'TF90T', 'TF725', 'TF825', 'TF1000',
     #          'TF30', 'TF50',  'TF70',   'TF90',   'DT20',    'DT35',  'DT50', 'BLANK',   'M30',   'M50',   'M70',   'M90']
@@ -1272,7 +1272,7 @@ def waxs_hard_Xray_Su3_2022_1(t=1):
     307830_Su3 Feb 16, 2022
     """
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     # Included all the samples mounted on the sample bar
     names = [
@@ -1374,7 +1374,7 @@ def waxs_hard_Xray_Su3_2022_1(t=1):
             name_fmt = "{sample}_{sdd}m_{energy}eV_wa{wax}_bpm{xbpm}"
             bpm = xbpm2.sumX.get()
             e = energy.energy.position
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
 
             sample_name = name_fmt.format(
                 sample=name,
@@ -1395,7 +1395,7 @@ def waxs_S_edge_greg_2024_1(t=1):
     307830_Su Feb 2, 2024
     """
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = ['N211_AR', 'NC700_AR', 'NC700_H', 'Pemion', 'Pemion_X1']
     x =     [    17500,       8500,      1500,    -6500,      -14500]
@@ -1456,7 +1456,7 @@ def swaxs_S_edge_greg_2024_2(t=1):
     307830_Su Feb 2, 2024
     """
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = ['SO3_particle_1', 'SO3_particle_2', 'SO3_particle_3', 'SO3_particle_4']
     x =     [          -19200,           -25100,           -30500,           -36100]
@@ -1516,7 +1516,7 @@ def nexafs_Ce_edge_greg_2024_1(t=1):
     307830_Su Feb 2, 2024
     """
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = ['test_nexafs']
     x =     [         8500]
@@ -1581,7 +1581,7 @@ def swaxs_Ce_edge_greg_2024_1(t=1):
     307830_Su Feb 2, 2024
     """
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = ['NC700_AR', 'NC700_H']
     x =     [      7500,       500]
@@ -1643,7 +1643,7 @@ def swaxs_S_edge_nafion_2024_2(t=1):
     307830_Su June 23, 2024
     """
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = [ 'kapton', 'ppion_zrox01', 'ppion_zrox02', 'nafion212', 'P25-0p25',  'P25-0p5',    'P25-1',      'P25-2', 
               'P25-4',    'AHPP25-0p5',  'AHPP25-0p25',  'AHPP25-1', 'AHPP25-2', 'AHPP25-4',    'P5A-4',
@@ -1712,7 +1712,7 @@ def swaxs_S_edge_nafion_2024_2(t=1):
 
 
 def bpmvspindiode_Sedge_2024_2(t=1):
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     name = 'Greg_Su_direct_beam_Sedge_scannormal'
@@ -1744,7 +1744,7 @@ def bpmvspindiode_Sedge_2024_2(t=1):
         sample_id(user_name="LR", sample_name=sample_name)
         print(f"\n\t=== Sample: {sample_name} ===\n")
 
-        yield from bp.count([pil1M], num=1)
+        yield from bp.count([pil2M], num=1)
 
         yield from bps.mv(energy, 2470)
         yield from bps.mv(energy, 2450)
@@ -1757,7 +1757,7 @@ def swaxs_hardxray_nafion_2024_2(t=1):
     307830_Su June 23, 2024
     """
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = [ 'kapton', 'ppion_zrox01', 'ppion_zrox02', 'nafion212', 'P25-0p25',  'P25-0p5',    'P25-1',      'P25-2', 
               'P25-4',    'AHPP25-0p5',  'AHPP25-0p25',  'AHPP25-1', 'AHPP25-2', 'AHPP25-4',    'P5A-4',
@@ -1811,7 +1811,7 @@ def swaxs_hardxray_mrl_2024_2(t=1):
     307830_Su June 23, 2024
     """
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = [             'xle-ctrl',               'xle-01',       'xle-02',           'xle-03',    'xle-04',    'xle-05',
               'alaska-filter1a-pos1', 'alaska-filter1a-pos2',  'kapton-ctrl',  'kapton-filter1b']
@@ -1853,7 +1853,7 @@ def saxs_hardxray_capillaries_2024_2(t=0.1):
     307830_Su June 24, 2024
     """
 
-    dets = [pil1M]
+    dets = [pil2M]
 
     #names = [  'capillary-AgB', '144D7-20CuAc', '144D6-20CuAc', '144D5-20CuAc', '144Z-20CuAc', '144A-20CuAc',
      #          '93N-24', '109I-12CuAc', '109I-12CuAc-cloudy', '124Z6-20', '105D6-20CuAc', '105D5-20CuAc',
@@ -1916,7 +1916,7 @@ def saxs_hardxray_mrl_capillaries_2024_2(t=1):
     307830_Su June 24, 2024
     """
 
-    dets = [pil1M]
+    dets = [pil2M]
     #names = [  'capillary-AgB']
     
    # x =     [ -42000  ]
@@ -1966,7 +1966,7 @@ def saxs_hardxray_mrl_capillaries_2024_2(t=1):
         sample_id(user_name="ML", sample_name=sample_name)
         print(f"\n\t=== Sample: {sample_name} ===\n")
 
-        yield from bp.count([pil1M], num=1)
+        yield from bp.count([pil2M], num=1)
 
 
 
@@ -2000,8 +2000,8 @@ def alignment_blade_coating_2024_2(coating_start_pos, measurement_pos,th):
 
 
 
-def blade_coating_2024_2(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.16, dets = [pil1M, pil900KW]):
-    # dets = ['pil900KW','pil1M']
+def blade_coating_2024_2(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.16, dets = [pil2M, pil900KW]):
+    # dets = ['pil900KW','pil2M']
 
     yield from shopen()
     yield from bps.sleep(1)
@@ -2036,7 +2036,7 @@ def blade_coating_2024_2(sample_name='bladecoating', coating_start_pos=10, measu
 def take_data():
     
     det_exposure_time(0.5,10)
-    yield from bp.count([pil1M])
+    yield from bp.count([pil2M])
 
 
 
@@ -2062,7 +2062,7 @@ def saxs_hardxray_inair_capillaries_2024_2(t=0.5):
     more capillaries and thin films on the morning (2am) of june 27, MRL
     """
 
-    dets = [pil1M]
+    dets = [pil2M]
 
  
     # sample names
@@ -2099,7 +2099,7 @@ def saxs_hardxray_inair_capillaries_2024_2(t=0.5):
         sample_id(user_name="ML", sample_name=sample_name)
         print(f"\n\t=== Sample: {sample_name} ===\n")
 
-        yield from bp.count([pil1M], num=1)
+        yield from bp.count([pil2M], num=1)
 
 
 
@@ -2186,7 +2186,7 @@ def waxs_hardxray_inair_2024_2(t=1):
 def saxs_hardxray_inair_june27_2024_2(t=1):
 
 
-    dets = [pil1M]
+    dets = [pil2M]
 
  
     # sample names
@@ -2222,7 +2222,7 @@ def saxs_hardxray_inair_june27_2024_2(t=1):
             sample_id(user_name="ML", sample_name=sample_name)
             print(f"\n\t=== Sample: {sample_name} ===\n")
 
-            yield from bp.count([pil1M], num=1)
+            yield from bp.count([pil2M], num=1)
 
 
 
@@ -2233,8 +2233,8 @@ def acq_delay(dets,exp_time,delay,num):
     yield from bp.count(dets,num,delay)
 
 
-def blade_coating_acqdelay_2024_2(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.16, dets = [pil1M, pil900KW]):
-    # dets = ['pil900KW','pil1M']
+def blade_coating_acqdelay_2024_2(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.16, dets = [pil2M, pil900KW]):
+    # dets = ['pil900KW','pil2M']
 
     # yield from shopen()
     # yield from bps.sleep(1)
@@ -2354,7 +2354,7 @@ def swaxs_hardxray_kelvin_2024_3(t=1):
     314483_Freychet_03 Sept 16, 2024
     """
 
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     names = [   'kl-blank',  'kl-nafion','kl-nf-p5-0.5', 'kl-nf-p5-2.0', 'kl-nf-p30-2.0', 'kl-nf-p30-0.5', 
              'kl-ahpp25-4','kl-ahpp25-2', 'kl-ahpp25-1','kl-ahpp25-0.5','kl-ahpp25-0.25',
@@ -2407,7 +2407,7 @@ def swaxs_sedge_kelvin_2024_3(t=1):
     314483_Freychet_03 Sept 16, 2024
     """
 
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     names = [   'kl-blank',  'kl-nafion','kl-nf-p5-0.5', 'kl-nf-p5-2.0', 'kl-nf-p30-2.0', 'kl-nf-p30-0.5', 
              'kl-ahpp25-4','kl-ahpp25-2', 'kl-ahpp25-1','kl-ahpp25-0.5','kl-ahpp25-0.25',
@@ -2480,7 +2480,7 @@ def nexafs_Zr_edge_greg_2024_1(t=1):
     307830_Su Feb 2, 2024
     """
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     names = ['sj-ppionzrox-k', 'sj-ppion-k']
     x =     [          -15900,        -8900]
@@ -2536,7 +2536,7 @@ def nexafs_Zr_edge_greg_2024_1(t=1):
 
 
 def Zr_edge_giswaxs_measurments_2024_3(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     names = ['sj-ppionzrox-m-post', 'sj-ppionzrox-m-ox', 'sj-ppionzrox-m-pre', 'sj-ppion-m-ox', 
@@ -2656,7 +2656,7 @@ def giwaxs_S_edge_Su_2024_3(t=1):
             if wa ==0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             # Do not take SAXS when WAXS detector in the way
 
@@ -2744,7 +2744,7 @@ def giwaxs_hardxray_Kelvin_2024_3(t=1):
             if wa ==0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             # Do not take SAXS when WAXS detector in the way
 
@@ -2799,7 +2799,7 @@ def nexafs_As_edge_matt_2024_1(t=1):
     #         dets = [pil900KW]
 
     #     else:
-    #         dets = [pil900KW, pil1M]
+    #         dets = [pil900KW, pil2M]
 
     #     det_exposure_time(t, t)
     
@@ -2953,8 +2953,8 @@ def alignment_blade_coating_2024_3(coating_start_pos, measurement_pos,th):
 
 
 
-def blade_coating_2024_3(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.12, dets = [pil1M, pil900KW]):
-    # dets = ['pil900KW','pil1M']
+def blade_coating_2024_3(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.12, dets = [pil2M, pil900KW]):
+    # dets = ['pil900KW','pil2M']
 
     #yield from shopen()
     #yield from bps.sleep(1)
@@ -2993,7 +2993,7 @@ def saxs_hardxray_capillaries_2024_3(t=0.1):
     315602, Sept 29, 2024
     """
 
-    dets = [pil1M]
+    dets = [pil2M]
 
     #names = [   '91N1MgAc1',  '91N1MgAc17','91N1MgAc2', '91N1CuAc01', '91N1CuAc02']
     #x =     [        -49150,        -42850,         -36550,          -30350,           -23750            ]
@@ -3078,7 +3078,7 @@ def swaxs_hardxray_mrl_2024_3(t=1):
     315602_Su_8    Sept 30, 2024
     """
 
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     names = [   'capillary-jd11',  'capillary-jd10', 'capillary-jd9', 'capillary-jd8', 'capillary-jd7', 'capillary-jd6',
                 'capillary-jd5',  'capillary-jd4', 'capillary-jd3', 'capillary-jd2', 'capillary-jd1', 'capillary-AgB']
@@ -3128,7 +3128,7 @@ def swaxs_hardxray_mrl_v2_2024_3(t=1):
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
 
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     #names = [   'capillary-jd11',  'capillary-jd10', 'capillary-jd9', 'capillary-jd8', 'capillary-jd7', 'capillary-jd6',
     #            'capillary-jd5',  'capillary-jd4', 'capillary-jd3', 'capillary-jd2', 'capillary-jd1', 'capillary-AgB']
@@ -3299,7 +3299,7 @@ def nexafs_Ag_edge_Su_2024_3(t=0.2):
 
                 # Metadata
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 wa = str(np.round(float(wa), 1)).zfill(4)
 
                 # Detector file name
@@ -3530,7 +3530,7 @@ def swaxs_hardxray_jose_2025_1(t=1):
     """
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     #stage.y = 4 and stage.x = 0
@@ -3577,7 +3577,7 @@ def swaxs_Sedge_jose_2025_1(t=1):
     """
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     #stage.y = 4 and stage.x = 0
@@ -3648,7 +3648,7 @@ def swaxs_Sedge_pierre_2025_1(t=1):
     """
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     #stage.y = 4 and stage.x = 0
@@ -3721,7 +3721,7 @@ def swaxs_Sedge_yunfei_2025_1(t=1):
     """
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     #stage.y = 4 and stage.x = 0
@@ -3790,7 +3790,7 @@ def swaxs_Cledge_jose_2025_1(t=1):
     """
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     energies = np.asarray(np.arange(2800, 2820, 5).tolist() + np.arange(2820, 2823, 1.0).tolist() 
                           + np.arange(2823, 2835, 0.5).tolist() + np.arange(2835, 2845, 2).tolist()
@@ -3990,12 +3990,12 @@ def blade_coating_2025_1_slowexp_withmotion(sample_name='bladecoating', coating_
     yield from bps.mv(syringe_pu.stop_flow, 1) # stop pump
     
     yield from bps.mv(thorlabs_su, measurement_pos)
-    yield from bp.scan([pil1M, pil900KW], thorlabs_su, measurement_pos, measurement_pos-15, num=360, per_step=one_1d_step_withwait)
+    yield from bp.scan([pil2M, pil900KW], thorlabs_su, measurement_pos, measurement_pos-15, num=360, per_step=one_1d_step_withwait)
 
 
 
 
-def exsitu_2025_01(sample_name='bladecoating', th=0.12, dets = [pil1M, pil900KW]):
+def exsitu_2025_01(sample_name='bladecoating', th=0.12, dets = [pil2M, pil900KW]):
     
     #yield from alignement_gisaxs_hex(0.1)
 
@@ -4003,7 +4003,7 @@ def exsitu_2025_01(sample_name='bladecoating', th=0.12, dets = [pil1M, pil900KW]
     sample_id(user_name='ML', sample_name=sample_name)
     
     yield from bps.mvr(stage.th, th)
-    yield from bp.count([pil1M, pil900KW])
+    yield from bp.count([pil2M, pil900KW])
     yield from bps.mvr(stage.th, -th)
 
 
@@ -4093,20 +4093,31 @@ def single_scan_giwaxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
     # x_hexa = [      0,         0,               -1,              -11]
     # y_piezo = [ -4000,     -4000,            -4000,            -4000]
 
-    names = [  'HOPI_70water_1', 'HOPI_70water_2']
-    x_piezo = [          -55000,           -55000]
-    x_hexa = [               -1,              -11]
-    y_piezo = [           -4000,            -4000]
+    # names = [  'HOPI_70water_1', 'HOPI_70water_2']
+    # x_piezo = [          -55000,           -55000]
+    # x_hexa = [               -1,              -11]
+    # y_piezo = [           -4000,            -4000]
 
-    names = [   'C12',  'C10',  'C08','HOPI_70water_1', 'HOPI_70water_2']
-    x_piezo = [ -5000, -14000, -22000,          -55000,           -55000]
-    x_hexa = [      0,      0,      0,              -1,              -11]
-    y_piezo = [ -4000, -4000,  -4000,           -4000,            -4000]
+    # names = [   'C12',  'C10',  'C08','HOPI_70water_1', 'HOPI_70water_2']
+    # x_piezo = [ -5000, -14000, -22000,          -55000,           -55000]
+    # x_hexa = [      0,      0,      0,              -1,              -11]
+    # y_piezo = [ -4000, -4000,  -4000,           -4000,            -4000]
 
-    names = [  'C14']
-    x_piezo = [ 2000]
-    x_hexa = [      0]
-    y_piezo = [ -4000]
+
+    # names = [   'NafionD2020_2wt_30water_1',  'NafionD2020_2wt_30water_2',  'NafionD2020_2wt_70water_1','NafionD2020_2wt_70water_2', 'NafionD2020_10wt_30water_1', 'NafionD2020_10wt_30water_2', 'NafionD2020_10wt_70water_1', 'NafionD2020_10wt_70water_2']
+    # x_piezo = [ -55500, -44500, -33500,          -21500,           -10500, 1500, 13500, 27500]
+    # x_hexa = [      -16,      -16,      -16,    -16, -16, -16, -16, -16]
+    # y_piezo = [ 3490, 3190,  3190,           3190, 3090,  2490,           2790,            2790]
+
+    names = ['NafionD2020_10wt_70water_2']
+    x_piezo = [27500]
+    x_hexa = [-16]
+    y_piezo = [  3010]
+
+    # names = [  'C14']
+    # x_piezo = [ 2000]
+    # x_hexa = [      0]
+    # y_piezo = [ -4000]
 
     assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
     assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
@@ -4114,11 +4125,11 @@ def single_scan_giwaxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
 
     waxs_arc = [20, 0]
 
-    ai0_all = -1
-    ai_list = [0.12]
+    ai0_all = -2.473
+    ai_list = [0.16]
     xstep = 0
 
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     for name, xs, ys, xs_hexa in zip(names, x_piezo, y_piezo, x_hexa):
@@ -4127,7 +4138,7 @@ def single_scan_giwaxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
                           piezo.y, ys)
 
         yield from bps.mv(piezo.th, ai0_all)
-        yield from alignement_gisaxs_doblestack(0.15)
+        # yield from alignment_gisaxs(0.15)
 
         ai0 = piezo.th.position
         det_exposure_time(t, t)
@@ -4149,7 +4160,7 @@ def single_scan_giwaxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
                     # yield from bps.mv(piezo.x, xs - counter * xstep)
                     counter += 1
                     e=energy.energy.position
-                    sdd=pil1m_pos.z.position
+                    sdd=pil2M.motor.z.position
                     sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa, sdd="%1f"%sdd)
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     s.put(sample_name)
@@ -4205,7 +4216,7 @@ def single_scan_waxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=10,
     waxs_arc = [0, 20]
     xstep = 0
 
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     for name, xs, ys, xs_hexa, ys_hexa in zip(names, x_piezo, y_piezo, x_hexa, y_hexa):
@@ -4278,7 +4289,7 @@ def scan_nexafs_Ti():
                 # Metadata
                 #e = energy.position.energy / 1000
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 # Sample name
                 name_fmt = ("{sample}_{energy}eV_wa{wax}_sdd{sdd}m_up")
@@ -4321,7 +4332,7 @@ def energy_Tiedge_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
                           + np.arange(5020, 5035, 5).tolist())
 
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     for name, x, y in zip(names, piezo_x, piezo_y):
@@ -4346,7 +4357,7 @@ def energy_Tiedge_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
                 
                     # Metadata
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
                     bpm3 = xbpm3.sumX.get()
 
                     # Sample name
@@ -4369,12 +4380,12 @@ def energy_Tiedge_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
 
 
 
-def temp_series(name='temp',temps = np.linspace(25,40,16),exp_time=1, hold_delay=120, dets=[pil1M]):   # function loop to bring linkam to temp, hold and measure
+def temp_series(name='temp',temps = np.linspace(25,40,16),exp_time=1, hold_delay=120, dets=[pil2M]):   # function loop to bring linkam to temp, hold and measure
 # Function will begin at start_temp and take a SAXS measurement at every temperature given 
     
     temps = [240, 230, 220, 210, 200, 175, 150, 125, 100, 75, 50, 30]
 
-    dets = [pil1M]
+    dets = [pil2M]
     LThermal.setTemperature(temps[0])
     # LThermal.setTemperatureRate(ramp)
     LThermal.on() # turn on 
@@ -4395,7 +4406,7 @@ def temp_series(name='temp',temps = np.linspace(25,40,16),exp_time=1, hold_delay
         
 
         # Metadata
-        sdd = pil1m_pos.z.position / 1000
+        sdd = pil2M_pos.z.position / 1000
 
         # Sample name
         name_fmt = ("{sample}_{energy}eV_sdd{sdd}m_temp{temp}")
@@ -4413,7 +4424,7 @@ def temp_series(name='temp',temps = np.linspace(25,40,16),exp_time=1, hold_delay
 
 
 
-def xpcs_2025_1(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.12, dets = [pil1M, pil900KW]):
+def xpcs_2025_1(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.12, dets = [pil2M, pil900KW]):
 
     det_exposure_time(0.5, 500)
     sample_id(user_name='ML', sample_name=sample_name)

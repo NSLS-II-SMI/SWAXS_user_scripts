@@ -173,7 +173,7 @@ def run_swaxs_KCW_2023_3(t=2):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
 
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
         for name, x, y, z, hx in zip(names, piezo_x, piezo_y, piezo_z, hexa_x):
             yield from bps.mv(piezo.x, x,
@@ -302,7 +302,7 @@ def grazing_Chen_Wiegart_2023_3(t=0.5):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
             # problems with the beamstop
             yield from bps.mv(waxs.bs_y, -3)
@@ -456,11 +456,11 @@ def align_across_x():
         # Align step by step
         alignment_LUP = dict()
 
-        yield from rel_scan([pil1M], piezo.y, -100, 100, 26)
+        yield from rel_scan([pil2M], piezo.y, -100, 100, 26)
         ps(der=True)
         yield from bps.mv(piezo.y, ps.cen)
 
-        yield from rel_scan([pil1M], piezo.th, -1.5, 1.5, 26)
+        yield from rel_scan([pil2M], piezo.th, -1.5, 1.5, 26)
         ps(der=False)
         yield from bps.mv(piezo.th, ps.peak)
 

@@ -34,7 +34,7 @@ def run_capillaries_Alexandra_2023_3(ts=0.5, tl=5, waxs_only=False):
     
     exposures = [ts, tl]
     
-    dets = [pil900KW]  if waxs_only else [pil1M]
+    dets = [pil900KW]  if waxs_only else [pil2M]
     waxs_arc = [0, 20] if waxs_only else [20]
 
     for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
@@ -46,7 +46,7 @@ def run_capillaries_Alexandra_2023_3(ts=0.5, tl=5, waxs_only=False):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            #dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            #dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
             # Read pin diode current
             if waxs.arc.position > 15:
@@ -114,7 +114,7 @@ def run_temp_capillaries_Alexandra_2023_3(ts=0.5, tl=1, waxs_only=False):
     
     exposures = [ts, tl]
     
-    dets = [pil900KW]  if waxs_only else [pil1M]
+    dets = [pil900KW]  if waxs_only else [pil2M]
     waxs_arc = [0, 20] if waxs_only else [20]
 
     for temperature in temperatures:
@@ -162,7 +162,7 @@ def run_temp_capillaries_Alexandra_2023_3(ts=0.5, tl=1, waxs_only=False):
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
 
-                #dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                #dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
                 # Read pin diode current
                 if waxs.arc.position > 15:
@@ -240,7 +240,7 @@ def run_capillaries_Chen_2024_1_saxsonly(ts1=10,ts2=20,tl=30):
     
     exposures = [ts1, ts2,tl]
     
-    dets = [pil1M]
+    dets = [pil2M]
 
     for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
         yield from bps.mv(piezo.x, x,
@@ -325,7 +325,7 @@ def run_capillaries_Chen_2024_1_waxs(ts1=0.5, ts2=1):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
             # Read pin diode current
             if waxs.arc.position > 15:
@@ -381,7 +381,7 @@ def run_capillaries_Chen_2024_1_saxs_time(exp_time=0.5, delay_sec=300,num=7):
     assert len(piezo_x) == len(piezo_z), f"Wrong list lenghts"
 
     
-    dets = [pil1M]
+    dets = [pil2M]
     y_off = [0]
     user_name = 'TC'
     

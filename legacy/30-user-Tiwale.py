@@ -21,7 +21,7 @@ def NEXAFS_S_edge(t=0.5):
 
 def NEXAFS_Cl_edge(t=0.5):
     yield from bps.mv(waxs, 65)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     name = "ZEP_flood_redo_ai1.5deg"
 
     energies = np.linspace(2800, 2850, 51)
@@ -297,7 +297,7 @@ def saxs_prep_multisample(t=1):
 
 
 def SAXS_S_edge_fine(t=1):
-    dets = [pil1M]
+    dets = [pil2M]
     name = "s3_ai0.9deg_sdd2.5m"
     energies = (
         np.arange(2450, 2470, 5).tolist()
@@ -347,7 +347,7 @@ def fly_scan_ai_nikhil(det, motor, cycle=1, cycle_t=10, phi=-0.6):
 
 
 def SAXS_S_edge_allprs(t=1):
-    dets = [pil1M]
+    dets = [pil2M]
     name = "s2_ai0.9deg"
 
     prs0 = 1.275
@@ -369,7 +369,7 @@ def SAXS_S_edge_allprs(t=1):
 
 
 def giwaxs_S_edge_pag_2021_2(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = ["pag0_redo", "pag20", "pag40"]
     x = [44000, 28000, 5000]
@@ -530,7 +530,7 @@ def ex_situ_nexafsznedge_2021_2(t=1):
 
 def ex_situ_saxsnexafsznedge_2021_2(t=1):
     # Detectors, motors:
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     waxs_range = [65]
 
     energies = (

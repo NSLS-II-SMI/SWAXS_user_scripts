@@ -60,7 +60,7 @@ def phong_waxs_S_edge_new(t=1):
 
 
 def phong_waxs_Sedge_multi_2022_1(t=3):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     energies = (
         np.arange(2445, 2470, 5).tolist()
@@ -140,7 +140,7 @@ def phong_waxs_Sedge_multi_2022_1(t=3):
 
 def song_waxs_S_edge_2022_1(t=0.5):
     # single energy scan in tensile stage
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     energies = (
         np.arange(2445, 2470, 5).tolist()
@@ -191,7 +191,7 @@ def song_waxs_S_edge_2022_1(t=0.5):
 
 
 def song_saxs_tensile_hard(t=1):
-    dets = [pil1M]
+    dets = [pil2M]
 
     names = "P3BT_loop2"
 
@@ -212,7 +212,7 @@ def song_saxs_tensile_hard(t=1):
 
 
 def song_saxs_waxs_tensile_hard(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     names = "P3BT_loop2"
     t0 = time.time()
@@ -238,7 +238,7 @@ def song_saxs_waxs_tensile_hard(t=1):
 
 def song_tensile_tender_loop(t=1):
     # infinite time loop for contonuous data taking
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     names = "P77_loop1"
     t0 = time.time()
@@ -276,7 +276,7 @@ def song_tensile_tender_loop(t=1):
 
 def song_tensile_tender(t=0.4):
     # infinite time loop for contonuous data taking
-    # dets = [pil1M, pil900KW]
+    # dets = [pil2M, pil900KW]
 
     names = "P75_7_3_thickSEBS_50strain_cycle100_2"
     det_exposure_time(t, t)
@@ -288,7 +288,7 @@ def song_tensile_tender(t=0.4):
         wa = [0, 20]
 
     for wax in wa:
-        dets = [pil900KW] if wax < 10 else [pil1M, pil900KW]
+        dets = [pil900KW] if wax < 10 else [pil2M, pil900KW]
 
         if energy.energy.position > 2475:
             ener = energies[::-1]
@@ -300,7 +300,7 @@ def song_tensile_tender(t=0.4):
             yield from bps.mv(energy, ene)
 
             yield from bps.mv(waxs, wax)
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
 
             sample_name = name_fmt.format(
                 sample=names, energy="%6.2f" % ene, sdd="%.1f" % sdd, wa="%1.1f" % wax
@@ -555,7 +555,7 @@ def phong_waxs_Sedge_multi_2022_3(t=0.5):
 
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         det_exposure_time(t, t)
 
         for name, xs, ys in zip(names, piezo_x, piezo_y):
@@ -572,7 +572,7 @@ def phong_waxs_Sedge_multi_2022_3(t=0.5):
                 # Metadata
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 scan_id = db[-1].start["scan_id"] + 1
 
                 # Sample name
@@ -626,7 +626,7 @@ def patryk_waxs_Sedge_multi_2022_3(t=0.5):
 
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         det_exposure_time(t, t)
 
         for name, xs, ys in zip(names, piezo_x, piezo_y):
@@ -643,7 +643,7 @@ def patryk_waxs_Sedge_multi_2022_3(t=0.5):
                 # Metadata
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 # Sample name
                 name_fmt = "{sample}_{energy}eV_wa{wax}_sdd{sdd}m"

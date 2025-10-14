@@ -69,7 +69,7 @@ def NEXAFS_Cd_edge(t=0.5):
 
 
 def time_resolved_S_edge(t=0.1, t1=10):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     name = "P3HT-tr10s-UVon2_ai0.6"
     e = "2490.0"
 
@@ -92,27 +92,27 @@ def fly_scan_prsx(det, motor, t=0.1, t1=30, name="test"):
     stop = piezo.x.position + 3000
 
     yield from bps.mv(motor, start)
-    pil1M.stage()
+    pil2M.stage()
     pil300KW.stage()
 
     det_exposure_time(t, t1)
 
     print(f"Acquire time before staging: {t}")
-    st = pil1M.trigger()
+    st = pil2M.trigger()
     st1 = pil300KW.trigger()
 
     yield from list_scan([], motor, [start, stop])
     while not st.done or not st1.done:
         pass
 
-    pil1M.unstage()
+    pil2M.unstage()
     pil300KW.unstage()
     print(f"We are done after {t1}s of waiting")
     # yield from bps.mv(attn_shutter, 'Insert')
 
 
 def giwaxs_S_edge_calvin(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     name = "SAXS_WAXS_CdSe-CdS-NR-HT-BA-30s"
     energies = [2460, 2475, 2476, 2490, 2510]
@@ -141,7 +141,7 @@ def giwaxs_S_edge_calvin(t=1):
 
 
 def giwaxs_Ag_edge_calvin(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     name = "SAXS_WAXS_P3HT_1nmA_2"
     energies = [3350, 3357, 3358, 3365]
@@ -173,7 +173,7 @@ def giwaxs_Ag_edge_calvin(t=1):
 
 
 def single_giwaxs(t=1, name="test"):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     det_exposure_time(t, t)
 
@@ -202,7 +202,7 @@ def night_shift_2():
     yield from bps.mvr(piezo.x, 300)
 
     t0 = time.time()
-    yield from fly_scan_prsx([pil1M, pil300KW], piezo.x, 0.1, 10, name=name)
+    yield from fly_scan_prsx([pil2M, pil300KW], piezo.x, 0.1, 10, name=name)
 
     t1 = time.time()
     i = 0

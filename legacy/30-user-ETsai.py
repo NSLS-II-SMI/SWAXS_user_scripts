@@ -5,7 +5,7 @@
 # RE.md['SAF_number'] = 311104
 # RE.md['SAXS_setup'] = {'sdd': 9200, 'beam_centre': [450, 554], 'bs': 'rod', 'energy': 16100}
 # 
-# RE(rel_scan([pil1M], stage.y, -2, 2, 15)); ps()
+# RE(rel_scan([pil2M], stage.y, -2, 2, 15)); ps()
 # ---------------------------------------------------------------
 # ---------------------------------------------------------------
 # 1. [Search hutch and close]
@@ -94,13 +94,13 @@ def run_giswaxs_2025C1(t=2, flag_align=1, flag_reflect = 1, waxs_angles = [15, 0
         if 1:
 
             # if waxs_angle >= 15:
-            #     dets = [pil900KW, pil1M] 
+            #     dets = [pil900KW, pil2M] 
             #     angle_arc = np.array([0.08, 0.12, 0.16, 0.2])  # incident angles
             # else:
             #     dets = [pil900KW] 
             #     angle_arc = np.array([0.08, 0.12, 0.16, 0.2])  # incident angles
 
-            dets = [pil1M] 
+            dets = [pil2M] 
             # angle_arc = np.array([0.12])  # incident angles
             angle_arc = np.array([0.05, 0.08, 0.1, 0.12])  # incident angles
             th_meas = (
@@ -142,7 +142,7 @@ def run_giswaxs_2025C1(t=2, flag_align=1, flag_reflect = 1, waxs_angles = [15, 0
 def measure_saxs(t=1, user_name="NEA", sample='D2O_s1', xr_list = [0, 100], yr_list = [0, 500]):
     x0 = piezo.x.position
     y0 = -8000 #piezo.y.position
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for xr in xr_list:
@@ -171,7 +171,7 @@ def measure_saxs_array(t=1, user_name="SF", sample='Ba4_d', xr_list = [-200, 0])
 
     for idx, x0 in enumerate(x0_list):
         y0 = piezo.y.position
-        dets = [pil1M]
+        dets = [pil2M]
         det_exposure_time(t, t)
 
         for xr in xr_list:
@@ -229,7 +229,7 @@ def measure_waxs(t=1, waxs_angle=0, user_name="CK", sample='test', yr_list = [-5
             yield from bp.count(dets, num=1)
 
 
-def test_measure(t=1, waxs_angle=0, user_name="test", sample_name='EmptyKapton', dets = [pil1M, pil900KW]):
+def test_measure(t=1, waxs_angle=0, user_name="test", sample_name='EmptyKapton', dets = [pil2M, pil900KW]):
     yield from bps.mv(waxs, waxs_angle)
     sample_id(user_name=user_name, sample_name=sample_name)
     det_exposure_time(t, t)
@@ -297,7 +297,7 @@ def alignement_gisaxs(angle=0.15, flag_reflect = 1):
     bec._calc_derivative_and_stats = False
 
     
-# 2023-Jun-2 Static, pil1M Y-44.4
+# 2023-Jun-2 Static, pil2M Y-44.4
 # RE(run_giswaxs(t=5, , flag_align=1))
 # RE(run_giswaxs(t=5, flag_align=1, flag_reflect=0, piezo_y_init=7700))
 def run_giswaxs(t=2, flag_align=1, flag_reflect = 0, waxs_angles = [15, 0], piezo_y_init=7500):
@@ -342,7 +342,7 @@ def run_giswaxs(t=2, flag_align=1, flag_reflect = 0, waxs_angles = [15, 0], piez
             yield from bps.mv(waxs, waxs_angle)
 
             if waxs_angle >= 15:
-                dets = [pil900KW, pil1M] 
+                dets = [pil900KW, pil2M] 
                 angle_arc = np.array([0.08, 0.12, 0.16, 0.2])  # incident angles
             else:
                 dets = [pil900KW] 
@@ -452,10 +452,10 @@ def alignement_gisaxs_hex(angle=0.1, rough_y=0.5, flag_reflection = 1):
 #2023-June. Hexa with z~3, theta=1.5, x -14/-12 to 18/20, y -20 to 8 still ok
 #Maybe better to do each alignment manually with: 
 # RE(alignement_gisaxs_hex(angle=0.1, rough_y=0.5, flag_reflection = 1))
-# RE(rel_scan([pil1M], stage.y, -0.2, 0.2, 16))
-# RE(rel_scan([pil1M], stage.th, -0.5, 0.5, 11))
-# RE(rel_scan([pil1M, pil900KW], stage.y, -0.3, 0.3, 13))
-# RE(rel_scan([pil1M, pil900KW], stage.th, -0.5, 0.5, 11))
+# RE(rel_scan([pil2M], stage.y, -0.2, 0.2, 16))
+# RE(rel_scan([pil2M], stage.th, -0.5, 0.5, 11))
+# RE(rel_scan([pil2M, pil900KW], stage.y, -0.3, 0.3, 13))
+# RE(rel_scan([pil2M, pil900KW], stage.th, -0.5, 0.5, 11))
 # 
 # RE(run_gi_humid(t=1, flag_align = 0, n0=42, t0 = None, Nmax=15, time_hr = [0.05, 0.1] , time_sleep_sec= [10, 5, 4]))
 # RE(run_gi_humid(t=1, flag_align = 0, n0=0, t0 = t0, Nmax=9999, time_hr = [4, 6] , time_sleep_sec= [3600, 1200, 600]))
@@ -529,7 +529,7 @@ def run_gi_humid(t=5, flag_align = 0, n0=0, t0 = 0, Nmax=9999, time_hr = [4, 8] 
                 for waxs_angle in waxs_angles:  # loop through waxs angles
                     yield from bps.mv(waxs, waxs_angle)
                     if waxs_angle >= 15:
-                        dets = [pil900KW, pil1M] 
+                        dets = [pil900KW, pil2M] 
                     else:
                         dets = [pil900KW] 
 
@@ -645,7 +645,7 @@ def run_gi_humid_new(t=0.5, t0=0, user_name='Insitu', time_hr = [2], time_sleep_
                     #yield from bps.mv(waxs, waxs_angle)
 
                     if waxs_angle >= 15:
-                        dets = [pil900KW, pil1M] 
+                        dets = [pil900KW, pil2M] 
                     else:
                         dets = [pil900KW] 
 
@@ -720,7 +720,7 @@ def run_gi_humid_testexp(t_list = [0.5, 1, 2, 3, 5], xr_list=[-0.4], n0=41, Nmax
 
                     yield from bps.mv(waxs, waxs_angle)
                     if waxs_angle >= 15:
-                        dets = [pil900KW, pil1M] 
+                        dets = [pil900KW, pil2M] 
                     else:
                         dets = [pil900KW] 
 

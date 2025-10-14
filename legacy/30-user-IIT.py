@@ -6,7 +6,7 @@ def mesh_IIT_2022_1(t=1):
     waxs_range = [20, 0]
 
     name = "JO"
-    dets = [pil900KW, pil1M, pil1mroi2, pil1mroi3, pil1mroi4]
+    dets = [pil900KW, pil2M, pil2Mroi2, pil2Mroi3, pil2Mroi4]
     det_exposure_time(t, t)
 
     """#these samples are very large areas and 3rd priority (lowest) except for the 1st teeth12.
@@ -57,7 +57,7 @@ def mesh_IIT_2022_1(t=1):
             if wa < 10:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M, pil1mroi2, pil1mroi3, pil1mroi4]
+                dets = [pil900KW, pil2M, pil2Mroi2, pil2Mroi3, pil2Mroi4]
 
             yield from bps.mv(waxs, wa)
             name_fmt = "{sam}_wa{waxs}_16.1keV_3m"

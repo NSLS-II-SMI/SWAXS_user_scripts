@@ -85,7 +85,7 @@ def gocko_res(meas_t=1):
         """
     curr_tray = xlocs1
     curr_names = names1
-    det1 = [pil1M]
+    det1 = [pil2M]
 
     xoffset = 200
     for x, name in zip(curr_tray, curr_names):
@@ -134,29 +134,29 @@ def alignmentmodeCai():
     if waxs.arc.position < 8:
         yield from bps.mv(waxs, 8)
     yield from bps.sleep(1)
-    yield from bps.mv(pil1m_pos.x, -4)
-    yield from bps.mv(pil1m_bs_rod.x, alignbspos)
+    yield from bps.mv(pil2M_pos.x, -4)
+    yield from bps.mv(pil2M_bs_rod.x, alignbspos)
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(0.5)
 
 
 def measurementmodeCai():
     yield from bps.mv(GV7.close_cmd, 1)
-    yield from bps.mv(pil1m_pos.x, -4)
-    yield from bps.mv(pil1m_bs_rod.x, measurebspos)
+    yield from bps.mv(pil2M_pos.x, -4)
+    yield from bps.mv(pil2M_bs_rod.x, measurebspos)
     yield from bps.sleep(1)
     yield from SMIBeam().insertFoils("Measurment")
     yield from bps.sleep(1)
 
 
 def align_gisaxs_height_Cai(rang=0.3, point=31, der=False):
-    yield from bp.rel_scan([pil1M], piezo.y, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], piezo.y, -rang, rang, point)
     ps(der=der)
     yield from bps.mv(piezo.y, ps.cen)
 
 
 def align_gisaxs_th_Cai(rang=0.3, point=31):
-    yield from bp.rel_scan([pil1M], piezo.th, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], piezo.th, -rang, rang, point)
     ps()
     yield from bps.mv(piezo.th, ps.peak)
 
@@ -170,14 +170,14 @@ def alignCai():
     det_exposure_time(0.5)
     sample_id(user_name="test", sample_name="test")
     yield from alignmentmodeCai()
-    yield from bps.mv(pil1M.roi1.min_xyz.min_y, 900)
+    yield from bps.mv(pil2M.roi1.min_xyz.min_y, 900)
     yield from align_gisaxs_height_Cai(700, 16, der=True)
     yield from align_gisaxs_th_Cai(1, 11)
     yield from align_gisaxs_height_Cai(300, 11, der=True)
     yield from align_gisaxs_th_Cai(0.5, 16)
     yield from bps.mv(piezo.th, ps.peak + 0.25)
     yield from bps.mv(
-        pil1M.roi1.min_xyz.min_y, 900 - 97
+        pil2M.roi1.min_xyz.min_y, 900 - 97
     )  # 168 px for 0.1deg at 8.3 m, 330px for 0.25deg at 6.5 m 97 for 6 m and 0.08
     yield from align_gisaxs_th_Cai(0.3, 31)
     yield from align_gisaxs_height_Cai(200, 21)
@@ -190,7 +190,7 @@ def alignfine():
     det_exposure_time(0.5)
     sample_id(user_name="test", sample_name="test")
     yield from alignmentmodeCai()
-    yield from bps.mv(pil1M.roi1.min_xyz.min_y, 916 - 330)
+    yield from bps.mv(pil2M.roi1.min_xyz.min_y, 916 - 330)
     yield from align_gisaxs_th_Cai(0.25, 31)
     yield from align_gisaxs_height_Cai(220, 25)
     yield from align_gisaxs_th_Cai(0.1, 21)

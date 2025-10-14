@@ -171,11 +171,11 @@ def temp_align_saxs(temp):
     # if temp == 120:
     #     time.sleep(60)
     #     for t in range(0,14):
-    #         yield from bp.count([pil1M, pil900KW])
+    #         yield from bp.count([pil2M, pil900KW])
     #         time.sleep(50)
 
     # else:
-    yield from bp.count([pil1M, pil900KW])
+    yield from bp.count([pil2M, pil900KW])
 
     yield from bps.mvr(piezo.th, -0.1 - ai_offset[idx])
     yield from bps.mvr(piezo.y, -y_offset[idx])
@@ -285,7 +285,7 @@ def giwaxs_White_2022_2(t=0.5):
         for wa in waxs_angles:
 
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
 
             inc_angles = [0.11] if name == "2PACZ_2F_down_measur_01" else [0.10, 0.18]
 
@@ -297,7 +297,7 @@ def giwaxs_White_2022_2(t=0.5):
                 name_fmt = "{sample}_ai{ai}_{energy}keV_wa{wax}_sdd{sdd}m_bpm{xbpm}"
                 bpm = xbpm3.sumX.get()
                 e = energy.energy.position / 1000
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 # wa = waxs.arc.user_readback.value
                 # wa = str(np.round(wa, 1)).zfill(4)
 

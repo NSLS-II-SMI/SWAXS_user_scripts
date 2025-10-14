@@ -136,7 +136,7 @@ def alice_grid_scans_2022_3(t=0.5):
     # Move WAXS out of the way
     if waxs.arc.position < 19.5:
         yield from bps.mv(waxs, 20)
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for name, x, y, h_y, sh, dr, ann in zip(names, piezo_x, piezo_y, hexa_y, shear, draw, anneal):
@@ -153,7 +153,7 @@ def alice_grid_scans_2022_3(t=0.5):
     
         # Metadata
         e = energy.position.energy / 1000  # energy keV
-        sdd = pil1m_pos.z.position / 1000  # SAXS detector distance
+        sdd = pil2M_pos.z.position / 1000  # SAXS detector distance
 
         dy = int((y_range[1] - y_range[0]) / (y_range[2] - 1 ))
         if x_range[2] > 2:

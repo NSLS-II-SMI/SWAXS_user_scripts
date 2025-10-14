@@ -17,7 +17,7 @@ def saxs_prep_multisample_matt(t=1):
     yield from bps.mv(GV7.open_cmd, 1)
     yield from bps.mv(att2_9.open_cmd, 1)
     yield from bps.mv(att2_10.open_cmd, 1)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     energies = [4030, 4040, 4050, 4055, 4075]
     det_exposure_time(t, t)
@@ -159,7 +159,7 @@ def saxs_prep_multisample_sintu(t=1):
     yield from bps.mv(att2_9.open_cmd, 1)
     yield from bps.mv(att2_10.open_cmd, 1)
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     energies = [4030, 4040, 4050, 4055, 4065, 4075, 4105]
     det_exposure_time(t, t)
@@ -361,7 +361,7 @@ def NEXAFS_Ca_edge_multi_sintu(t=0.5, name="test"):
 
 #     yield from bps.mv(waxs, 52)
 
-#     dets = [pil1M]
+#     dets = [pil2M]
 
 #     energies = np.linspace(4030, 4150, 121)
 
@@ -526,7 +526,7 @@ def ex_situ_hardxray_micro(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW, pil300KW]
+    dets = [pil2M, pil900KW, pil300KW]
     waxs_range = [22, 20, 0]
 
     assert len(x_list) == len(
@@ -557,10 +557,10 @@ def ex_situ_hardxray_micro(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 22:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_up"
             elif wa == 22:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_do"
 
             sample_name = name_fmt.format(sam=sam, waxs="%2.1f" % wa)
@@ -683,7 +683,7 @@ def ex_situ_hardxray_micro_2(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW, pil300KW]
+    dets = [pil2M, pil900KW, pil300KW]
     waxs_range = [22, 20, 0]
 
     assert len(x_list) == len(
@@ -714,10 +714,10 @@ def ex_situ_hardxray_micro_2(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 22:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_up"
             elif wa == 22:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_do"
 
             sample_name = name_fmt.format(sam=sam, waxs="%2.1f" % wa)
@@ -1086,7 +1086,7 @@ def ex_situ_hardxray_micro_4(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW, pil300KW]
+    dets = [pil2M, pil900KW, pil300KW]
     waxs_range = [22, 20, 0]
 
     assert len(x_list) == len(
@@ -1118,10 +1118,10 @@ def ex_situ_hardxray_micro_4(t=1):
             yield from bps.mv(stage.y, hy)
 
             if wa != 22:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_up"
             elif wa == 22:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_do"
 
             sample_name = name_fmt.format(sam=sam, waxs="%2.1f" % wa)
@@ -1223,7 +1223,7 @@ def ex_situ_hardxray_sintu(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(19.5, 0, 4)
 
     ypos = [0, 400, 3]
@@ -1244,10 +1244,10 @@ def ex_situ_hardxray_sintu(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_up"
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_do"
 
             sample_name = name_fmt.format(sam=sam, waxs="%2.1f" % wa)
@@ -1341,10 +1341,10 @@ def ex_situ_hardxray_sintu(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_up"
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_do"
 
             sample_name = name_fmt.format(sam=sam, waxs="%2.1f" % wa)
@@ -1455,7 +1455,7 @@ def ex_situ_hardxray_JDM(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW, pil300KW]
+    dets = [pil2M, pil900KW, pil300KW]
     waxs_range = [22, 20, 0]
 
     assert len(x_list) == len(
@@ -1487,10 +1487,10 @@ def ex_situ_hardxray_JDM(t=1):
             yield from bps.mv(stage.y, hy)
 
             if wa != 22:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_up"
             elif wa == 22:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_do"
 
             sample_name = name_fmt.format(sam=sam, waxs="%2.1f" % wa)
@@ -1734,7 +1734,7 @@ def ex_situ_hardxray_JDM_3(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW, pil300KW]
+    dets = [pil2M, pil900KW, pil300KW]
     waxs_range = [22, 20, 0]
 
     assert len(x_list) == len(
@@ -1766,10 +1766,10 @@ def ex_situ_hardxray_JDM_3(t=1):
             yield from bps.mv(stage.y, hy)
 
             if wa != 22:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_up"
             elif wa == 22:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_do"
 
             sample_name = name_fmt.format(sam=sam, waxs="%2.1f" % wa)
@@ -1782,7 +1782,7 @@ def ex_situ_hardxray_JDM_3(t=1):
 
 def ex_situ_hardxray_sintu_2021_2(t=1):
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(19.5, 0, 4)
     ypos = [0, 400, 3]
 
@@ -1815,10 +1815,10 @@ def ex_situ_hardxray_sintu_2021_2(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_up"
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_do"
 
             sample_name = name_fmt.format(sam=sam, waxs="%2.1f" % wa)
@@ -1848,10 +1848,10 @@ def ex_situ_hardxray_sintu_2021_2(t=1):
     #         yield from bps.mv(piezo.z, z)
 
     #         if wa != 19.5:
-    #             yield from bps.mv(pil1m_pos.y, -60.0)
+    #             yield from bps.mv(pil2M_pos.y, -60.0)
     #             name_fmt = '{sam}_wa{waxs}_sdd5m_16.1keV_up'
     #         elif wa == 19.5:
-    #             yield from bps.mv(pil1m_pos.y, -55.7)
+    #             yield from bps.mv(pil2M_pos.y, -55.7)
     #             name_fmt = '{sam}_wa{waxs}_sdd5m_16.1keV_do'
 
     #         sample_name = name_fmt.format(sam=sam, waxs='%2.1f'%wa)
@@ -1864,7 +1864,7 @@ def ex_situ_hardxray_sintu_2021_2(t=1):
 
 def ex_situ_hardxray_humidity_2021_2(t=1):
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(19.5, 0, 4)
     ypos = [0, 0.2, 3]
 
@@ -1898,10 +1898,10 @@ def ex_situ_hardxray_humidity_2021_2(t=1):
             yield from bps.mv(stage.y, y)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_up_3s_bpm{bpm}"
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_wa{waxs}_sdd5m_16.1keV_do_3s_bpm{bpm}"
 
             bpm1 = xbpm3.sumX.value
@@ -1918,7 +1918,7 @@ def ex_situ_hardxray_humidity_2021_2(t=1):
 def ex_situ_caedge_humidity_2021_2(t=1):
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(19.5, 0, 4)
     # waxs_range = np.linspace(45.5, 0, 8)
     ypos = [0, 0.2, 3]
@@ -2035,11 +2035,11 @@ def ex_situ_caedge_humidity_2021_2(t=1):
             yield from bps.mv(stage.y, y)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_16.1keV_up_3s_bpm{bpm}"
 
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_16.1keV_do_3s_bpm{bpm}"
 
             for k, e in enumerate(energies):
@@ -2136,7 +2136,7 @@ def ex_situ_nexafscaedge_humidity_2021_2(t=1):
 def ex_situ_caedge_2021_3(t=1):
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     waxs_range = [40]
     ypos = [0, 0, 1]
 
@@ -2277,11 +2277,11 @@ def ex_situ_caedge_2021_3(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 40:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_up_3s_bpm{bpm}"
 
             elif wa == 40:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_do_3s_bpm{bpm}"
 
             for k, e in enumerate(energies):
@@ -2371,7 +2371,7 @@ def ex_situ_nexafscaedge_2021_3(t=1):
 def ex_situ_caedge_2021_2(t=1):
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(39, 0, 7)
     ypos = [0, 100]
 
@@ -2517,11 +2517,11 @@ def ex_situ_caedge_2021_2(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_up_3s_bpm{bpm}"
 
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_do_3s_bpm{bpm}"
 
             for k, e in enumerate(energies):
@@ -2656,11 +2656,11 @@ def ex_situ_caedge_2021_2(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_up_3s_bpm{bpm}"
 
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_do_3s_bpm{bpm}"
 
             for k, e in enumerate(energies):
@@ -2761,7 +2761,7 @@ def ex_situ_nexafscaedge_2021_2(t=1):
 def ex_situ_caedge_nosmaract_2021_2(t=1):
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(39, 0, 7)
     ypos = [0, 0.2]
 
@@ -2884,11 +2884,11 @@ def ex_situ_caedge_nosmaract_2021_2(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_up_3s_bpm{bpm}"
 
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_do_3s_bpm{bpm}"
 
             for k, e in enumerate(energies):
@@ -3026,11 +3026,11 @@ def ex_situ_caedge_nosmaract_2021_2(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_up_3s_bpm{bpm}"
 
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_do_3s_bpm{bpm}"
 
             for k, e in enumerate(energies):
@@ -3054,7 +3054,7 @@ def ex_situ_caedge_nosmaract_2021_2(t=1):
 def ex_situ_znedge_nosmaract_2021_2(t=1):
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(19.5, 0, 4)
     ypos = [0, 0.2, 0.4, 0.6]
     # ypos = [0, 0.2]
@@ -3198,11 +3198,11 @@ def ex_situ_znedge_nosmaract_2021_2(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_up_bpm{bpm}"
 
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_do_bpm{bpm}"
 
             for k, e in enumerate(energies):
@@ -3347,7 +3347,7 @@ def ex_situ_nexafsLaedge_2021_2(t=1):
 def ex_situ_laedge_2021_2(t=1):
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(32.5, 32.5, 1)
     ypos = [0, 400, 800]
 
@@ -3390,11 +3390,11 @@ def ex_situ_laedge_2021_2(t=1):
             yield from bps.mv(piezo.z, z)
 
             if wa != 19.5:
-                yield from bps.mv(pil1m_pos.y, -60.0)
+                yield from bps.mv(pil2M_pos.y, -60.0)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_up_bpm{bpm}"
 
             elif wa == 19.5:
-                yield from bps.mv(pil1m_pos.y, -55.7)
+                yield from bps.mv(pil2M_pos.y, -55.7)
                 name_fmt = "{sam}_{energy}eV_wa{waxs}_sdd5m_do_bpm{bpm}"
 
             for k, e in enumerate(energies):

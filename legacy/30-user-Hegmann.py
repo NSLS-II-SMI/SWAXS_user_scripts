@@ -7,8 +7,8 @@ height = 0.1  # mm shift from the nozzle this is half the filament width, which 
 # Do not enter a value
 waxs_arc = 8
 
-# pil300KW for waxs, pil1M for saxs
-det = [pil1M]
+# pil300KW for waxs, pil2M for saxs
+det = [pil2M]
 
 import sys
 import time
@@ -60,7 +60,7 @@ def saxs_hegmann_gird(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(y_range)})"
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
 
     for x, y, sample, x_r, y_r, sta_y in zip(
         xlocs, ylocs, names, x_range, y_range, stage_y
@@ -110,7 +110,7 @@ def saxs_hegmann_grid2(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(y_range)})"
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
 
     for x, y, sample, x_r, y_r in zip(xlocs, ylocs, names, x_range, y_range):
         yield from bps.mv(piezo.x, x)
@@ -153,7 +153,7 @@ def saxs_hegmann(t=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
 
     for sam, x, y in zip(names, xlocs, ylocs):
         yield from bps.mv(piezo.x, x)
@@ -284,7 +284,7 @@ def sample_alignment():
 
 def align_height_hexa(rang=0.3, point=31, der=False):
     det_exposure_time(0.5, 0.5)
-    yield from bp.rel_scan([pil1M], stage.y, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], stage.y, -rang, rang, point)
     ps(der=der)
     yield from bps.mv(stage.y, ps.cen)
     plt.close("all")
@@ -292,7 +292,7 @@ def align_height_hexa(rang=0.3, point=31, der=False):
 
 def align_x_hexa(rang=0.3, point=31, der=False):
     det_exposure_time(0.5, 0.5)
-    yield from bp.rel_scan([pil1M], stage.x, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], stage.x, -rang, rang, point)
     # yield from bps.mv(stage.y, ps.cen)
 
 
@@ -368,7 +368,7 @@ def ex_situ_hegmann(meas_t=1):
     assert len(x_list) == len(sample_list), f"Sample name/position list is borked"
 
     waxs_arc = [0, 26, 5]
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
         yield from bps.mv(piezo.x, x)
@@ -420,7 +420,7 @@ def ex_situ_xscan_hegmann(meas_t=1):
     assert len(x_list) == len(sample_list), f"Sample name/position list is borked"
 
     waxs_arc = np.linspace(0, 26, 5)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for waxs_a in waxs_arc:
         yield from bps.mv(waxs, waxs_a)
@@ -448,7 +448,7 @@ def ex_situ_xscan_hegmann1(meas_t=1):
     x = [36200, 36800]
 
     waxs_arc = np.linspace(0, 13, 3)
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     for waxs_a in waxs_arc:
         yield from bps.mv(waxs, waxs_a)
@@ -514,7 +514,7 @@ def saxs_hegmann_grid_2021_2(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(y_range)})"
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
 
     for x, y, sample, x_r, y_r in zip(xlocs, ylocs, names, x_range, y_range):
         yield from bps.mv(piezo.x, x)

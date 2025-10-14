@@ -13,7 +13,7 @@ def run_mesh_fastUCR(t=0.5):
     y_range = [[0, 600, 151]]
 
     # Detectors, motors:
-    dets = [pil900KW]  # dets = [pil1M,pil300KW]
+    dets = [pil900KW]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
     assert len(x_list) == len(
         samples
@@ -151,7 +151,7 @@ def mesh_UCI_2021_2(t=1):
     waxs_range = np.linspace(0, 26, 5)
 
     name = "TW"
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     det_exposure_time(t, t)
 
     # Finished at -17300 in X
@@ -227,7 +227,7 @@ def mesh_UCI_2021_3(t=1):
     waxs_range = [0, 20]
 
     name = "WY"
-    dets = [pil300KW, pil900KW, pil1M]
+    dets = [pil300KW, pil900KW, pil2M]
     det_exposure_time(t, t)
 
     # these samples are done.

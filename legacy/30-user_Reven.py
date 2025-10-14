@@ -1,11 +1,11 @@
 
 
-def temp_series(name='temp',temps = np.linspace(32,26,13),exp_time=1, hold_delay=120, dets=[pil1M]):   # function loop to bring linkam to temp, hold and measure
+def temp_series(name='temp',temps = np.linspace(32,26,13),exp_time=1, hold_delay=120, dets=[pil2M]):   # function loop to bring linkam to temp, hold and measure
 # Function will begin at start_temp and take a SAXS measurement at every temperature given 
     
     #temps = np.linspace(45, 30, 16)
 
-    #dets = [pil1M] 
+    #dets = [pil2M] 
     LThermal.setTemperature(temps[0])
     # LThermal.setTemperatureRate(ramp)
     LThermal.on() # turn on 
@@ -31,7 +31,7 @@ def temp_series(name='temp',temps = np.linspace(32,26,13),exp_time=1, hold_delay
 
 
         # Metadata
-        sdd = pil1m_pos.z.position / 1000
+        sdd = pil2M_pos.z.position / 1000
 
         # Sample name
         name_fmt = ("{sample}_{energy}eV_sdd{sdd}m_temp{temp}")
@@ -48,12 +48,12 @@ def temp_series(name='temp',temps = np.linspace(32,26,13),exp_time=1, hold_delay
 
 
 
-def temp_series_withpos(name='temp',temps = np.linspace(32,26,13),exp_time=1, hold_delay=120, dets=[pil1M], xs=[-12.5], ys=[-2.298]):   # function loop to bring linkam to temp, hold and measure
+def temp_series_withpos(name='temp',temps = np.linspace(32,26,13),exp_time=1, hold_delay=120, dets=[pil2M], xs=[-12.5], ys=[-2.298]):   # function loop to bring linkam to temp, hold and measure
 # Function will begin at start_temp and take a SAXS measurement at every temperature given 
     
     #temps = np.linspace(45, 30, 16)
 
-    #dets = [pil1M] 
+    #dets = [pil2M] 
     LThermal.setTemperature(temps[0])
     # LThermal.setTemperatureRate(ramp)
     LThermal.on() # turn on 
@@ -82,7 +82,7 @@ def temp_series_withpos(name='temp',temps = np.linspace(32,26,13),exp_time=1, ho
 
 
             # Metadata
-            sdd = pil1m_pos.z.position / 1000
+            sdd = pil2M_pos.z.position / 1000
 
             # Sample name
             name_fmt = ("{sample}_{energy}eV_sdd{sdd}m_temp{temp}_pos{pos`}")
@@ -105,7 +105,7 @@ def temp_series_grid(name='temp',
                      temps = np.linspace(32,26,13),
                      exp_time=1, 
                      hold_delay=120, 
-                     dets=[pil1M], 
+                     dets=[pil2M], 
                      xs=np.linspace(-13,-12,11), 
                      ys=np.linspace(-2.3,-2.8,6)):
        # function loop to bring linkam to temp, hold and measure
@@ -145,7 +145,7 @@ def temp_series_grid(name='temp',
 
 
                 # Metadata
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 # Sample name
                 name_fmt = ("{sample}_{energy}eV_sdd{sdd}m_temp{temp}_x{x}_y{y}")

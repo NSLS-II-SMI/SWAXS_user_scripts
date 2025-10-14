@@ -104,7 +104,7 @@ def sample_alignment():
 
 def align_height_hexa(rang=0.3, point=31, der=False):
     det_exposure_time(0.5, 0.5)
-    yield from bp.rel_scan([pil1M], stage.y, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], stage.y, -rang, rang, point)
     ps(der=der)
     yield from bps.mv(stage.y, ps.cen)
     plt.close("all")
@@ -112,14 +112,14 @@ def align_height_hexa(rang=0.3, point=31, der=False):
 
 def align_x_hexa(rang=0.3, point=31, der=False):
     det_exposure_time(0.5, 0.5)
-    yield from bp.rel_scan([pil1M], stage.x, -rang, rang, point)
+    yield from bp.rel_scan([pil2M], stage.x, -rang, rang, point)
     # yield from bps.mv(stage.y, ps.cen)
 
 
 """       
 def align_theta_hexa(rang = 0.1, point = 20, der=False):   
         det_exposure_time(0.5)
-        yield from bp.rel_scan([pil1M], stage.th, 0, rang, point )
+        yield from bp.rel_scan([pil2M], stage.th, 0, rang, point )
         ps(der=der)
         #yield from bps.mv(stage.y, ps.cen)
         #plt.close('all')

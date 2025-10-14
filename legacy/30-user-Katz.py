@@ -224,7 +224,7 @@ def saxs_14keV_Matt_2021_2(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(names)})"
 
     # Detectors, motors:
-    dets = [pil300KW, pil900KW, pil1M]
+    dets = [pil300KW, pil900KW, pil2M]
     waxs_range = [0, 2, 19.5, 21.5, 39, 41]
 
     ypos = [-500, 500, 3]
@@ -322,7 +322,7 @@ def saxs_2p4keV_Matt_2021_2(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(names)})"
 
     # Detectors, motors:
-    dets = [pil300KW, pil900KW, pil1M]
+    dets = [pil300KW, pil900KW, pil2M]
     waxs_range = [0, 2, 19.5, 21.5, 39, 41]
 
     ypos = [-500, 500, 3]
@@ -596,7 +596,7 @@ def nexafs_Caedge_Matt(t=0.5, name="test"):
 
 
 def saxs_prep_multisample(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     energies = [4030, 4040, 4050, 4055, 4075]
     det_exposure_time(t, t)
@@ -739,7 +739,7 @@ def nexafs_Caedge_Katz_2021_3(t=1):
 
 
 def swaxs_Caedge_Katz_2021_3(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     energies = [4030, 4040, 4050, 4055, 4075]
     det_exposure_time(t, t)
@@ -888,7 +888,7 @@ def nexafs_Agedge_Katz_2021_3(t=1):
 
 
 def swaxs_Agedge_Katz_2021_3(t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     energies = [3300, 3350, 3357, 3367, 3400, 3430]
     det_exposure_time(t, t)
@@ -927,7 +927,7 @@ def swaxs_Agedge_Katz_2021_3(t=1):
 
     for wa in waxs_range[::-1]:
         if wa == 42:
-            dets = [pil1M]
+            dets = [pil2M]
             yield from bps.mv(GV7.open_cmd, 1)
             yield from bps.mv(att2_10.open_cmd, 1)
             yield from bps.mv(att2_11.open_cmd, 1)
@@ -1120,7 +1120,7 @@ def saxs_2021_3(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(names)})"
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     waxs_range = [30]
 
     ypos = [-200, 200, 3]
@@ -1201,7 +1201,7 @@ def waxs_Ca_edge_Katz_2022_2(t=0.2):
         yield from bps.mv(waxs, wa)
 
         # Do not read SAXS if WAXS is in the way
-        dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+        dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
         # Change energies
         energies = energies_coarse if wa < 45 else energies_nexafs
@@ -1223,7 +1223,7 @@ def waxs_Ca_edge_Katz_2022_2(t=0.2):
 
                 # Metadata
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 wa = str(np.round(float(wa), 1)).zfill(4)
 
                 # Detector file name
@@ -1343,7 +1343,7 @@ def nexafs_saxs_Ag_edge_Katz_2022_2(t=0.2):
         yield from bps.mv(waxs, wa)
 
         # Do not read SAXS if WAXS is in the way
-        dets = [pil900KW] if wa < 50 else [pil1M, pil900KW]
+        dets = [pil900KW] if wa < 50 else [pil2M, pil900KW]
 
         # Go over samples
         for name, xs, ys in zip(names, piezo_x, piezo_y):
@@ -1362,7 +1362,7 @@ def nexafs_saxs_Ag_edge_Katz_2022_2(t=0.2):
 
                 # Metadata
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 wa = str(np.round(float(wa), 1)).zfill(4)
 
                 # Detector file name
@@ -1462,7 +1462,7 @@ def swaxs_2023_2_run1(t=1):
     assert len(xlocs) == len(zlocs), f"Number of X coordinates ({len(zlocs)}) is different from number of samples ({len(names)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     # dets = [pil900KW]
 
     waxs_range = [20]
@@ -1491,7 +1491,7 @@ def swaxs_2023_2_run1(t=1):
 
 
 def giswaxs_2023_2(t=1):
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     # names = [  'grazing1', 'grazing2', 'grazing3', 'grazing4', 'grazing5', 'grazing6', 'grazing7', 'grazing8', 'grazing9', 
@@ -1538,7 +1538,7 @@ def giswaxs_2023_2(t=1):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             for k, ais in enumerate(ai_list):
                 yield from bps.mv(piezo.th, ai0 + ais)
@@ -1599,7 +1599,7 @@ def blade_coating_2022_1(sample_name='test'):
 
     yield from bps.mv(syringe_pu.x3, 1)
     yield from bps.sleep(3)
-    yield from blading_scan(pil1M, bc_smaract.x1, 70)
+    yield from blading_scan(pil2M, bc_smaract.x1, 70)
 
 
 
@@ -1622,7 +1622,7 @@ def button_blade_coating(sample_name='test'):
 
     det_exposure_time(0.1, 180)
     sample_id(user_name='ML', sample_name=sample_name)
-    yield from blading_scan(pil1M, bc_smaract.x1, 70)
+    yield from blading_scan(pil2M, bc_smaract.x1, 70)
 
 
 def nexafs_cu(t=1, name='test'):
@@ -1677,7 +1677,7 @@ def waxs_Ca_edge_Katz_2024_2(t=0.2):
         yield from bps.mv(waxs, wa)
 
         # Do not read SAXS if WAXS is in the way
-        dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+        dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
         # Go over samples
         for name, xs, ys in zip(names, piezo_x, piezo_y):
@@ -1700,7 +1700,7 @@ def waxs_Ca_edge_Katz_2024_2(t=0.2):
 
                 # Metadata
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 wa = str(np.round(float(wa), 1)).zfill(4)
 
                 # Detector file name
@@ -1747,7 +1747,7 @@ def waxs_Ca_edge_Katz_2024_2(t=0.2):
         yield from bps.mv(waxs, wa)
 
         # Do not read SAXS if WAXS is in the way
-        dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+        dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
         # Go over samples
         for name, xs, ys in zip(names, piezo_x, piezo_y):
@@ -1770,7 +1770,7 @@ def waxs_Ca_edge_Katz_2024_2(t=0.2):
 
                 # Metadata
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 wa = str(np.round(float(wa), 1)).zfill(4)
 
                 # Detector file name
@@ -1831,5 +1831,5 @@ def blade_coating_2024_2(sample_name='test', coating_start_pos=10, measurement_p
     yield from bps.mv(thorlabs_su, measurement_pos)
 
     det_exposure_time(0.5,300)
-    yield from bp.count([pil1M])
+    yield from bp.count([pil2M])
     

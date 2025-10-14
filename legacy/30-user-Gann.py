@@ -7,7 +7,7 @@ def get_scan_md_tender():
     #temp = str(np.round(float(temp_degC), 1)).zfill(5)
     wa = waxs.arc.position + 0.001
     wa = str(np.round(float(wa), 1)).zfill(4)
-    sdd = pil1m_pos.z.position / 1000
+    sdd = pil2M_pos.z.position / 1000
 
     md_fmt = ("_{energy}keV_wa{wa}_sdd{sdd}m")
 
@@ -61,7 +61,7 @@ def giwaxs_guillaume_2023_1(t=0.5):
         for wa in waxs_angles:
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             for i, ai in enumerate(inc_angles):
                 yield from bps.mv(piezo.x, xs-500*i)
@@ -70,7 +70,7 @@ def giwaxs_guillaume_2023_1(t=0.5):
 
                 bpm = xbpm3.sumX.get()
                 e = energy.energy.position / 1000
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 name_fmt = "{sample}_ai{ai}_{energy}eV_wa{wax}_sdd{sdd}m"
                 sample_name = name_fmt.format(sample=name, ai="%.2f"%ai, energy="%.1f"%e, sdd="%.1f"%sdd, wax="%.1f"%wa)
@@ -120,7 +120,7 @@ def giwaxs_guillaume_2023_1(t=0.5):
         def inner():
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M] # making one run this will not be possible
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M] # making one run this will not be possible
                 # potentially we don't link those useless files
                 # or make the detecor know when it's useless and produce none and have tiled assume nans
                 # or have different trigger and reads e.g.(name="saxs") (different streams) for each detector
@@ -144,7 +144,7 @@ def giwaxs_guillaume_2023_1(t=0.5):
                         yield from bps.trigger(pil900KW, group='dets')
                         arc = yield from  bps.rd(waxs.arc)
                         if arc is not None and arc > 15:
-                            yield from bps.trigger(pil1M, group='dets')
+                            yield from bps.trigger(pil2M, group='dets')
                         yield from bps.wait(group='dets')
                         yield from bps.create(name='SAXS')
                         yield from bps.read(...)
@@ -152,7 +152,7 @@ def giwaxs_guillaume_2023_1(t=0.5):
                         if COND:
                             yield from bps.create(name='WAXS')
 
-                            yield from bps.read(pil1M)
+                            yield from bps.read(pil2M)
                             for m in motors:
                                 yield from bps.read(m)
                             yield from bps.save()
@@ -412,14 +412,14 @@ def giwaxs_eliot_2024_3(t=0.5):
         for wa in waxs_angles:
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             for i, ai in enumerate(inc_angles):
                 yield from bps.mv(piezo.th, ai0 + ai)
 
                 bpm = xbpm3.sumX.get()
                 e = energy.energy.position / 1000
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 name_fmt = "{sample}_ai{ai}_{energy}eV_wa{wax}_sdd{sdd}m"
                 sample_name = name_fmt.format(sample=name, ai="%.2f"%ai, energy="%.1f"%e, sdd="%.1f"%sdd, wax="%.1f"%wa)
@@ -466,15 +466,15 @@ def giwaxs_et_2024_3(ts=[0.5, 5, 15]):
             for wa in waxs_angles:
                 yield from bps.mv(waxs, wa)
 
-                #dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
-                dets = [pil1M]
+                #dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
+                dets = [pil2M]
 
                 for i, ai in enumerate(inc_angles):
                     yield from bps.mv(piezo.th, ai0 + ai)
 
                     bpm = xbpm3.sumX.get()
                     e = energy.energy.position / 1000
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     name_fmt = "{sample}_ai{ai}_{t}s_{energy}eV_wa{wax}_sdd{sdd}m"
                     sample_name = name_fmt.format(sample=name, ai="%.3f"%ai, energy="%.1f"%e, sdd="%.1f"%sdd, t="%.1f"%t, wax="%.1f"%wa)
@@ -497,7 +497,7 @@ def nikhil_S_edge_spectroscopy(t=1,ai=0.5):
 
     
     yield from bps.mv(waxs, 52)
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     energies = (np.arange(2445, 2470, 5).tolist()+ np.arange(2470, 2480, 0.25).tolist()+ np.arange(2480, 2490, 1).tolist()
@@ -561,7 +561,7 @@ def nikhil_Zn_edge_spectroscopy(t=1,ai=0.2):
 
     
     yield from bps.mv(waxs, 52)
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     #energies = (np.arange(2445, 2470, 5).tolist()+ np.arange(2470, 2480, 0.25).tolist()+ np.arange(2480, 2490, 1).tolist()
@@ -625,7 +625,7 @@ def nikhil_Bi_edge_spectroscopy(t=1,ai=0.2):
 
     
     yield from bps.mv(waxs, 52)
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     #energies = (np.arange(2445, 2470, 5).tolist()+ np.arange(2470, 2480, 0.25).tolist()+ np.arange(2480, 2490, 1).tolist()
@@ -680,7 +680,7 @@ def nikhil_S_edge_spectroscopy_2(t=1,ai=0.5):
 
     
     yield from bps.mv(waxs, 52)
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     energies = (np.arange(2445, 2470, 5).tolist()+ np.arange(2470, 2480, 0.25).tolist()+ np.arange(2480, 2490, 1).tolist()
@@ -730,7 +730,7 @@ def nikhil_Zn_edge_spectroscopy2(t=1,ai=0.2):
 
     
     yield from bps.mv(waxs, 52)
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
 
     #energies = (np.arange(2445, 2470, 5).tolist()+ np.arange(2470, 2480, 0.25).tolist()+ np.arange(2480, 2490, 1).tolist()
@@ -955,7 +955,7 @@ def xrr_sedge_2025_1():
     pil900KW.stats1.kind = 'hinted'
 
     set_energy_cam(pil900KW.cam,energies[0])
-    set_energy_cam(pil1M.cam,energies[0])
+    set_energy_cam(pil2M.cam,energies[0])
     # yield from bps.mv(energy,energies[0])
     yield from bps.sleep(5)
 
@@ -1086,7 +1086,7 @@ def single_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=10, waxs
 
     ai0 = piezo.th.position
     xs = piezo.x.position
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     s = Signal(name='target_file_name', value='')
 
@@ -1288,7 +1288,7 @@ def giwaxs_hardxray_Kelvin_2024_3(t=1):
             if wa ==0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             # Do not take SAXS when WAXS detector in the way
 

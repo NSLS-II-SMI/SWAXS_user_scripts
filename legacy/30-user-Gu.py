@@ -111,7 +111,7 @@ def saxs_gu_2022_1(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(names)})"
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     waxs_range = [20]
 
     for wa in waxs_range:
@@ -151,7 +151,7 @@ def temp_2021_3(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M]  # ALL detectors
+    dets = [pil2M]  # ALL detectors
 
     waxs_arc = [20]
     name_fmt = "{sample}_16.1keV_4.0m_{temperature}C_wa{waxs}"
@@ -254,7 +254,7 @@ def gu_nexafs_S_2021_3(t=1):
 
 
 def gu_saxs_S_2022_1(t=1):
-    dets = [pil1M]
+    dets = [pil2M]
 
     energies = [2450, 2460, 2470, 2475, 2476, 2477, 2478, 2480, 2500]
     waxs_arc = [20]
@@ -304,7 +304,7 @@ def gu_saxs_S_2022_1(t=1):
 
 
 def gu_saxs_hardxray_2022_1(t=1):
-    dets = [pil1M]
+    dets = [pil2M]
 
     energies = [16100]
     waxs_arc = [20]
@@ -458,7 +458,7 @@ def wang_temperature_hard_2022_2(t=1):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             for x, y, name in zip(x_piezo, y_piezo, samples):
@@ -469,7 +469,7 @@ def wang_temperature_hard_2022_2(t=1):
                 e = energy.position.energy / 1000
                 temp = str(np.round(float(temp_degC), 1)).zfill(5)
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 scan_id = db[-1].start["scan_id"] + 1
 
                 sample_name = name_fmt.format(
@@ -645,7 +645,7 @@ def wang_temperature_tender_2022_2(t=1):
 
             # YWang: I changed < 25 to <45 to skip NEXAFS  1:16 am 07/21/22
             energies = energies_coarse if waxs.arc.position < 45 else energies_nexafs
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             for j, (x, y, name) in enumerate(zip(x_piezo, y_piezo, samples)):
@@ -660,7 +660,7 @@ def wang_temperature_tender_2022_2(t=1):
                     # e = energy.position.energy / 1000
                     temp = str(np.round(float(temp_degC), 1)).zfill(5)
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
                     scan_id = db[-1].start["scan_id"] + 1
 
                     sample_name = name_fmt.format(
@@ -753,12 +753,12 @@ def wang_temperature_hard_2022_3(t=1):
         # Read T and convert to deg C
         temp_degC = ls.input_A.get() - 273.15
 
-        rod_pos = pil1m_bs_rod.x.position
+        rod_pos = pil2M_bs_rod.x.position
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             
             if not ((0 < rod_pos) and (rod_pos < 3)):
                 dets.append(pdcurrent)
@@ -776,7 +776,7 @@ def wang_temperature_hard_2022_3(t=1):
                 temp = str(np.round(float(temp_degC), 1)).zfill(5)
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 if not ((0 < rod_pos) and (rod_pos < 3)):
                     if waxs.arc.position > 15:
@@ -869,7 +869,7 @@ def wang_temperature_tender_2022_3(t=2.5):
     temperatures = [25, 200] #[25, 180]
     waxs_arc = [0, 20]
     energies = [2460, 2470, 2472, 2474, 2475, 2476, 2477, 2478, 2480]
-    rod_pos = pil1m_bs_rod.x.position
+    rod_pos = pil2M_bs_rod.x.position
 
     pin_diode_in_rod_out = not ((0 < rod_pos) and (rod_pos < 3))
 
@@ -917,7 +917,7 @@ def wang_temperature_tender_2022_3(t=2.5):
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             if pin_diode_in_rod_out:
@@ -939,7 +939,7 @@ def wang_temperature_tender_2022_3(t=2.5):
                     temp = str(np.round(float(temp_degC), 1)).zfill(5)
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     if pin_diode_in_rod_out:
                         if waxs.arc.position > 15:
@@ -1044,7 +1044,7 @@ def guorong_swaxs_2023_1(t=0.5):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, hy in zip(names, piezo_x, piezo_y, hexa_y):
@@ -1063,7 +1063,7 @@ def guorong_swaxs_2023_1(t=0.5):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{yy}{xx}")
@@ -1145,7 +1145,7 @@ def guorong_temperature_cap_2023_1(t=0.5):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             dets.append(pdcurrent)
@@ -1166,7 +1166,7 @@ def guorong_temperature_cap_2023_1(t=0.5):
                         temp = str(np.round(float(temp_degC), 1)).zfill(5)
                         wa = waxs.arc.position + 0.001
                         wa = str(np.round(float(wa), 1)).zfill(4)
-                        sdd = pil1m_pos.z.position / 1000
+                        sdd = pil2M_pos.z.position / 1000
 
 
                         # Sample name
@@ -1212,7 +1212,7 @@ def yunfei_hard_temperature_2023_1(t=1):
     temperatures = [180]
     waxs_arc = [20, 0]
 
-    rod_pos = pil1m_bs_rod.x.position
+    rod_pos = pil2M_bs_rod.x.position
     pin_diode_in_rod_out = not ((0 < rod_pos) and (rod_pos < 3))
 
     # Add beamstop to sample name
@@ -1263,7 +1263,7 @@ def yunfei_hard_temperature_2023_1(t=1):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             dets.append(pdcurrent)
@@ -1278,7 +1278,7 @@ def yunfei_hard_temperature_2023_1(t=1):
                 temp = str(np.round(float(temp_degC), 1)).zfill(5)
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 if pin_diode_in_rod_out:
                     if waxs.arc.position > 15:
@@ -1339,7 +1339,7 @@ def wang_temperature_tender_2023_1(t=5):
     temperatures = [180, 190, 200, 210, 220] #[25, 180]
     waxs_arc = [20, 0] 
     energies = [2460, 2470, 2472, 2474, 2475, 2476, 2477, 2478, 2480, 2490]
-    rod_pos = pil1m_bs_rod.x.position
+    rod_pos = pil2M_bs_rod.x.position
 
     pin_diode_in_rod_out = not ((0 < rod_pos) and (rod_pos < 3))
 
@@ -1391,7 +1391,7 @@ def wang_temperature_tender_2023_1(t=5):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             if pin_diode_in_rod_out:
@@ -1412,7 +1412,7 @@ def wang_temperature_tender_2023_1(t=5):
                     temp = str(np.round(float(temp_degC), 1)).zfill(5)
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     if pin_diode_in_rod_out:
                         if waxs.arc.position > 15:
@@ -1508,7 +1508,7 @@ def guorong_temperature_cap_2023_2(t=0.5):
 
     saxs_dist = [3000]
 
-    current_sdd = pil1m_pos.z.user_setpoint.get()
+    current_sdd = pil2M_pos.z.user_setpoint.get()
 
     if ( abs(current_sdd - saxs_dist[0]) ) > ( abs(current_sdd - saxs_dist[-1]) ):
         saxs_dist = saxs_dist[::-1]
@@ -1555,19 +1555,19 @@ def guorong_temperature_cap_2023_2(t=0.5):
         temp = str(np.round(float(temp_degC), 1)).zfill(5)
 
         for sdd in saxs_dist:
-            yield from bps.mv(pil1m_pos.z, sdd)
+            yield from bps.mv(pil2M_pos.z, sdd)
 
             SAXS_setup = saxs_dict[sdd]
             RE.md['SAXS_setup'] = SAXS_setup
             bs_pos = SAXS_setup['bs_pos']
-            yield from bps.mv(pil1m_bs_rod.x, bs_pos)
+            yield from bps.mv(pil2M_bs_rod.x, bs_pos)
             print(SAXS_setup)
 
 
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
 
-                dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
                 det_exposure_time(t, t)
 
                 condition = (
@@ -1579,17 +1579,17 @@ def guorong_temperature_cap_2023_2(t=0.5):
 
                 if condition:
                     yield from atten_move_in()
-                    yield from bps.mv(pil1m_bs_rod.x, bs_pos + 5)
+                    yield from bps.mv(pil2M_bs_rod.x, bs_pos + 5)
                     yield from bps.mv(piezo.x, dbeam_x,
                                       piezo.y, dbeam_y)
 
                     sample_name = f'empty_{temp}degC_-attn-direct'
                     sample_id(user_name='test', sample_name=sample_name)
                     print(f"\n\n\n\t=== Sample: {sample_name} ===")
-                    yield from bp.count([pil1M])
-                    stats1_direct = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                    yield from bp.count([pil2M])
+                    stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
-                    yield from bps.mv(pil1m_bs_rod.x, bs_pos)
+                    yield from bps.mv(pil2M_bs_rod.x, bs_pos)
                     yield from atten_move_out()
 
                 for name, x, y in zip(names, piezo_x, piezo_y):
@@ -1609,18 +1609,18 @@ def guorong_temperature_cap_2023_2(t=0.5):
                             yield from atten_move_in()
 
                             # Sample
-                            yield from bps.mv(pil1m_bs_rod.x, bs_pos + 5)
+                            yield from bps.mv(pil2M_bs_rod.x, bs_pos + 5)
                             sample_name = f'{name}_loc{i}-attn-sample'
                             sample_id(user_name='test', sample_name=sample_name)
                             print(f"\n\n\t=== Sample: {sample_name} ===")
-                            yield from bp.count([pil1M])
-                            stats1_sample = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                            yield from bp.count([pil2M])
+                            stats1_sample = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                             # Transmission
                             trans = np.round( stats1_sample / stats1_direct, 5)
 
                             # Revert configuraton
-                            yield from bps.mv(pil1m_bs_rod.x, bs_pos)
+                            yield from bps.mv(pil2M_bs_rod.x, bs_pos)
                             yield from atten_move_out()
                         else:
                             trans = 0
@@ -1676,7 +1676,7 @@ def guorong_temperature_2023_2_redo(t=1, prefix='test'):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
             
             for yy, y_of in enumerate(y_off):
@@ -1750,7 +1750,7 @@ def wang_temperature_tender_2025_1(t=5):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
 
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         det_exposure_time(t, t)
 
         for name, x, y in zip(names, piezo_x, piezo_y):
@@ -1770,7 +1770,7 @@ def wang_temperature_tender_2025_1(t=5):
                 #e = energy.position.energy / 1000
                 temp = str(np.round(float(temp_degC), 1)).zfill(5)
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 # Sample name
                 name_fmt = ("{sample}_{temp}degC_{energy}eV_wa{wax}_sdd{sdd}m_expt{t}s")
@@ -1825,7 +1825,7 @@ def energy_Sedge_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=10
     # 63 energies
     energies = [2470, 2472, 2474, 2475, 2476, 2477, 2478, 2480]
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(t, t)
 
     s = Signal(name='target_file_name', value='')
@@ -1854,7 +1854,7 @@ def energy_Sedge_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=10
                     #e = energy.position.energy / 1000
                     temp = str(np.round(float(temp_degC), 1)).zfill(5)
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     print(temp, wa, sdd)
 
@@ -1905,7 +1905,7 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
     # 63 energies
     energies = [2470, 2472, 2474, 2475, 2476, 2477, 2478, 2480]
 
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
     det_exposure_time(0.5, 2.5)
 
     s = Signal(name='target_file_name', value='')
@@ -1920,8 +1920,8 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             if wa == 0:
-                yield from bps.mv(pil1m_pos.x, -50)
-                yield from bps.mv(pil1m_pos.y, -61)
+                yield from bps.mv(pil2M_pos.x, -50)
+                yield from bps.mv(pil2M_pos.y, -61)
 
                 for name, x, y in zip(names, piezo_x, piezo_y):
                     yield from bps.mv(piezo.x, x,piezo.y, y)
@@ -1937,7 +1937,7 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
                         #e = energy.position.energy / 1000
                         temp = str(np.round(float(temp_degC), 1)).zfill(5)
                         wa = str(np.round(float(wa), 1)).zfill(4)
-                        sdd = pil1m_pos.z.position / 1000
+                        sdd = pil2M_pos.z.position / 1000
 
                         print(temp, wa, sdd)
 
@@ -1954,8 +1954,8 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
                     yield from bps.sleep(2)
 
             if wa == 20:
-                yield from bps.mv(pil1m_pos.x, -52)
-                yield from bps.mv(pil1m_pos.y, -59)
+                yield from bps.mv(pil2M_pos.x, -52)
+                yield from bps.mv(pil2M_pos.y, -59)
 
                 for name, x, y in zip(names, piezo_x, piezo_y):
                     yield from bps.mv(piezo.x, x,piezo.y, y)
@@ -1971,7 +1971,7 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
                         #e = energy.position.energy / 1000
                         temp = str(np.round(float(temp_degC), 1)).zfill(5)
                         wa = str(np.round(float(wa), 1)).zfill(4)
-                        sdd = pil1m_pos.z.position / 1000
+                        sdd = pil2M_pos.z.position / 1000
 
                         print(temp, wa, sdd)
 
@@ -1988,8 +1988,8 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
                     yield from bps.sleep(2)
 
             if wa == 20:
-                yield from bps.mv(pil1m_pos.x, -52)
-                yield from bps.mv(pil1m_pos.y, -61)
+                yield from bps.mv(pil2M_pos.x, -52)
+                yield from bps.mv(pil2M_pos.y, -61)
 
                 for name, x, y in zip(names, piezo_x, piezo_y):
                     yield from bps.mv(piezo.x, x,piezo.y, y)
@@ -2005,7 +2005,7 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
                         #e = energy.position.energy / 1000
                         temp = str(np.round(float(temp_degC), 1)).zfill(5)
                         wa = str(np.round(float(wa), 1)).zfill(4)
-                        sdd = pil1m_pos.z.position / 1000
+                        sdd = pil2M_pos.z.position / 1000
 
                         print(temp, wa, sdd)
 
@@ -2022,8 +2022,8 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
                     yield from bps.sleep(2)
 
             if wa == 20:
-                yield from bps.mv(pil1m_pos.x, -50)
-                yield from bps.mv(pil1m_pos.y, -61)
+                yield from bps.mv(pil2M_pos.x, -50)
+                yield from bps.mv(pil2M_pos.y, -61)
 
                 for name, x, y in zip(names, piezo_x, piezo_y):
                     yield from bps.mv(piezo.x, x,piezo.y, y)
@@ -2039,7 +2039,7 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
                         #e = energy.position.energy / 1000
                         temp = str(np.round(float(temp_degC), 1)).zfill(5)
                         wa = str(np.round(float(wa), 1)).zfill(4)
-                        sdd = pil1m_pos.z.position / 1000
+                        sdd = pil2M_pos.z.position / 1000
 
                         print(temp, wa, sdd)
 
@@ -2057,8 +2057,8 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
 
 
             if wa == 20:
-                yield from bps.mv(pil1m_pos.x, -50)
-                yield from bps.mv(pil1m_pos.y, -59)
+                yield from bps.mv(pil2M_pos.x, -50)
+                yield from bps.mv(pil2M_pos.y, -59)
 
                 for name, x, y in zip(names, piezo_x, piezo_y):
                     yield from bps.mv(piezo.x, x,piezo.y, y)
@@ -2074,7 +2074,7 @@ def energy_Sedge_scan_withdetmotion(t=1, name="Test", ai_list: list[int]|None = 
                         #e = energy.position.energy / 1000
                         temp = str(np.round(float(temp_degC), 1)).zfill(5)
                         wa = str(np.round(float(wa), 1)).zfill(4)
-                        sdd = pil1m_pos.z.position / 1000
+                        sdd = pil2M_pos.z.position / 1000
 
                         print(temp, wa, sdd)
 

@@ -226,7 +226,7 @@ x_list = [-3300]
 # ##   y = 1000, Z= 2300  @about 4:300 pm start vent, mount samples, then do vacuum,
 ## For RUN 6,  Kim's 44-47 samples
 ## change beam stop from pindiode to regular beamstop
-# RE(pil1m_bs_pd.mv_out())
+# RE(pil2M_bs_pd.mv_out())
 #
 sample_list = [
     "2022C1_S44_LargeBeam_Vacuum",
@@ -324,7 +324,7 @@ def vertical_scan(t=10):
     for waxs_angle in waxs_angle_array:  # loop through waxs angles
         yield from bps.mv(waxs, waxs_angle)
         if waxs_angle == max_waxs_angle:
-            dets = [pil900KW, pil1M]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+            dets = [pil900KW, pil2M]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
             print("Meausre both saxs and waxs here for w-angle=%s" % waxs_angle)
         else:
             dets = [pil900KW, pil300KW]
@@ -395,7 +395,7 @@ def snap_waxs(t=0.1):
 
 
 def snap_saxs(t=0.1):
-    dets = [pil1M]
+    dets = [pil2M]
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(t)
     yield from (bp.count(dets, num=1))
@@ -408,7 +408,7 @@ def run_giwaxs_Kim(t=1, username=username):
     waxs_angle_array = np.array(
         [7, 27, 47]
     )  # 4*3.14/(12.39842/16.1)*np.sin((7*6.5+3.5)*3.14/360) = 6.760 A-1
-    # dets = [pil300KW, pil1M] # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    # dets = [pil300KW, pil2M] # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
     max_waxs_angle = np.max(waxs_angle_array)
     x_shift_array = np.linspace(-500, 500, 3)  # measure at a few x positions
     inverse_angle = False
@@ -435,8 +435,8 @@ def run_giwaxs_Kim(t=1, username=username):
                 dets = [
                     pil900KW,
                     pil300KW,
-                    pil1M,
-                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+                    pil2M,
+                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
                 print("Meausre both saxs and waxs here for w-angle=%s" % waxs_angle)
             else:
                 dets = [pil900KW, pil300KW]

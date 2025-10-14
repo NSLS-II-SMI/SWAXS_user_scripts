@@ -15,7 +15,7 @@ def run_gi_sweden_SAXS(tim=0.5, sample="Test", ti_sl=60):
     angle = 0.1
 
     # Detectors, motors:
-    dets = [pil1M, pil1mroi2]  # WAXS detector ALONE
+    dets = [pil2M, pil2Mroi2]  # WAXS detector ALONE
     x_offset = 10
     t0 = time.time()
 
@@ -112,7 +112,7 @@ def gisaxs_KTH_2021_1(t=1):
     print(y_piezo_aligned)
 
     angle = [0.1]
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for name, xs, zs, aiss, ys, xs_hexa in zip(
@@ -138,7 +138,7 @@ def gisaxs_KTH_2021_1(t=1):
                 yield from bp.count(dets, num=1)
 
     angle = np.linspace(0.08, 0.4, 17)
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for name, xs, zs, aiss, ys, xs_hexa in zip(
@@ -179,7 +179,7 @@ def run_gi_sweden_GISAXS(tim=0.5, sample="Test", ti_sl=77):
     angle = 0.1
 
     # Detectors, motors:
-    dets = [pil1M, pil1mroi2]  # WAXS detector ALONE
+    dets = [pil2M, pil2Mroi2]  # WAXS detector ALONE
     x_offset = 10
     t0 = time.time()
 
@@ -328,7 +328,7 @@ def run_loop_measurement(t=0.5, name='test', loops=4, pump_t=180, total_t=600, j
         t_measurement = ( time.time() - t_initial ) / 60
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
             for ai in incident_angles:
                 yield from bps.mv(piezo.th, ai0 + ai)
@@ -372,18 +372,18 @@ Manual alignment
 RE(alignment_start())
 
 # half cut on direct beam
-RE(rel_scan([pil1M], piezo.y, -300, 300, 21))
+RE(rel_scan([pil2M], piezo.y, -300, 300, 21))
 ps(der=True)
 RE(mv(piezo.y, ps.cen)) # or replace ps.cen with a valid piezo y position
 
 # th scan (rocking) on direct beam
-RE(rel_scan([pil1M], piezo.th, -1, 1, 21))
+RE(rel_scan([pil2M], piezo.th, -1, 1, 21))
 ps()
 RE(mv(piezo.th, ps.cen)) # or replace ps.cen with a valid th position
 RE.md['ai_0'] = piezo.th.user_setpoint.get()
 
 # repeat halfcat on direct beam if move in th was substantial
-# RE(rel_scan([pil1M], piezo.y, -100, 100, 21))
+# RE(rel_scan([pil2M], piezo.y, -100, 100, 21))
 # ps(der=True)
 # RE(mv(piezo.y, ps.cen)) # or replace ps.cen with a valid piezo y position
 
@@ -394,18 +394,18 @@ RE(mvr(piezo.th, 0.1))
 # alternatively RE(mv(piezo.th,RE.md['ai_0'] + 0.1))
 
 # th scan reflected
-RE(rel_scan([pil1M], piezo.th, -0.2, 0.2, 31))
+RE(rel_scan([pil2M], piezo.th, -0.2, 0.2, 31))
 ps()
 RE(mv(piezo.th, ps.cen))
 RE.md['ai_0'] = piezo.th.user_setpoint.get() - 0.1
 
 # y scan reflected
-RE(rel_scan([pil1M], piezo.y, -50, 50, 21))
+RE(rel_scan([pil2M], piezo.y, -50, 50, 21))
 ps()
 RE(mv(piezo.y, ps.cen))  # or replace ps.cen with a valid piezo y position
 
 # final refinement of th
-RE(rel_scan([pil1M], piezo.th, -0.025, 0.025, 21))
+RE(rel_scan([pil2M], piezo.th, -0.025, 0.025, 21))
 ps()
 RE(mv(piezo.th, ps.cen))
 RE.md['ai_0'] = piezo.th.user_setpoint.get() - 0.1

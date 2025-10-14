@@ -11,8 +11,8 @@ def rotation_saxs(t=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    # dets = [pil1M, rayonix, pil300KW]
-    dets = [pil1M, pil300KW]
+    # dets = [pil2M, rayonix, pil300KW]
+    dets = [pil2M, pil300KW]
     prs_range = [-90, 90, 91]
     waxs_range = [0, 26, 5]  # step of 6.5 degrees
     det_exposure_time(t, t)
@@ -49,7 +49,7 @@ def rotation_saxs_fast(t=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     prs_range = np.linspace(-90, 90, 91)
     waxs_range = np.linspace(0, 26, 5)
     det_exposure_time(t, t)
@@ -88,8 +88,8 @@ def rotation_saxs_att(t=1):  # attenuated WAXS, so SAXS recorded separately firs
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    # dets = [pil1M, rayonix, pil300KW]
-    dets0 = [pil1M]
+    # dets = [pil2M, rayonix, pil300KW]
+    dets0 = [pil2M]
     dets = [pil300KW]
     det_exposure_time(t, t)
 
@@ -120,8 +120,8 @@ def rotation_saxs_att(t=1):  # attenuated WAXS, so SAXS recorded separately firs
         yield from bps.mv(piezo.y, y)  # SmarAct
         for i, waxs_pos in enumerate(waxs_po):
             yield from bps.mv(waxs, waxs_pos)
-            yield from bps.mv(pil1m_pos.x, pil_pos_x[i])
-            yield from bps.mv(pil1m_pos.y, pil_pos_y[i])
+            yield from bps.mv(pil2M_pos.x, pil_pos_x[i])
+            yield from bps.mv(pil2M_pos.y, pil_pos_y[i])
 
             for angle in range(-90, 91, 1):
                 yield from bps.mv(prs, angle)
@@ -140,5 +140,5 @@ def rotation_saxs_att(t=1):  # attenuated WAXS, so SAXS recorded separately firs
     yield from bps.mv(att1_6, "Retract")
     yield from bps.sleep(1)
 
-    yield from bps.mv(pil1m_pos.x, -0.4997)
-    yield from bps.mv(pil1m_pos.y, -59.9987)
+    yield from bps.mv(pil2M_pos.x, -0.4997)
+    yield from bps.mv(pil2M_pos.y, -59.9987)

@@ -3,12 +3,12 @@ def saxsafrl(t=2):
     name = "BS"
     x_list = -6
     # Detectors, motors:
-    dets = [pil1M, pil300KW, ls.ch1_read]
+    dets = [pil2M, pil300KW, ls.ch1_read]
     # y_range = [-0.0, 0.0, 1]
     sample = "water2"
     num = 10000
 
-    pil1M.cam.file_path.put(
+    pil2M.cam.file_path.put(
         f"/ramdisk/images/users/2020_2/305934_Schantz/1M/%s" % sample
     )
     name_fmt = "{i}_{temperature}C"

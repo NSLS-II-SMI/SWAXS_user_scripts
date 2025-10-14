@@ -2,7 +2,7 @@ import sys
 import time
 
 
-det = [pil1M, pdcurrent, pdcurrent1, pdcurrent2]
+det = [pil2M, pdcurrent, pdcurrent1, pdcurrent2]
 
 
 def bu(user_name, start_y, end_y, acq_t=2, meas_t=2):
@@ -43,12 +43,12 @@ def run_bu_2022_2(name="test", t=1):
     x_range = [0, 600, 3]
     y_range = [0, 300, 3]
 
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     # Metadata
     e = energy.position.energy / 1000
-    sdd = pil1m_pos.z.position / 1000
+    sdd = pil2M_pos.z.position / 1000
     scan_id = db[-1].start["scan_id"] + 1
 
     # Sample filename
@@ -74,12 +74,12 @@ def run_background_bu_2022_2(name="test", t=1):
     user = "GVD"
     name = name + "-bkg"
 
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     # Metadata
     e = energy.position.energy / 1000
-    sdd = pil1m_pos.z.position / 1000
+    sdd = pil2M_pos.z.position / 1000
     scan_id = db[-1].start["scan_id"] + 1
 
     # Sample filename

@@ -1,7 +1,7 @@
 def run_caps_fastRPI(t=1):
     x_list = [6908, 13476, 19764, 26055]  #
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(0, 45.5, 8)
     samples = [
         "LC-O38-6-100Cto40C",
@@ -33,7 +33,7 @@ def run_saxs_capsRPI(t=1):
 
     x_list = [6908, 13476, 19764, 26055]  #
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     y_range = [2000, -8000, 11]  # [2.64, 8.64, 2]
     samples = [
         "LC-O38-6-100Cto40C",
@@ -137,7 +137,7 @@ def run_saxs_capsRPI_2021_1(t=1):
         samples
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(samples)})"
 
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t)
 
     for x, sample in zip(xlocs, samples):
@@ -177,7 +177,7 @@ def run_waxs_fastRPI_2021_(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(0, 45.5, 8)
 
     for wa in waxs_range:
@@ -303,7 +303,7 @@ def run_waxs_fastRPI_2021_2(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(ylocs)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(45.5, 0, 8)
 
     for wa in waxs_range:
@@ -336,7 +336,7 @@ def run_waxs_fastRPI(t=1):
     det_exposure_time(t, t)
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(45.5, 0, 8)
 
     for wa in waxs_range:
@@ -362,7 +362,7 @@ def run_saxs_linkamRPI(t=1):
     # y_range = [2.75, 2.75, 1]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     # waxs_range = np.linspace(45.5, 0, 8)
 
     name_fmt = "{sam}"
@@ -390,7 +390,7 @@ def run_waxs_fastRPIy(t=1):
     ), f"Number of X coordinates ({len(x_locs)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(13, 13, 1)
 
     # yield from bps.mv(GV7.open_cmd, 1 )
@@ -433,7 +433,7 @@ def run_waxs_cap_temp(t=1):
     user = "DW"
 
     det_exposure_time(t, t)
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(0, 13, 3)
 
     for wa in waxs_range:
@@ -523,7 +523,7 @@ def run_saxs_fastRPI(t=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     for sam, x, y in zip(names, xlocs, ylocs):
         yield from bps.mv(piezo.y, y)
         yield from bps.mv(piezo.x, x)
@@ -540,7 +540,7 @@ def run_saxs_fastRPI(t=1):
 def run_contRPI(t=1, numb=100, sleep=5):
 
     det_exposure_time(t, t)
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     # dets = [pil300Kw]
     for i in range(numb):
         yield from bp.count(dets, num=1)
@@ -550,7 +550,7 @@ def run_contRPI(t=1, numb=100, sleep=5):
 def acq_tem(t=0.2):
     sam = "0122A-11-lk5.5m-1s"
 
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
     temp = ls.ch1_read.value
     name_fmt = "{sam}_{temp}C"
@@ -562,7 +562,7 @@ def acq_tem(t=0.2):
 def acq_bd(t=0.2):
     sam = "0122A-10-lk5.5m-0.2s-4"
 
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
     temp = ls.ch1_read.value
     name_fmt = "{sam}_{temp}C"
@@ -636,7 +636,7 @@ def gisaxs_rpi_2021_3(t=1):
     angle = [0.10, 0.12, 0.15]
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -701,7 +701,7 @@ def run_waxs_fastRPI_2021_3(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(ylocs)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     waxs_range = [40, 20, 0]
 
     for wa in waxs_range:
@@ -734,7 +734,7 @@ def run_waxs_capRPI_2021_3(t=1):
     det_exposure_time(t, t)
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     waxs_range = [40, 20, 0]
 
     for wa in waxs_range:
@@ -757,7 +757,7 @@ def run_waxs_linkamRPI_2021_3(t=1):
     det_exposure_time(t, t)
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
 
     name_fmt = "{sam}"
     sample_name = name_fmt.format(sam=names[0])
@@ -787,7 +787,7 @@ def run_waxs_linkamRPI_2022_1(t=1):
     det_exposure_time(t, t)
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     t0 = time.time()
 
@@ -859,7 +859,7 @@ def run_swaxs_fastRPI_2022_2(t=1):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
 
         for name, x, y, hy in zip(names, xlocs, ylocs, hexa_y):
             yield from bps.mv(piezo.y, y)
@@ -880,7 +880,7 @@ def run_swaxs_fastRPI_2022_2(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
                     scan_id = db[-1].start["scan_id"] + 1
 
                     # Sample name
@@ -933,7 +933,7 @@ def run_saxs_linkam_temp_2022_2(t=0.5, temp=25):
     user = "test"
 
     det_exposure_time(t, t)
-    dets = [pil1M]
+    dets = [pil2M]
 
     # Metadata
     e = energy.position.energy / 1000
@@ -941,7 +941,7 @@ def run_saxs_linkam_temp_2022_2(t=0.5, temp=25):
     wa = str(np.round(float(wa), 1)).zfill(4)
     # temp = ls.input_A.get() - 273.15
     temp = str(np.round(float(temp), 1)).zfill(5)
-    sdd = pil1m_pos.z.position / 1000
+    sdd = pil2M_pos.z.position / 1000
     scan_id = db[-1].start["scan_id"] + 1
     # bpm = xbpm3.sumX.get()
 
@@ -981,7 +981,7 @@ def run_saxs_linkamRPI_2022_2_ps(t=1):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         wa = str(np.round(float(wa), 1)).zfill(4)
         name_fmt = "{sam}_wa{wa}"
@@ -1029,7 +1029,7 @@ def run_swaxs_fastRPI_2022_3(t=1):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, hy in zip(names, xlocs, ylocs, hexa_y):
             yield from bps.mv(piezo.y, y,
@@ -1051,7 +1051,7 @@ def run_swaxs_fastRPI_2022_3(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -1103,8 +1103,8 @@ def run_saxs_linkamRPI_2022_3_ps(t=1):
                           stage.x, stage_x
         )
 
-        #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
-        dets = [pil1M]
+        #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+        dets = [pil2M]
 
         for yy, y_of in enumerate(stage_y_off):
             yield from bps.mv(stage.y, stage_y + y_of)
@@ -1118,7 +1118,7 @@ def run_saxs_linkamRPI_2022_3_ps(t=1):
                 e = energy.position.energy / 1000
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 # Sample name
                 name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -1177,7 +1177,7 @@ def run_cap_swaxs_fastRPI_2023_1(t=1):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, hy in zip(names, piezo_x, piezo_y, hexa_y):
             yield from bps.mv(piezo.y, y,
@@ -1196,7 +1196,7 @@ def run_cap_swaxs_fastRPI_2023_1(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -1264,7 +1264,7 @@ def run_plaq_swaxs_fastRPI_2023_1(t=1):
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, hy in zip(names, piezo_x, piezo_y, hexa_y):
             yield from bps.mv(piezo.y, y,
@@ -1283,7 +1283,7 @@ def run_plaq_swaxs_fastRPI_2023_1(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -1330,8 +1330,8 @@ def run_saxs_linkamRPI_2023_1(t=1):
                           stage.x, stage_x
         )
 
-        #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
-        dets = [pil1M]
+        #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+        dets = [pil2M]
 
         for yy, y_of in enumerate(stage_y_off):
             yield from bps.mv(stage.y, stage_y + y_of)
@@ -1345,7 +1345,7 @@ def run_saxs_linkamRPI_2023_1(t=1):
                 e = energy.position.energy / 1000
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 # Sample name
                 name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -1418,7 +1418,7 @@ def run_plaq_swaxs_fastRPI_2023_2(t=1):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         for name, x, y, hy in zip(names, piezo_x, piezo_y, hexa_y):
             yield from bps.mv(piezo.y, y,
@@ -1462,7 +1462,7 @@ def run_saxs_linkamRPI_2023_2(t=1):
 
     waxs_arc = [20]
 
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for wa in waxs_arc:
@@ -1541,7 +1541,7 @@ def run_plaq_swaxs_fastRPI_2023_3(t=1):
     
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         
         y_add=300*wa/20
         
@@ -1588,7 +1588,7 @@ def run_saxs_linkamRPI_2023_3(t=1):
 
     waxs_arc = [20]
 
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for wa in waxs_arc:
@@ -1672,7 +1672,7 @@ def run_plaq_swaxs_fastRPI_2024_1(t=1):
     
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         
         y_add=300*wa/20
         
@@ -1722,7 +1722,7 @@ def run_saxs_linkamRPI_2024_1(t=1):
 
     waxs_arc = [20]
 
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     for wa in waxs_arc:
@@ -1800,7 +1800,7 @@ def run_plaq_swaxs_fastRPI_2024_2(t=1):
     
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         
         y_add = 300 * wa / 20
         
@@ -1859,9 +1859,9 @@ def run_saxs_linkamRPI_2024_2(t=1, waxs_data=False):
         )
         
         if waxs_data:
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         else:
-            dets = [pil1M]
+            dets = [pil2M]
 
         for yy, y_of in enumerate(stage_y_off):
             yield from bps.mv(stage.y, stage_y + y_of)
@@ -1926,9 +1926,9 @@ def run_saxs_linkamRPI_2024_3(t=1, waxs_data=False):
         )
         
         if waxs_data:
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         else:
-            dets = [pil1M]
+            dets = [pil2M]
 
         for yy, y_of in enumerate(stage_y_off):
             yield from bps.mv(stage.y, stage_y + y_of)
@@ -2009,7 +2009,7 @@ def run_plaq_swaxs_fastRPI_2024_3(t=1):
     
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         
         y_add = 300 * wa / 20
         
@@ -2068,9 +2068,9 @@ def run_saxs_linkamRPI_2024_3_Vac(t=1, waxs_data=False):
         )
         
         if waxs_data:
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         else:
-            dets = [pil1M]
+            dets = [pil2M]
 
         for yy, y_of in enumerate(stage_y_off):
             yield from bps.mv(stage.y, stage_y + y_of)

@@ -28,8 +28,8 @@ def move_8m():
     RE(bps.mv(SAXS.x, 75))
     RE(bps.mv(SAXS.y, -61))
     RE(bps.mv(SAXS.z, 8000))
-    RE(bps.mv(pil1m_bs_pd.x, -199))
-    RE(bps.mv(pil1m_bs_pd.y, 9.2))
+    RE(bps.mv(pil2M_bs_pd.x, -199))
+    RE(bps.mv(pil2M_bs_pd.y, 9.2))
 
 
 def move_5m():
@@ -37,8 +37,8 @@ def move_5m():
     RE(bps.mv(SAXS.x, 75))
     RE(bps.mv(SAXS.y, -61))
     RE(bps.mv(SAXS.z, 5000))
-    RE(bps.mv(pil1m_bs_pd.x, -198.5))
-    RE(bps.mv(pil1m_bs_pd.y, 8.8))
+    RE(bps.mv(pil2M_bs_pd.x, -198.5))
+    RE(bps.mv(pil2M_bs_pd.y, 8.8))
 
 
 def move_2m():
@@ -46,8 +46,8 @@ def move_2m():
     RE(bps.mv(SAXS.x, 75))
     RE(bps.mv(SAXS.y, -61))
     RE(bps.mv(SAXS.z, 2000))
-    RE(bps.mv(pil1m_bs_pd.x, -198.5))
-    RE(bps.mv(pil1m_bs_pd.y, 8.8))
+    RE(bps.mv(pil2M_bs_pd.x, -198.5))
+    RE(bps.mv(pil2M_bs_pd.y, 8.8))
 
 
 # reminder
@@ -239,9 +239,9 @@ def measure_one_humidity_WAXS(t0, ks, dx=0, dy=0, t=0.5):
 
 # def measure_one_humidity_SAXS(  t0,  ks, wa=45,  dx=0, dy=0 ,  t=0.5   ):
 def measure_one_humidity_SAXS(t0, ks, wa=25, dx=0, dy=0, t=0.5):
-    _measure_one(t0=t0, ks=ks, dets=[pil1M], waxs_angle=wa, dx=dx, dy=dy, t=t)
+    _measure_one(t0=t0, ks=ks, dets=[pil2M], waxs_angle=wa, dx=dx, dy=dy, t=t)
     RE(bps.mvr(SAXS.y, 30 * 0.172))
-    _measure_one(t0=t0, ks=ks, dets=[pil1M], waxs_angle=wa, dx=dx, dy=dy, t=t)
+    _measure_one(t0=t0, ks=ks, dets=[pil2M], waxs_angle=wa, dx=dx, dy=dy, t=t)
     RE(bps.mvr(SAXS.y, -30 * 0.172))
 
 
@@ -260,8 +260,8 @@ def _measure_one(t0, ks, dets, waxs_angle, dx=0, dy=0, t=0.5):
             z_pos=stage.z.position,
             tx=np.round((tcur - t0), 1),
             h=np.round(readHumidity(temperature=25, voltage_supply=5, verbosity=1), 2),
-            saxs_y=np.round(pil1m_pos.y.position, 2),
-            saxs_z=np.round(pil1m_pos.z.position, 2),
+            saxs_y=np.round(pil2M_pos.y.position, 2),
+            saxs_z=np.round(pil2M_pos.z.position, 2),
             waxs_angle=waxs_angle,
             expt=t,
             scan_id=RE.md["scan_id"],
@@ -282,7 +282,7 @@ def test_waxs_move_time():
 def measure_saxs(t=1, att="None", dy=0, user_name="YM", sample=None):
     if sample is None:
         sample = RE.md["sample"]
-    dets = [pil1M]
+    dets = [pil2M]
     # att_in( att )
     if dy:
         yield from bps.mvr(stage.y, dy)
@@ -293,7 +293,7 @@ def measure_saxs(t=1, att="None", dy=0, user_name="YM", sample=None):
         sample=sample,
         x_pos=np.round(stage.x.position, 2),
         y_pos=np.round(stage.y.position, 2),
-        saxs_z=np.round(pil1m_pos.z.position, 2),
+        saxs_z=np.round(pil2M_pos.z.position, 2),
         expt=t,
         att=att,
         scan_id=RE.md["scan_id"],
@@ -350,7 +350,7 @@ def measure_wsaxs(t=1, waxs_angle=20, att="None", dy=0, user_name="XZ", sample=N
     if sample is None:
         sample = RE.md["sample"]
     yield from bps.mv(waxs, waxs_angle)
-    dets = [pil900KW, pil300KW, pil1M]
+    dets = [pil900KW, pil300KW, pil2M]
     # att_in( att )
     if dy:
         yield from bps.mvr(stage.y, dy)
@@ -360,7 +360,7 @@ def measure_wsaxs(t=1, waxs_angle=20, att="None", dy=0, user_name="XZ", sample=N
         x_pos=stage.x.position,
         y_pos=stage.y.position,
         z_pos=stage.z.position,
-        saxs_z=np.round(pil1m_pos.z.position, 2),
+        saxs_z=np.round(pil2M_pos.z.position, 2),
         waxs_angle=waxs_angle,
         expt=t,
         scan_id=RE.md["scan_id"],
@@ -413,9 +413,9 @@ def measure_waxs_multi_angles(
         if saxs_on:
             if waxs_angle == max_waxs_angle:
                 dets = [
-                    pil1M,
+                    pil2M,
                     pil300KW,
-                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
             else:
                 dets = [pil300KW]
 
@@ -487,7 +487,7 @@ def snap_waxs(t=0.1):
 
 
 def snap_saxs(t=0.1):
-    dets = [pil1M]
+    dets = [pil2M]
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(t)
     yield from (bp.count(dets, num=1))

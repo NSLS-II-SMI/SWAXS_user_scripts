@@ -27,7 +27,7 @@ def take_test_det(t=0.5):
     """
     Take some data just in case WAXS complains
     """
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
     sample_id(user_name="test", sample_name="test")
     yield from bp.count(dets)
@@ -83,11 +83,11 @@ def run_nist_linescans(t=0.5):
     # beamstop x position on SAXS
     bs_pos = 2.2
     yield from atten_move_out()
-    yield from bps.mv(pil1m_bs_rod.x, bs_pos)
+    yield from bps.mv(pil2M_bs_rod.x, bs_pos)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         det_exposure_time(t, t)
 
         condition = ( 19 < waxs.arc.position ) and ( waxs.arc.position < 21 )
@@ -97,15 +97,15 @@ def run_nist_linescans(t=0.5):
             yield from atten_move_in()
             yield from bps.mv(piezo.x, dbeam_x,
                               piezo.y, dbeam_y,
-                              pil1m_bs_rod.x, bs_pos + 5)
+                              pil2M_bs_rod.x, bs_pos + 5)
             
             sample_name = f'empty-attn-direct'
             sample_id(user_name='test', sample_name=sample_name)
             print(f"\n\n\n\t=== Sample: {sample_name} ===")
-            yield from bp.count([pil1M])
-            stats1_direct = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+            yield from bp.count([pil2M])
+            stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
-            yield from bps.mv(pil1m_bs_rod.x, bs_pos)
+            yield from bps.mv(pil2M_bs_rod.x, bs_pos)
             yield from atten_move_out()
         
         # Measure samples
@@ -117,19 +117,19 @@ def run_nist_linescans(t=0.5):
             if condition:
                 yield from atten_move_in()
                 yield from bps.mv(piezo.y, y + y_r[1] / 2,
-                                  pil1m_bs_rod.x, bs_pos + 5,)
+                                  pil2M_bs_rod.x, bs_pos + 5,)
 
                 sample_name = f'{name}-attn-sample'
                 sample_id(user_name='test', sample_name=sample_name)
                 print(f"\n\n\t=== Sample: {sample_name} ===")
-                yield from bp.count([pil1M])
-                stats1_sample = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                yield from bp.count([pil2M])
+                stats1_sample = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
                 
                 # Transmission
                 trans = np.round( stats1_sample / stats1_direct, 5)
 
                 # Revert configuraton
-                yield from bps.mv(pil1m_bs_rod.x, bs_pos,
+                yield from bps.mv(pil2M_bs_rod.x, bs_pos,
                                   piezo.y, y,)
                 yield from atten_move_out()
             else:
@@ -173,7 +173,7 @@ def run_nist_spirals(t=0.5):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         dets.append(OAV_writing)
         det_exposure_time(t, t)
         
@@ -254,7 +254,7 @@ def run_nist_grids(t=0.3):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         dets.append(OAV_writing)
         det_exposure_time(t, t)
         

@@ -10,7 +10,7 @@ def temp_snapshop(name_base="temp",num=1,delay=0, exp_time=1,en=2472,dets=[pil90
 
 
 def saxs_S_edge_linkam_2024_1(t=1,temps=[30]):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     name = "D1_06_10sexpo"
 
@@ -30,7 +30,7 @@ def saxs_S_edge_linkam_2024_1(t=1,temps=[30]):
         if wa == 0:
             dets = [pil900KW]
         else:
-            dets = [pil900KW, pil1M]
+            dets = [pil900KW, pil2M]
 
         det_exposure_time(t, t)
 

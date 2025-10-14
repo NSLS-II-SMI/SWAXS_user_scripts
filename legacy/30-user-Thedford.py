@@ -19,7 +19,7 @@ def mapping_saxs_Thed(t=1):
     y_range = [[0, 0, 1], [0, 1000, 11], [0, 8500, 86], [0, 8000, 81], [0, 9300, 94]]
 
     # Detectors, motors:
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -79,7 +79,7 @@ def mapping2_saxs_Thed(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -127,7 +127,7 @@ def mapping3_saxs_Thed(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -231,7 +231,7 @@ def capillaries_saxs_Thed(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -270,7 +270,7 @@ def gisaxs_Thed1(t=1):
     angle = [0.1, 0.15, 0.2]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -437,8 +437,8 @@ def saxs_well_Thed_2021(t=1):
     waxs_arc = np.linspace(13, 13, 1)
 
     # Detectors, motors:
-    # dets = [pil300KW, pil1M]
-    dets = [pil1M]
+    # dets = [pil300KW, pil2M]
+    dets = [pil2M]
 
     det_exposure_time(t, t)
 
@@ -581,7 +581,7 @@ def saxs_well_Thed_2021_3(t=1):
     waxs_arc = [0, 20]
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -638,7 +638,7 @@ def saxs_well_rot_Thed_2021_3(t=1):
     waxs_arc = [20, 0]
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     det_exposure_time(t, t)
 
@@ -679,7 +679,7 @@ def saxs_well_rot_Thed_2021_3(t=1):
 
 def saxs_well_rot_Thed_2021(t=1):
     waxs_arc = np.linspace(0, 58.5, 10)
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     for j, wa in enumerate(waxs_arc):
@@ -919,7 +919,7 @@ def gisaxs_Thed_2021_1(t=1):
     waxs_arc = np.linspace(0, 58.5, 10)
     angle = [0.1, 0.15, 0.2]
 
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     for wa in waxs_arc:
@@ -1082,7 +1082,7 @@ def capillaries_saxs_Thed_2021_3(t=1):
     ]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1124,7 +1124,7 @@ def capillaries_saxs_Thed_2021_1(t=1):
     z_list = [-8100, -8100, -8100, -8100, -8100, -8100, -8100, -8100, -8100]
 
     # Detectors, motors:
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1158,7 +1158,7 @@ def gisaxs_Thed2(t=1):
     angle = [0.1, 0.15, 0.2]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1245,7 +1245,7 @@ def gisaxs_Thed_2021_2(t=1):
     angle = [0.1, 0.15]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1297,7 +1297,7 @@ def gisaxs_Thed_2021_3(t=1):
     #     angle = np.linspace(0.05, 0.2, 16)
 
     #   # Detectors, motors:
-    #     dets = [pil1M, pil900KW]
+    #     dets = [pil2M, pil900KW]
     #     det_exposure_time(t,t)
 
     #     assert len(x_list) == len(samples), f'Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})'
@@ -1344,7 +1344,7 @@ def gisaxs_Thed_2021_3(t=1):
     angle = [0.05, 0.10, 0.15]
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1397,7 +1397,7 @@ def gisaxs_Thed_2021_3(t=1):
     angle = [0.05, 0.10, 0.15]
 
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1451,7 +1451,7 @@ def gisaxs_2021_2(t=1):
     angle = [0.1, 0.15]
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1504,7 +1504,7 @@ def gisaxs_finestep_Thed_2021_2(t=1):
     angle = np.linspace(0.05, 0.2, 16)
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1695,7 +1695,7 @@ def saxs_well_Thed(t=1):
     waxs_arc = np.linspace(0, 58.5, 10)
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1764,7 +1764,7 @@ def saxs_well2_Thed(t=1):
     waxs_arc = np.linspace(13, 13, 1)
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1804,7 +1804,7 @@ def run_saxsmapPT(t=1):
     y_range = [[-5000, 5000, 41], [-3750, 3750, 16]]
 
     # Detectors, motors:
-    dets = [pil1M]  # dets = [pil1M,pil300KW]
+    dets = [pil2M]  # dets = [pil2M,pil300KW]
     det_exposure_time(t, t)
 
     assert len(x_list) == len(
@@ -1835,7 +1835,7 @@ def run_saxsmapPT(t=1):
 
 
 def run_waxslongPT(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     xlocs = [-38000, -33000, -20000, -8000, 5000, 18000, 31000]
     ylocs = [-8400, 0, 0, 0, 0, 0, 0]
     names = [
@@ -1865,7 +1865,7 @@ def run_waxslongPT(t=1):
 
 
 def run_waxsshortPT(t=0.25):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     xlocs = [
         -36000,
         -25000,
@@ -1926,7 +1926,7 @@ def run_waxsshortPT(t=0.25):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW]
+    dets = [pil2M, pil300KW]
     waxs_range = np.linspace(0, 58.5, 10)
     for wa in waxs_range:
         yield from bps.mv(waxs, wa)
@@ -1951,8 +1951,8 @@ def gisaxs_tempPT(t=1):
     samples = ["DVC_3MPA", "DVC_CystAm", "DVC_u1", "KRH_u1"]
 
     # Detectors, motors:
-    # dets = [pil1M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
-    dets = [pil1M, pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE
+    # dets = [pil2M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
+    dets = [pil2M, pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE
     angle_offset = [0.1, 0.15]
     waxs_range = [0, 58.5, 10]
     waxs_range_rev = [58.5, 0, 10]
@@ -2006,8 +2006,8 @@ def gisaxs_PT(t=1):
     ]
 
     # Detectors, motors:
-    # dets = [pil1M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
-    dets = [pil1M]  # WAXS detector ALONE
+    # dets = [pil2M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
+    dets = [pil2M]  # WAXS detector ALONE
     angle_offset = [0.1, 0.15, 0.2]
     waxs_range = [0, 58.5, 10]
 
@@ -2087,7 +2087,7 @@ def run_swaxs_Fei_2022_3(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, in zip(names, piezo_x, piezo_y):
@@ -2104,7 +2104,7 @@ def run_swaxs_Fei_2022_3(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -2173,7 +2173,7 @@ def run_swaxs_Fei_2023_1(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, in zip(names, piezo_x, piezo_y):
@@ -2190,7 +2190,7 @@ def run_swaxs_Fei_2023_1(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -2295,7 +2295,7 @@ def run_swaxs_Fei_2023_2(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, y_hexa in zip(names, piezo_x, piezo_y, hexa_y):
@@ -2314,7 +2314,7 @@ def run_swaxs_Fei_2023_2(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -2377,7 +2377,7 @@ def run_swaxs_Fei_2023_3(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, y_hexa in zip(names, piezo_x, piezo_y, hexa_y):
@@ -2396,7 +2396,7 @@ def run_swaxs_Fei_2023_3(t=1):
                     e = energy.position.energy / 1000
                     wa = waxs.arc.position + 0.001
                     wa = str(np.round(float(wa), 1)).zfill(4)
-                    sdd = pil1m_pos.z.position / 1000
+                    sdd = pil2M_pos.z.position / 1000
 
                     # Sample name
                     name_fmt = ( "{sample}_{energy}keV_wa{wax}_sdd{sdd}m_loc{loc}")
@@ -2453,7 +2453,7 @@ def run_swaxs_Fei_2024_1(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, y_hexa in zip(names, piezo_x, piezo_y, hexa_y):
@@ -2509,7 +2509,7 @@ def run_swaxs_Feicap_2024_1(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil1M]
+        dets = [pil2M]
         det_exposure_time(t, t)
 
         for name, x, y in zip(names, piezo_x, piezo_y):
@@ -2551,7 +2551,7 @@ def run_Fei_manualcap_2024_1(t=1, name='test'):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil1M]
+        dets = [pil2M]
         det_exposure_time(t, t)
         y=piezo.y.position
 
@@ -2607,7 +2607,7 @@ def run_swaxs_Fei_2024_3(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, y_hexa in zip(names, piezo_x, piezo_y, hexa_y):
@@ -2740,7 +2740,7 @@ def run_swaxs_Fei_2025_1(t=1):
     for i, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         det_exposure_time(t, t)
 
         for name, x, y, x_hexa in zip(names, piezo_x, piezo_y, hexa_x):

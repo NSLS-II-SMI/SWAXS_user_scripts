@@ -1,5 +1,5 @@
 def saxs_waxs_Shejla(t=1):
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
 
     waxs_arc = np.linspace(0, 26, 5)
 

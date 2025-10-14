@@ -14,7 +14,7 @@ def run_saxs_lipids(y=1, t=2):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil300KW, ssacurrent]
+    dets = [pil2M, pil300KW, ssacurrent]
     waxs_arc = [11, 11, 1]
     stage_y = [y, y + 4, 81]
 
@@ -107,7 +107,7 @@ def grating_rana(det, motor, name="Water_upRepeat", cycle=1, cycle_t=11, n_cycle
 def run_saxs_caps(t=1):
     x_list = [-15, -12.8, -6.45, -0.25, 6.43, 12.5, 19.05, 25.2]  #
     # Detectors, motors:
-    dets = [pil1M]
+    dets = [pil2M]
     y_range = [0, 0, 1]  # beginning, end, num pnts
     samples = [
         "LC-O36-6",
@@ -138,7 +138,7 @@ def run_saxs_caps_temp(name="DB"):
     temperatures = [30, 36, 40, 44, 50]
     x_list = [-31.88, -25.56, -19.27, -12.92, -6.57, -0.22, 6.05, 12.42, 18.74, 25.09]
     # Detectors, motors:
-    dets = [pil1M, ls.ch1_read, xbpm3.sumY]
+    dets = [pil2M, ls.ch1_read, xbpm3.sumY]
     y_range = [-3.4, -7.2, 77]
     samples = ["water", "F3", "F2", "F1", "F0", "E3", "E2", "E0", "D3", "D2"]
     name_fmt = "{sample}_{temperature}C"
@@ -170,7 +170,7 @@ def run_waxs_multi(t=1):
     x_list = [-0.025, 0, 0.025]
     # y_offset
     # Detectors, motors:
-    dets = [pil1M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]
     waxs_arc = [7, 31, 5]
     samples = ["SP_Air_in_Airmode", "SP_CT_New_Vert", "SP_Kapton_in_Airmode"]
     #    param   = '16.1keV'
@@ -230,5 +230,5 @@ def run_ben_giwaxs(t=10):
 
 def linkam_fast(n=6):
     yield from bps.mv(attn_shutter, "Retract")
-    yield from bp.scan([pil1M], stage.y, 0.1, 0.9, n)
+    yield from bp.scan([pil2M], stage.y, 0.1, 0.9, n)
     yield from bps.mv(attn_shutter, "Insert")

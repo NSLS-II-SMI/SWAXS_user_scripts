@@ -21,7 +21,7 @@ def run_giwaxs(t=1):  # 2020C1
     )  # (0, 18, 4)   # q=4*3.14/0.77*np.sin((max angle+3.5)/2*3.14159/180)
     # if 12, 3: up to q=2.199
     # if 18, 4: up to q=3.04
-    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
 
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
 
@@ -105,7 +105,7 @@ def run_gisaxsAngle_AB2(t=1):  # 2020C1
     )  # (0, 18, 4)   # q=4*3.14/0.77*np.sin((max angle+3.5)/2*3.14159/180)
     # if 12, 3: up to q=2.199
     # if 18, 4: up to q=3.04
-    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
 
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
 

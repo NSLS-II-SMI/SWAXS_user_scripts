@@ -128,7 +128,7 @@ def giwaxs_Fernandez(t=1):
     print(incident_angles)
     print(y_piezo_aligned)
 
-    dets = [pil300KW, pil1M]
+    dets = [pil300KW, pil2M]
     waxs_arc = np.linspace(0, 19.5, 4)
     angle = np.linspace(0.04, 0.18, 15)
 

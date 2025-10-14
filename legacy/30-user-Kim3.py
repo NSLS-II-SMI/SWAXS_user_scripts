@@ -492,7 +492,7 @@ def run_giwaxs_Kim(t=1, username="Kim"):
         0, 45.5, 8
     )  # 4*3.14/(12.39842/16.1)*np.sin((7*6.5+3.5)*3.14/360) = 6.760 A-1
 
-    # dets = [pil300KW, pil1M] # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+    # dets = [pil300KW, pil2M] # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
     max_waxs_angle = np.max(waxs_angle_array)
     x_shift_array = np.linspace(-500, 500, 3)  # measure at a few x positions
     inverse_angle = False
@@ -536,8 +536,8 @@ def run_giwaxs_Kim(t=1, username="Kim"):
             if waxs_angle == max_waxs_angle:
                 dets = [
                     pil300KW,
-                    pil1M,
-                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil1M]
+                    pil2M,
+                ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
                 print("Meausre both saxs and waxs here for w-angle=%s" % waxs_angle)
             else:
                 dets = [pil300KW]

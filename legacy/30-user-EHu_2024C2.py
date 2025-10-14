@@ -703,7 +703,7 @@ def do_line_trans_scan( sample ='4AMP_C_',  t=1,  scan_range = [ 0,  100 ],
 
 
     waxs_angle = 20 
-    dets = [ pil900KW,  pil1M ] #
+    dets = [ pil900KW,  pil2M ] #
     #dets = [ pil900KW  ] #
 
     yield from bps.mv(waxs, waxs_angle)  

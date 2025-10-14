@@ -42,7 +42,7 @@ def run_swaxs_Liu_2023_2(t=2):
     dy = 100
     waxs_arc = [20, 0]
 
-    beamstop = pil1m_bs_pd
+    beamstop = pil2M_bs_pd
     bs_pos_x = -202.5
     transmission_exposure = 1.0
     dx = 1500
@@ -61,7 +61,7 @@ def run_swaxs_Liu_2023_2(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         condition = ( 19 < waxs.arc.position ) and ( waxs.arc.position < 21 )
 
@@ -74,8 +74,8 @@ def run_swaxs_Liu_2023_2(t=2):
             sample_name = f'empty_-attn-direct'
             sample_id(user_name='test', sample_name=sample_name)
             print(f"\n\n\n\t=== Sample: {sample_name} ===")
-            yield from bp.count([pil1M])
-            stats1_direct = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+            yield from bp.count([pil2M])
+            stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
             yield from bps.mv(beamstop.x, bs_pos_x)
             yield from atten_move_out()
 
@@ -103,8 +103,8 @@ def run_swaxs_Liu_2023_2(t=2):
                     yield from bps.mv(beamstop.x, bs_pos_x + 5)
                     sample_name = f'{name}-attn-sample'
                     sample_id(user_name='test', sample_name=sample_name)
-                    yield from bp.count([pil1M])
-                    stats1_sample = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                    yield from bp.count([pil2M])
+                    stats1_sample = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                     # Transmission
                     trans = np.round( stats1_sample / stats1_direct, 5)
@@ -144,7 +144,7 @@ def run_swaxs_Liu_2023_3(t=2):
     dy = 100
     waxs_arc = [20, 0]
 
-    beamstop = pil1m_bs_pd
+    beamstop = pil2M_bs_pd
     bs_pos_x = -201.5
     user = 'PW'
 
@@ -163,7 +163,7 @@ def run_swaxs_Liu_2023_3(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         condition = ( 19 < waxs.arc.position ) and ( waxs.arc.position < 21 )
 
@@ -176,8 +176,8 @@ def run_swaxs_Liu_2023_3(t=2):
             sample_name = f'empty_-attn-direct'
             sample_id(user_name='test', sample_name=sample_name)
             print(f"\n\n\n\t=== Sample: {sample_name} ===")
-            yield from bp.count([pil1M])
-            stats1_direct = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+            yield from bp.count([pil2M])
+            stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
             yield from bps.mv(beamstop.x, bs_pos_x)
             yield from atten_move_out()
 
@@ -206,8 +206,8 @@ def run_swaxs_Liu_2023_3(t=2):
                     yield from bps.mv(beamstop.x, bs_pos_x + 5)
                     sample_name = f'{name}-attn-sample'
                     sample_id(user_name='test', sample_name=sample_name)
-                    yield from bp.count([pil1M])
-                    stats1_sample = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                    yield from bp.count([pil2M])
+                    stats1_sample = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                     # Transmission
                     trans = np.round( stats1_sample / stats1_direct, 5)
@@ -247,7 +247,7 @@ def run_swaxs_Liu_2024_1(t=2):
     dy = 100
     waxs_arc = [20, 0]
 
-    beamstop = pil1m_bs_pd
+    beamstop = pil2M_bs_pd
     bs_pos_x = -201.5
     user = 'PW'
 
@@ -266,7 +266,7 @@ def run_swaxs_Liu_2024_1(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         condition = ( 19 < waxs.arc.position ) and ( waxs.arc.position < 21 )
 
@@ -279,8 +279,8 @@ def run_swaxs_Liu_2024_1(t=2):
             sample_name = f'empty-attn-direct'
             sample_id(user_name='test', sample_name=sample_name)
             print(f"\n\n\n\t=== Sample: {sample_name} ===")
-            yield from bp.count([pil1M])
-            stats1_direct = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+            yield from bp.count([pil2M])
+            stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
             yield from bps.mv(beamstop.x, bs_pos_x)
             yield from atten_move_out()
 
@@ -309,8 +309,8 @@ def run_swaxs_Liu_2024_1(t=2):
                     yield from bps.mv(beamstop.x, bs_pos_x + 5)
                     sample_name = f'{name}-attn-sample'
                     sample_id(user_name='test', sample_name=sample_name)
-                    yield from bp.count([pil1M])
-                    stats1_sample = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                    yield from bp.count([pil2M])
+                    stats1_sample = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                     # Transmission
                     trans = np.round( stats1_sample / stats1_direct, 5)
@@ -357,7 +357,7 @@ def run_swaxs_Liu_2024_2(t=2):
     dy = 100
     waxs_arc = [20, 0]
 
-    beamstop = pil1m_bs_pd
+    beamstop = pil2M_bs_pd
     bs_pos_x = -200.8
     user = 'PW'
 
@@ -375,7 +375,7 @@ def run_swaxs_Liu_2024_2(t=2):
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
 
         condition = ( 19 < waxs.arc.position ) and ( waxs.arc.position < 21 )
 
@@ -388,8 +388,8 @@ def run_swaxs_Liu_2024_2(t=2):
             sample_name = f'empty-attn-direct'
             sample_id(user_name='test', sample_name=sample_name)
             print(f"\n\n\n\t=== Sample: {sample_name} ===")
-            yield from bp.count([pil1M])
-            stats1_direct = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+            yield from bp.count([pil2M])
+            stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
             yield from bps.mv(beamstop.x, bs_pos_x)
             yield from atten_move_out()
 
@@ -418,8 +418,8 @@ def run_swaxs_Liu_2024_2(t=2):
                     yield from bps.mv(beamstop.x, bs_pos_x + 5)
                     sample_name = f'{name}-attn-sample'
                     sample_id(user_name='test', sample_name=sample_name)
-                    yield from bp.count([pil1M])
-                    stats1_sample = db[-1].table(stream_name='primary')['pil1M_stats1_total'].values[0]
+                    yield from bp.count([pil2M])
+                    stats1_sample = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
                     # Transmission
                     trans = np.round( stats1_sample / stats1_direct, 5)

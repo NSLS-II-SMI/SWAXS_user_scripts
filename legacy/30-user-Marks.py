@@ -6,7 +6,7 @@
     # dir = Cpt(EpicsSignal, "Val:Dir-Sel",) 
 
 def waxs_S_edge_marks_2025_1_coarse(name, x=[0], y=[-3190], t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
     # names = ["PM7_TO1"]
     # x = [          2000] 7500  9500
@@ -44,7 +44,7 @@ def waxs_S_edge_marks_2025_1_coarse(name, x=[0], y=[-3190], t=1):
             if wa == 0:
                 dets = [pil900KW]
             else:
-                dets = [pil900KW, pil1M]
+                dets = [pil900KW, pil2M]
 
             det_exposure_time(t, t)
 
@@ -86,7 +86,7 @@ def waxs_S_edge_marks_2025_1_coarse(name, x=[0], y=[-3190], t=1):
 
 
 def nexafs_S_edge_marks_2025_1_coarse(name, x=[0], y=[-3190], t=1):
-    dets = [pil900KW, pil1M]
+    dets = [pil900KW, pil2M]
 
 
     assert len(x) == len(y), f"Number of X coordinates ({len(x)}) is different from number of samples ({len(y)})"

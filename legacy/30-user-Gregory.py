@@ -4,7 +4,7 @@ def waxs_S_edge_Gregory_2022_2(t=0.5):
     and modified for GU-309504 Gregory. SAXS ssd 1.6 m.
     """
     # detectors will be defined later in the macro -> inside the waxc_arc cycle!
-    # dets = [pil1M, pil900KW]
+    # dets = [pil2M, pil900KW]
 
     # x and y are top center position on the sample
     names_a = [
@@ -80,7 +80,7 @@ def waxs_S_edge_Gregory_2022_2(t=0.5):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             det_exposure_time(t, t)
 
@@ -93,7 +93,7 @@ def waxs_S_edge_Gregory_2022_2(t=0.5):
                 yield from bps.mv(piezo.x, xsss)
 
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 sample_name = name_fmt.format(
                     sample=name,
@@ -136,7 +136,7 @@ def waxs_Pt_L_edge_Gregory_2022_2(t=0.3):
     """
 
     # detectors will be defined later in the macro -> inside the waxc_arc cycle!
-    # dets = [pil1M, pil900KW]
+    # dets = [pil2M, pil900KW]
 
     # x and y are top left position on the sample
     names = ["Pt-1", "Pt-2", "Pt-3"]
@@ -160,7 +160,7 @@ def waxs_Pt_L_edge_Gregory_2022_2(t=0.3):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 15 else [pil2M, pil900KW]
             det_exposure_time(t, t)
 
             # Stay at the same x and y positions
@@ -180,7 +180,7 @@ def waxs_Pt_L_edge_Gregory_2022_2(t=0.3):
                 yield from bps.mv(piezo.x, xsss)
 
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 sample_name = name_fmt.format(
                     sample=name,
@@ -206,7 +206,7 @@ def waxs_Te_edge_Gregory_2022_2(t=0.35):
     Tellurium L edge TReXS, based on waxs_S_edge_2022_2 above. SAXS ssd 1.6 m.
     """
     # detectors will be defined later in the macro -> inside the waxc_arc cycle!
-    # dets = [pil1M, pil900KW]
+    # dets = [pil2M, pil900KW]
 
     # x and y are top center position on the sample
     # names_a = ['0_pristine', '1_hT', '2_hT-6', '3_hT-25', '4_hT-400', '5_hTe', '6_hPTe-1pt5', '7_hTe-3', '8_hTe_400']
@@ -262,7 +262,7 @@ def waxs_Te_edge_Gregory_2022_2(t=0.35):
             yield from bps.mvr(piezo.x, 60)
 
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             det_exposure_time(t, t)
 
@@ -275,7 +275,7 @@ def waxs_Te_edge_Gregory_2022_2(t=0.35):
                 # yield from bps.mv(piezo.x, xsss)
 
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 sample_name = name_fmt.format(
                     sample=name,
@@ -300,7 +300,7 @@ def waxs_Ca_edge_Gregory_2022_2(t=0.5):
     Calcium K edge TReXS, based on waxs_S_edge_2022_2 above ad revised for Ca edge. SAXS ssd 1.6 m.
     """
     # detectors will be defined later in the macro -> inside the waxc_arc cycle!
-    # dets = [pil1M, pil900KW]
+    # dets = [pil2M, pil900KW]
 
     # x and y are top left position on the sample
     # two bars for these samples since washers are massive
@@ -339,7 +339,7 @@ def waxs_Ca_edge_Gregory_2022_2(t=0.5):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             det_exposure_time(t, t)
 
@@ -352,7 +352,7 @@ def waxs_Ca_edge_Gregory_2022_2(t=0.5):
                 yield from bps.mv(piezo.x, xsss)
 
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 sample_name = name_fmt.format(
                     sample=name,
@@ -377,7 +377,7 @@ def waxs_S_edge_Gregory_2022_1(t=0.5):
     Based on waxs_S_edge_gordon_2021_2 from 30-user-Gordon
     and modified for GU-309504 Gregory. SAXS ssd 1.6 m.
     """
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
 
     # x and y are top left position on the sample
     names_a = ["1-P3RT_doped", "2-P3RTe_doped", "3-blend_doped", "4-copolymer_doped"]
@@ -432,7 +432,7 @@ def waxs_S_edge_Gregory_2022_1(t=0.5):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             det_exposure_time(t, t)
 
@@ -524,7 +524,7 @@ def giwaxs_shawn_2022_2(t=0.5):
         # Go over WAXS detector angles
         for wa in waxs_angles:
             yield from bps.mv(waxs, wa)
-            dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+            dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
 
             # Go over different incident angles
             for ai in inc_angles:
@@ -534,7 +534,7 @@ def giwaxs_shawn_2022_2(t=0.5):
                 name_fmt = "{sample}_{energy}eV_wa{wax}_sdd{sdd}m_bpm{xbpm}_ai{ai}"
                 bpm = xbpm3.sumX.get()
                 e = energy.energy.position / 1000
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 sample_name = name_fmt.format(
                     sample=name,
@@ -577,12 +577,12 @@ def run_waxs_simple_2022_2(t=1):
     ), f"Number of X coordinates ({len(xlocs)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil1M, pil900KW]
+    dets = [pil2M, pil900KW]
     waxs_range = np.linspace(0, 40, 3)
 
     for wa in waxs_range:
         yield from bps.mv(waxs, wa)
-        dets = [pil900KW] if wa < 15 else [pil900KW, pil1M]
+        dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
 
         for sam, x, y in zip(samples, xlocs, ylocs):
             yield from bps.mv(piezo.x, x)
@@ -601,7 +601,7 @@ def waxs_Te_edge_Gregory_2022_2_mrl_june(t=0.35):
     Tellurium L edge TReXS, based on waxs_S_edge_2022_2 above. SAXS ssd 8.3 m.
     """
     # detectors will be defined later in the macro -> inside the waxc_arc cycle!
-    # dets = [pil1M, pil900KW]
+    # dets = [pil2M, pil900KW]
 
     names = ["mrl_copoly_med", "mrl_copoly_high", "mrl_copoly_pristine"]
     x = [-18700, -24500, -12400]
@@ -654,7 +654,7 @@ def waxs_Te_edge_Gregory_2022_2_mrl_june(t=0.35):
                 # yield from bps.mv(piezo.x, xsss)
 
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 sample_name = name_fmt.format(
                     sample=name,
@@ -729,7 +729,7 @@ def swaxs_S_edge_Gregory_2022_3(t=0.5):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
             det_exposure_time(t, t)
 
@@ -742,7 +742,7 @@ def swaxs_S_edge_Gregory_2022_3(t=0.5):
                 # Metadata
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 scan_id = db[-1].start["scan_id"] + 1
                 xbpm3_readout = xbpm3.sumX.get()
 
@@ -819,7 +819,7 @@ def saxs_Ag_edge_Gregory_2022_3(t=0.2):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
             det_exposure_time(t, t)
 
@@ -832,7 +832,7 @@ def saxs_Ag_edge_Gregory_2022_3(t=0.2):
                 # Metadata
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 scan_id = db[-1].start["scan_id"] + 1
                 xbpm3_readout = xbpm3.sumX.get()
 
@@ -947,7 +947,7 @@ def swaxs_Te_edge_Gregory_2022_3(t=0.35):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if waxs.arc.position < 15 else [pil1M, pil900KW]
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
             det_exposure_time(t, t)
 
@@ -960,7 +960,7 @@ def swaxs_Te_edge_Gregory_2022_3(t=0.35):
                 # Metadata
                 wa = waxs.arc.position + 0.001
                 wa = str(np.round(float(wa), 1)).zfill(4)
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
                 scan_id = db[-1].start["scan_id"] + 1
                 xbpm3_readout = xbpm3.sumX.get()
 
@@ -1072,7 +1072,7 @@ def swaxs_Cl_edge_Gregory_2022_3(t=0.5):
             # yield from bps.mvr(piezo.x, 60)
 
             # Do not read SAXS if WAXS is in the way
-            dets = [pil900KW] if wa < 10 else [pil1M, pil900KW]
+            dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
             det_exposure_time(t, t)
 
@@ -1085,7 +1085,7 @@ def swaxs_Cl_edge_Gregory_2022_3(t=0.5):
                 # yield from bps.mv(piezo.x, xsss)
 
                 bpm = xbpm3.sumX.get()
-                sdd = pil1m_pos.z.position / 1000
+                sdd = pil2M_pos.z.position / 1000
 
                 sample_name = name_fmt.format(
                     sample=name,
