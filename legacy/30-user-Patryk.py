@@ -3152,3 +3152,390 @@ def run_Paren_hard_2nd_2025_2(t=2):
 
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(0.3, 0.3)
+
+def create_timestamp():
+    """
+    store in RE.md and print
+    """
+    RE.md['tstamp'] = time.time()
+    print('\nTime stamp created in RE.md')
+    tstamp = RE.md['tstamp']
+    print(f'tstamp: {tstamp}')
+
+def insitu_loop_mapping_Das_2025_3(t=1, waxs_only=False):
+    """
+    WAXS or SAXS/WAXS at once, 300x300, 121(y) x 13(x)
+    1h scan
+
+    """
+
+    project_set('Mn3O4-IE-RT')
+
+    # Sample name and coordinates
+    
+    name = 'sample'
+    x =    -2500
+    y =     1400
+    z =   -35400
+
+    if waxs_only:
+        waxs_arc = [ 0 ]
+    else:
+        waxs_arc = [ 14.5 ]
+    
+    det_exposure_time(t, t)
+
+    run = 0
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+
+    while True:
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 14.3 else [pil900KW, pil2M]
+            
+            # Get xbpm3
+            dets.append(xbpm3.sumX)
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+                )
+            
+            eplased = time.time() - tstamp
+
+            sample_name = f'{name}_run{run}_{get_scan_md()}_t{eplased:.0f}'
+            sample_id(user_name='SD', sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                
+            if 'bgk' not in name:
+                yield from bp.rel_grid_scan(
+                    dets, piezo.y, -300, 300, 121,  piezo.x, -300, 300, 13, 0
+                    )
+            else:
+                yield from bp.rel_grid_scan(dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 11, 0)
+            run += 1
+    
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+
+def run_Paren_hard_multiplesaxs_2025_3(t=1):
+    """
+    Run standard hard transmission over multiple SAXS distances
+
+    For future refernce:
+        pil2M.insert_beamstop('rod') - insert beamstop (rod, pin)
+        bps.mv(pil2M.beamstop.x_pin, -227.6,
+               pil2M.beamstop.y_pin, 6.6)   - move pin to position
+            pil2M.beamstop.x_rod, pil2M.beamstop.y_rod - rod positions
+    """
+
+    saxs_dct = {
+        0 : {'sdd': 2000, 'beam_centre': [860.5, 1196], 'bs': 'pd', 'energy': 16100,
+             'bs_x': -227.3, 'bs_y': 6.4},
+        
+        1 : {'sdd': 5000, 'beam_centre': [861, 1195.5], 'bs': 'pd', 'energy': 16100,
+             'bs_x': -227.5, 'bs_y': 6.6},
+        
+        2 : {'sdd': 9200, 'beam_centre': [854, 1191], 'bs': 'pd', 'energy': 16100,
+             'bs_x': -227.35, 'bs_y': 7.0},
+    }
+
+    names_1   = [  'vacuum', 'CNC-CSH2_p','CNC-CSH3', 'CNC-CSH3_p','CNC-CSH4']
+    piezo_x_1 = [    -43400,       -41300,    -36300,       -32600,    -29200]
+    piezo_y_1 = [     -7400,        -7500,     -7500,        -7500,     -7500]
+
+    names_2   = [ 'CNC-CSH4_p','CNC-CSH5','CNC-CSH5_p','CNF_CSH1','CNF_CSH1_p']
+    piezo_x_2 = [       -25400,    -21400,      -17800,    -14400,      -11200]
+    piezo_y_2 = [        -6500,     -7000,       -6300,     -7200,       -7200]
+
+    names_3   = [ 'Cell-CSH1',  'Cell-CSH1_p','AuNP_Hex','AuNP_Disp','SiO2NP_Loop']
+    piezo_x_3 = [       -8200,          -5200,      -700,       5300,        15000]
+    piezo_y_3 = [       -7200,          -7000,     -7400,      -7400,        -7400]
+    
+    names_4   = [  'SiO2NP_Linear','CNC-CSH2','CNC-CSH1_p','CNC-CSH1', 'C6',  'C8']
+    piezo_x_4 = [            19500,    -42500,      -39000,    -34000,-2800,-24000]
+    piezo_y_4 = [            -7400,      5500,        5500,      5500, 5500,  5500]
+
+    names_5   = [  'PEX_No_I', 'PEX_I', 'SA_g_sap_center', 'SA_g_sap_top', 'SA_g_sap_edge']
+    piezo_x_5 = [     -19000,   -14000,             -9800,          -9800,           -9800]
+    piezo_y_5 = [      5700,      5700,              6100,           5500,            5100]
+
+    names_6   = [  'SA_g_center', 'SA_g_top', 'SA_g_edge', 'SA_ng_center', 'SA_ng_top']
+    piezo_x_6 = [          -4800,      -4800,       -4800,            200,         200]
+    piezo_y_6 = [           6100,       5600,        5350,           5750,        5050]
+
+    names_7   = [ 'SA_ng_edge', 'SOX_center', 'SOX_top', 'SOX_edge', '81OA_ng_center']
+    piezo_x_7 = [         -500,         5000,      5000,       5000,            11000]
+    piezo_y_7 = [         4850,         5800,      5150,       4950,             5800]
+
+    names_8   = [ '81OA_ng_top', '81OA_ng_edge', '82OA_ng_center', '82OA_ng_top', '44SA_ng_center']
+    piezo_x_8 = [         11000,          11000,            15000,         15000,            18200]
+    piezo_y_8 = [          5200,           5000,             6000,          5200,             6200]
+
+    names_9   = [ '44SA_ng_top', '44SA_ng_edge', 'MO_ng_center', 'MO_ng_top', 'OA_ng_center', 'OA_ng_top']
+    piezo_x_9 = [         18200,          18200,          22400,       22400,          27400,       27400]
+    piezo_y_9 = [          5700,           5300,           6000,        5300,           6000,        5400]
+
+    names_10   = [ 'OA_ng_edge', 'MO_g_center', 'MO_g_top', 'MO_g_edge', 'OA_g_center']
+    piezo_x_10 = [        27400,         31600,      31600,       31600,         36600]
+    piezo_y_10 = [         5200,          5900,       5200,        5000,          6300]
+
+    names_11   = [ 'OA_g_top', 'Ref_center', 'Ref_top']
+    piezo_x_11 = [      36600,        42400,     42400]
+    piezo_y_11 = [       5800,         6400,      5950]
+
+    names   =   names_1 +   names_2 +   names_3 +   names_4 +   names_5 +   names_6 +   names_7 +   names_8 +  names_9 +   names_10 +   names_11
+    piezo_x = piezo_x_1 + piezo_x_2 + piezo_x_3 + piezo_x_4 + piezo_x_5 + piezo_x_6 + piezo_x_7 + piezo_x_8 + piezo_x_9 + piezo_x_10 + piezo_x_11
+    piezo_y = piezo_y_1 + piezo_y_2 + piezo_y_3 + piezo_y_4 + piezo_y_5 + piezo_y_6 + piezo_y_7 + piezo_y_8 + piezo_y_9 + piezo_y_10 + piezo_y_11
+    
+    piezo_z = [ 3200 for n in names ]
+    
+    waxs_arc = [ 40, 20, 0 ]
+    user = "BP"
+    det_exposure_time(t, t)
+
+    msg = 'Wrong number of coordinates'
+    for arr in [piezo_x, piezo_y, piezo_z, ]:
+        assert len(arr) == len(names), msg
+
+    # Go over SAXS distances
+    for k, v in saxs_dct.items():
+
+        print(v)
+        RE.md['SAXS_setup'] = v
+        sdd = v['sdd']
+        bs_x = v['bs_x']
+        bs_y = v['bs_y']
+
+        pname = f'hard-{sdd}mm'
+        project_set(pname)
+
+        yield from bps.mv(
+            pil2M.motor.z, sdd,
+            pil2M.beamstop.x_pin, bs_x,
+            pil2M.beamstop.y_pin, bs_y,
+            waxs, waxs_arc[0],
+            piezo.y, piezo_y[0],
+            piezo.x, piezo_x[0],
+        )
+
+        # Go over WAXS angles
+        for wa in waxs_arc:
+            yield from bps.mv(
+                waxs, wa,
+                piezo.y, piezo_y[0],
+                piezo.x, piezo_x[0],
+            )
+
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+            
+            if wa == waxs_arc[0]:
+                dets.append(OAV_writing)
+
+            for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
+
+                yield from bps.mv(
+                    piezo.y, y,
+                    piezo.x, x,
+                    piezo.z, z,
+                )
+
+                sample_name = f'{name}_{get_scan_md()}'
+                sample_id(user_name=user, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+
+
+def run_Paren_hard_cap_multiplesaxs_2025_3(t=2):
+    """
+    Run standard hard transmission over multiple SAXS distances
+
+    For future refernce:
+        pil2M.insert_beamstop('rod') - insert beamstop (rod, pin)
+        bps.mv(pil2M.beamstop.x_pin, -227.6,
+               pil2M.beamstop.y_pin, 6.6)   - move pin to position
+            pil2M.beamstop.x_rod, pil2M.beamstop.y_rod - rod positions
+    """
+
+    saxs_dct = {
+        0 : {'sdd': 2000, 'beam_centre': [860.5, 1196], 'bs': 'pd', 'energy': 16100,
+             'bs_x': -227.3, 'bs_y': 6.4},
+        
+        1 : {'sdd': 5000, 'beam_centre': [861, 1195.5], 'bs': 'pd', 'energy': 16100,
+             'bs_x': -227.5, 'bs_y': 6.6},
+        
+        2 : {'sdd': 9200, 'beam_centre': [854, 1191], 'bs': 'pd', 'energy': 16100,
+             'bs_x': -227.35, 'bs_y': 7.0},
+    }
+
+    names_1   = [  'PolyB-PBS', 'Empty Cap','DMF-H2O', 'DMF-H2O-CNC_II','DMF-H2O-CNC']
+    piezo_x_1 = [        32800,       26400,    14000,             7200,          900]
+    piezo_y_1 = [        -2000,       -2000,    -2000,            -2000,        -2000]
+
+    names_2   = ['Buffer', 'PBS','PolyB1','PolyB3']
+    piezo_x_2 = [  -11100,-17800,  -24000,  -30000]
+    piezo_y_2 = [   -2000, -2000,   -2000,   -2000]
+
+
+    names   =   names_1 +   names_2
+    piezo_x = piezo_x_1 + piezo_x_2
+    piezo_y = piezo_y_1 + piezo_y_2
+    
+    piezo_z = [ 1200 for n in names ]
+    
+    waxs_arc = [ 40, 20, 0 ]
+    user = "BP"
+    det_exposure_time(t, t)
+
+    msg = 'Wrong number of coordinates'
+    for arr in [piezo_x, piezo_y, piezo_z, ]:
+        assert len(arr) == len(names), msg
+
+    # Go over SAXS distances
+    for k, v in sorted(saxs_dct.items())[::-1]:
+
+        print(v)
+        RE.md['SAXS_setup'] = v
+        sdd = v['sdd']
+        bs_x = v['bs_x']
+        bs_y = v['bs_y']
+
+        pname = f'hard-{sdd}mm'
+        project_set(pname)
+
+        yield from bps.mv(
+            pil2M.motor.z, sdd,
+            pil2M.beamstop.x_pin, bs_x,
+            pil2M.beamstop.y_pin, bs_y,
+            waxs, waxs_arc[0],
+            piezo.y, piezo_y[0],
+            piezo.x, piezo_x[0],
+        )
+
+        # Go over WAXS angles
+        for wa in waxs_arc:
+            yield from bps.mv(
+                waxs, wa,
+                piezo.y, piezo_y[0],
+                piezo.x, piezo_x[0],
+            )
+
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+            
+            if wa == waxs_arc[0]:
+                dets.append(OAV_writing)
+
+            for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
+
+                yield from bps.mv(
+                    piezo.y, y,
+                    piezo.x, x,
+                    piezo.z, z,
+                )
+
+                sample_name = f'{name}_{get_scan_md()}'
+                sample_id(user_name=user, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+
+def rerun_Paren_hard_cap_multiplesaxs_2025_3(t=15):
+    """
+    Run standard hard transmission over multiple SAXS distances
+    """
+
+    saxs_dct = {
+        #1 : {'sdd': 5000, 'beam_centre': [861, 1195.5], 'bs': 'pd', 'energy': 16100,
+        #     'bs_x': -227.5, 'bs_y': 6.6},
+        2 : {'sdd': 9200, 'beam_centre': [854, 1191], 'bs': 'pd', 'energy': 16100,
+             'bs_x': -227.35, 'bs_y': 7.0},
+    }
+
+    names_1   = [  'PolyB-PBS', 'Empty_Cap','DMF-H2O', 'DMF-H2O-CNC_II','DMF-H2O-CNC']
+    piezo_x_1 = [        32800,       26400,    14000,             7200,          900]
+    piezo_y_1 = [        -2000,       -2000,    -2000,            -2000,        -2000]
+
+    names_2   = ['Buffer', 'PBS','PolyB1','PolyB3']
+    piezo_x_2 = [  -11100,-17800,  -24000,  -30000]
+    piezo_y_2 = [   -2000, -2000,   -2000,   -2000]
+
+
+    names   =   names_1 +   names_2
+    piezo_x = piezo_x_1 + piezo_x_2
+    piezo_y = piezo_y_1 + piezo_y_2
+
+    names = [f'exp-{t}s-{n}' for n in names]
+    piezo_y = np.asarray(piezo_y) - 500
+    
+    piezo_z = [ 1000 for n in names ]
+    
+    waxs_arc = [ 20, ]
+    user = "BP"
+    det_exposure_time(t, t)
+
+    msg = 'Wrong number of coordinates'
+    for arr in [piezo_x, piezo_y, piezo_z, ]:
+        assert len(arr) == len(names), msg
+
+    # Go over SAXS distances
+    for k, v in sorted(saxs_dct.items())[::-1]:
+
+        print(v)
+        RE.md['SAXS_setup'] = v
+        sdd = v['sdd']
+        bs_x = v['bs_x']
+        bs_y = v['bs_y']
+
+        pname = f'hard-{sdd}mm'
+        project_set(pname)
+
+        yield from bps.mv(
+            pil2M.motor.z, sdd,
+            pil2M.beamstop.x_pin, bs_x,
+            pil2M.beamstop.y_pin, bs_y,
+            waxs, waxs_arc[0],
+            piezo.y, piezo_y[0],
+            piezo.x, piezo_x[0],
+        )
+
+        # Go over WAXS angles
+        for wa in waxs_arc:
+            yield from bps.mv(
+                waxs, wa,
+                piezo.y, piezo_y[0],
+                piezo.x, piezo_x[0],
+            )
+
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+            dets = [pil2M]
+            
+            if wa == waxs_arc[0]:
+                dets.append(OAV_writing)
+
+            for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
+
+                yield from bps.mv(
+                    piezo.y, y,
+                    piezo.x, x,
+                    piezo.z, z,
+                )
+
+                sample_name = f'{name}_{get_scan_md()}'
+                sample_id(user_name=user, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)

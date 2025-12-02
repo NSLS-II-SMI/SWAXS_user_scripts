@@ -3802,7 +3802,7 @@ def milan_single_measurement_2025_2(name='MR_D_02', t_frame=0.5, t_tot=600, peri
     As the name says, set coordinates via CSS, then take data
     WAXS only
 
-    This one is working, burst mode for tensile tests
+    This one is working, burst mode for tensile tests - do not ctrl c
     """
     tstart = datetime.now()
 
@@ -3828,6 +3828,8 @@ def reena_single_measurement_2025_2(name='BK_A_02', t_frame=0.5, frames=1, delay
     """
     As the name says, set coordinates via CSS, then take data
     WAXS only. Rewrote from burst to loop
+
+    THIS ONE FOR TENSILE MEASUREMENTS - CAN USE CTRL C and data will still save 
     """
 
     yield from bps.mv(waxs, 20)
@@ -4872,3 +4874,1189 @@ def reena_pucks_roomtemp_2025_2(tim=0.2):
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
         yield from ls.output1.turn_off()
+
+def fotini_pucks_temp_2025_3(tim=0.2):
+    """
+    Temperature scan using resistive thermal GI stage for transmission with the hexa tilt.
+    4 points per sample. For hockey pucks.
+
+
+
+     """
+     
+    names =   ['FT_D_01','FT_C_02','FT_C_01','FT_B_04','FT_B_03','FT_B_02','FT_B_01','FT_A_11','FT_A_10','FT_A_09','FT_A_08','FT_A_07','FT_A_06','FT_A_05','FT_A_04','FT_A_03','FT_A_02','FT_A_01']
+    piezo_x = [7690, 10090, 13690, 16040, 19040, 21840, 25040, 27040, 30040, 33340, 36140, 38340, 43040, 45940, 48940, 51140, 53490, 55590]
+    piezo_y = [-6410, -6430, -6310, -6350, -6490, -6550, -6290, -6130, -6370, -6330, -6310, -6270, -6200, -6250, -6200, -6100, -6510, -6100]
+    piezo_z = [-12700, -12700, -11600, -11400, -13400, -10200, -13200, -13200, -13200, -10800, -10800, -10200, -11100, -11100, -11100, -11100, -12200, -8900]
+    #piezo_z = [8400 for n in names]"""
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    assert len(names) == len(piezo_x),   msg
+    assert len(piezo_y) == len(piezo_x), msg
+    assert len(piezo_y) == len(piezo_z), msg
+
+    temperatures = [30, 70, 90, 130, 160]
+    user_name = 'MW'
+    det_exposure_time(tim, tim)
+
+    #These are the offsets for the coordinates in the x and y direction 
+
+    x_offsets = [0, 75] 
+    y_offsets = [0, 75]
+    waxs_arc = [0, 20]
+
+    for temperature in temperatures:
+        t_kelvin = temperature + 273.15
+        yield from ls.output1.mv_temp(t_kelvin)
+
+        # Activate heating range in Lakeshore
+        yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        print(f"Equalising temperature to {temperature:.0f} deg C")
+        start = time.time()
+        temp = ls.input_A.get()
+        while abs(temp - t_kelvin) > 3:
+            print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+            yield from bps.sleep(5)
+            temp = ls.input_A.get()
+            
+            # Escape the loop if too much time passes
+            if time.time() - start > 30 * 60:
+                temp = t_kelvin
+        
+        print("Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60))
+
+        # Wait extra time depending on temperature
+        if temperature != temperatures[0]:
+            wait_time = 60
+            print(f'Sleeping for {wait_time} seconds')
+            yield from bps.sleep(wait_time)
+
+        # Read T and convert to deg C
+        temp_degC = ls.input_A.get() - 273.15
+        temp = str(np.round(float(temp_degC), 1)).zfill(5)
+
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+            for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
+                yield from bps.mv(piezo.x, x,
+                                piezo.y, y,
+                                piezo.z, z)
+                                                                                                                                                                            
+                for yy, y_of in enumerate(y_offsets):
+                    yield from bps.mv(piezo.y, y + y_of)
+
+                    for xx, x_of in enumerate(x_offsets):
+                        yield from bps.mv(piezo.x, x + x_of)
+
+                        loc = f'{yy}{xx}'
+
+                        sample_name = f'{name}_temp{temp}degC{get_scan_md()}_loc{loc}'
+                        sample_id(user_name=user_name, sample_name=sample_name)
+                        print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                        yield from bp.count(dets)
+
+        sample_id(user_name='test', sample_name='test')
+        det_exposure_time(0.2, 0.2)
+
+        t_kelvin = 25 + 273.15
+        yield from ls.output1.mv_temp(t_kelvin)
+        yield from ls.output1.turn_off()
+
+def linescan_fotini_2025_3(t=0.5):
+    """
+    Fine line scan on Linkam GI thermal stage
+    WAXS arc as the slowest motor, outside sample loop
+    """
+
+    names =   ['FT_F_04-b','FT_F_03-b','FT_F_02','FT_F_01','FT_E_02','FT_E_01']
+    piezo_x = [-26960,-22960, -19310, -15510, -6510, -110]
+    piezo_y = [-6760,-6720, -6620, -6580, -6520, -6420]
+    piezo_z = [-14900, -15300, -14500, -13450, -15300, -12700]
+    #piezo_z = [8400 for n in names]
+    x_range = [[0, 2500, 126],[0, 2400, 121],[0, 2750, 139],[0, 3800, 191],[0, 6000, 301], [0, 4580, 230]]
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    assert len(names) == len(piezo_x),   msg
+    assert len(piezo_y) == len(piezo_x), msg
+    assert len(piezo_y) == len(piezo_z), msg
+    assert len(piezo_z) == len(x_range), msg
+    assert len(x_range) == len(x_range), msg
+
+    #piezo_y = np.asarray(piezo_y) - 50
+
+    waxs_arc = [0,20]
+    temperatures = [#27, 70, 90, 130, 
+        175]
+    det_exposure_time(t, t)
+
+    for temperature in temperatures:
+        t_kelvin = temperature + 273.15
+        yield from ls.output1.mv_temp(t_kelvin)
+        yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        print(f"Equalising temperature to {temperature} deg C")
+        start = time.time()
+        temp = ls.input_A.get()
+        while abs(temp - t_kelvin) > 5:
+            print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+            yield from bps.sleep(10)
+            temp = ls.input_A.get()
+
+            # Escape the loop if too much time passes
+            if time.time() - start > 1800:
+                temp = t_kelvin
+        print(
+            "Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60)
+        )
+        # Wait extra time depending on temperature
+        if (140 < temperature) and (temperature < 181):
+            extra_sleep = 0
+            print(f'Sleeping for {extra_sleep} s  |  {extra_sleep/60} min')
+            yield from bps.sleep(extra_sleep)
+
+        if (40 < temperature) and (temperature <132):
+            extra_sleep = 0
+            print(f'Sleeping for {extra_sleep} s  |  {extra_sleep/60} min')
+            yield from bps.sleep(extra_sleep)
+
+        for name, x, y, z, scan_pts_x in zip(names, piezo_x, piezo_y, piezo_z, x_range):
+            yield from bps.mv(piezo.x, x,
+                              piezo.y, y,
+                              piezo.z, z)
+            
+            # Read T and convert to deg C
+            temp_degC = ls.input_A.get() - 273.15
+            temp = str(np.round(float(temp_degC), 1)).zfill(5)
+            
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+                sample_name = f'{name}_{temp}degC{get_scan_md()}'
+                sample_name = sample_name.translate(
+                    {ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ =,"}
+                )
+                sample_id(user_name="MW", sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+                yield from bp.rel_scan(dets + [ls.input_A], piezo.x, *scan_pts_x)
+                plt.close('all')
+            waxs_arc = waxs_arc[::-1]
+    # for name, x, y, z, scan_pts_x in zip(names, piezo_x, piezo_y, piezo_z, x_range):
+    #         yield from bps.mv(piezo.x, x,
+    #                           piezo.y, y,
+    #                           piezo.z, z)
+
+    #         for wa in waxs_arc:
+    #             yield from bps.mv(waxs, wa)
+    #             dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+    #             sample_name = f'{name}_025.0degC{get_scan_md()}'
+    #             sample_name = sample_name.translate(
+    #                 {ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ =,"}
+    #             )
+    #             sample_id(user_name="MW", sample_name=sample_name)
+    #             print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+    #             yield from bp.rel_scan(dets, piezo.x, *scan_pts_x)
+    #             plt.close('all')
+    #         waxs_arc = waxs_arc[::-1]
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+    t_kelvin = 25 + 273.15
+    yield from ls.output1.mv_temp(t_kelvin)
+    yield from ls.output1.turn_off()
+
+def fotini_single_measurement_2025_3(name='MR_D_02', t_frame=0.5, t_tot=600, period_delay=1):
+
+    """
+    As the name says, set coordinates via CSS, then take data
+    WAXS only
+
+    This one is working, burst mode for tensile tests - do not ctrl c
+    """
+    tstart = datetime.now()
+
+    yield from bps.mv(waxs, 0)
+    det_exposure_time(t_frame, t_tot, period_delay=period_delay)
+    # det_exposure_time_old(t_frame, t_tot)
+    yield from bps.sleep(1)
+
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+    
+    tstart = tstart.strftime("%H-%M-%S") + "-" + tstart.strftime("%f")[:3]
+
+    sample_name = f'{name}_{get_scan_md()}_loc00_tf{t_frame}_tstart{tstart}'
+    sample_id(user_name='MW', sample_name=sample_name)
+    print(f"\n\n\n\t=== Sample: {sample_name} ===")
+    yield from bp.count(dets)
+
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.2, 0.2)
+
+def fotini_single_measurement_2025_3(name='bkg-long-3', temp=25, t_frame=0.05, t_tot=2, saxs=False):
+    
+    """
+    As the name says, set coordinates via CSS, then take data
+    WAXS only, Linkam GIS
+
+    strart added to be consistant with tensile runs
+
+    This one is working, above does not at the moment
+    """
+
+    if saxs:
+        yield from bps.mv(waxs, 20)
+        name = str(name) + '-saxs'
+    else:
+        yield from bps.mv(waxs, 0)
+
+    tstart = datetime.now()
+
+    temp = str(np.round(float(temp), 1)).zfill(5)
+    det_exposure_time(t_frame, t_tot, period_delay=0.005)
+    # det_exposure_time_old(t_frame, t_tot)
+    yield from bps.sleep(1)
+
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+    tstart = tstart.strftime("%H-%M-%S") + "-" + tstart.strftime("%f")[:3]
+
+    sample_name = f'{name}_{temp}degC_{get_scan_md()}_loc00_tf{t_frame}_tstart{tstart}'
+    sample_id(user_name='MW', sample_name=sample_name)
+    
+    print(f"\n\n\n\t=== Sample: {sample_name} ===")
+    yield from bp.count(dets)
+
+    #yield from bps.mv(waxs, 0)
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.2, 0.2)
+
+
+def puck_fotini_2025_3(t=0.5):
+    """
+    Fine line scan on Linkam GI thermal stage + puck
+    WAXS arc as the slowest motor, outside sample loop
+
+    line scan: y_range: [0, 0, 1], x_range = [0, 2500, 126] or as needed
+    puck: y_range: [0, 75, 2], x_range: [0, 75, 2]
+    """
+
+    names =   ['FT_F_07','FT_F_05','FT_D_01','FT_C_02','FT_C_01','FT_B_04','FT_B_03','FT_B_02','FT_B_01','FT_A_11','FT_A_10','FT_A_09','FT_A_08','FT_A_07','FT_A_06','FT_A_05','FT_A_04','FT_A_03','FT_A_02','FT_A_01']
+    piezo_x = [-48800, -40600, 2300, 5000, 9200, 11800, 14600, 17200, 20400, 22400, 25400, 28400, 31400, 34100, 38100, 41300, 44100, 46600, 48800, 50900]
+    piezo_y = [-400, -435, -410, -430, -460, -480, -610, -680, -560, -350, -500, -530, -540, -520, -480, -510, -540, -460, -550, -580]
+    piezo_z = [-10000, -10000, -11200, -11400, -11900, -10400, -10600, -10200, -10500, -10800, -10800, -10800, -10800, -10800, -10800, -11700, -11700, -11800, -12000, -11800]
+    #piezo_z = [8400 for n in names]
+    x_range = [[0, 2900, 59], [0, 2300, 47],[0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2],[0, 75, 2], [0, 75, 2], [0, 75, 2]]
+    y_range = [[0, 0, 1],[0, 0, 1],[0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2],[0, 75, 2], [0, 75, 2], [0, 75, 2]]
+
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    for arr in [piezo_x, piezo_y, piezo_z, x_range, y_range]:
+        assert len(arr) == len(names), msg
+
+    # if reruning after cooling
+    names = [n + 'cycle2' for n in names]
+
+    waxs_arc = [0]
+    # temperatures = [70, 90, 130]
+    temperatures = [170]
+
+    det_exposure_time(t, t)
+
+    for temperature in temperatures:
+        t_kelvin = temperature + 273.15
+        yield from ls.output1.mv_temp(t_kelvin)
+        yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        print(f"Equalising temperature to {temperature} deg C")
+        start = time.time()
+        temp = ls.input_A.get()
+        while abs(temp - t_kelvin) > 5:
+            print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+            yield from bps.sleep(10)
+            temp = ls.input_A.get()
+
+            # Escape the loop if too much time passes
+            if time.time() - start > 1800:
+                temp = t_kelvin
+        print(
+            "Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60)
+        )
+        
+        # Wait extra time depending on temperature
+        if (35 < temperature) and (temperature < 181):
+            extra_sleep = 5 * 60
+            # extra_sleep = 0
+            print(f'Sleeping for {extra_sleep} s  |  {extra_sleep/60} min')
+            yield from bps.sleep(extra_sleep)
+
+        for name, x, y, z, scan_pts_x, scan_pts_y in zip(names, piezo_x, piezo_y, piezo_z, x_range, y_range):
+            yield from bps.mv(piezo.x, x,
+                              piezo.y, y,
+                              piezo.z, z)
+            
+            # Read T and convert to deg C
+            temp_degC = ls.input_A.get() - 273.15
+            temp = str(np.round(float(temp_degC), 1)).zfill(5)
+            
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+                sample_name = f'{name}_{temp}degC{get_scan_md()}'
+
+                sample_id(user_name="MW", sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+                yield from bp.rel_grid_scan(
+                    dets + [ls.input_A],
+                    piezo.y, *scan_pts_y,
+                    piezo.x, *scan_pts_x,
+                )
+                plt.close('all')
+            waxs_arc = waxs_arc[::-1]
+    
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+    t_kelvin = 25 + 273.15
+    yield from ls.output1.mv_temp(t_kelvin)
+    yield from ls.output1.turn_off()
+
+def linkam_fotini_2025_3(t=0.5):
+    """
+    Fine line scan on Linkam GI thermal stage + puck
+    WAXS arc as the slowest motor, outside sample loop
+
+    line scan: y_range: [0, 0, 1], x_range = [0, 2500, 126] or as needed
+    puck: y_range: [0, 75, 2], x_range: [0, 75, 2]
+    """
+
+    names =  ['FT_F_08','FT_T_08','FT_F_09','FT_T_09','FT_F_10','FT_T_10', 'FT_F_11', 'FT_T_11']
+    piezo_x = [4545, 3950, 1250, 650, -2050, -2650, -7450, -8050]
+    piezo_y = [360, 360, 560, 540, 440, 440, 400, 400 ]
+    piezo_z = [-3720, -3720, -4320, -4320, -4320, -4320, -4520, -4520]
+     #piezo_z = [8400 for n in names]
+    y_range = [[0, 280, 29], [0, 280, 29],[0, 320, 33], [0, 320, 33], [0, 280, 29], [0, 280, 29], [0, 280, 29], [0, 280, 29]]
+    
+    #names =   ['test']
+   # piezo_x = [-5800]
+   #piezo_y = [450]
+   # piezo_z = [-5600]
+    #piezo_z = [8400 for n in names]
+   # y_range = [[0, 1, 1]]
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    for arr in [piezo_x, piezo_y, piezo_z, y_range]:
+        assert len(arr) == len(names), msg
+
+    # if reruning after cooling
+    # names = [n + 'cycle2' for n in names]
+
+    waxs_arc = [0]
+    temperatures = [170]
+
+    det_exposure_time(t, t)
+
+    for temperature in temperatures:
+        temp_degC = temperature
+        # t_kelvin = temperature + 273.15
+        # yield from ls.output1.mv_temp(t_kelvin)
+        # yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        # print(f"Equalising temperature to {temperature} deg C")
+        # start = time.time()
+        # temp = ls.input_A.get()
+        # while abs(temp - t_kelvin) > 5:
+        #     print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+        #     yield from bps.sleep(10)
+        #     temp = ls.input_A.get()
+
+        #     # Escape the loop if too much time passes
+        #     if time.time() - start > 1800:
+        #         temp = t_kelvin
+        # print(
+        #     "Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60)
+        # )
+        
+        # # Wait extra time depending on temperature
+        # if (35 < temperature) and (temperature < 181):
+        #     extra_sleep = 5 * 60
+        #     # extra_sleep = 0
+        #     print(f'Sleeping for {extra_sleep} s  |  {extra_sleep/60} min')
+        #     yield from bps.sleep(extra_sleep)
+
+        for name, x, y, z, scan_pts_y in zip(names, piezo_x, piezo_y, piezo_z, y_range):
+            yield from bps.mv(piezo.x, x,
+                              piezo.y, y,
+                              piezo.z, z)
+            
+            # # Read T and convert to deg C
+            # temp_degC = ls.input_A.get() - 273.15
+            temp = str(np.round(float(temp_degC), 1)).zfill(5)
+            
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+                sample_name = f'{name}_{temp}degC{get_scan_md()}'
+
+                sample_id(user_name="MW", sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+                yield from bp.rel_grid_scan(
+                    dets + [ls.input_A],
+                    piezo.y, *scan_pts_y,
+                    # piezo.x, *scan_pts_x,
+                )
+                plt.close('all')
+            waxs_arc = waxs_arc[::-1]
+    
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+    # t_kelvin = 25 + 273.15
+    # yield from ls.output1.mv_temp(t_kelvin)
+    # yield from ls.output1.turn_off()
+
+def pull_measurement_2025_3(name='FT_G_04', t_frame=0.5, t_tot=600, period_delay=0.5):
+
+    """
+    As the name says, set coordinates via CSS, then take data
+    WAXS only
+
+    This one is working, burst mode for tensile tests - cannot ctrl c - otherwise data will not save, do not use 
+    """
+    tstart = datetime.now()
+
+    yield from bps.mv(waxs, 0)
+    det_exposure_time(t_frame, t_tot, period_delay=period_delay)
+    # det_exposure_time_old(t_frame, t_tot)
+    yield from bps.sleep(1)
+
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+    dets = [pil2M]
+    
+    tstart = tstart.strftime("%H-%M-%S") + "-" + tstart.strftime("%f")[:3]
+
+    sample_name = f'{name}_{get_scan_md()}_loc00_tf{t_frame}_tstart{tstart}'
+    sample_id(user_name='MW', sample_name=sample_name)
+    print(f"\n\n\n\t=== Sample: {sample_name} ===")
+    yield from bp.count(dets)
+
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.2, 0.2)
+
+def puck_reena_2025_3(t=0.5):
+    """
+    Fine line scan on Linkam GI thermal stage + puck
+    WAXS arc as the slowest motor, outside sample loop
+
+    line scan: y_range: [0, 0, 1], x_range = [0, 2500, 126] or as needed
+    puck: y_range: [0, 75, 2], x_range: [0, 75, 2]
+    """
+
+    # names =   ['FS_B_01','FS_B_02','FS_B_03','FS_B_04','FS_A_01','FS_A_02','FS_A_03','FS_A_04','RP_L_61','RP_L_51','RP_L_41','RP_L_31','RP_L_21']
+    # piezo_x = [-50700, -46700, -41000, -39200, -34500, -30700, -26900, -23300, 13000, 15800, 19000, 22900, 26200]
+    # piezo_y = [725, 725, 725, 725, 675, 675, 675, 625, 525, 525, 525, 625, 525]
+    # piezo_z = [-14100, -14100, -14100, -13100, -13100, -12700, -12700, -12700, -9600, -9600, -9600, -9600, -9600]
+    # #piezo_z = [8400 for n in names]
+    # y_range = [[0, 300, 31], [0, 300, 31], [0, 300, 31], [0, 350, 36],[0, 300, 31], [0, 350, 36], [0, 350, 36], [0, 300, 31], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2]]
+    # x_range = [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 75, 2],[0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2]]
+    
+    names =   ['FS_B_01','FS_B_02','FS_B_03','FS_B_04','FS_A_01','FS_A_02','FS_A_03','FS_A_04']
+    piezo_x = [-50700, -46700, -41000, -39200, -34500, -30700, -26900, -23300]
+    piezo_y = [725, 725, 725, 725, 675, 675, 675, 625]
+    piezo_z = [-14100, -14100, -14100, -13100, -13100, -12700, -12700, -12700]
+    #piezo_z = [8400 for n in names]
+    y_range = [[0, 300, 31], [0, 300, 31], [0, 300, 31], [0, 350, 36],[0, 300, 31], [0, 350, 36], [0, 350, 36], [0, 300, 31]]
+    x_range = [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]]
+    
+    
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    for arr in [piezo_x, piezo_y, piezo_z, x_range, y_range]:
+        assert len(arr) == len(names), msg
+
+    # if reruning after cooling
+    # names = [n + 'cycle2' for n in names]
+
+    waxs_arc = [0, 20]
+    # temperatures = []
+    temperatures = [55, 85]
+
+    det_exposure_time(t, t)
+
+    for temperature in temperatures:
+        t_kelvin = temperature + 273.15
+        yield from ls.output1.mv_temp(t_kelvin)
+        yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        print(f"Equalising temperature to {temperature} deg C")
+        start = time.time()
+        temp = ls.input_A.get()
+        while abs(temp - t_kelvin) > 5:
+            print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+            yield from bps.sleep(10)
+            temp = ls.input_A.get()
+
+            # Escape the loop if too much time passes
+            if time.time() - start > 1800:
+                temp = t_kelvin
+        print(
+            "Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60)
+        )
+        
+        # Wait extra time depending on temperature
+        if (35 < temperature) and (temperature < 181):
+            extra_sleep = 15 * 60
+            # extra_sleep = 0
+            print(f'Sleeping for {extra_sleep} s  |  {extra_sleep/60} min')
+            yield from bps.sleep(extra_sleep)
+
+        for name, x, y, z, scan_pts_x, scan_pts_y in zip(names, piezo_x, piezo_y, piezo_z, x_range, y_range):
+            yield from bps.mv(piezo.x, x,
+                              piezo.y, y,
+                              piezo.z, z)
+            
+            # Read T and convert to deg C
+            temp_degC = ls.input_A.get() - 273.15
+            temp = str(np.round(float(temp_degC), 1)).zfill(5)
+            
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+                sample_name = f'{name}_{temp}degC{get_scan_md()}'
+
+                sample_id(user_name="MW", sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+                yield from bp.rel_grid_scan(
+                    dets + [ls.input_A],
+                    piezo.y, *scan_pts_y,
+                    piezo.x, *scan_pts_x,
+                )
+                plt.close('all')
+            waxs_arc = waxs_arc[::-1]
+    
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+    t_kelvin = 25 + 273.15
+    yield from ls.output1.mv_temp(t_kelvin)
+    yield from ls.output1.turn_off()
+
+def linescan_and_puck_fritz_2025_3(t=0.5):
+    """
+    Fine line scan on Linkam GI thermal stage + puck
+    WAXS arc as the slowest motor, outside sample loop
+
+    line scan: y_range: [0, 0, 1], x_range = [0, 2500, 126] or as needed
+    puck: y_range: [0, 75, 2], x_range: [0, 75, 2]
+    """
+
+    names =   ['FT_F_07','FT_F_06', 'FT_F_05','FT_F_04','FT_F_03','FT_F_02','FT_F_01','FT_E_02','FT_E_01','FT_D_01','FT_C_02','FT_C_01','FT_B_04','FT_B_03','FT_B_02','FT_B_01','FT_A_11','FT_A_10','FT_A_09','FT_A_08','FT_A_07','FT_A_06','FT_A_05','FT_A_04','FT_A_03','FT_A_02','FT_A_01']
+    piezo_x = [-48800, -43700,-40600, -33300, -29400, -25600, -21900, -11800, -5000, 2300, 5000, 9200, 11800, 14600, 17200, 20400, 22400, 25400, 28400, 31400, 34100, 38100, 41300, 44100, 46600, 48800, 50900]
+    piezo_y = [-430, -420, -400, -500,-500, -370, -380, -390, -300, -360, -380, -410, -430, -560, -630, -510, -300, -450, -480, -490, -470, -430, -460, -490, -410, -500, -530]
+    piezo_z = [-10000, -10000, -10000, -10200, -10200, -10800, -11400, -11300, -10600, -11200, -11400, -11900, -10400, -10600, -10200, -10500, -10800, -10800, -10800, -10800, -10800, -10800, -11700, -11700, -11800, -12000, -11800]
+    #piezo_z = [8400 for n in names]
+    x_range = [[0, 2900, 59],[0, 1900, 39],[0, 2300, 47],[0, 2500, 51],[0, 2500, 51], [0, 2600, 53], [0, 3600, 73], [0, 6450, 130],[0, 4800, 97],[0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2],[0, 75, 2], [0, 75, 2], [0, 75, 2]]
+    y_range = [[0, 0, 1],[0, 0, 1],[0, 0, 1],[0, 0, 1],[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1],[0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2],[0, 75, 2], [0, 75, 2], [0, 75, 2]]
+
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    for arr in [piezo_x, piezo_y, piezo_z, x_range, y_range]:
+        assert len(arr) == len(names), msg
+
+    # if reruning after cooling
+    #names = [n + 'cycle2' for n in names]
+
+    waxs_arc = [0, 20]
+    # waxs_arc = [20]
+    # temperatures = [27, 70, 90, 130, 170]
+    temperatures = [55, 85]
+    
+    det_exposure_time(t, t)
+
+    for temperature in temperatures:
+        t_kelvin = temperature + 273.15
+        yield from ls.output1.mv_temp(t_kelvin)
+        yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        print(f"Equalising temperature to {temperature} deg C")
+        start = time.time()
+        temp = ls.input_A.get()
+        while abs(temp - t_kelvin) > 5:
+            print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+            yield from bps.sleep(10)
+            temp = ls.input_A.get()
+
+            # Escape the loop if too much time passes
+            if time.time() - start > 1800:
+                temp = t_kelvin
+        print(
+            "Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60)
+        )
+        
+        # Wait extra time depending on temperature
+        if (35 < temperature) and (temperature < 181):
+            # extra_sleep = 15 * 60
+            extra_sleep = 0
+            print(f'Sleeping for {extra_sleep} s  |  {extra_sleep/60} min')
+            yield from bps.sleep(extra_sleep)
+
+        for name, x, y, z, scan_pts_x, scan_pts_y in zip(names, piezo_x, piezo_y, piezo_z, x_range, y_range):
+            yield from bps.mv(piezo.x, x,
+                              piezo.y, y,
+                              piezo.z, z)
+            
+            # Read T and convert to deg C
+            temp_degC = ls.input_A.get() - 273.15
+            temp = str(np.round(float(temp_degC), 1)).zfill(5)
+            
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+                sample_name = f'{name}_{temp}degC{get_scan_md()}'
+
+                sample_id(user_name="MW", sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+                yield from bp.rel_grid_scan(
+                    dets + [ls.input_A],
+                    piezo.y, *scan_pts_y,
+                    piezo.x, *scan_pts_x,
+                )
+                plt.close('all')
+            waxs_arc = waxs_arc[::-1]
+    
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+    t_kelvin = 25 + 273.15
+    yield from ls.output1.mv_temp(t_kelvin)
+    yield from ls.output1.turn_off()
+
+def fotini_pucks_temp_2025_3(tim=0.5):
+    """
+    Temperature scan using resistive thermal GI stage for transmission with the hexa tilt.
+    4 points per sample. For hockey pucks.
+
+
+
+     """
+     
+    names =   ['RP_J_26','RP_J_27','RP_J_28','RP_J_29','RP_J_30','RP_J_31','RP_J_32','RP_J_33','RP_J_34','RP_K_01','RP_K_02','RP_K_03','RP_K_04','RP_K_05','RP_K_06','RP_K_07','RP_K_08','RP_K_09','RP_K_10','RP_K_11']
+    piezo_x = [-48700, -47300, -45900, -44300, -42700, -41500,-40100, -38700, -36900, 11700, 13300, 14900, 16300, 18100, 19900, 21200, 22500, 24300, 25500, 27100]
+    piezo_y = [625,625, 625, 625, 625, 625, 675, 675, 675, 325, 325, 305, 285, 265, 265, 225, 225, 225, 260, 265]
+    piezo_z = [-13000, -13000, -13100, -13100, -13100, -13100, -13100, -13100, -13100, -11600, -11600, -11600, -11600,-11600, -11600,  -11600, -11600, -10900, -10900, -10900]
+    #piezo_z = [8400 for n in names]"""
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    assert len(names) == len(piezo_x),   msg
+    assert len(piezo_y) == len(piezo_x), msg
+    assert len(piezo_y) == len(piezo_z), msg
+
+    temperatures = [32]
+    user_name = 'MW'
+    det_exposure_time(tim, tim)
+
+    #These are the offsets for the coordinates in the x and y direction 
+
+    x_offsets = [0, 75] 
+    y_offsets = [0, 75]
+    waxs_arc = [20]
+
+    for temperature in temperatures:
+        t_kelvin = temperature + 273.15
+        yield from ls.output1.mv_temp(t_kelvin)
+
+        # Activate heating range in Lakeshore
+        yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        print(f"Equalising temperature to {temperature:.0f} deg C")
+        start = time.time()
+        temp = ls.input_A.get()
+        while abs(temp - t_kelvin) > 3:
+            print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+            yield from bps.sleep(5)
+            temp = ls.input_A.get()
+            
+            # Escape the loop if too much time passes
+            if time.time() - start > 30 * 60:
+                temp = t_kelvin
+        
+        print("Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60))
+
+        # Wait extra time depending on temperature
+        if temperature != temperatures[0]:
+            wait_time = 60
+            print(f'Sleeping for {wait_time} seconds')
+            yield from bps.sleep(wait_time)
+
+        # Read T and convert to deg C
+        temp_degC = ls.input_A.get() - 273.15
+        temp = str(np.round(float(temp_degC), 1)).zfill(5)
+
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+            for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
+                yield from bps.mv(piezo.x, x,
+                                piezo.y, y,
+                                piezo.z, z)
+                                                                                                                                                                            
+                for yy, y_of in enumerate(y_offsets):
+                    yield from bps.mv(piezo.y, y + y_of)
+
+                    for xx, x_of in enumerate(x_offsets):
+                        yield from bps.mv(piezo.x, x + x_of)
+
+                        loc = f'{yy}{xx}'
+
+                        sample_name = f'{name}_temp{temp}degC{get_scan_md()}_loc{loc}'
+                        sample_id(user_name=user_name, sample_name=sample_name)
+                        print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                        yield from bp.count(dets)
+
+        sample_id(user_name='test', sample_name='test')
+        det_exposure_time(0.2, 0.2)
+
+        t_kelvin = 25 + 273.15
+        yield from ls.output1.mv_temp(t_kelvin)
+        yield from ls.output1.turn_off()
+
+def tensile_single_measurement_2025_3(name='FT_L_02', t_frame=0.5, frames=600, delay=0.5):
+
+    """
+    As the name says, set coordinates via CSS, then take data
+    WAXS only. Rewrote from burst to loop
+
+    THIS ONE FOR TENSILE MEASUREMENTS - CAN USE CTRL C and data will still save 
+    """
+
+    yield from bps.mv(waxs, 0)
+    det_exposure_time(t_frame, t_frame)
+
+    dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+    for i in range(frames):
+        tstart = datetime.now()
+        tstart = tstart.strftime("%H-%M-%S") + "-" + tstart.strftime("%f")[:3]
+        loc = str(i).zfill(4)
+
+        sample_name = f'{name}_{get_scan_md()}_loc{loc}_time{tstart}'
+        sample_id(user_name='MW', sample_name=sample_name)
+        print(f"\n\n\n\t=== Sample: {sample_name} ===")
+        yield from bp.count(dets)
+
+        if delay is not None:
+            yield from bps.sleep(delay)
+
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.3, 0.3)
+
+def linkam_reena_2025_3(t=0.5):
+    """
+    Fine line scan on Linkam GI thermal stage + puck
+    WAXS arc as the slowest motor, outside sample loop
+
+    line scan: y_range: [0, 0, 1], x_range = [0, 2500, 126] or as needed
+    puck: y_range: [0, 75, 2], x_range: [0, 75, 2]
+    """
+
+    names =   ['RP_J_32','RP_J_34','RP_K_40','RP_K_41']
+    piezo_x = [-6250, -3950, -750, 2750]
+    piezo_y = [240, 320, 320, 340]
+    piezo_z = [-5040, -5040, -5040, -5040]
+    #piezo_z = [8400 for n in names]
+    x_range = [[0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2]]
+    y_range = [[0, 75, 2], [0, 75, 2], [0, 75, 2], [0, 75, 2]]
+
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    for arr in [piezo_x, piezo_y, piezo_z, x_range, y_range]:
+        assert len(arr) == len(names), msg
+
+    # if reruning after cooling
+    # names = [n + 'cycle2' for n in names]
+
+    waxs_arc = [20]
+    temperatures = [200]
+
+    det_exposure_time(t, t)
+
+    for temperature in temperatures:
+        temp_degC = temperature
+        # t_kelvin = temperature + 273.15
+        # yield from ls.output1.mv_temp(t_kelvin)
+        # yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        # print(f"Equalising temperature to {temperature} deg C")
+        # start = time.time()
+        # temp = ls.input_A.get()
+        # while abs(temp - t_kelvin) > 5:
+        #     print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+        #     yield from bps.sleep(10)
+        #     temp = ls.input_A.get()
+
+        #     # Escape the loop if too much time passes
+        #     if time.time() - start > 1800:
+        #         temp = t_kelvin
+        # print(
+        #     "Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60)
+        # )
+        
+        # # Wait extra time depending on temperature
+        # if (35 < temperature) and (temperature < 181):
+        #     extra_sleep = 5 * 60
+        #     # extra_sleep = 0
+        #     print(f'Sleeping for {extra_sleep} s  |  {extra_sleep/60} min')
+        #     yield from bps.sleep(extra_sleep)
+
+        for name, x, y, z, scan_pts_x, scan_pts_y in zip(names, piezo_x, piezo_y, piezo_z, x_range, y_range):
+            yield from bps.mv(piezo.x, x,
+                              piezo.y, y,
+                              piezo.z, z)
+            
+            # # Read T and convert to deg C
+            # temp_degC = ls.input_A.get() - 273.15
+            temp = str(np.round(float(temp_degC), 1)).zfill(5)
+            
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+                sample_name = f'{name}_{temp}degC{get_scan_md()}'
+
+                sample_id(user_name="MW", sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+                yield from bp.rel_grid_scan(
+                    dets + [ls.input_A],
+                    piezo.y, *scan_pts_y,
+                    piezo.x, *scan_pts_x,
+                )
+                plt.close('all')
+            waxs_arc = waxs_arc[::-1]
+    
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+    # t_kelvin = 25 + 273.15
+    # yield from ls.output1.mv_temp(t_kelvin)
+    # yield from ls.output1.turn_off()
+
+def mustafa_linkam_horizontal_linescan_2025_3(t=0.5):
+    """
+    Fine line scan on Linkam GI thermal stage + puck
+    WAXS arc as the slowest motor, outside sample loop
+
+    line scan: y_range: [0, 0, 1], x_range = [0, 2500, 126] or as needed
+    puck: y_range: [0, 75, 2], x_range: [0, 75, 2]
+    """
+
+    # names =  ['MA_F_05','MA_F_06','MA_F_04','MA_F_02','MA_F_01','MA_F_03']
+    # piezo_x = [-6250, -6250, -50, -5850, 5850, -50]
+    # piezo_y = [-7600, -1600, -1600, -1600, -7600, -7600]
+    # piezo_z = [-4020, -4020, -4020, -4020, -4020, -4020]
+    #  #piezo_z = [8400 for n in names]
+    # y_range = [[0, 2400, 30], [0, 2400, 30],[0, 2400, 30],[0, 2400, 30],[0, 2400, 30],[0, 2400, 30]]
+    
+    names =  ['MA_F_01']
+    piezo_x = [ 5850]
+    piezo_y = [-7600]
+    piezo_z = [-4020]
+    #  piezo_z = [8400 for n in names]
+    y_range = [[0, 2400, 30]]
+    
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    for arr in [piezo_x, piezo_y, piezo_z, y_range]:
+        assert len(arr) == len(names), msg
+
+    # if reruning after cooling
+    names = [n + 'cycle2' for n in names]
+
+    waxs_arc = [0]
+    temperatures = [100]
+
+    det_exposure_time(t, t)
+
+    for temperature in temperatures:
+        temp_degC = temperature
+        # t_kelvin = temperature + 273.15
+        # yield from ls.output1.mv_temp(t_kelvin)
+        # yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        # print(f"Equalising temperature to {temperature} deg C")
+        # start = time.time()
+        # temp = ls.input_A.get()
+        # while abs(temp - t_kelvin) > 5:
+        #     print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+        #     yield from bps.sleep(10)
+        #     temp = ls.input_A.get()
+
+        #     # Escape the loop if too much time passes
+        #     if time.time() - start > 1800:
+        #         temp = t_kelvin
+        # print(
+        #     "Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60)
+        # )
+        
+        # # Wait extra time depending on temperature
+        # if (35 < temperature) and (temperature < 181):
+        #     extra_sleep = 5 * 60
+        #     # extra_sleep = 0
+        #     print(f'Sleeping for {extra_sleep} s  |  {extra_sleep/60} min')
+        #     yield from bps.sleep(extra_sleep)
+
+        for name, x, y, z, scan_pts_y in zip(names, piezo_x, piezo_y, piezo_z, y_range):
+            yield from bps.mv(piezo.x, x,
+                              piezo.y, y,
+                              piezo.z, z)
+            
+            # # Read T and convert to deg C
+            # temp_degC = ls.input_A.get() - 273.15
+            temp = str(np.round(float(temp_degC), 1)).zfill(5)
+            
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+                sample_name = f'{name}_{temp}degC{get_scan_md()}'
+
+                sample_id(user_name="MW", sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+                yield from bp.rel_grid_scan(
+                    dets + [ls.input_A],
+                    piezo.y, *scan_pts_y,
+                    # piezo.x, *scan_pts_x,
+                )
+                plt.close('all')
+            waxs_arc = waxs_arc[::-1]
+    
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+    # t_kelvin = 25 + 273.15
+    # yield from ls.output1.mv_temp(t_kelvin)
+    # yield from ls.output1.turn_off()
+
+def linkam_horizontal_vertical_linescan_2025_3(t=0.5):
+    """
+    Fine line scan on Linkam GI thermal stage + puck
+    WAXS arc as the slowest motor, outside sample loop
+
+    line scan: y_range: [0, 0, 1], x_range = [0, 2500, 126] or as needed
+    puck: y_range: [0, 75, 2], x_range: [0, 75, 2]
+    """
+
+    # names =  ['MA_B_05','MA_B_06','MA_B_07','MA_B_08','MA_B_01','MA_B_02', 'MA_B_03','MA_B_04', 'MA_D_01','MA_D_02','MA_D_03', 'MA_D_04', 'MA_D_05', 'MA_D_06', 'MA_D_07']
+    # piezo_x = [5150, 5150, 5150, 5150, -850, -850, -850, -850, -7550, -7550, -7550, -7550, -7550, -7550, -7550]
+    # piezo_y = [-7675, -5975, -1500, -100, -7675, -5975, -1500, -300, -7275, -6400, -5525, -1425, -625, 0, 750]
+    # piezo_z = [-2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720]
+    #  #piezo_z = [8400 for n in names]
+    # x_range = [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 900, 30], [0, 900, 30], [0, 900, 30], [0, 900, 30], [0, 900, 30], [0, 900, 30], [0, 900, 30]]
+    # y_range = [[0, 800, 15],  [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]]
+    
+    
+    # names =  ['MA_B_01','MA_B_05','MA_B_02','MA_B_06','MA_B_03','MA_B_07', 'MA_B_04','MA_B_08', 'MA_D_01','MA_D_02','MA_D_03', 'MA_D_04', 'MA_D_05', 'MA_D_06', 'MA_D_07']
+    # piezo_x = [-850, 5150, -850, 5150, -850, 5150, -850, 5150, -7550, -7550, -7550, -7550, -7550, -7550, -7550]
+    # piezo_y = [-7675, -7675, -5975, -5975, -1500, -1500, -300, -100, -7275, -6400, -5525, -1425, -625, 0, 750]
+    # piezo_z = [-2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720]
+    #  #piezo_z = [8400 for n in names]
+    # x_range = [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 900, 30], [0, 900, 30], [0, 900, 30], [0, 900, 30], [0, 900, 30], [0, 900, 30], [0, 900, 30]]
+    # y_range = [[0, 800, 15],  [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]]
+   
+    names =  ['MA_B_01','MA_B_05','MA_B_02','MA_B_06','MA_B_03','MA_B_07', 'MA_B_04','MA_B_08']
+    piezo_x = [-850, 5150, -850, 5150, -850, 5150, -850, 5150]
+    piezo_y = [-7675, -7675, -5975, -5975, -1500, -1500, -300, -100]
+    piezo_z = [-2720, -2720, -2720, -2720, -2720, -2720, -2720, -2720]
+     #piezo_z = [8400 for n in names]
+    x_range = [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]]
+    y_range = [[0, 800, 15],  [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15], [0, 800, 15]]
+   
+
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    for arr in [piezo_x, piezo_y, piezo_z, y_range, x_range]:
+        assert len(arr) == len(names), msg
+
+    # if reruning after cooling
+    # names = [n + 'cycle2' for n in names]
+
+    waxs_arc = [0]
+    temperatures = [200]
+
+    det_exposure_time(t, t)
+
+    for temperature in temperatures:
+        temp_degC = temperature
+        # t_kelvin = temperature + 273.15
+        # yield from ls.output1.mv_temp(t_kelvin)
+        # yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        # print(f"Equalising temperature to {temperature} deg C")
+        # start = time.time()
+        # temp = ls.input_A.get()
+        # while abs(temp - t_kelvin) > 5:
+        #     print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+        #     yield from bps.sleep(10)
+        #     temp = ls.input_A.get()
+
+        #     # Escape the loop if too much time passes
+        #     if time.time() - start > 1800:
+        #         temp = t_kelvin
+        # print(
+        #     "Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60)
+        # )
+        
+        # # Wait extra time depending on temperature
+        # if (35 < temperature) and (temperature < 181):
+        #     extra_sleep = 5 * 60
+        #     # extra_sleep = 0
+        #     print(f'Sleeping for {extra_sleep} s  |  {extra_sleep/60} min')
+        #     yield from bps.sleep(extra_sleep)
+
+        for name, x, y, z, scan_pts_x, scan_pts_y in zip(names, piezo_x, piezo_y, piezo_z, x_range, y_range):
+            yield from bps.mv(piezo.x, x,
+                              piezo.y, y,
+                              piezo.z, z)
+            
+            # # Read T and convert to deg C
+            # temp_degC = ls.input_A.get() - 273.15
+            temp = str(np.round(float(temp_degC), 1)).zfill(5)
+            
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+                sample_name = f'{name}_{temp}degC{get_scan_md()}'
+
+                sample_id(user_name="MW", sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+                yield from bp.rel_grid_scan(
+                    dets + [ls.input_A],
+                    piezo.x, *scan_pts_x,
+                    piezo.y, *scan_pts_y,
+                )
+                plt.close('all')
+            waxs_arc = waxs_arc[::-1]
+    
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+    # t_kelvin = 25 + 273.15
+    # yield from ls.output1.mv_temp(t_kelvin)
+    # yield from ls.output1.turn_off()
+
+def mustafa_linkam_horizontal_linescan_2025_3(t=0.5):
+    """
+    Fine line scan on Linkam GI thermal stage + puck
+    WAXS arc as the slowest motor, outside sample loop
+
+    line scan: y_range: [0, 0, 1], x_range = [0, 2500, 126] or as needed
+    puck: y_range: [0, 75, 2], x_range: [0, 75, 2]
+    """
+
+    names =  ['MA_B_05','MA_B_06','MA_B_07','MA_B_08','MA_B_01','MA_B_02', 'MA_B_03','MA_B_04', 'MA_D_01','MA_D_02','MA_D_03', 'MA_D_04', 'MA_D_05', 'MA_D_06', 'MA_D_07']
+    piezo_x = [-6250, -6250, -50, -5850, 5850, -50]
+    piezo_y = [-7600, -1600, -1600, -1600, -7600, -7600]
+    piezo_z = [-4020, -4020, -4020, -4020, -4020, -4020]
+    #piezo_z = [8400 for n in names]
+    y_range = [[0, 2400, 30], [0, 2400, 30],[0, 2400, 30],[0, 2400, 30],[0, 2400, 30],[0, 2400, 30]]
+    
+    #names =  ['MA_F_01']
+    #piezo_x = [ 5850]
+    #piezo_y = [-7600]
+   # piezo_z = [-4020]
+    #  piezo_z = [8400 for n in names]
+    #y_range = [[0, 2400, 30]]
+    
+
+    msg = "Wrong number of coordinates, check names and piezos"
+    for arr in [piezo_x, piezo_y, piezo_z, y_range]:
+        assert len(arr) == len(names), msg
+
+    # if reruning after cooling
+    names = [n + 'cycle2' for n in names]
+
+    waxs_arc = [20]
+    temperatures = [25]
+
+    det_exposure_time(t, t)
+
+    for temperature in temperatures:
+        temp_degC = temperature
+        # t_kelvin = temperature + 273.15
+        # yield from ls.output1.mv_temp(t_kelvin)
+        # yield from bps.mv(ls.output1.status, 3)
+
+        # Equalise temperature
+        # print(f"Equalising temperature to {temperature} deg C")
+        # start = time.time()
+        # temp = ls.input_A.get()
+        # while abs(temp - t_kelvin) > 5:
+        #     print("Difference: {:.1f} K".format(abs(temp - t_kelvin)))
+        #     yield from bps.sleep(10)
+        #     temp = ls.input_A.get()
+
+        #     # Escape the loop if too much time passes
+        #     if time.time() - start > 1800:
+        #         temp = t_kelvin
+        # print(
+        #     "Time needed to equilibrate: {:.1f} min".format((time.time() - start) / 60)
+        # )
+        
+        # # Wait extra time depending on temperature
+        # if (35 < temperature) and (temperature < 181):
+        #     extra_sleep = 5 * 60
+        #     # extra_sleep = 0
+        #     print(f'Sleeping for {extra_sleep} s  |  {extra_sleep/60} min')
+        #     yield from bps.sleep(extra_sleep)
+
+        for name, x, y, z, scan_pts_y in zip(names, piezo_x, piezo_y, piezo_z, y_range):
+            yield from bps.mv(piezo.x, x,
+                              piezo.y, y,
+                              piezo.z, z)
+            
+            # # Read T and convert to deg C
+            # temp_degC = ls.input_A.get() - 273.15
+            temp = str(np.round(float(temp_degC), 1)).zfill(5)
+            
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
+
+                sample_name = f'{name}_{temp}degC{get_scan_md()}'
+
+                sample_id(user_name="MW", sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+                yield from bp.rel_grid_scan(
+                    dets + [ls.input_A],
+                    piezo.y, *scan_pts_y,
+                    # piezo.x, *scan_pts_x,
+                )
+                plt.close('all')
+            waxs_arc = waxs_arc[::-1]
+    
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+    # t_kelvin = 25 + 273.15
+    # yield from ls.output1.mv_temp(t_kelvin)
+    # yield from ls.output1.turn_off()
+

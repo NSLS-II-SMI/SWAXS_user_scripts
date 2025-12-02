@@ -34,7 +34,7 @@ def name_sample(name, tstamp):
     eplased = time.time() - tstamp
     sample_name = f'{name}{get_scan_md()}_t{eplased:.1f}_{get_positions()}'
     sample_id(user_name='YCK', sample_name=sample_name)
-    print(sample_name)
+    print(f'\n\n\n{sample_name}\n')
 
 def take_data_manually(name, t=2):
     """
@@ -324,14 +324,13 @@ def grazing_Chen_Wiegart_2023_3(t=0.5):
     sample_id(user_name='test', sample_name='test')
     det_exposure_time(0.5, 0.5)
 
-def alignment_on():
+def alignment_on(beamstop_x=6.55):
     """
     Alignment mode on
     """
     smi = SMI_Beamline()
     yield from smi.modeAlignment(technique="gisaxs")
     yield from smi.setDirectBeamROI(size=[48, 20])
-    beamstop_x = 6.2
     print(f'Using hardcoded SAXS beamstop position {beamstop_x} mm due to smi.mode not working properly')
     yield from bps.mv(pil2M.beamstop.x_rod, beamstop_x + 5)
     sample_id(user_name='test', sample_name='test')
@@ -339,17 +338,71 @@ def alignment_on():
     det_exposure_time(0.5, 0.5)
     print('\t\tALIGNMENT MODE ON')
 
-def alignment_off():
+def alignment_off(beamstop_x=6.55):
     """
     Alignment mode off
     """
     print('\t\tALIGNMENT MODE OFF and WAXS arc to 0 deg')
     smi = SMI_Beamline()
     yield from smi.modeMeasurement()
-    beamstop_x = 6.2
     print(f'Using hardcoded SAXS beamstop position {beamstop_x} mm due to smi.mode not working properly')
     yield from bps.mv(pil2M.beamstop.x_rod, beamstop_x)
     yield from bps.mv(waxs, 0)
+
+
+def atten_move_in():
+    """
+    Move 4x + 2x Sn 60 um attenuators in
+    """
+    print('Moving attenuators in')
+
+    while att1_7.status.get() != 'Open':
+        yield from bps.mv(att1_7.open_cmd, 1)
+        yield from bps.sleep(1)
+    while att1_6.status.get() != 'Open':
+        yield from bps.mv(att1_6.open_cmd, 1)
+        yield from bps.sleep(1)
+
+def atten_move_out():
+    """
+    Move 4x + 2x Sn 60 um attenuators out
+    """
+    print('Moving attenuators out')
+    while att1_7.status.get() != 'Not Open':
+        yield from bps.mv(att1_7.close_cmd, 1)
+        yield from bps.sleep(1)
+    while att1_6.status.get() != 'Not Open':
+        yield from bps.mv(att1_6.close_cmd, 1)
+        yield from bps.sleep(1)
+
+def alignment_on_stepbystep():
+    """
+    Aomething wrong with beamline code and attens, making separate routine
+    yield from bps.mv(
+    RE.md['SAXS_setup']['bs_x']
+    """
+    smi = SMI_Beamline()
+    yield from atten_move_in()
+    yield from bps.mv(waxs, 15)
+    yield from bps.mvr(pil2M.beamstop.x_rod, 5)
+    yield from smi.setDirectBeamROI()
+    print('\t\tALIGNMENT MODE ON and WAXS arc at 15 deg')
+
+def alignment_off_stepbystep(bs_x=None):
+    """
+    Aomething wrong with beamline code and attens, making separate routine
+    yield from bps.mv(
+    RE.md['SAXS_setup']['bs_x']
+    """
+    if bs_x is None:
+        bs_x = RE.md['SAXS_setup']['bs_x']
+
+    yield from atten_move_out()
+    yield from bps.mv(waxs, 0)
+    yield from bps.mv(pil2M.beamstop.x_rod, bs_x)
+
+    print('\t\tALIGNMENT MODE OFF and WAXS arc to 0 deg')
+
 
 def continous_run_change_xpos(sname='20250630_op_a_echem', t=2, wait=100, frames=5000,
         x_off=[-150, -100, -50, 0, 50, 100,150]):
@@ -655,7 +708,7 @@ def continous_run_change_xpos_thpos(
         yield from bps.sleep(wait)
 
 
-def continous_run_prealigned_positions_2025_2(sname='20250709_op_e_echem', t=2, wait=100, frames=5000):
+def continous_run_prealigned_positions_2025_2(sname='20251117_op_a_echem_run', t=2, wait=100, frames=5000):
 
     """
     At each prealigned region of interest, take a finer scan across x with several
@@ -671,16 +724,16 @@ def continous_run_prealigned_positions_2025_2(sname='20250709_op_e_echem', t=2, 
     # x_off (list of floats): offset values in um for x scans,
     # ai_off (list of floats): values of incident angles to take scans at.
     
-    x_off  = [-100, -50, 0, 50, 100]
+    x_off  = [-100, 0, 100]
     ai_off = [0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5]
 
     try:
         alignment = RE.md['alignment_LUT']
     except:
         alignment =  {
-            '-2000': {'x': -2000, 'y': 7105.626, 'z': 2000, 'th': 0.4},
-                '0': {'x': -0, 'y': 7092.411, 'z': 2000, 'th': 0.4},
-             '2000': {'x':  2000, 'y': 7075.913, 'z': 2000, 'th': 0.4},
+            '-2000': {'x': -2000, 'y': 7579.694, 'z': -0.423, 'th': -0.5433},
+                '0': {'x': -0.405, 'y': 7473.095, 'z': -0.438, 'th': 0.5433},
+             '2000': {'x': 2000, 'y': 7353.558, 'z': -0.438, 'th': -0.54327},
                         
         }
         RE.md['alignment_LUT'] = alignment
@@ -744,6 +797,116 @@ def continous_run_prealigned_positions_2025_2(sname='20250709_op_e_echem', t=2, 
         # wait
         print(f'\nWaiting {wait} s')
         yield from bps.sleep(wait)
+
+
+def continous_run_prealigned_positions_2025_3_swaxs(
+        sname='20251027_Cu_cel2325_glassfiber', t=2, wait=0, frames=1, saxs_frame=1):
+
+    """
+    At each prealigned region of interest, take a finer scan across x with several
+    incident angles. Each nth frame, take full SAXS WAXS scan.
+
+    Args:
+        sname (str): sample name,
+        t (float): exposure time,
+        wait (float): wait time after one series of scans is done,
+        frames (int): number of series of scans to be taken,
+        x_off (list of floats): offset values in um for x scans,
+        ai_off (list of floats): values of incident angles to take scans at,
+        saxs_frame (int): frame interval for which to take full SWAXS dataset.
+
+    """
+    x_off  = [-100, 0, 100]
+    ai_off = [0.05, 0.10, 0.15, 0.20, 0.30]
+    
+    # for SAXS / WAXS measurement
+    y_off  = [0, 10, 50, 100, ]
+    waxs_arc = [0, 20]
+
+    try:
+        alignment = RE.md['alignment_LUT']
+    except:
+        alignment =  {
+            '-2000': {'x': -17000, 'y': -595.365, 'z': -18842, 'th': 1.439}          
+        }
+        RE.md['alignment_LUT'] = alignment
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+
+    for i in range(frames):
+        yield from bps.mv(waxs, 0)
+        print(f'Taking {i + 1} / {frames} frames for {len(alignment)} ROIs')
+
+        # Iterate over region of interest
+        for key, value in alignment.items():
+
+            # ROI alignment values
+            x0 = value['x']
+            y0 = value['y']
+            z0 = value['z']
+            th0 = value['th']
+
+            yield from bps.mv(
+                piezo.x, x0,
+                piezo.y, y0,
+                piezo.z, z0,
+                piezo.th, th0,
+            )
+
+            print(f'{key}, {value}')
+            
+
+            # Fine scan across x
+            for x_step in x_off:
+                yield from bps.mv(piezo.x, x0 + x_step)
+
+                # Go over incident angles
+                for ai in ai_off:
+                    yield from bps.mv(piezo.th, th0 + ai)
+
+                    name_sample(sname, tstamp)
+                    # Add incident angle to sample name
+                    ai_md = f'_ai_{ai:.3f}'
+                    print(f'Incident angle:\t{ai}')
+                    name = RE.md['sample_name']
+                    RE.md['sample_name'] = name + ai_md
+                    yield from bp.count([pil900KW])
+        
+        if i % saxs_frame == 0:
+
+            for wa in waxs_arc:
+                yield from bps.mv(waxs, wa)
+                dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+
+                for key, value in alignment.items():
+
+                    yield from bps.mv(
+                        piezo.x, value['x'],
+                        piezo.y, value['y'],
+                        piezo.z, value['z'],
+                        piezo.th, value['th'],
+                    )
+
+                    # Fine scan across y
+                    for y_step in y_off:
+                        yield from bps.mv(piezo.y, value['y'] - y_step)
+                        sname_saxs = sname + '-SWAXS'
+                        name_sample(sname_saxs, tstamp)
+                        ai = 0
+                        ai_md = f'_ai_{ai:.3f}'
+                        name = RE.md['sample_name']
+                        RE.md['sample_name'] = name + ai_md
+                        yield from bp.count(dets)
+                
+                yield from bps.mv(waxs, 0)
+        else:
+            print(f'\nWaiting {wait} s')
+            yield from bps.sleep(wait)
+
 
 # Backup
 
@@ -948,3 +1111,253 @@ def continous_run_prealigned_positions_2025_2(sname='Pristine_Cu_in_cell', t=2, 
 # Read T and convert to deg C
 #temp = ls.input_A.get() - 273.15
 #temp = str(np.round(float(temp), 1)).zfill(5)
+
+def grazing_Dean_2025_3(t=0.5):
+    """
+    standard GI-S/WAXS on hexapod for humidity
+
+    """
+    #project_set('ex-situ')
+
+    # Sample set 1
+    names_1   = ['20251117_exsitu_sample_a']
+    stage_x_1 = [27]
+    stage_y_1 = [-0.02]
+    #stage_z_1 = []
+
+    # Sample set 2
+    names_2   = []
+    stage_x_2 = []
+    stage_y_2 = []
+    #stage_z_2 = []
+  
+
+    names   = names_1   + names_2
+    stage_x = stage_x_1 + stage_x_2
+    stage_y = stage_y_1 + stage_y_2
+    #stage_z = stage_z_1 + stage_z_2
+
+    msg = "Wrong number of coordinates"
+    for arr in [stage_x, stage_y, ]:
+        assert len(arr) == len(names), msg
+
+    waxs_arc = [ 0 ]
+    incident_angles = [ 0.05, 0.10, 0.15, 0.20, 0.25 ]
+    user_name = 'YCW'
+
+    det_exposure_time(t, t)
+
+
+    try:
+        misaligned_samples = RE.md['misaligned_samples']
+    except:
+        misaligned_samples = []
+        RE.md['misaligned_samples'] = misaligned_samples
+
+
+    for name, sx, sy, in zip(names, stage_x, stage_y, ):
+
+        yield from bps.mv(
+            stage.x, sx,
+            stage.y, sy,
+        )
+
+        # Align the sample
+        try:
+            yield from alignement_gisaxs_hex_rough_Dean()
+        except:
+            misaligned_samples.append(name)
+            RE.md['misaligned_samples'] = misaligned_samples
+
+        yield from smi.modeMeasurement()
+        yield from atten_move_out()
+
+        # Sample flat at ai0
+        ai0 = stage.th.position
+
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+
+            # problems with the beamstop
+            yield from bps.mv(waxs.bs_y, -3)
+            yield from smi.modeMeasurement()
+
+            for ai in incident_angles:
+                yield from bps.mv(stage.th, ai0 + ai)
+
+                ai_md = f'_ai_{ai:.3f}'
+                sample_name = f'{name}{get_scan_md()}' + ai_md
+
+                sample_id(user_name=user_name, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+
+        yield from bps.mv(piezo.th, ai0)
+
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+def prealigned_grazing_Dean_2025_3(t=0.5):
+    """
+    standard GI-S/WAXS on hexapod for humidity
+
+    """
+    #project_set('ex-situ')
+
+    # Sample set 1
+    names   = ['20251117_exsitu_sample_a_pos9']
+    stage_x = [27.4]
+    stage_y = [-0.253]
+
+
+    msg = "Wrong number of coordinates"
+    for arr in [stage_x, stage_y, ]:
+        assert len(arr) == len(names), msg
+
+    waxs_arc = [ 0 ]
+    incident_angles = [ 0.05,0.1,0.15,0.2,0.25 ]
+    user_name = 'YCW'
+
+    det_exposure_time(t, t)
+
+    print('\n\nPrealigned sample - skipping alignment step!!\n\n')
+
+    for name, sx, sy, in zip(names, stage_x, stage_y, ):
+
+        yield from bps.mv(
+            stage.x, sx,
+            stage.y, sy,
+        )
+
+        # Sample flat at ai0
+        ai0 = stage.th.position
+
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+
+            # problems with the beamstop
+            yield from bps.mv(waxs.bs_y, -3)
+            yield from smi.modeMeasurement()
+
+            for ai in incident_angles:
+                yield from bps.mv(stage.th, ai0 + ai)
+
+                ai_md = f'_ai_{ai:.3f}'
+                sample_name = f'{name}{get_scan_md()}' + ai_md
+
+                sample_id(user_name=user_name, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+
+        yield from bps.mv(piezo.th, ai0)
+
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+
+def alignement_gisaxs_hex_rough_Dean(angle=0.1):
+    """
+    Adopted from alignement_gisaxs_hex_roughsample(angle=0.1)
+
+    """
+
+    # Activate the automated derivative calculation
+    bec._calc_derivative_and_stats = True
+
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.5, 0.5)
+
+    yield from smi.modeAlignment()
+    #yield from alignment_on_stepbystep()
+
+    # Set direct beam ROI
+    yield from smi.setDirectBeamROI()
+
+    # Scan theta and height
+    yield from align_gisaxs_height_hex(1, 31, der=True)
+    try:
+        yield from align_gisaxs_th_hex(1.5, 31)
+    except:
+        yield from align_gisaxs_th_hex(0.7, 31)
+    yield from align_gisaxs_height_hex(0.5, 31, der=True)
+    yield from align_gisaxs_th_hex(0.5, 31)
+    yield from align_gisaxs_height_hex(0.2, 31, der=True)
+    yield from align_gisaxs_th_hex(0.2, 31)
+
+
+    ######
+    # Scan theta and height
+    #yield from align_gisaxs_height_hex(0.5, 15, der=True)
+    #yield from align_gisaxs_th_hex(0.5, 21)
+    #yield from align_gisaxs_height_hex(0.2, 25, der=True)
+    #yield from align_gisaxs_th_hex(0.2, 21)
+    
+    # Close all the matplotlib windows
+    plt.close("all")
+
+    # Return angle
+    #      yield from bps.mvr(stage.th, -angle)
+    yield from smi.modeMeasurement()
+    #yield from alignment_off_stepbystep()
+
+    # Deactivate the automated derivative calculation
+    bec._calc_derivative_and_stats = False
+
+def atten_move_in():
+    """
+    Move 4x + 2x Sn 60 um attenuators in
+    """
+    print('Moving attenuators in')
+
+    while att1_7.status.get() != 'Open':
+        yield from bps.mv(att1_7.open_cmd, 1)
+        yield from bps.sleep(1)
+    while att1_6.status.get() != 'Open':
+        yield from bps.mv(att1_6.open_cmd, 1)
+        yield from bps.sleep(1)
+
+def atten_move_out():
+    """
+    Move 4x + 2x  + 1x Sn 60 um attenuators out
+    """
+    print('Moving attenuators out')
+    while att1_7.status.get() != 'Not Open':
+        yield from bps.mv(att1_7.close_cmd, 1)
+        yield from bps.sleep(1)
+    while att1_6.status.get() != 'Not Open':
+        yield from bps.mv(att1_6.close_cmd, 1)
+        yield from bps.sleep(1)
+    while att1_5.status.get() != 'Not Open':
+        yield from bps.mv(att1_6.close_cmd, 1)
+        yield from bps.sleep(1)
+
+
+def alignment_on_stepbystep():
+    """
+    Aomething wrong with beamline code and attens, making separate routine
+    yield from bps.mv(
+    RE.md['SAXS_setup']['bs_x']
+    """
+    smi = SMI_Beamline()
+    yield from atten_move_in()
+    yield from bps.mv(waxs, 15)
+    yield from bps.mvr(pil2M.beamstop.x_rod, 5)
+    #yield from smi.setDirectBeamROI()
+    print('\t\tALIGNMENT MODE ON and WAXS arc at 15 deg')
+
+def alignment_off_stepbystep(bs_x=None):
+    """
+    Aomething wrong with beamline code and attens, making separate routine
+    yield from bps.mv(
+    RE.md['SAXS_setup']['bs_x']
+    """
+    if bs_x is None:
+        bs_x = RE.md['SAXS_setup']['bs_x']
+
+    yield from atten_move_out()
+    yield from bps.mv(waxs, 0)
+    yield from bps.mv(pil2M.beamstop.x_rod, bs_x)
+
+    print('\t\tALIGNMENT MODE OFF and WAXS arc to 0 deg')

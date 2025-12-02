@@ -491,6 +491,21 @@ def cd_saxs_new(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2
         print(f"\n\t=== Sample: {sample_name} ===\n")
         yield from bp.count(det, num=nume)
 
+def cd_saxs_newLigang(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2M, pin_diode]):
+
+    for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
+        yield from bps.mv(prs, theta)
+        exp_ti=exp_t/abs(np.cos(np.deg2rad(theta)))
+        print("*************************************************************************")
+        print("new exposure time is : ", exp_ti)
+        det_exposure_time(exp_ti, exp_ti)
+        name_fmt = "{sample}_num{num}_{th}deg_x{x}_y{y}_z{z}_bpm{bpm}{md}_time{exp_ti}"
+        sample_name = name_fmt.format(sample=sample, num="%03d"%num, th="%2.2d"%theta, x = "%.2f" % (piezo.x.position), y = "%.2f" % (piezo.y.position), z = "%.2f" % (piezo.z.position), bpm="%1.3f"%xbpm3.sumX.get(), md = get_scan_md(), exp_ti="%.2f" % exp_ti) # Philipp change, original: num="%2.2d"%num
+        #sample_id(user_name="PG", sample_name=sample_name)
+        sample_id(sample_name=sample_name)
+
+        print(f"\n\t=== Sample: {sample_name} ===\n")
+        yield from bp.count(det, num=nume)
 
 def dose(exp_t=1, sample='test', nume=1000, det=[pil2M, pin_diode]):
     det_exposure_time(exp_t, exp_t)
@@ -721,6 +736,50 @@ def cdsaxsstd_2025_1_yager(t=1):
             sample_id(sample_name=sample_name)
             yield from bp.count([pil2M], num=nume)
             yield from bps.mvr(pil2M_pos.y, -4.3)
+
+def cdsaxsstd_2025Oct_1_Ligang(t=1):
+    det = [pil2M]
+    det_exposure_time(t, t)
+
+    phi_offest = 1
+
+    names = ['S1_right_prsscan']
+    
+    ## with on-axis camera
+    x =     [   7800
+                    ]
+    y=      [  2092
+                    ]
+    
+    z=      [    -15800
+                    ]
+    
+    ## with scattering pattern
+    chi=    [  2.6
+                 ]
+    th =    [     1.91
+              ]
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+
+    
+    for i in range(1):
+        for name, xs, ys, zs, chis, ths in zip(names, x, y, z, chi, th):
+            yield from bps.mv(piezo.z, zs)
+            yield from bps.mv(piezo.ch, chis)
+            yield from bps.mv(piezo.th, ths)
+            yield from bps.mv(piezo.x, xs)
+            yield from bps.mv(piezo.y, ys)
+
+            # yield from bp
+            # if 'bkg' not in name:
+            yield from cd_saxs_newLigang(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
+
+    print("====== Done with CD-SAXS scan")
 
 def cdsaxsstd_2025_1A_yager(t=1):
     det = [pil2M]
@@ -1163,6 +1222,33 @@ def cdsaxsstd_2025May_Philipp3(t=1):
 
     print("====== Done with CD-SAXS scan")
 
+
+## /home/xf12id/SWAXS_user_scripts/CDSAXS/30-user-CDSAXS_Philipp.py
+
+def cdsaxsstd_2025_10_simplePRS(N=5):
+    #sample_id(user_name='test', sample_name=f'test_S1_left_prsscan_{get_scan_md()}_xbpm3sumX{xbpm3.sumX.get():.2f}')
+    for _ in range(N):
+        yield from rel_scan([pil2M, pin_diode,xbpm3],prs , -60, 60, 121)
+
+
+    print("====== Done with CD-SAXS scan")
+
+def cdsaxsstd_2025_10_simplePRS2(N=5):
+    #sample_id(user_name='test', sample_name=f'test_S1_left_prsscan_{get_scan_md()}_xbpm3sumX{xbpm3.sumX.get():.2f}')
+    for _ in range(N):
+        yield from rel_scan([pil2M, pin_diode,xbpm3],prs , -60, 65, 126)
+
+
+    print("====== Done with CD-SAXS scan")
+
+def cdsaxsstd_2025_10_simplePRS3(N=5):
+    #sample_id(user_name='test', sample_name=f'test_S1_left_prsscan_{get_scan_md()}_xbpm3sumX{xbpm3.sumX.get():.2f}')
+    for _ in range(N):
+        yield from rel_scan([pil2M, pin_diode,xbpm3],prs , -60, 64, 63)
+
+
+    print("====== Done with CD-SAXS scan")
+
 def cdsaxsstd_2025_1CD_yager(t=1):
     det = [pil2M]
     det_exposure_time(t, t)
@@ -1311,6 +1397,7 @@ def cdsaxsstd_2025September_Philipp1(t=1):
     x =     [  
                 -17250   ,         -17250 ,           -21250,           -21250,           -21250  #-14764
                     ]
+    
     y=      [  
                5151       ,           3100 ,         3150,                5150,                7152#-4299
                     ]

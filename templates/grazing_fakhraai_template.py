@@ -1,4 +1,4 @@
-# Refactored experiment plan template for Fakhraai grazing experiment
+# Experimental plan rfactored from a template that was developed and refined for Fakhraai group by Patryk
 
 def get_fakhraai_inputs():
     """
