@@ -800,7 +800,7 @@ def continous_run_prealigned_positions_2025_2(sname='20251117_op_a_echem_run', t
 
 
 def continous_run_prealigned_positions_2025_3_swaxs(
-        sname='20251027_Cu_cel2325_glassfiber', t=2, wait=0, frames=1, saxs_frame=1):
+        sname='20260126_op_b_echem', t=2, wait=100, frames=5000, saxs_frame=10):
 
     """
     At each prealigned region of interest, take a finer scan across x with several
@@ -827,7 +827,9 @@ def continous_run_prealigned_positions_2025_3_swaxs(
         alignment = RE.md['alignment_LUT']
     except:
         alignment =  {
-            '-2000': {'x': -17000, 'y': -595.365, 'z': -18842, 'th': 1.439}          
+            '-1000': {'x': -1000, 'y': 3429.8, 'z': 10200.0, 'th': 0.223},  
+                '0': {'x': 0, 'y': 3423.7, 'z': 10200.0, 'th': 0.140},
+             '1000': {'x': 1000, 'y': 3419.2, 'z': 10200.0, 'th': 0.223}        
         }
         RE.md['alignment_LUT'] = alignment
 

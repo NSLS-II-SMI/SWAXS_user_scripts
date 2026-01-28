@@ -3539,3 +3539,96 @@ def rerun_Paren_hard_cap_multiplesaxs_2025_3(t=15):
 
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(0.3, 0.3)
+
+def run_Paren_hard_multiplesaxs_2026_1(t=1):
+    """
+    Run standard hard transmission over multiple SAXS distances
+
+    For future refernce:
+        pil2M.insert_beamstop('rod') - insert beamstop (rod, pin)
+        bps.mv(pil2M.beamstop.x_pin, -227.6,
+               pil2M.beamstop.y_pin, 6.6)   - move pin to position
+            pil2M.beamstop.x_rod, pil2M.beamstop.y_rod - rod positions
+    """
+
+    saxs_dct = {
+        #0 : {'sdd': 2000, 'beam_centre': [744, 1110], 'bs': 'pd', 'energy': 16100,
+        #     'bs_x': -227.3, 'bs_y': 6.4},
+        
+        1 : {'sdd': 5000, 'beam_centre': [744, 1110], 'bs': 'pd', 'energy': 16100,
+             'bs_x': -227.5, 'bs_y': 6.6},
+        
+        2 : {'sdd': 9200, 'beam_centre': [744, 1110], 'bs': 'pd', 'energy': 16100,
+             'bs_x': -227.35, 'bs_y': 7.0},
+    }
+
+    names   = [ 'Cell-C6-NTf2',  'vacuum',]
+    piezo_x = [         -44800,    -39000,]
+    piezo_y = [          -4500,     -4500,]
+    piezo_z = [ 6300 for n in names ]
+    
+    waxs_arc = [ 40, 20, 0 ]
+    user = "PW"
+    det_exposure_time(t, t)
+
+    msg = 'Wrong number of coordinates'
+    for arr in [piezo_x, piezo_y, piezo_z, ]:
+        assert len(arr) == len(names), msg
+
+    # Go over SAXS distances
+    for k, v in saxs_dct.items():
+
+        print(v)
+        #RE.md['SAXS_setup'] = v
+        sdd = v['sdd']
+        bs_x = v['bs_x']
+        bs_y = v['bs_y']
+
+        #pname = f'hard-{sdd}mm'
+        #project_set(pname)
+
+        yield from bps.mv(
+            pil2M.motor.z, sdd,
+            pil2M.beamstop.x_pin, bs_x,
+            pil2M.beamstop.y_pin, bs_y,
+            waxs, waxs_arc[0],
+            piezo.y, piezo_y[0],
+            piezo.x, piezo_x[0],
+        )
+
+        # Go over WAXS angles
+        waxs_arc = [40, 20, 0] if sdd < 2100 else [ 40 ]
+        
+        for wa in waxs_arc:
+            yield from bps.mv(
+                waxs, wa,
+                piezo.y, piezo_y[0],
+                piezo.x, piezo_x[0],
+            )
+
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+
+            if sdd < 2100:
+                dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+            else:
+                dets = [pil2M]
+
+            for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
+
+                yield from bps.mv(
+                    piezo.y, y,
+                    piezo.x, x,
+                    piezo.z, z,
+                )
+
+                sample_name = f'{name}_{get_scan_md()}'
+                sample_id(user_name=user, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.rel_grid_scan(
+                        dets,
+                        piezo.y, -1000, 1000, 3,
+                        piezo.x, -1000, 1000, 3, 
+                )
+
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
