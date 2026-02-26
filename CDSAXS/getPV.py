@@ -20,7 +20,7 @@ ctx = Context('pva')
 # print("prs = {}".format(prs))
 
 # Get the current camera image
-folder = 'ManualAlign260128'
+folder = 'ManualAlign260210'
 os.makedirs(folder, exist_ok=True)
 
 

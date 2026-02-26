@@ -4494,3 +4494,478 @@ def swaxs_Kelvin_2025_3(t=1):
 
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(0.3, 0.3)
+
+
+
+
+
+
+
+def swaxs_S_edge_nafion_2026_1(t=1):
+    """
+    307830_Su June 23, 2024
+    """
+
+    dets = [pil900KW, pil2M]
+
+    names = [ 'nafion_4wt', '3m_4wt', 'nafion_SiO2_5', 'nafion_SiO2_2p5']
+    x =     [        42000,    31000,           19300,        6700]
+    y =     [        -7000,    -7500,           -7600,       -7700]
+    z =     [         3000,     3000,            3000,        3000]
+
+
+
+    # names = [      'nafion_SiO2_2p5_pinhole']
+    # x =     [              1807]
+    # y =     [             -7306.8]
+    # z =     [              3000]
+
+    names = [ 'N212_Li', 'N212_Na', 'N212_K', 'N212_Fe', 'N212_Ce', 'N212_Co']
+    x =     [     39000,     30000,    19000,      8000,     -3000,    -14000]
+    y =     [      -400,      -400,      200,       200,       400,       600]
+    z =     [      3000,      3000,     3000,      3000,      3000,      3000]
+   
+    names = [  'FKE_50', 'SPES_50']
+    x =     [     19000,     13000]
+    y =     [         0,         0]
+    z =     [      3000,      3000]
+
+    names = [ 'N212_Li', 'N212_Na', 'N212_K', 'N212_Fe', 'N212_Ce', 'N212_Co', 'Nafion_4wt', 'Nafion_SiO2_5', 'Nafion_SiO2_2p5']
+    x =     [     40500,     30500,    19500,      8500,     -3500,    -14500,       -19500,          -29500,            -39800]
+    y =     [      3000,      3000,     3300,      3500,      3700,      4000,         4000,            4400,              4300]
+    z =     [      3000,      3000,     3000,      3000,      3000,      3000,         3000,            3000,              3000]
+
+    names = [  'Nafion_Si02_5_pinhole']
+    x =     [    -34830]
+    y =     [      5204]
+    z =     [      3000]
+
+    names = [ 'Nafion_SiO2_1', 'Nafion_SiO2_0p5', 'Nafion_SiO2_0p2', 'Nafion_SiO2_0', 'Blank']
+    x =     [            25500,             15000,              4000,           -7000,  -25000]
+    y =     [            -4000,             -4000,             -4000,           -4500,   -4500]
+    z =     [             2000,              2000,              2000,            2000,    2000]
+
+    # energies = np.arange(2445, 2470, 5).tolist() + np.arange(2470, 2480, 0.5).tolist() + np.arange(2480, 2490, 2).tolist()+ np.arange(2490, 2501, 5).tolist()
+    energies = 7 + np.asarray(np.arange(2445, 2470, 5).tolist() + np.arange(2470, 2480, 0.25).tolist() + np.arange(2480, 2490, 1).tolist()
+                              + np.arange(2490, 2521, 5).tolist())
+    
+    waxs_arc = [7, 20]
+
+    for name, xs, ys in zip(names, x, y):
+        det_exposure_time(t, t)
+
+        # changing ys to allow for more room during dense energy scan
+        yield from bps.mv(piezo.x, xs)
+        yield from bps.mv(piezo.y, ys)
+
+        yss = np.linspace(ys, ys + 1500, len(energies))
+        # yss = np.linspace(ys, ys + 0, len(energies))
+
+        xss = np.array([xs])
+
+        yss, xss = np.meshgrid(yss, xss)
+        yss = yss.ravel()
+        xss = xss.ravel()
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+
+                name_fmt = "{sample}_3.0m_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e, xsss, ysss in zip(energies, xss, yss):
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+                    yield from bps.mv(piezo.y, ysss)
+                    yield from bps.mv(piezo.x, xsss)
+
+                    bpm = xbpm3.sumX.get()
+                    
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+                
+                yield from bps.mv(energy, 2470)
+                yield from bps.mv(energy, 2450)
+
+        (yield from inner())
+
+
+
+def nexafs_Sedge_2026_1():
+    dets = [pil900KW]
+
+    name='P3HT_calibrant'
+    energies = (np.arange(2445, 2470, 5).tolist()+ np.arange(2470, 2480, 0.25).tolist()+ np.arange(2480, 2490, 1).tolist()
+        + np.arange(2490, 2500, 5).tolist()+ np.arange(2500, 2560, 10).tolist())
+    
+    waxs_arc = [20]
+
+    s = Signal(name='target_file_name', value='')
+
+    @bpp.stage_decorator(dets)
+    @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+    def inner():
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+
+            for i, e in enumerate(energies):
+                yield from bps.mv(energy, e)
+                yield from bps.sleep(3)
+                
+                # Metadata
+                wa = str(np.round(float(wa), 1)).zfill(4)
+
+                # Sample name
+                name_fmt = ("{sample}_{energy}eV_wa{wax}_ai1.6deg")
+                sample_name = name_fmt.format(sample = name,energy = "%.2f" % e , wax = wa)
+                sample_name = sample_name.translate({ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ =, "})
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                s.put(sample_name)
+                
+                yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+            yield from bps.sleep(2)
+    (yield from inner())
+
+    
+
+
+def nexafs_ZrL3edge_2026_1():
+    dets = [pil900KW]
+
+    name='nexafs_Zr_redo'
+    energies = np.linspace(2200, 2250, 51)
+    
+    waxs_arc = [20]
+
+    s = Signal(name='target_file_name', value='')
+
+    @bpp.stage_decorator(dets)
+    @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+    def inner():
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+
+            for i, e in enumerate(energies):
+                yield from bps.mv(energy, e)
+                yield from bps.sleep(3)
+                
+                # Metadata
+                wa = str(np.round(float(wa), 1)).zfill(4)
+
+                # Sample name
+
+
+                bpm = xbpm3.sumX.get()
+                name_fmt = "{sample}_3.0m_{energy}eV_wa{wax}_bpm{xbpm}"
+                sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                sample_name = sample_name.translate({ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ =, "})
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                s.put(sample_name)
+                
+                yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+            yield from bps.sleep(2)
+    (yield from inner())
+
+    
+
+def swaxs_K_edge_nafion_2026_1(t=1):
+    """
+    307830_Su June 23, 2024
+    """
+
+    dets = [pil900KW, pil2M]
+
+    names = [ 'Nafion_SiO2_1', 'Nafion_SiO2_0p5', 'Nafion_SiO2_0p2', 'Nafion_SiO2_0', 'Blank']
+    x =     [            25500,             15000,              4000,           -7000,  -25000]
+    y =     [            -4000,             -4000,             -4000,           -4500,   -4500]
+    z =     [             2000,              2000,              2000,            2000,    2000]
+
+    names = [  'N212_K']
+    x =     [     17000]
+    y =     [      -500]
+    z =     [      2000]  
+
+    energies = np.asarray(np.arange(3570, 3600, 5).tolist() + np.arange(3600, 3608, 2).tolist() 
+                          + np.arange(3608, 3640, 1).tolist() + np.arange(3640, 3690, 5).tolist())
+    
+    waxs_arc = [7, 20]
+
+    for name, xs, ys in zip(names, x, y):
+        det_exposure_time(t, t)
+
+        # changing ys to allow for more room during dense energy scan
+        yield from bps.mv(piezo.x, xs)
+        yield from bps.mv(piezo.y, ys)
+
+        yss = np.linspace(ys, ys + 1500, len(energies))
+        # yss = np.linspace(ys, ys + 0, len(energies))
+
+        xss = np.array([xs])
+
+        yss, xss = np.meshgrid(yss, xss)
+        yss = yss.ravel()
+        xss = xss.ravel()
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+
+                name_fmt = "{sample}_3.0m_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e, xsss, ysss in zip(energies, xss, yss):
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+                    yield from bps.mv(piezo.y, ysss)
+                    yield from bps.mv(piezo.x, xsss)
+
+                    bpm = xbpm3.sumX.get()
+                    
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+                
+                yield from bps.mv(energy, 2470)
+                yield from bps.mv(energy, 2450)
+
+        (yield from inner())
+
+
+
+
+
+def swaxs_Fe_edge_nafion_2026_1(t=1):
+    """
+    307830_Su June 23, 2024
+    """
+
+    dets = [pil900KW, pil2M]
+
+    names = [ 'Nafion_SiO2_1', 'Nafion_SiO2_0p5', 'Nafion_SiO2_0p2', 'Nafion_SiO2_0', 'Blank']
+    x =     [            25500,             15000,              4000,           -7000,  -25000]
+    y =     [            -4000,             -4000,             -4000,           -4500,   -4500]
+    z =     [             2000,              2000,              2000,            2000,    2000]
+
+    names = [  'N212_Fe']
+    x =     [       7500]
+    y =     [      -1000]
+    z =     [       3000]  
+
+    energies = np.concatenate((np.arange(7070, 7110, 5), np.arange(7110, 7150, 1), np.arange(7150, 7160, 2), 
+                               np.arange(7160, 7240, 5) ))
+    
+    waxs_arc = [7, 20]
+
+    for name, xs, ys in zip(names, x, y):
+        det_exposure_time(t, t)
+
+        # changing ys to allow for more room during dense energy scan
+        yield from bps.mv(piezo.x, xs)
+        yield from bps.mv(piezo.y, ys)
+
+        yss = np.linspace(ys, ys + 1500, len(energies))
+        # yss = np.linspace(ys, ys + 0, len(energies))
+
+        xss = np.array([xs])
+
+        yss, xss = np.meshgrid(yss, xss)
+        yss = yss.ravel()
+        xss = xss.ravel()
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+
+                name_fmt = "{sample}_3.0m_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e, xsss, ysss in zip(energies, xss, yss):
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+                    yield from bps.mv(piezo.y, ysss)
+                    yield from bps.mv(piezo.x, xsss)
+
+                    bpm = xbpm3.sumX.get()
+                    
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+
+        (yield from inner())
+
+
+
+
+def swaxs_Co_edge_nafion_2026_1(t=1):
+    """
+    307830_Su June 23, 2024
+    """
+
+    dets = [pil900KW, pil2M]
+
+    names = [ 'Nafion_SiO2_1', 'Nafion_SiO2_0p5', 'Nafion_SiO2_0p2', 'Nafion_SiO2_0', 'Blank']
+    x =     [            25500,             15000,              4000,           -7000,  -25000]
+    y =     [            -4000,             -4000,             -4000,           -4500,   -4500]
+    z =     [             2000,              2000,              2000,            2000,    2000]
+
+    names = [  'N212_Co']
+    x =     [      -14500]
+    y =     [      -500]
+    z =     [       3000]  
+
+    energies = np.asarray(np.arange(7650, 7700, 5).tolist() + np.arange(7700, 7750, 1).tolist() 
+                          + np.arange(7750, 7800, 5).tolist())
+    
+    waxs_arc = [20]
+
+    for name, xs, ys in zip(names, x, y):
+        det_exposure_time(t, t)
+
+        # changing ys to allow for more room during dense energy scan
+        yield from bps.mv(piezo.x, xs)
+        yield from bps.mv(piezo.y, ys)
+
+        yss = np.linspace(ys, ys + 1500, len(energies))
+        # yss = np.linspace(ys, ys + 0, len(energies))
+
+        xss = np.array([xs])
+
+        yss, xss = np.meshgrid(yss, xss)
+        yss = yss.ravel()
+        xss = xss.ravel()
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+
+                name_fmt = "{sample}_3.0m_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e, xsss, ysss in zip(energies, xss, yss):
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+                    yield from bps.mv(piezo.y, ysss)
+                    yield from bps.mv(piezo.x, xsss)
+
+                    bpm = xbpm3.sumX.get()
+                    
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+        (yield from inner())
+
+
+
+
+def swaxs_Ce_edge_nafion_2026_1(t=1):
+    """
+    307830_Su June 23, 2024
+    """
+
+    dets = [pil900KW, pil2M]
+
+    names = [ 'Nafion_SiO2_1', 'Nafion_SiO2_0p5', 'Nafion_SiO2_0p2', 'Nafion_SiO2_0', 'Blank']
+    x =     [            25500,             15000,              4000,           -7000,  -25000]
+    y =     [            -4000,             -4000,             -4000,           -4500,   -4500]
+    z =     [             2000,              2000,              2000,            2000,    2000]
+
+    names = [  'N212_Se']
+    x =     [      -4500]
+    y =     [      -700]
+    z =     [       3000]  
+
+    energies = np.asarray(np.arange(5690, 5715, 5).tolist() + np.arange(5715, 5750, 1).tolist() 
+                          + np.arange(5750, 5800, 5).tolist())
+    
+    waxs_arc = [7, 20]
+
+    for name, xs, ys in zip(names, x, y):
+        det_exposure_time(t, t)
+
+        # changing ys to allow for more room during dense energy scan
+        yield from bps.mv(piezo.x, xs)
+        yield from bps.mv(piezo.y, ys)
+
+        yss = np.linspace(ys, ys + 1500, len(energies))
+        # yss = np.linspace(ys, ys + 0, len(energies))
+
+        xss = np.array([xs])
+
+        yss, xss = np.meshgrid(yss, xss)
+        yss = yss.ravel()
+        xss = xss.ravel()
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+
+                name_fmt = "{sample}_3.0m_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e, xsss, ysss in zip(energies, xss, yss):
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+                    yield from bps.mv(piezo.y, ysss)
+                    yield from bps.mv(piezo.x, xsss)
+
+                    bpm = xbpm3.sumX.get()
+                    
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+        (yield from inner())
+
+
+
+
+
+def swaxs_hardxray_nafion_2026(t=1):
+    """
+    switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
+    """
+    dets = [pil2M, pil900KW]
+
+    names = ['Nafion_SiO2_5','Nafion_SiO2_2p5','Nafion_SiO2_1','Nafion_SiO2_0p5', 'Nafion_SiO2_p2', 'Nafion_SiO2_0', 'Blank']
+    x =     [          40500,            35500,          27500,            16500,             5500,           -5500,  -23500]
+    y =     [          -7500,            -7500,          -7500,            -7500,            -7500,           -7500,   -7500]
+    z =     [           3000,             3000,           3000,             3000,             3000,            3000,    3000]
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of y ({len(z)}) is different from number of samples ({len(names)})"
+
+    det_exposure_time(t, t)
+    waxs_arc = [7, 20]
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+    
+        for name, xs, ys, zs in zip(names, x, y, z):
+            yield from bps.mv(piezo.x, xs)
+            yield from bps.mv(piezo.y, ys)
+            yield from bps.mv(piezo.z, zs)
+
+            name_fmt = "{sample}_3.0m_16100.0eV_wa{wax}"
+
+            sample_name = name_fmt.format(sample=name, wax=wa)
+            sample_id(user_name="ML", sample_name=sample_name)
+            print(f"\n\t=== Sample: {sample_name} ===\n")
+
+            yield from bp.count(dets, num=1)
