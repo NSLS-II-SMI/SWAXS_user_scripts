@@ -2259,160 +2259,67 @@ def cdsaxsstd_2026_1_nischal(t=1):
     det = [pil2M]
     det_exposure_time(t, t)
 
-    phi_offest = -3.7
+    phi_offest = -1.45
 
-    # names = [ 'cesta_bkg',  'c00_3', 'c00_4','c00_2p1', 'c00_2p2', 'c00_2p3', 'c00_5p2',  'c01_3', 'c01_4','c01_2p1', 'c01_2p2', 'c01_2p3', 'c01_5p2']
-    # x =     [      -35000,   -13000,  -13000,   -13000,    -10000,    -14000,    -18000,    12700,   12700,    12700,     16200,     12200,     8200]
-    # ysmar=  [       -1000,    -3000,    3000,     5000,      5500,      5500,      5500,    -1000,    1000,     1000,      7000,      7000,     7000]
-    # yhex=  [            0,       -4,      -4,        0,         5,         5,         5,       -4,      -1,        5,         5,         5,        5]
-    # z=      [        1500,    -5000,   -5000,     -5000,    -5000,     -5000,     -5000,    -5500,   -5500,     -5500,    -5500,     -5500,     -5500]
-    # chi=    [           0,     -2.2,    -2.2,      -2.2,     -2.2,      -2.2,      -2.2,     -3.6,    -3.6,      -3.6,     -3.6,      -3.6,     -3.6]
-
-    # names = [ 'c0m4_3', 'c0m4_4','c0m4_2p1','c0m4_2p2', 'c0m4_2p3', 'c0m4_5p2',
-    #           'c0m2_3', 'c0m2_4','c0m2_2p1','c0m2_2p2', 'c0m2_2p3', 'c0m2_5p2',
-    #            'c03_3',  'c03_4', 'c03_2p1', 'c03_2p2',  'c03_2p3',  'c03_5p2', 'bkg_soft']
-    # x =     [    30600,    30600,     30600,     30600,      34600,      26600, 
-    #               3600,     3600,      3600,      3100,       7100,       -900,
-    #             -22900,   -22900,    -22900,    -24400,     -20400,     -28400, -48200]
-    # ysmar=  [    -7500,    -7000,     -1500,      5300,       5300,       5500,
-    #              -7500,    -7000,     -1500,      4300,       4300,       4300,
-    #              -7500,    -7000,     -1500,      4800,       4800,       4800, 0]
-    # yhex=   [       -4,        0,         0,         0,          0,          0,
-    #                 -4,        0,         0,         0,          0,          0,
-    #                 -4,        0,         0,         0,          0,          0,-4]
-    # z=      [     3220,     3220,      3220,      3220,       3220,       3220,
-    #               4320,     4320,      4320,      4320,       4320,       4320, 
-    #               6120,     6120,      6120,      6120,       6120,       6120, 6120]
-    # chi=    [     -1.0,     -1.0,      -1.0,      -1.0,       -1.0,       -1.0,
-    #               -1.6,     -1.6,      -1.6,      -1.6,       -1.6,       -1.6,
-    #               -1.3,     -1.3,      -1.3,      -1.3,       -1.3,       -1.3, -1.3]
-
-
-    names = ['c00_2p1']
-    x =     [    40400]
-    ysmar=  [     -500]
-    yhex=   [        0]
-    z=      [     4400]
-    chi=    [     -0.4]
-
-    xmin = 25400
-    xmax = 35400
-
-    det_exposure_time(3, 3)
-    nume = 500
-    for i in range(1):
-        for name, xs, ys, yhe, zs, chis in zip(names, x, ysmar, yhex, z, chi):
-            yield from bps.mv(piezo.z, zs,
-                              piezo.ch, chis, 
-                              piezo.x, xs,
-                              piezo.y, ys,
-                              stage.y, yhe,
-                              prs, phi_offest)
-
-            name_fmt = "{sample}_freshspot_rugo_up_sdd9p30_16.1keV"
-            sample_name = name_fmt.format(sample=name)
-            sample_id(sample_name=sample_name)
-            yield from bp.scan([pil2M], piezo.x, xmin, xmax, nume)
-
-            # yield from bps.mvr(pil2m_pos.y, 4.3)
-            # name_fmt = "{sample}_freshspot_rugo_down_sdd9p30_16.1keV"
-            # sample_name = name_fmt.format(sample=name)
-            # sample_id(sample_name=sample_name)
-            # yield from bp.scan([pil2M],  piezo.x, xmin, xmax, nume)
-
-            # yield from bps.mvr(pil2m_pos.y, -4.3)
+    # names = [ 'c00_2p1',  'c00_2p3',  'c00_2p2',  'c00_5p2',
+    #           'c03_2p1',  'c03_2p2',  'c03_2p2',  'c03_5p2',
+    #         'cm4m2_2p1','cm4m2_2p2','cm4m2_2p2','cm4m2_5p2',
+    #           'c32_2p1',  'c32_2p3',  'c32_2p2',  'c32_5p2']
+    # x =     [     39600,      39600,      43600,      47600,
+    #                8200,       8200,      12200,      16200,
+    #              -27100,     -27100,     -23100,     -19100,
+    #              -55800,     -55800,     -51800,     -47800]
+    # ysmar=  [     -7600,      -8800,      -8800,      -9000,
+    #               -6300,      -7300,      -7300,      -7300,
+    #               -7800,      -8900,      -8900,      -8900,
+    #               -7900,      -8900,      -9500,      -9500]
+    # yhex=   [         0,         -5,         -5,         -5,
+    #                   0,         -5,         -5,         -5,
+    #                   0,         -5,         -5,         -5,
+    #                   0,         -5,         -5,         -5]
+    # z=      [      9200,       9200,       9250,       9300, 
+    #                9000,       9000,       9050,       9100,
+    #                8700,       8700,       8750,       8800,
+    #                8450,       8450,       8500,       8550]
+    # chi=    [      -0.8,       -0.8,       -0.8,       -0.8,
+    #                -0.9,       -0.9,       -0.9,       -0.9, 
+    #               -1.25,      -1.25,      -1.25,      -1.25, 
+    #               -1.02,      -1.02,      -1.02,      -1.02]
 
 
-    names = ['c00_2p1']
-    x =     [    40400]
-    ysmar=  [     -300]
-    yhex=   [        0]
-    z=      [     4400]
-    chi=    [     -0.4]
+    names = [ 'c32_2p1',  'c32_2p3',  'c32_2p2',  'c32_5p2',
+             'cm10_2p1', 'cm10_2p2', 'cm10_2p2', 'cm10_5p2',
+             'c0m2_2p1', 'c0m2_2p2', 'c0m2_2p2', 'c0m2_5p2',
+             'c0m3_2p1', 'c0m3_2p3', 'c0m3_2p2', 'c0m3_5p2']
+    x =     [     40400,      40400,      44400,      48400,
+                  11500,      11500,      15500,      19500,
+                 -17700,     -17700,     -13700,      -9700,
+                 -51800,     -51800,     -47800,     -43800]
+    ysmar=  [     -7900,      -9000,      -9000,      -9000,
+                  -7800,      -8800,      -8800,      -8800,
+                  -7700,      -8900,      -8900,      -8900,
+                  -6900,      -9800,      -9800,      -9800]
+    yhex=   [         0,         -5,         -5,         -5,
+                      0,         -5,         -5,         -5,
+                      0,         -5,         -5,         -5,
+                      0,         -5,         -5,         -5]
+    z=      [      9450,       9450,       9500,       9550, 
+                   8000,       8800,       8850,       8900,
+                   8800,       8800,       8850,       8900,
+                   8550,       8550,       8600,       8650]
+    chi=    [     -1.35,      -1.35,      -1.35,      -1.35,
+                  -0.25,      -0.25,      -0.25,      -0.25, 
+                    0.7,        0.7,        0.7,        0.7, 
+                    1.5,        1.5,        1.5,        1.5]
 
-    xmin = 27900
-    xmax = 32900
-
-    det_exposure_time(3, 3)
-    nume = 500
-    for i in range(1):
-        for name, xs, ys, yhe, zs, chis in zip(names, x, ysmar, yhex, z, chi):
-            yield from bps.mv(piezo.z, zs,
-                              piezo.ch, chis, 
-                              piezo.x, xs,
-                              piezo.y, ys,
-                              stage.y, yhe,
-                              prs, phi_offest)
-
-            name_fmt = "{sample}_halffreshspot_rugo_up_sdd9p30_16.1keV"
-            sample_name = name_fmt.format(sample=name)
-            sample_id(sample_name=sample_name)
-            yield from bp.scan([pil2M],  piezo.x, xmin, xmax, nume)
-
-            # yield from bps.mvr(pil2m_pos.y, 4.3)
-            # name_fmt = "{sample}_halffreshspot_rugo_down_sdd9p30_16.1keV"
-            # sample_name = name_fmt.format(sample=name)
-            # sample_id(sample_name=sample_name)
-            # yield from bp.scan([pil2M],  piezo.x, xmin, xmax, nume)
-
-            # yield from bps.mvr(pil2m_pos.y, -4.3)
-
-
-    #move up
-    names = ['c00_2p1']
-    x =     [    40400]
-    ysmar=  [     -100]
-    yhex=   [        0]
-    z=      [     4400]
-    chi=    [     -0.4]
-
-    det_exposure_time(3, 3)
-    nume = 500
-    for i in range(1):
-        for name, xs, ys, yhe, zs, chis in zip(names, x, ysmar, yhex, z, chi):
-            yield from bps.mv(piezo.z, zs,
-                              piezo.ch, chis, 
-                              piezo.x, xs,
-                              piezo.y, ys,
-                              stage.y, yhe,
-                              prs, phi_offest)
-
-            name_fmt = "{sample}_static_rugo_up_sdd9p30_16.1keV"
-            sample_name = name_fmt.format(sample=name)
-            sample_id(sample_name=sample_name)
-            yield from bp.count([pil2M], num=nume)
-
-            # if '_2p1' in name:
-            #     yield from bps.mv(piezo.x, xs-1000)
-            # yield from bps.mvr(pil2m_pos.y, 4.3)
-            # name_fmt = "{sample}_static_rugo_down_sdd9p30_16.1keV"
-            # sample_name = name_fmt.format(sample=name)
-            # sample_id(sample_name=sample_name)
-            # yield from bp.count([pil2M], num=nume)
-            # yield from bps.mvr(pil2m_pos.y, -4.3)
-
-
-
-
-    names = [  'c01_3',  'c01_4',  'c01_2p1',  'c01_2p2',  'c01_2p3',  'c01_5p2',
-              'cm30_3', 'cm30_2p1', 'cm30_2p2', 'cm30_2p3', 'cm30_5p2']
-    x =     [     -600,    37000,      37000,       -600,       3400,      -4600,
-                -29000,   -29000,     -28400,     -24400,     -32400]
-    ysmar=  [    -7000,    -6000,          0,       6300,       6300,       6300,
-                 -7000,    -1000,       5700,       5700,       5700]
-    yhex=   [       -4,        0,          0,          0,          0,          0, 
-                    -4,        0,          0,          0,          0]
-    z=      [     4300,     4300,       4300,       4300,       4300,       4300, 
-                  3900,     3900,       3900,       3900,       3900]
-    chi=    [      0.9,      0.9,        0.9,        0.9,        0.9,        0.9, 
-                  -0.7,     -0.7,       -0.7,       -0.7,       -0.7]
+    # th = 1.0
 
     assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
-    assert len(names) == len(ysmar), f"len of y ({len(ysmar)}) is different from number of samples ({len(names)})"
-    assert len(names) == len(yhex), f"len of y ({len(yhex)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(ysmar), f"len of ysm ({len(ysmar)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(yhex), f"len of yhex ({len(yhex)}) is different from number of samples ({len(names)})"
 
     assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
-    assert len(names) == len(chi), f"len of y ({len(chi)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
     
     for i in range(1):
         for name, xs, ys, yhe, zs, chis in zip(names, x, ysmar, yhex, z, chi):
@@ -2470,18 +2377,31 @@ def cdsaxsstd_2026_1_nischal(t=1):
     #               -2.6,     -2.6,       -2.6,       -2.6,       -2.6,       -2.6,       -2.6, 
     #               -2.2,     -2.2,       -2.2,       -2.2,       -2.2,       -2.2,       -2.2]
 
-    names = [  'c01_3',  'c01_4',  'c01_2p1',  'c01_2p2',  'c01_2p3',  'c01_5p2',
-              'cm30_3', 'cm30_2p1', 'cm30_2p2', 'cm30_2p3', 'cm30_5p2']
-    x =     [     -600,    37000,      37000,       -600,       3400,      -4600,
-                -29000,   -29000,     -28400,     -24400,     -32400]
-    ysmar=  [    -7000,    -6000,          0,       6300,       6300,       6300,
-                 -7000,    -1000,       5700,       5700,       5700]
-    yhex=   [       -4,        0,          0,          0,          0,          0, 
-                    -4,        0,          0,          0,          0]
-    z=      [     4300,     4300,       4300,       4300,       4300,       4300, 
-                  3900,     3900,       3900,       3900,       3900]
-    chi=    [      0.9,      0.9,        0.9,        0.9,        0.9,        0.9, 
-                  -0.7,     -0.7,       -0.7,       -0.7,       -0.7]
+    names = [ 'c32_2p1',  'c32_2p3',  'c32_2p2',  'c32_5p2',
+             'cm10_2p1', 'cm10_2p2', 'cm10_2p2', 'cm10_5p2',
+             'c0m2_2p1', 'c0m2_2p2', 'c0m2_2p2', 'c0m2_5p2',
+             'c0m3_2p1', 'c0m3_2p3', 'c0m3_2p2', 'c0m3_5p2']
+    x =     [     40400,      40400,      44400,      48400,
+                  11500,      11500,      15500,      19500,
+                 -17700,     -17700,     -13700,      -9700,
+                 -51800,     -51800,     -47800,     -43800]
+    ysmar=  [     -7900,      -9000,      -9000,      -9000,
+                  -7800,      -8800,      -8800,      -8800,
+                  -7700,      -8900,      -8900,      -8900,
+                  -6900,      -9800,      -9800,      -9800]
+    yhex=   [         0,         -5,         -5,         -5,
+                      0,         -5,         -5,         -5,
+                      0,         -5,         -5,         -5,
+                      0,         -5,         -5,         -5]
+    z=      [      9450,       9450,       9500,       9550, 
+                   8000,       8800,       8850,       8900,
+                   8800,       8800,       8850,       8900,
+                   8550,       8550,       8600,       8650]
+    chi=    [     -1.35,      -1.35,      -1.35,      -1.35,
+                  -0.25,      -0.25,      -0.25,      -0.25, 
+                    0.7,        0.7,        0.7,        0.7, 
+                    1.5,        1.5,        1.5,        1.5]
+    # th = 1.0
     
     det_exposure_time(3, 3)
     nume = 100
@@ -2498,21 +2418,17 @@ def cdsaxsstd_2026_1_nischal(t=1):
             sample_name = name_fmt.format(sample=name)
             print(sample_name)
             sample_id(sample_name=sample_name)
-            if '_2p1' in name:
-                yield from bp.scan([pil2M],  piezo.x, xs-2500, xs+2500, nume)
-            else:
-                yield from bp.count([pil2M], num=nume)
+            yield from bp.count([pil2M], num=nume)
 
-            # yield from bps.mvr(pil2m_pos.y, 4.3)
-            # name_fmt = "{sample}_rugo_down_sdd9p30_16.1keV"
-            # sample_name = name_fmt.format(sample=name)
-            # sample_id(sample_name=sample_name)
-            # if '_2p1' in name:
-            #     yield from bp.scan([pil2M],  piezo.x, xs-2500, xs+2500, nume)
-            # else:
-            #     yield from bp.count([pil2M], num=nume)
+            yield from bps.mvr(pil2m_pos.y, 4.3)
+            name_fmt = "{sample}_rugo_down_sdd9p30_16.1keV"
+            sample_name = name_fmt.format(sample=name)
+            sample_id(sample_name=sample_name)
+            yield from bp.count([pil2M], num=nume)
     
-            # yield from bps.mvr(pil2m_pos.y, -4.3)
+            yield from bps.mvr(pil2m_pos.y, -4.3)
+
+
 
 
 

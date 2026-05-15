@@ -975,7 +975,7 @@ def align_gix_loop_samples( x_list, sample_list, inc_ang = 0.15,   ):
 
 import datetime 
 smi = SMI_Beamline()#
-def alignement_height(  ):        
+def yz_alignement_height(  ):        
     sample_id(user_name='test', sample_name='test')
     det_exposure_time(0.3, 0.3)        
     smi = SMI_Beamline()
@@ -990,7 +990,7 @@ def alignement_height(  ):
 ## From 37-Alignement
 import datetime 
 smi = SMI_Beamline()#
-def alignement_gisaxs(angle=0.15):        
+def yz_alignement_gisaxs(angle=0.15):        
     sample_id(user_name='test', sample_name='test')
     det_exposure_time(0.3, 0.3)        
     smi = SMI_Beamline()
@@ -1011,14 +1011,14 @@ def alignement_gisaxs(angle=0.15):
     yield from align_gisaxs_height(150, 21)
     yield from align_gisaxs_th(0.025, 21)        
     # Close all the matplotlib windows
-    plt.close('all')        
+    ###plt.close('all')        
     # Return angle
     yield from bps.mv(piezo.th, ps.cen - angle)
     yield from smi.modeMeasurement()
 
 
 
-def alignement_gisaxs_hex(angle=0.1, rough_y=0.5):
+def yz_alignement_gisaxs_hex(angle=0.1, rough_y=0.5):
     """
     Regular alignement routine for gisaxs and giwaxs using the hexapod. First, scan of the sample height
     and incident angle on the direct beam.

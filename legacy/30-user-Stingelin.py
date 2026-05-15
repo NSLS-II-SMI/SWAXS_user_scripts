@@ -3989,6 +3989,8 @@ def GIWAXS_2024_vacuum_NCSU2_plus_reruns3(t=1):
 
     # LThermal.temperatureRate() # reads back the current temperature
 
+    # after done, turin it off and set temp to 25
+
     
     """to set a temperature and wait until you get there you can do something like this:
     

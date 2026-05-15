@@ -500,3 +500,68 @@ def run_multiple_exposures_Das():
     yield from exsitu_swaxs_Das_2025_3(t=5)
     project_set('pw-exsitu-vac-60s')
     yield from exsitu_swaxs_Das_2025_3(t=60, y_off=150)
+
+
+def exsitu_swaxs_Das_2026_1(t=60, x_off=0, y_off=0):
+    """
+    Low divergence measurements, 9 points on each sample
+
+    """
+
+    names =   [ 'AgBH',  'S01a1',  'S01a2',  'S01b1',  'S01b2',  'S02a',  'S02b',  'S03',  'vac-bkg', ]
+    piezo_x = [ -44000,   -29400,   -29400,   -20400,   -19400,   11000,   16000,  41000,     -14000, ] 
+    piezo_y = [  -1200,    -1200,    -2000,    -1200,    -1200,   -1200,   -1200,   -800,      -1200  ]
+    piezo_z = [ 200 for n in names ]
+    stage_y = [  -10 for n in names ]
+
+    piezo_x = np.asarray(piezo_x) + x_off
+    piezo_y = np.asarray(piezo_y) + y_off
+
+
+    msg = 'Wrong number of coordinates'
+    for arr in [piezo_x, piezo_y, piezo_z, stage_y]:
+        assert len(arr) == len(names), msg
+
+    waxs_arc = [ 0, 20 ]
+    det_exposure_time(t, t)
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+
+        if wa == 20:
+            yield from mv(waxs.bs_x, -130)
+        
+        # Get xbpm3
+        #dets.append(xbpm3.sumX)
+
+        for name, x, y, z, sy in zip(names, piezo_x, piezo_y, piezo_z, stage_y):
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+                stage.y, sy,
+            )
+
+            sample_name = f'{name}_{get_scan_md()}'
+            sample_id(user_name='PW', sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+            
+            if wa == waxs_arc[0]:
+                yield from bp.count([OAV_writing])
+            
+            yield from bp.rel_grid_scan(dets, piezo.y, -300, 300, 3,  piezo.x, -400, 400, 3, 0)
+    
+
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+def run_multiple_exposures_Das_2026_1():
+    """
+    Run twice with diffent exposure time and offest in y in between
+    """
+    project_set('pw-exsitu-vac-5s')
+    yield from exsitu_swaxs_Das_2026_1(t=5)
+    project_set('pw-exsitu-vac-60s')
+    yield from exsitu_swaxs_Das_2026_1(t=60, y_off=150)

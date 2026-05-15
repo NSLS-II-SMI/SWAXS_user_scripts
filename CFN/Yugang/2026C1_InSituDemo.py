@@ -12,7 +12,7 @@ SAXS: 2M ,5 meter
 %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/YZhang_SMI_Base.py
 %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C1_EHu.py
 proposal_swap(318527)
-project_set('OGang')
+project_set('InSitu_Demo')
 
 
 sample_id(user_name='pw', sample_name=f'hscan_{get_scan_md()}')
@@ -104,11 +104,9 @@ pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  2800, -5820 ),  }
 
 username = 'DR'
 user_name = 'DR' 
-sample_dict =  {1: 'Blank1', 2: '5lank15' }
+sample_dict =  {1: '240_S', 3: 'SC_Control1' }
 ypos = 0
 pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  -29800, -5700 ),  }
-
-
 
 
 
@@ -126,12 +124,6 @@ pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  -29800, -5700 ),  }
 
 
 '''
-
-RE(measure_saxs( t=.1, sample = 'test',  user_name = 'MH'))
-
-
-
-
 for j in range( 10 ):    
     for i in range(10):
         RE(measure_saxs( t=1, sample = '240_S',  user_name = 'CL'))
@@ -146,24 +138,6 @@ for j in range( 1 ):
         movx( 260  )
     movx( -2600 )
     movy( 260  )
-
-xstep=150;
-ystep=80;
-max_x=3;
-max_y=6;
-tim=0.5;
-samname='FL_00';
-for j in range( max_x ):    
-    for i in range(max_y):
-        RE(measure_saxs( t=tim, sample = samname,  user_name = 'DR'))
-        movy( ystep  )
-    movy( -ystep*max_y )
-    movx( xstep  ) 
-movx(-max_x*xstep)   
-
-for k in [0.1,0.5,1,2,5]:
-
-    RE(measure_saxs( t=k, sample = 'Blank15',  user_name = 'DR'))
 
 '''
 

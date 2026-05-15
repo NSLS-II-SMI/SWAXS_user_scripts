@@ -12,7 +12,7 @@ SAXS: 2M ,5 meter
 %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/YZhang_SMI_Base.py
 %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C1_EHu.py
 proposal_swap(318527)
-project_set('OGang')
+project_set('InSitu')
 
 
 sample_id(user_name='pw', sample_name=f'hscan_{get_scan_md()}')
@@ -111,8 +111,6 @@ pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  -29800, -5700 ),  }
 
 
 
-
-
 # -29800, + 2600  (H)
 # -8000 + 2600
 
@@ -127,43 +125,8 @@ pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  -29800, -5700 ),  }
 
 '''
 
-RE(measure_saxs( t=.1, sample = 'test',  user_name = 'MH'))
 
 
-
-
-for j in range( 10 ):    
-    for i in range(10):
-        RE(measure_saxs( t=1, sample = '240_S',  user_name = 'CL'))
-        movx( 260  )
-    movx( -2600 )
-    movy( 260  )
-
-
-for j in range( 1 ):    
-    for i in range(10):
-        RE(measure_saxs( t=.1, sample = '240_S',  user_name = 'CL'))
-        movx( 260  )
-    movx( -2600 )
-    movy( 260  )
-
-xstep=150;
-ystep=80;
-max_x=3;
-max_y=6;
-tim=0.5;
-samname='FL_00';
-for j in range( max_x ):    
-    for i in range(max_y):
-        RE(measure_saxs( t=tim, sample = samname,  user_name = 'DR'))
-        movy( ystep  )
-    movy( -ystep*max_y )
-    movx( xstep  ) 
-movx(-max_x*xstep)   
-
-for k in [0.1,0.5,1,2,5]:
-
-    RE(measure_saxs( t=k, sample = 'Blank15',  user_name = 'DR'))
 
 '''
 
@@ -407,6 +370,7 @@ class NanoSyn( ):
         print("Collect data here....")
         #yield from bp.count(dets, num=1)
         #RE( bp.count(dets, num=1))
+        det_exposure_time(t, t) 
         RE(bp.count(  dets ))
         if take_camera:
             scan_id=RE.md["scan_id"]
@@ -417,7 +381,7 @@ class NanoSyn( ):
 
 
 
-    def run( self,  sample_name ='X', sleep_time= 5, run_time = 3600*10, extra='', verbosity=3, **md):
+    def run( self,  sample_name ='X', sleep_time= 5, t=1,  motor='piezo', run_time = 3600*10, extra='', verbosity=3, **md):
         '''
         sam = NanoSyn( sample = 'Au111125_ASP_NoThiol_RT' )
         sam.measure( sample_name = 'Au111125_ASP_NoThiol_RT' )
@@ -431,8 +395,14 @@ class NanoSyn( ):
         t0 = time.time()        
         print('Starting measurements for %.2f min.'%( run_time/60))
         I = 0
-        Dx = np.arange( -0.2, .3, .2 )
-        Dy = np.arange( -0.2, .3, .2 )
+        if motor=='piezo':    
+            x0, y0 = piezo.x.position, piezo.y.position
+            Dx = np.arange( -400, 410, 20 )
+            Dy = np.arange( -400, 410, 20  )
+        elif motor == 'mdrive'   :     
+            Dx = np.arange( -0.2, .3, .2 )
+            Dy = np.arange( -0.2, .3, .2 )
+        
         Dxy = []
         for i, dy in enumerate(Dy):
             for dx in Dx:
@@ -443,12 +413,20 @@ class NanoSyn( ):
         Dxy = np.array( Dxy )    
         N = len( Dxy )    
         while (time.time() < ( t0 + run_time) ):
-            self.measure(sample_name = sample_name )
+            self.measure(sample_name = sample_name, t=t )
             print( I )
             x, y = Dxy[ I%N ]
             print( f'Move by dx={x:.2f}, dy={y:.2f}' ) 
-            RE( bps.mvr( motorX, x ) )
-            RE( bps.mvr( motorZ, y ) )               
+
+
+            if motor=='piezo':                
+                RE( bps.mv( piezo.x, x0+x ) )
+                RE( bps.mv( piezo.y, y0+y ) )   
+
+            elif motor == 'mdrive':
+                RE( bps.mvr( motorX, x ) )
+                RE( bps.mvr( motorZ, y ) )   
+
             I+=1
             time.sleep(sleep_time)    
 

@@ -4,53 +4,33 @@ proposal: 318527
 
 
 
-20251109
+20260405
+change vaccum to air
+
+
 SAXS: 2M ,5 meter
 16.1 kev, low-divergency, in air
 
+Put Cal holder in
+AgBH around -30000, -2800, -4900
+YAG  
+
+
+
 
 %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/YZhang_SMI_Base.py
-%run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C1_EHu.py
+%run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C1_FLu.py
 proposal_swap(318527)
-project_set('OGang')
+project_set('FLu')
 
 
-sample_id(user_name='pw', sample_name=f'hscan_{get_scan_md()}')
-RE(bp.rel_scan([pil2M,pin_diode],piezo.x,-1000,1000,51))
+sample_id(user_name='test', sample_name=f'hscan_{get_scan_md()}')
+#RE(bp.rel_scan([pil2M,pin_diode],piezo.x,-1000,1000,51))
 
-
-
-
-move_waxs(0)  #the waxs beamstop should go to -54.8
-Otherwise, we need to do the following:
-1) go to the hutch, manually push the base of the WAXS beamstop to the inboard limit
-2) go to the smartAct, channel  to do home - forward
-3) open the beam, put att, check the waxs beam stop, and if needed put the beamstop - 54.8
-
-if gap messed up
-need to do 
-energy.move(16.1) 
-
-
-we need to make the waxs  to >=16, otherwise, it will block the right side of the 2M
-
-Beamstop:
-Rod: [6.8, 289, 10 ]
-2M: [0,0]
-Beam center:
-WAXS: 16 deg 
-
-
-
-'''
-
-'''
+ 
 NOTE: 
 
-For calibration holder
-M-Drive 5: X,  3: Z,   # set Z limit as 120 
-AgBH: [ 68, 101  ]
-YAG: [  52, 101  ]
+ 
 
 for reactor, 
 M-Drive 5: X,  3: Z, 
@@ -75,61 +55,74 @@ beamstop_save()
 Data Folder:
 /nsls2/data/smi/proposals/2026-1/pass-318527/projects/static/user_data/2M
 
-
+ 
+  
  
 '''
-
- 
-'''
-Data Folder:
-/nsls2/data/smi/proposals/2026-1/pass-318527/projects/OGang
-
-9 Meter
-X, Y  are [0,0] --> 2M
-saxs rod X --> 6.8 
-
- 
-'''
+username = 'FL'
+user_name =  'FL'
+sample_dict = {   1: 'AgBH'   } 
+pxy_dict = {      1:[ -31000, 0]       }
 
 
+ypos = 0 
+
+username = ''
+user_name = '' 
 
 
-username = 'CL'
-user_name = 'CL' 
-sample_dict =  {1: '240_S', 2: '240_S1_' }
+sample_dict =  {1: 'JO_S1', 2: 'JO_S2', 3: 'JO_S3', 
+                4: 'FL_20260405_S1',   5: 'FL_20260405_S3',  6: 'FL_20260405_S5', 
+                
+                7: 'FL_20260405_S6',  8: 'AS_UnkFL_20260405_S4',
+                  9:  'FL_20260405_S9',   10: 'FL_20260405_S10',  
+                    11: 'FL_20260405_S8',   12: 'FL_20260405_S7', 
+                  13: 'FL_20260405_S2',}
+
 ypos = 0
-pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  2800, -5820 ),  }
+
+pxy_dict = {   1:  (39500.0, 10322.91) ,  2: (35299.99, 8622.91), 3: (30099.98, 10422.91), 
+            4: (24599.92, 10422.91),  5:  (19499.95, 10222.91),  
+            6: (15199.94, 9622.91), 7: (10199.92, 9522.91),  8: (6200.01, 8422.89),             
+            9 : (1799.98, 9022.89) , 10: (-3600.04, 8422.89), 11: (-9700.05, 8722.89),
+            12: (-15700.06, 8122.89), 13: (-21600.05, 6422.89)
+             
+              }  
+
+ 
 
 
 
-username = 'DR'
-user_name = 'DR' 
-sample_dict =  {1: 'Blank1', 2: '5lank15' }
+
+sample_dict =  {1: 'HZ_S1_Pd1',        2: 'HZ_S2_Pd2', 
+                3: 'HZ_S3_Pd1_H2',     4: 'HZ_S4_Pd2_H2',
+                5: 'HZ_S5_Pd1H_Rel',   6: 'HZ_S6_Pd2H_Rel',
+                
+                
+                }
+
 ypos = 0
-pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  -29800, -5700 ),  }
+
+pxy_dict = {   1:  (41400.69, 7822.89),  2: (28400.58, 6822.89),             
+            3: (13400.58, 5822.89), 
+            4: (-3599.79, 5822.89), 
+              5: (-19199.79, 8622.89),  6: (-40500.05, 8622.89)
+              }  
 
 
 
+sample_dict =  {1:  'FL_Wat'}
 
+ypos = 0
 
-
-# -29800, + 2600  (H)
-# -8000 + 2600
-
-
-# username = 'OG'
-# user_name = 'OG'
-
-# sample_dict =  {1: 'AgBH' }
-# ypos = 0
-# pxy_dict = {   1:  ( -47400+500, -1600 )  }
+pxy_dict = {   1:   (21899, 10422),   
+             
+              }  
 
 
 '''
 
-RE(measure_saxs( t=.1, sample = 'test',  user_name = 'MH'))
-
-
+t0=time.time();RE(measure_multi_waxs_loop_angles());run_time(t0)   
 
 
 for j in range( 10 ):    
@@ -147,23 +140,16 @@ for j in range( 1 ):
     movx( -2600 )
     movy( 260  )
 
-xstep=150;
-ystep=80;
-max_x=3;
-max_y=6;
-tim=0.5;
-samname='FL_00';
-for j in range( max_x ):    
-    for i in range(max_y):
-        RE(measure_saxs( t=tim, sample = samname,  user_name = 'DR'))
-        movy( ystep  )
-    movy( -ystep*max_y )
-    movx( xstep  ) 
-movx(-max_x*xstep)   
 
-for k in [0.1,0.5,1,2,5]:
+for j in range( 20 ):  
+    RE(measure_saxs( t=1, sample = 'Unknown_S1',  user_name = 'CAT'))
+    movy( 120 )
 
-    RE(measure_saxs( t=k, sample = 'Blank15',  user_name = 'DR'))
+
+for j in range( 30 ):  
+    RE(measure_saxs( t=1, sample = 'Unknown_S2',  user_name = 'CAT'))
+    movy( 120 )
+
 
 '''
 

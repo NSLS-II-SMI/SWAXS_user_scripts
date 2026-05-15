@@ -344,12 +344,12 @@ def auto():
     if 1:
         # print("The best coordinate is: ", best_coord)
 
-        ##### Run a scan 
+        #### Run a scan 
         # yield from rel_grid_scan([OAV_writing, OAV2_writing, piezo, prs],
         #         prs, -60, 60, 5,
         #         piezo.x, -50, 50, 3,
         #         piezo.z, -50, 50, 3,
-        #         snake_axes=True)
+        #         # snake_axes=True)
 
 
         scan_id = -1

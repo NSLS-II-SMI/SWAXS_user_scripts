@@ -708,7 +708,8 @@ def continous_run_change_xpos_thpos(
         yield from bps.sleep(wait)
 
 
-def continous_run_prealigned_positions_2025_2(sname='20251117_op_a_echem_run', t=2, wait=100, frames=5000):
+def continous_run_prealigned_positions_2025_2(sname='20260408_op_c_ehem', t=2
+                                              , wait=100, frames=5000):
 
     """
     At each prealigned region of interest, take a finer scan across x with several
@@ -723,17 +724,18 @@ def continous_run_prealigned_positions_2025_2(sname='20251117_op_a_echem_run', t
     """
     # x_off (list of floats): offset values in um for x scans,
     # ai_off (list of floats): values of incident angles to take scans at.
-    
+
+    yield from bps.mv(waxs, 0)
     x_off  = [-100, 0, 100]
-    ai_off = [0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5]
+    ai_off = [0.05, 0.10, 0.15, 0.20, 0.30]
 
     try:
         alignment = RE.md['alignment_LUT']
     except:
         alignment =  {
-            '-2000': {'x': -2000, 'y': 7579.694, 'z': -0.423, 'th': -0.5433},
-                '0': {'x': -0.405, 'y': 7473.095, 'z': -0.438, 'th': 0.5433},
-             '2000': {'x': 2000, 'y': 7353.558, 'z': -0.438, 'th': -0.54327},
+            '-1000': {'x': -9000, 'y': 6801.6, 'z': 4600, 'th': 0.043},  
+                '0': {'x': -8000, 'y': 6789.5, 'z': 4600, 'th': 0.043},
+             '1000': {'x': -7000, 'y': 6777.5, 'z': 4600, 'th': 0.043} 
                         
         }
         RE.md['alignment_LUT'] = alignment
@@ -800,7 +802,7 @@ def continous_run_prealigned_positions_2025_2(sname='20251117_op_a_echem_run', t
 
 
 def continous_run_prealigned_positions_2025_3_swaxs(
-        sname='20260126_op_b_echem', t=2, wait=100, frames=5000, saxs_frame=10):
+        sname='20260408_aligment_test', t=2, wait=10, frames=1, saxs_frame=100000):
 
     """
     At each prealigned region of interest, take a finer scan across x with several
@@ -821,15 +823,15 @@ def continous_run_prealigned_positions_2025_3_swaxs(
     
     # for SAXS / WAXS measurement
     y_off  = [0, 10, 50, 100, ]
-    waxs_arc = [0, 20]
+    waxs_arc = [0, 5, 10, 15, 20]
 
     try:
         alignment = RE.md['alignment_LUT']
     except:
         alignment =  {
-            '-1000': {'x': -1000, 'y': 3429.8, 'z': 10200.0, 'th': 0.223},  
-                '0': {'x': 0, 'y': 3423.7, 'z': 10200.0, 'th': 0.140},
-             '1000': {'x': 1000, 'y': 3419.2, 'z': 10200.0, 'th': 0.223}        
+            '-1000': {'x': -1000, 'y': 7404.8, 'z': 4600, 'th': -0.519},  
+                '0': {'x': 0, 'y': 7396.3, 'z': 4600, 'th': -0.6},
+             '1000': {'x': 1000, 'y': 7385, 'z': 4600, 'th': -0.599}        
         }
         RE.md['alignment_LUT'] = alignment
 

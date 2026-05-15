@@ -10,12 +10,12 @@ SAXS: 2M ,5 meter
 
 
 %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/YZhang_SMI_Base.py
-%run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C1_EHu.py
+%run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C1_Tomo.py
 proposal_swap(318527)
-project_set('OGang')
+project_set('Tomo')
 
 
-sample_id(user_name='pw', sample_name=f'hscan_{get_scan_md()}')
+sample_id(user_name='test', sample_name=f'hscan_{get_scan_md()}')
 RE(bp.rel_scan([pil2M,pin_diode],piezo.x,-1000,1000,51))
 
 
@@ -39,6 +39,10 @@ Rod: [6.8, 289, 10 ]
 2M: [0,0]
 Beam center:
 WAXS: 16 deg 
+
+
+
+
 
 
 
@@ -81,15 +85,112 @@ Data Folder:
 
  
 '''
+2026/3/25, Microfocusing, 16.1, 23 * 3 um
 Data Folder:
-/nsls2/data/smi/proposals/2026-1/pass-318527/projects/OGang
+/nsls2/data/smi/proposals/2026-1/pass-318527/projects/Tomo
+change to pindiode 
+RE(pil2M.insert_beamstop('pd'))
+change to rod
+RE(pil2M.insert_beamstop('rod'))
+
 
 9 Meter
-X, Y  are [0,0] --> 2M
-saxs rod X --> 6.8 
+change from 9 meter to 5 meter
 
+SAXS det, X, Y  are [0,0] --> 2M
+#beam center: [749, 574 ]
+saxs rod X --> change from 6.8  to 7.3
+
+How to align the sample
+1) put the pin (sample) in the middle of the bar
+2) load bar to the piezo stage
+3) move px to around 0, and y around 0, z round -9000
+3.5) draw a vline as Ref 
+4) change the PRS angle from 0 to 90, change pz to the half way
+5) change 90 to 0, change px to the half way
+6) change 0 to -90, change pz to the half way
+7) Repeat several time, in the last few runs, make px and pz step as 2 micrometer
+8) until no move of the sample when change PRS from -90 to 90
+
+
+
+change from microfocusing to low div
+beam center is 
+[ 755, 567 ]
+beamstop [ 6.55, 288 ]
+
+
+
+for j in range( 10 ):    
+    for i in range(10):
+        RE(measure_saxs( t=1, sample = '240_S',  user_name = 'CL'))
+        
+    movx( -2600 )
+    movy( 260  )
+
+N = 30    
+for j in range( N ):  
+        RE(measure_waxs( t=1, sample = 'S1', waxs_angle=0,  user_name = 'CWang'))
+        RE( bps.movr( stage.y, 0.003  ) )
+    RE( bps.movr( stage.y, -0.003 * N   ) )
  
+    
+
+20260325 NGT   
+
+RE(run_tomo( -90, 91, 181, sample='FL_S3Cube_2025Q3_LargeBeam' ))
+found the beam center is not good, then change to a new center
+
+project_set('Tomo_NewCen')
+Sample 1: FL_S3Cube_2025Q3
+mov det Y to 10
+still 5 meter, 16.1 kev, low divergency
+beam center is 
+[ 757, 508 ]
+beamstop [ 6.55, 288 ]
+Sampe with angle PRS @89.3  is good
+
+RE(run_tomo( 91-5, 91+6, 50, sample='FL_S3Cube_2025Q3_LargeBeamNC_Fine' ))
+RE(run_tomo( 89.3-2, 89.3+2, 40, sample='FL_S3Cube_2025Q3_LargeBeamNC_Fine2' ))   
+RE(run_tomo( 89.3-2-90, 89.3+2-90, 40, sample='FL_S3Cube_2025Q3_LargeBeamNC_Fine3' ))  
+
+
+Second Sample:
+RE(run_tomo( -90, 91, 181, sample='FL_S1NaCl_2026Q1_LargeBeam' ))
+RE(run_tomo( -90, 91, 1801, sample='FL_S1NaCl_2026Q1_LargeBeam_Fine' ))
+
+
+
+20260327 Friday, 12:40 PM
+Third Sample:
+RE(run_tomo( -90, 91, 1801, sample='FL_S2CsCl_2026Q1_LargeBeam_Fine' ))
+RE(run_tomo( -90, 91, 181, sample='FL_S2CsCl_2026Q1_LargeBeam_Fine' ))
+
+
+20260327 Friday, 4:30 PM
+Fourth Sample:
+RE(run_tomo( -90, 91, 181, sample='FL_S2TH_2025Q3_LargeBeam' )) --> not the sample, stop
+
+RE(run_tomo( -90, 91, 181, sample='FL_S2TH_2025Q3_LargeBeamB' ))
+
+
+20260327 Friday, 6:50 PM
+Fifth Sample:
+RE(run_tomo( -90, 91, 181, sample='FL_S1TH_2025Q3_LargeBeam' )) 
+
+20260327 Friday, 8:05 PM
+Sixth Sample:
+RE(run_tomo( -90, 91, 181, sample='FL_S4TH_2025Q3_LargeBeam' )) 
+
+
 '''
+
+def yline_scan( step_size = 0.003 ):
+    N = 10    
+    for j in range( -N//2, N//2  ):  
+        RE(measure_wsaxs( t=5, sample = 'FL_S3Cube_2025Q3_E', waxs_angle=15,  user_name = 'FL'))
+        RE( bps.movr( stage.y, step_size  )  )
+    #RE( bps.movr( stage.y, -step_size * N //2  ) )
 
 
 
@@ -110,6 +211,14 @@ pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  -29800, -5700 ),  }
 
 
 
+username = 'FL'
+user_name = 'FL' 
+sample_dict =  {1: 'AgBH' }
+ypos = 0
+pxy_dict = {   1:  ( -41000 , 7000 )  }
+
+
+
 
 
 
@@ -127,43 +236,21 @@ pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  -29800, -5700 ),  }
 
 '''
 
-RE(measure_saxs( t=.1, sample = 'test',  user_name = 'MH'))
+Sample1: 
+CWang's Sample
+
+
+Sample2: 
+FL_S3Cube_2025Q3_F
+
+Sample 3:
+FL_S1NaCl_2026Q1_LargeBeam_Fine
+
+Sample 4:
+FL_S2CsCl_2026Q1_LargeBeam
 
 
 
-
-for j in range( 10 ):    
-    for i in range(10):
-        RE(measure_saxs( t=1, sample = '240_S',  user_name = 'CL'))
-        movx( 260  )
-    movx( -2600 )
-    movy( 260  )
-
-
-for j in range( 1 ):    
-    for i in range(10):
-        RE(measure_saxs( t=.1, sample = '240_S',  user_name = 'CL'))
-        movx( 260  )
-    movx( -2600 )
-    movy( 260  )
-
-xstep=150;
-ystep=80;
-max_x=3;
-max_y=6;
-tim=0.5;
-samname='FL_00';
-for j in range( max_x ):    
-    for i in range(max_y):
-        RE(measure_saxs( t=tim, sample = samname,  user_name = 'DR'))
-        movy( ystep  )
-    movy( -ystep*max_y )
-    movx( xstep  ) 
-movx(-max_x*xstep)   
-
-for k in [0.1,0.5,1,2,5]:
-
-    RE(measure_saxs( t=k, sample = 'Blank15',  user_name = 'DR'))
 
 '''
 
@@ -184,6 +271,19 @@ motorZ = MDrive.m3
 ###NOTE
 # X (MotorX): 88.4 #motor 5
 # Y (MotorZ): 77.6  #motor 3
+
+
+def run_tomo(th_ini=-90, th_fin=90, th_st=30, exp_t=1, sample='test',
+              nume=1, det=[pil2M,pil900KW] ) :
+    det_exposure_time(exp_t, exp_t*nume)
+
+    for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
+        yield from bps.mv(prs, theta)
+        name_fmt = "{sample}_5.0m_16.1keV_num{num}_{th}deg_bpm{bpm}"
+        sample_name = name_fmt.format(sample=sample, num="%2.2d"%num, th="%2.2f"%theta, bpm="%1.3f"%xbpm3.sumX.get())
+        sample_id(sample_name=sample_name)
+        print(f"\n\t=== Sample: {sample_name} ===\n")
+        yield from bp.count(det, num=1)
 
 
 
@@ -243,13 +343,20 @@ def name_sam(pos):
 ############################################################################
 #Transimission  
 
-def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=20, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False):
+def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=15, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False):
     """RE( measure_transmission_xs( sample = 'test' ) )"""
     
-    if user_name is None:        
-        user_name = RE.md["user_name"]         
-    if sample is None:        
-        sample = RE.md["sample_name"]   
+    if user_name is None:   
+        try:     
+            user_name = RE.md["user_name"]   
+        except:
+            user_name = 'test'
+
+    if sample is None:    
+        try:              
+            sample = RE.md["sample_name"]   
+        except:
+            sample = 'test'
     sample0 = sample  
     if dy:
         yield from bps.mvr(piezo.y, dy)
@@ -260,11 +367,19 @@ def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=20, att="None", dx=
         dets.append( pil2M )
     #print( 'xxx'  )  
     if 'waxs' in mode:
-        yield from bps.mv(waxs, waxs_angle)
         dets.append( pil900KW )   
-    #if '300kw' in mode:        
-    #    dets.append( pil300KW )     ???  
-    #maybe add sid  
+        yield from bps.mv(waxs, waxs_angle)  
+        # if waxs_angle >=15:
+        #     yield from bps.mv(waxs.bs_x, -108.0 )
+        #     yield from bps.mv(waxs.arc, waxs_angle)
+        # elif waxs_angle == 0:
+        #     yield from bps.mv(waxs, waxs_angle)
+        # else:
+        #     yield from bps.mv(waxs, waxs_angle)        
+        
+        
+
+
     name_fmt = "{sample}_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
     sample_name = name_fmt.format(
         sample=sample,
@@ -307,7 +422,8 @@ def measure_wsaxs( t=1, waxs_angle=20, att="None", dx=0, dy=0, user_name=None, s
     
 
 
-def measure_multi_waxs_loop_angles(  t= [1], waxs_angles=[0, 15, 20, 40   ], 
+def measure_multi_waxs_loop_angles(  t= [1], waxs_angles=[0, 15, 20 , 40  ], 
+                                   #waxs_angles=[0, 15, 20, 40   ], 
                                    dxs=[0], dys=[0], saxs_on=True ,
                                    user_name= user_name  ):
     """    
@@ -318,6 +434,7 @@ def measure_multi_waxs_loop_angles(  t= [1], waxs_angles=[0, 15, 20, 40   ],
     maxA = np.max(waxs_angles)
     take_camera = False
     for waxs_angle in waxs_angles:
+        print( f'WAXS angle is: {waxs_angle}....')
         for k in ks:
             print(k)
             yield from mov_sam_re(k)  #mov_sam_re
@@ -407,6 +524,7 @@ class NanoSyn( ):
         print("Collect data here....")
         #yield from bp.count(dets, num=1)
         #RE( bp.count(dets, num=1))
+        det_exposure_time(t, t) 
         RE(bp.count(  dets ))
         if take_camera:
             scan_id=RE.md["scan_id"]
@@ -417,7 +535,7 @@ class NanoSyn( ):
 
 
 
-    def run( self,  sample_name ='X', sleep_time= 5, run_time = 3600*10, extra='', verbosity=3, **md):
+    def run( self,  sample_name ='X', sleep_time= 5, t=1,  motor='piezo', run_time = 3600*10, extra='', verbosity=3, **md):
         '''
         sam = NanoSyn( sample = 'Au111125_ASP_NoThiol_RT' )
         sam.measure( sample_name = 'Au111125_ASP_NoThiol_RT' )
@@ -431,8 +549,14 @@ class NanoSyn( ):
         t0 = time.time()        
         print('Starting measurements for %.2f min.'%( run_time/60))
         I = 0
-        Dx = np.arange( -0.2, .3, .2 )
-        Dy = np.arange( -0.2, .3, .2 )
+        if motor=='piezo':    
+            x0, y0 = piezo.x.position, piezo.y.position
+            Dx = np.arange( -40, 41, 20 )
+            Dy = np.arange( -40, 41, 20  )
+        elif motor == 'mdrive'   :     
+            Dx = np.arange( -0.2, .3, .2 )
+            Dy = np.arange( -0.2, .3, .2 )
+        
         Dxy = []
         for i, dy in enumerate(Dy):
             for dx in Dx:
@@ -443,12 +567,20 @@ class NanoSyn( ):
         Dxy = np.array( Dxy )    
         N = len( Dxy )    
         while (time.time() < ( t0 + run_time) ):
-            self.measure(sample_name = sample_name )
+            self.measure(sample_name = sample_name, t=t )
             print( I )
             x, y = Dxy[ I%N ]
             print( f'Move by dx={x:.2f}, dy={y:.2f}' ) 
-            RE( bps.mvr( motorX, x ) )
-            RE( bps.mvr( motorZ, y ) )               
+
+
+            if motor=='piezo':                
+                RE( bps.mv( piezo.x, x0+x ) )
+                RE( bps.mv( piezo.y, y0+y ) )   
+
+            elif motor == 'mdrive':
+                RE( bps.mvr( motorX, x ) )
+                RE( bps.mvr( motorZ, y ) )   
+
             I+=1
             time.sleep(sleep_time)    
 

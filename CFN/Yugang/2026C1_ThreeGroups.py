@@ -12,7 +12,7 @@ SAXS: 2M ,5 meter
 %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/YZhang_SMI_Base.py
 %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C1_EHu.py
 proposal_swap(318527)
-project_set('OGang')
+project_set('ThreeGroups')
 
 
 sample_id(user_name='pw', sample_name=f'hscan_{get_scan_md()}')
@@ -92,21 +92,45 @@ saxs rod X --> 6.8
 '''
 
 
+ 
+username = ''
+user_name = '' 
+sample_dict =  {1: 'QWang_Cell1_S1', 2: 'QWang_Cell1_S2', 3:  'QWang_Cell1_S3', 4: 'QWang_Cell1_S4', 
+                5: 'QWang_Cell2_S1',  6: 'QWang_Cell1_S2', 7: 'QWang_Cell1_S3', 
+                 8: 'MZheng_S1', 9: 'MZheng_S2',  }
+ypos = 9000
+pxy_dict = {   1:  ( -43000, -8000  ) ,  2: ( -36500, -8000), 3: ( -30400, -8000), 4: ( -24300, -8000 ), 
+            5:  ( -11300, -8000 ),  6: (-5000,-8000), 7: (1600, -8000), 
+            8: ( 7300, -8000) , 9 : ( 14400, -8000)}
 
 
-username = 'CL'
-user_name = 'CL' 
-sample_dict =  {1: '240_S', 2: '240_S1_' }
+
+username = ''
+user_name = '' 
+sample_dict =  {1: 'CAT_Unknown_S1', 2: 'CAT_Unknown_S2', 3: 'CAT_Unknown_S3', 4: 'CAT_Unknown_S4',                              
+
+                5: 'AS_Unknown_S1',  6: 'AS_Unknown_S2', 7: 'AS_Unknown_S3',  8: 'AS_Unknown_S4',
+                  9:  'AS_Unknown_S5',   10: 'AS_Unknown_S6',    }
 ypos = 0
-pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  2800, -5820 ),  }
+pxy_dict = {   1:  ( 33100, -7700  ) ,  2: ( 27000, -7300 ), 3: ( 19900, -7000), 4: ( 13700, -6540 ), 
+            5:  ( 8100, -4100 ),  6: (1700,-4100), 7: (-5200, -4100),  8: ( -11800, -4100) ,             
+            9 : ( -17600, -6000) , 10: {  -24000, -54100}  }  
 
 
 
-username = 'DR'
-user_name = 'DR' 
-sample_dict =  {1: 'Blank1', 2: '5lank15' }
+
+username = ''
+user_name = '' 
+sample_dict =  {1: 'SY_S10_InP', 2: 'SY_S9_Cu3P', 3: 'SY_S7_Ti3C2THF', 4: 'SY_S6_Ti3C2Br2',  
+                5:   'SY_S5_Ti3C2_h_MXene',    6:   'SY_S4_Ti3C2', 7:  'SY_S3_Ti3C2Cl2',   
+                  8:  'SY_S2_CSS_Air',     9:  'SY_S1_CSS_Fresh', 
+                  10:  'Jules_S1',  11:  'Jules_S2'  , 12:  'Jules_S3' }
 ypos = 0
-pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  -29800, -5700 ),  }
+pxy_dict = {   1:  ( -36700, -3900  ) ,  2: ( -30400, -3300 ), 3: ( -23800, -5500), 4: ( -17200, -4000 ), 
+
+            5:  (-11100, -4900 ),   6: (-4300, -4300 ), 7: (1700, -4700),  8: ( 7500,-4900) ,    9 : ( 14000, -4900) , 
+             
+              10: { 21100, -7100},    11: { 27200, -5900},    12: { 33800, -6200},    }  
 
 
 
@@ -126,12 +150,6 @@ pxy_dict = {   1:  ( -28000, -6500  ) ,  2: (  -29800, -5700 ),  }
 
 
 '''
-
-RE(measure_saxs( t=.1, sample = 'test',  user_name = 'MH'))
-
-
-
-
 for j in range( 10 ):    
     for i in range(10):
         RE(measure_saxs( t=1, sample = '240_S',  user_name = 'CL'))
@@ -147,23 +165,16 @@ for j in range( 1 ):
     movx( -2600 )
     movy( 260  )
 
-xstep=150;
-ystep=80;
-max_x=3;
-max_y=6;
-tim=0.5;
-samname='FL_00';
-for j in range( max_x ):    
-    for i in range(max_y):
-        RE(measure_saxs( t=tim, sample = samname,  user_name = 'DR'))
-        movy( ystep  )
-    movy( -ystep*max_y )
-    movx( xstep  ) 
-movx(-max_x*xstep)   
 
-for k in [0.1,0.5,1,2,5]:
+for j in range( 20 ):  
+    RE(measure_saxs( t=1, sample = 'Unknown_S1',  user_name = 'CAT'))
+    movy( 120 )
 
-    RE(measure_saxs( t=k, sample = 'Blank15',  user_name = 'DR'))
+
+for j in range( 30 ):  
+    RE(measure_saxs( t=1, sample = 'Unknown_S2',  user_name = 'CAT'))
+    movy( 120 )
+
 
 '''
 
