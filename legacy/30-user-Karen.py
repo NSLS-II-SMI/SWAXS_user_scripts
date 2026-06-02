@@ -708,7 +708,7 @@ def continous_run_change_xpos_thpos(
         yield from bps.sleep(wait)
 
 
-def continous_run_prealigned_positions_2025_2(sname='20260408_op_c_ehem', t=2
+def continous_run_prealigned_positions_2025_2(sname='20260601_op_echem', t=2
                                               , wait=100, frames=5000):
 
     """
@@ -733,9 +733,9 @@ def continous_run_prealigned_positions_2025_2(sname='20260408_op_c_ehem', t=2
         alignment = RE.md['alignment_LUT']
     except:
         alignment =  {
-            '-1000': {'x': -9000, 'y': 6801.6, 'z': 4600, 'th': 0.043},  
-                '0': {'x': -8000, 'y': 6789.5, 'z': 4600, 'th': 0.043},
-             '1000': {'x': -7000, 'y': 6777.5, 'z': 4600, 'th': 0.043} 
+            '-1000': {'x': -11900, 'y': 10221.8, 'z': 7400, 'th': 0.239},  
+                '0': {'x': -12900, 'y': 10225.2, 'z': 7400, 'th': 0.099},
+            '+1000': {'x': -13900, 'y': 10230.9, 'z': 7400, 'th': 0.3499} 
                         
         }
         RE.md['alignment_LUT'] = alignment
@@ -802,7 +802,7 @@ def continous_run_prealigned_positions_2025_2(sname='20260408_op_c_ehem', t=2
 
 
 def continous_run_prealigned_positions_2025_3_swaxs(
-        sname='20260408_aligment_test', t=2, wait=10, frames=1, saxs_frame=100000):
+        sname='20260601_exp_a_test2', t=2, wait=10, frames=2, saxs_frame=100000):
 
     """
     At each prealigned region of interest, take a finer scan across x with several
@@ -823,15 +823,15 @@ def continous_run_prealigned_positions_2025_3_swaxs(
     
     # for SAXS / WAXS measurement
     y_off  = [0, 10, 50, 100, ]
-    waxs_arc = [0, 5, 10, 15, 20]
+    waxs_arc = [0]
 
     try:
         alignment = RE.md['alignment_LUT']
     except:
         alignment =  {
-            '-1000': {'x': -1000, 'y': 7404.8, 'z': 4600, 'th': -0.519},  
-                '0': {'x': 0, 'y': 7396.3, 'z': 4600, 'th': -0.6},
-             '1000': {'x': 1000, 'y': 7385, 'z': 4600, 'th': -0.599}        
+            '-1000': {'x': -15000, 'y': 9994.3, 'z': 7400, 'th': 0.094},  
+                '0': {'x': -14000, 'y': 9972.3, 'z': 7400, 'th': 0.094}
+                   
         }
         RE.md['alignment_LUT'] = alignment
 
