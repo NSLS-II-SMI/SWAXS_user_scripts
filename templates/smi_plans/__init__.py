@@ -45,9 +45,10 @@ from ._samples import Sample, SampleList  # noqa: F401  (pure python, always saf
 # The device-dependent modules import bluesky lazily; importing the package outside the
 # beamline env should still expose the sample model without exploding.
 try:  # pragma: no cover
-    from . import _preprocessors, _core  # noqa: F401
+    from . import _preprocessors, _core, _compose  # noqa: F401
 except Exception:  # pragma: no cover
     _preprocessors = None
     _core = None
+    _compose = None
 
-__all__ = ["Sample", "SampleList", "_preprocessors", "_core"]
+__all__ = ["Sample", "SampleList", "_preprocessors", "_core", "_compose"]

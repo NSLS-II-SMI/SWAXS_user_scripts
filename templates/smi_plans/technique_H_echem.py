@@ -19,6 +19,16 @@ The legacy form bakes the applied potential into the filename as a **hand-typed 
 potential (and current, if available) as devices in the stream instead, and makes each
 potential ladder / operando hold ONE run.
 
+**This file is a PRESET RECIPE built on the composition layer (``_compose``).**  Applied
+potential is just one (medium-speed) scan axis: :func:`potential_step_run` assembles a
+potential :class:`_compose.ScanAxis` (driven by the caller-supplied ``set_potential`` plan),
+:func:`operando_kinetics_run` assembles an inner time axis at a held bias, and
+:func:`doping_state_run` assembles a (named-state) axis -- each nested inside ONE
+:func:`_compose.acquire` per sample.  The potential concern is independent and freely
+combinable with others (energy, incidence, spatial, time); to mix them, assemble the axes
+directly -- see ``recipes_combined.py`` (e.g. ``operando_echem_energy``, which composes
+:func:`_compose.potential_axis` with :func:`_compose.energy_axis`) and the README.
+
 Gold / legacy reference: ``legacy/30-user-Meli.py`` (operando + ``amptek`` fluorescence,
 ``K_edge_timescan``), ``legacy/30-user-Karen.py`` (operando ``continous_run_*`` with
 ``frames=5000`` time loops), ``legacy/30-user-Richter.py`` (gate-bias mV ladders; FeCl3 /
@@ -62,6 +72,7 @@ import time
 
 from ._samples import SampleList
 from ._core import (one_sample_run, goto_sample, saxs_waxs_dets, fname, merge_md)
+from ._compose import acquire, nest_axes, ScanAxis, SPEED_MEDIUM, SPEED_FAST
 from ._preprocessors import (ensure_in_wrapper, cleanup_wrapper, baseline_wrapper,
                              fresh_spot_wrapper)
 
@@ -176,26 +187,57 @@ def potential_step_run(name, potentials, *, set_potential, potential_readback=No
     det_exposure_time(t, t)                                      # noqa: F821
     sample_name = fname(name, *name_tokens)
 
-    def _measure():
-        for v in potentials:
-            yield from set_potential(v)
-            potential_v.put(float(v))
-            if equilibration:
-                yield from bps.sleep(equilibration)
-            if measure is not None:
-                yield from measure(v, potential_v)
-            else:
-                for _ in range(int(measure_at_v)):
-                    yield from potential_point(dets, reads, potential_v,
-                                               readback=potential_readback, settle=settle)
+    # POTENTIAL is the scan axis (medium speed): its `move` reuses the caller-supplied
+    # ``set_potential`` plan, records the *commanded* V on the file's own ``potential_v`` Signal
+    # (so {potential_v} resolves and the same Signal is handed to a custom ``measure``), and
+    # equilibrates.  The measured ``potential_readback`` (if given) is recorded each event.
+    def _set(v):
+        yield from set_potential(v)
+        potential_v.put(float(v))
+        if equilibration:
+            yield from bps.sleep(equilibration)
 
-    plan = one_sample_run(_measure, dets, sample_name=sample_name,
-                          scan_name="potential_step", geometry=geometry,
-                          md=md, baseline=base)
+    v_reads = [potential_readback] if potential_readback is not None else []
+
+    def _setup():
+        if atten_in is not None:
+            yield from atten_in()
+
+    if measure is not None:
+        # SPECIAL CASE: a caller-supplied custom inner that records its OWN events (e.g. a
+        # NEXAFS energy sweep at each potential).  :func:`_compose.acquire` always appends one
+        # ``trigger_and_read``, so we nest the potential axis directly over the custom
+        # ``measure`` via the same composition primitives, keeping the exact legacy behavior.
+        cur = {"v": None}
+
+        def _set_track(v):
+            yield from _set(v)
+            cur["v"] = v
+
+        v_axis_meas = ScanAxis("potential", list(potentials), move=_set_track,
+                               record=potential_v, reads=v_reads, speed=SPEED_MEDIUM)
+
+        def _body():
+            if atten_in is not None:
+                yield from atten_in()
+            yield from nest_axes([v_axis_meas], lambda: measure(cur["v"], potential_v))
+
+        plan = one_sample_run(_body, dets, sample_name=sample_name,
+                              scan_name="potential_step", geometry=geometry,
+                              md=md, baseline=base)
+    else:
+        # DEFAULT: take ``measure_at_v`` events at each equilibrated potential -- an inner frame
+        # axis (no frame token) carrying the per-event ``settle``.
+        v_axis = ScanAxis("potential", list(potentials), move=_set, record=potential_v,
+                          reads=v_reads, speed=SPEED_MEDIUM)
+        frames = ScanAxis("frame", list(range(int(measure_at_v))), record=None,
+                          settle=settle, speed=SPEED_FAST)
+        plan = acquire(name, dets, [v_axis, frames], reads=reads, setup=_setup,
+                       geometry=geometry, scan_name="potential_step", md=md, baseline=base,
+                       name_tokens=list(name_tokens), check_order=False)
+
     if dose_motor is not None and dose_step is not None:
         plan = fresh_spot_wrapper(plan, dose_motor, dose_step)
-    if atten_in is not None:
-        plan = ensure_in_wrapper(plan, atten_in)
     return (yield from plan)
 
 
@@ -256,29 +298,45 @@ def operando_kinetics_run(name, hold_potential, *, set_potential, potential_read
         pass
 
     det_exposure_time(t, t)                                      # noqa: F821
-    sample_name = fname(name, *name_tokens)
 
-    def _measure():
+    # The scan axis is TIME: a custom :class:`_compose.ScanAxis` over the (clamped) frame
+    # indices, holding ``hold_potential`` for the whole series.  Its `move` paces the run (the
+    # inter-frame ``period`` sleep precedes each frame after the first, matching the legacy
+    # "measure then sleep(period)" order) and stamps the frame index; `per_point` stamps the
+    # elapsed time just before the event.  ``potential_v`` (constant), ``potential_readback``
+    # (if given), ``elapsed`` and ``frame_index`` are recorded each event.
+    clk = {}
+    extra_reads = [potential_v, elapsed, frame_index]
+    if potential_readback is not None:
+        extra_reads.append(potential_readback)
+
+    def _frame(i):
+        if i > 0:
+            yield from bps.sleep(period)
+        frame_index.put(int(i))
+
+    def _stamp():
+        elapsed.put(time.monotonic() - clk["t0"])
+        yield from bps.null()
+
+    time_kinetics_axis = ScanAxis("time", list(range(n_frames)), move=_frame,
+                                  record=None, per_point=_stamp,
+                                  reads=extra_reads, speed=SPEED_FAST)
+
+    def _setup():
+        if atten_in is not None:
+            yield from atten_in()
         yield from set_potential(hold_potential)
         potential_v.put(float(hold_potential))
         if equilibration:
             yield from bps.sleep(equilibration)
-        t0 = time.monotonic()
-        for i in range(n_frames):
-            frame_index.put(i)
-            yield from potential_point(dets, reads + [frame_index], potential_v,
-                                       readback=potential_readback,
-                                       elapsed_sig=elapsed, t0=t0)
-            if i < n_frames - 1:
-                yield from bps.sleep(period)
+        clk["t0"] = time.monotonic()
 
-    plan = one_sample_run(_measure, dets, sample_name=sample_name,
-                          scan_name="operando_kinetics", geometry=geometry,
-                          md=md, baseline=base)
+    plan = acquire(name, dets, [time_kinetics_axis], reads=reads, setup=_setup,
+                   geometry=geometry, scan_name="operando_kinetics", md=md, baseline=base,
+                   name_tokens=list(name_tokens), check_order=False)
     if dose_motor is not None and dose_step is not None:
         plan = fresh_spot_wrapper(plan, dose_motor, dose_step)
-    if atten_in is not None:
-        plan = ensure_in_wrapper(plan, atten_in)
     return (yield from plan)
 
 
@@ -336,25 +394,52 @@ def doping_state_run(name, states, *, apply, measure_per_state=1, t=1.0, dets=No
     det_exposure_time(t, t)                                      # noqa: F821
     sample_name = fname(name, *name_tokens)
 
-    def _measure():
-        for st in states:
-            yield from apply(st)
-            dope_state.put(st)
-            if equilibration:
-                yield from bps.sleep(equilibration)
-            if measure is not None:
-                yield from measure(st, dope_state)
-            else:
-                for _ in range(int(measure_per_state)):
-                    yield from potential_point(dets, reads, dope_state, settle=settle)
+    # The scan axis is the (named) DOPING STATE: its `move` reuses the caller-supplied
+    # ``apply`` plan and the axis records the state *label* onto ``dope_state`` (the value may
+    # be a string, so {dope_state} resolves directly to the label) and equilibrates.
+    def _apply(st):
+        yield from apply(st)
+        if equilibration:
+            yield from bps.sleep(equilibration)
 
-    plan = one_sample_run(_measure, dets, sample_name=sample_name,
-                          scan_name="doping_state_series", geometry=geometry,
-                          md=md, baseline=base)
+    def _setup():
+        if atten_in is not None:
+            yield from atten_in()
+
+    if measure is not None:
+        # SPECIAL CASE: a caller-supplied custom inner that records its OWN events (e.g. NEXAFS
+        # at each state).  As elsewhere, nest the state axis directly over the custom ``measure``
+        # via the composition primitives (acquire would append an extra trigger_and_read).
+        cur = {"st": None}
+
+        def _apply_track(st):
+            yield from _apply(st)
+            cur["st"] = st
+
+        state_axis_meas = ScanAxis("dope_state", list(states), move=_apply_track,
+                                   record=dope_state, speed=SPEED_MEDIUM)
+
+        def _body():
+            if atten_in is not None:
+                yield from atten_in()
+            yield from nest_axes([state_axis_meas], lambda: measure(cur["st"], dope_state))
+
+        plan = one_sample_run(_body, dets, sample_name=sample_name,
+                              scan_name="doping_state_series", geometry=geometry,
+                              md=md, baseline=base)
+    else:
+        # DEFAULT: take ``measure_per_state`` events at each state -- an inner frame axis (no
+        # frame token) carrying the per-event ``settle``.
+        state_axis = ScanAxis("dope_state", list(states), move=_apply, record=dope_state,
+                              speed=SPEED_MEDIUM)
+        frames = ScanAxis("frame", list(range(int(measure_per_state))), record=None,
+                          settle=settle, speed=SPEED_FAST)
+        plan = acquire(name, dets, [state_axis, frames], reads=reads, setup=_setup,
+                       geometry=geometry, scan_name="doping_state_series", md=md, baseline=base,
+                       name_tokens=list(name_tokens), check_order=False)
+
     if dose_motor is not None and dose_step is not None:
         plan = fresh_spot_wrapper(plan, dose_motor, dose_step)
-    if atten_in is not None:
-        plan = ensure_in_wrapper(plan, atten_in)
     return (yield from plan)
 
 

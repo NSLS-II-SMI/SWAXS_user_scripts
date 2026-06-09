@@ -96,6 +96,21 @@ the axis the best-practices effort is trying to move the corpus along.
 These are the high-level intents. Counts are approximate "files where this is a primary
 mode"; many files span several.
 
+> **These archetypes are overlapping concern-bundles, NOT exclusive categories.** The labels
+> A–O are a vocabulary for *understanding demand*, not a set of bins each experiment falls into.
+> In practice most real scripts are **combinations** — e.g. "tender energy (A) + grazing (B) +
+> temperature ramp (C) + microraster (D)" is one common experiment, not four. Treat each
+> archetype below as one *concern* (a beam/q choice, an apparatus, or a scan dimension) that
+> composes with the others.
+>
+> The acquisition tooling reflects this: `templates/smi_plans/_compose.py` exposes each concern
+> as a stackable **scan axis** (`energy_axis`, `temperature_axis`, `incidence_axis`,
+> `spatial_grid_axes`, `potential_axis`, `rh_axis`, `time_axis`, `manual_axis`), and an
+> experiment is assembled by nesting the axes you need (see
+> `smi_plans/recipes_combined.py`). The `technique_*` files are **presets** for the common
+> single-concern cases. So as you read A–O, map each to "an axis / a setup step", and remember
+> the real value is in combining them.
+
 ### A. Tender-energy resonant scattering & NEXAFS (TReXS / edge scanning) — **most common**
 - **Intent:** energy sweep across an absorption edge while collecting scattering and/or
   fluorescence-yield, in grazing or transmission geometry. Resonant/anomalous SAXS/WAXS.
@@ -230,6 +245,19 @@ mode"; many files span several.
   (`attenuation_testing.py`), mirror bounce-down (`bounce_down_mirror.py`), microfocus GUI
   templates (`microlistscan.py`), the Oleg utility files (`33/34/35-oleg`), `new_ivu_gap`
   undulator commissioning.
+
+### P. Manual / interactive steps — **a cross-cutting concern, not a technique**
+- **Intent:** steps the beamline cannot automate that must still be part of the experiment and
+  its provenance: swap a sample bar by hand, dial a hot stage manually, start a pump, or read a
+  prep-sheet value and type it in.
+- **Hallmarks (legacy):** these were handled outside Bluesky entirely — a `print()` + bare
+  `input()`, or the value typed into a filename string / lost as a comment. The user-entered
+  value rarely made it into the data.
+- **Target:** prompt via `bps.input_plan` (RunEngine-driven, pause/resume-safe) and **record the
+  entered value as a Signal** (baseline if constant, stream if it varies). Composable as a setup
+  step or a scan axis: `smi_plans/_compose.py::manual_step`/`manual_value`/`manual_axis`/
+  `manual_loop`/`pause_for_user`; worked example in
+  `smi_plans/recipes_combined.py::giwaxs_manual_swap_bar`.
 
 ---
 

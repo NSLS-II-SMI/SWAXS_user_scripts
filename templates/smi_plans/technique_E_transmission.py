@@ -11,6 +11,13 @@ quantitative transmission from a beamstop diode.  The legacy form computes trans
 result into the filename; here we instead **record ``pin_diode`` (and ``xbpm``) in the primary
 stream** and leave the transmission ratio to be computed in analysis from recorded data.
 
+**This file is a PRESET RECIPE built on the composition layer (``_compose``).**  The multi-spot
+capillary average is just a (fast) spatial sampling concern: :func:`transmission_run` assembles
+the serpentine dither as :func:`_compose.spatial_grid_axes` (slow dither axis outer, fast dither
+axis inner) nested inside ONE :func:`_compose.acquire` per sample.  The spatial concern is
+independent and freely combinable with others (energy, temperature, incidence); to mix them,
+assemble the axes directly -- see ``recipes_combined.py`` and the README.
+
 Gold reference: UVA ``Cai`` ``capillary_transmission_saxs.py`` (multi-spot capillary averaging,
 direct-beam / sample transmission), ``templates/tranmission.py`` ``multi_transmission`` (the
 serpentine x/y dither), Telles / Quan / Foster / Liu-Akron (quantitative T).
@@ -43,7 +50,8 @@ reach-back, no value baked into a filename string.
 """
 
 from ._samples import SampleList
-from ._core import (one_sample_run, goto_sample, saxs_waxs_dets, fname, merge_md)
+from ._core import (goto_sample, saxs_waxs_dets, merge_md)
+from ._compose import acquire, spatial_grid_axes
 from ._preprocessors import (fresh_spot_wrapper, ensure_in_wrapper, cleanup_wrapper)
 
 try:
@@ -172,34 +180,47 @@ def transmission_run(name, *, t=1.0, dets=None, reads=None, geometry="transmissi
             baseline = []
 
     det_exposure_time(t, t)                                           # noqa: F821
-    sample_name = fname(name, *name_tokens)
-    offsets = _spot_offsets(points_slow, points_fast, d_slow, d_fast, snake=snake)
 
     # Record the dither origin so absolute spot positions reconstruct from origin + piezo read.
     x0 = slow_axis.position
     y0 = fast_axis.position
 
-    def _measure():
+    # The multi-spot dither as compose axes: slow dither axis OUTER, fast dither axis INNER,
+    # serpentined when `snake` -- this is exactly the legacy `_spot_offsets` serpentine raster
+    # (slow varies outer, fast varies inner) re-expressed declaratively, over absolute
+    # positions origin + i*step.  `record=False`: the parent ``piezo`` in `reads` already
+    # records the dithered spot position (its sub-axes), so we keep the recorded fields
+    # identical to the hand-rolled form rather than adding separate piezo.x/piezo.y reads.
+    x_vals = [x0 + ix * d_slow for ix in range(int(points_slow))]
+    y_vals = [y0 + iy * d_fast for iy in range(int(points_fast))]
+    axes = spatial_grid_axes(x_motor=slow_axis, x=x_vals,
+                             y_motor=fast_axis, y=y_vals, snake=snake, record=False)
+    # `settle` is applied just before each event -> put it on the innermost (fast) axis.
+    if settle and axes:
+        axes[-1].settle = settle
+
+    def _setup():
         try:
             yield from bps.mv(pin_diode.averaging_time, t)           # noqa: F821
         except Exception:
-            pass
-        for (off_slow, off_fast) in offsets:
-            yield from bps.mv(slow_axis, x0 + off_slow,
-                              fast_axis, y0 + off_fast)
-            yield from transmission_point(dets, reads, settle=settle)
-        # Return the dither axes to the sample origin.
-        yield from bps.mv(slow_axis, x0, fast_axis, y0)
+            yield from bps.null()
+        if atten_in is not None:
+            yield from atten_in()
 
-    plan = one_sample_run(_measure, dets, sample_name=sample_name,
-                          scan_name="transmission", geometry=geometry,
-                          md=md, baseline=baseline)
+    plan = acquire(name, dets, axes, reads=reads, setup=_setup,
+                   geometry=geometry, scan_name="transmission",
+                   md=md, baseline=baseline, name_tokens=list(name_tokens),
+                   check_order=False)
 
     if dose_step is not None:
         plan = fresh_spot_wrapper(plan, fast_axis, dose_step)
-    if atten_in is not None:
-        plan = ensure_in_wrapper(plan, atten_in)
-    return (yield from plan)
+
+    def _with_return():
+        yield from plan
+        # Return the dither axes to the sample origin (hardware hygiene; no event recorded).
+        yield from bps.mv(slow_axis, x0, fast_axis, y0)
+
+    return (yield from _with_return())
 
 
 # ---------------------------------------------------------------------------

@@ -11,6 +11,14 @@ timeout*, then bakes the read-back temperature into the filename.  The moderniza
 equilibration choreography but **records temperature as a device in the run** and templates the
 filename from that recorded field.
 
+**This file is a PRESET RECIPE built on the composition layer (``_compose``).**  Temperature
+is just one (slow, outermost) scan axis: :func:`temperature_ramp_run` assembles a temperature
+:class:`_compose.ScanAxis` (driven by the preserved :func:`goto_temperature` equilibration) and
+:func:`isothermal_kinetics_run` assembles a :func:`_compose.time_axis`, each nested inside ONE
+:func:`_compose.acquire` per sample.  The temperature concern is independent and freely
+combinable with others (energy, incidence, spatial); to mix them, assemble the axes directly --
+see ``recipes_combined.py`` (e.g. ``giwaxs_tempramp_energy_5loc``) and the README.
+
 Gold reference: UVA ``Cai`` 2026 plans + ``legacy/30-Harward.py`` / ``legacy/30-user-Reven.py``.
 The "best" legacy detail (Harvard 2026_1, Cai ``run_swaxs_Cai_2026_1``) records
 ``ls.input_A_celsius`` as a *detector* in the scan -- exactly the device-in-stream form below.
@@ -41,7 +49,8 @@ hook, fresh-spot dose walking, ensure-attenuators-in, baseline capture of the se
 """
 
 from ._samples import SampleList
-from ._core import (one_sample_run, goto_sample, saxs_waxs_dets, fname, merge_md)
+from ._core import (goto_sample, saxs_waxs_dets, merge_md)
+from ._compose import acquire, ScanAxis, SPEED_SLOW
 from ._preprocessors import (fresh_spot_wrapper, ensure_in_wrapper, cleanup_wrapper)
 
 try:
@@ -99,6 +108,16 @@ class Heater(object):
     def read_value(self):
         """Current temperature (controller native units) for the convergence test."""
         return self._read_value()
+
+    def sync_readback(self):
+        """Mirror the controller reading onto the recordable ``readback`` Signal if needed.
+
+        For Lakeshore the read-back is already an ophyd device that updates itself; for the
+        Linkam wrapper we mirror ``LThermal.temperature()`` onto the artificial Signal so the
+        recorded value matches the convergence test.  Safe to call before each event.  (Also
+        available as the module-level :func:`_sync_readback` for back-compat.)
+        """
+        _sync_readback(self)
 
 
 def lakeshore_heater(*, kelvin_setpoint=True, celsius_readback=True):
@@ -326,29 +345,49 @@ def temperature_ramp_run(name, heater, setpoints, *, t=1.0, dets=None, reads=Non
         name_tokens = (t_token + "degC", "bpm{xbpm2_sumX}")
 
     det_exposure_time(t, t)                                            # noqa: F821
-    sample_name = fname(name, *name_tokens)
 
-    def _measure():
+    # TEMPERATURE is the (only) scan axis: SLOW, so outermost.  Built as a ScanAxis whose
+    # `move` reuses the preserved :func:`goto_temperature` equilibration (index-aware soak so a
+    # there-and-back ramp gives the longer `first_soak` only to the *first* setpoint), and
+    # whose `per_point` reproduces :func:`temperature_point`'s pre-read sequence (optional
+    # re-align, settle, sync the recordable read-back) just before the event.  `heater.readback`
+    # is recorded each event via the axis `reads` so the measured T lands in the stream.
+    counter = {"i": 0}
+
+    def _goto(sp):
+        i = counter["i"]
+        counter["i"] += 1
+        this_soak = first_soak if i == 0 else soak
+        yield from goto_temperature(heater, sp, tol=tol, poll=poll,
+                                    timeout=timeout, soak=this_soak)
+
+    def _per_point():
+        if align is not None:
+            yield from align()
+        if settle:
+            yield from bps.sleep(settle)
+        _sync_readback(heater)
+        yield from bps.null()
+
+    t_axis = ScanAxis("temperature", list(setpoints), move=_goto,
+                      record=None, per_point=_per_point, reads=[heater.readback],
+                      speed=SPEED_SLOW)
+
+    def _setup():
         try:
             yield from bps.mv(pin_diode.averaging_time, t)            # noqa: F821
         except Exception:
-            pass
-        for i, sp in enumerate(setpoints):                            # TEMPERATURE outermost
-            this_soak = first_soak if i == 0 else soak
-            yield from goto_temperature(heater, sp, tol=tol, poll=poll,
-                                        timeout=timeout, soak=this_soak)
-            if align is not None:
-                yield from align()
-            yield from temperature_point(dets, reads, heater, settle=settle)
+            yield from bps.null()
+        if atten_in is not None:
+            yield from atten_in()
 
-    plan = one_sample_run(_measure, dets, sample_name=sample_name,
-                          scan_name="temperature_ramp", geometry=geometry,
-                          md=md, baseline=baseline)
+    plan = acquire(name, dets, [t_axis], reads=reads, setup=_setup,
+                   geometry=geometry, scan_name="temperature_ramp",
+                   md=md, baseline=baseline, name_tokens=list(name_tokens),
+                   check_order=False)
 
     if dose_motor is not None and dose_step is not None:
         plan = fresh_spot_wrapper(plan, dose_motor, dose_step)
-    if atten_in is not None:
-        plan = ensure_in_wrapper(plan, atten_in)
     return (yield from plan)
 
 
@@ -404,33 +443,55 @@ def isothermal_kinetics_run(name, heater, setpoint, *, n_frames=60, period=10.0,
         name_tokens = (t_token + "degC", "t{kinetics_elapsed_s_value}s")
 
     det_exposure_time(t, t)                                            # noqa: F821
-    sample_name = fname(name, *name_tokens)
 
-    def _measure():
+    # The scan axis is TIME: a custom time :class:`_compose.ScanAxis` reproducing the original
+    # frame pacing exactly -- spacing consecutive frame *starts* by ~`period` (accounting for
+    # the time a frame itself takes, and with no trailing wait after the final frame), and
+    # recording wall-clock elapsed seconds on the `elapsed` Signal.  `heater.readback` and
+    # `elapsed` are recorded each event so {kinetics_elapsed_s_value} resolves.  Equilibration
+    # at the hold setpoint happens once, in `setup`, before the first frame.
+    clk = {}
+
+    def _frame(i):
+        # Runs just before each event; pace relative to the previous frame's start.
+        now = time.time()
+        if i == 0:
+            clk["t0"] = now
+            clk["fs"] = now
+        else:
+            remaining = period - (now - clk["fs"])
+            if remaining > 0:
+                yield from bps.sleep(remaining)
+            clk["fs"] = time.time()
+        elapsed.put(round(clk["fs"] - clk["t0"], 3))
+
+    def _per_point():
+        if settle:
+            yield from bps.sleep(settle)
+        _sync_readback(heater)
+        yield from bps.null()
+
+    time_kinetics_axis = ScanAxis("time", list(range(int(n_frames))), move=_frame,
+                                  record=None, per_point=_per_point,
+                                  reads=[heater.readback, elapsed], speed=SPEED_SLOW)
+
+    def _setup():
         try:
             yield from bps.mv(pin_diode.averaging_time, t)            # noqa: F821
         except Exception:
-            pass
+            yield from bps.null()
+        if atten_in is not None:
+            yield from atten_in()
         yield from goto_temperature(heater, setpoint, tol=tol, poll=poll,
                                     timeout=timeout, soak=soak)
-        t0 = time.time()
-        for i in range(int(n_frames)):
-            frame_start = time.time()
-            elapsed.put(round(frame_start - t0, 3))
-            yield from temperature_point(dets, reads + [elapsed], heater, settle=settle)
-            # Pace the loop to ~period, accounting for the time the frame itself took.
-            remaining = period - (time.time() - frame_start)
-            if i < int(n_frames) - 1 and remaining > 0:
-                yield from bps.sleep(remaining)
 
-    plan = one_sample_run(_measure, dets, sample_name=sample_name,
-                          scan_name="isothermal_kinetics", geometry=geometry,
-                          md=md, baseline=baseline)
+    plan = acquire(name, dets, [time_kinetics_axis], reads=reads, setup=_setup,
+                   geometry=geometry, scan_name="isothermal_kinetics",
+                   md=md, baseline=baseline, name_tokens=list(name_tokens),
+                   check_order=False)
 
     if dose_motor is not None and dose_step is not None:
         plan = fresh_spot_wrapper(plan, dose_motor, dose_step)
-    if atten_in is not None:
-        plan = ensure_in_wrapper(plan, atten_in)
     return (yield from plan)
 
 

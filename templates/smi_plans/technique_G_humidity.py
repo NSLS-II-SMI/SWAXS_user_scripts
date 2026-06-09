@@ -20,6 +20,15 @@ recorded as an ``rh`` ``Signal`` (set from ``readHumidity()`` just before each e
 ``{rh}`` is a filename token resolved from the recorded stream, while the *setpoint* (and the
 dry/wet flow setpoints) go in the baseline as constants for that run.
 
+**This file is a PRESET RECIPE built on the composition layer (``_compose``).**  Relative
+humidity is just one (slow, outermost) scan axis: each ``*_run`` below assembles an RH
+:class:`_compose.ScanAxis` whose ``move`` reuses this file's own :func:`set_rh` MFC ramp +
+equilibration, then nests an inner sampling axis (a per-setpoint frame count, or a swelling
+time series) inside ONE :func:`_compose.acquire` per sample.  The humidity concern is
+independent and freely combinable with others (energy, incidence, spatial, time); to mix them,
+assemble the axes directly -- see ``recipes_combined.py`` (e.g. ``transmission_rh_kinetics``,
+which composes :func:`_compose.rh_axis` with :func:`_compose.time_axis`) and the README.
+
 Gold / legacy reference: ``legacy/30-user-Richter.py::SVA_night_12_02`` (dry/wet flow program +
 40-min equilibration + Cl-edge measurement), ``legacy/30-user-ETsai.py::run_gi_humid`` and
 ``legacy/30-user-Jones.py::run_gi_humid`` (per-frame ``readHumidity`` into the name),
@@ -64,6 +73,7 @@ import time
 
 from ._samples import SampleList
 from ._core import (one_sample_run, goto_sample, saxs_waxs_dets, fname, merge_md)
+from ._compose import acquire, nest_axes, ScanAxis, SPEED_SLOW, SPEED_FAST
 from ._preprocessors import (ensure_in_wrapper, cleanup_wrapper, baseline_wrapper,
                              fresh_spot_wrapper)
 
@@ -241,25 +251,66 @@ def rh_step_series_run(name, rh_setpoints, *, measure_at_rh=1, t=1.0, dets=None,
     base = base + [rh_setpoint]                                 # setpoint travels in baseline
 
     det_exposure_time(t, t)                                      # noqa: F821
-    sample_name = fname(name, *name_tokens)
 
-    def _measure():
-        for sp in rh_setpoints:
-            yield from set_rh(sp, tol=equilibration_tol, timeout=equilibration_timeout)
-            rh_setpoint.put(float(sp))
-            if measure is not None:
-                yield from measure(sp, rh)
-            else:
-                for _ in range(int(measure_at_rh)):
-                    yield from rh_point(dets, reads + [rh_setpoint], rh, settle=settle)
+    # RH is the (outer, SLOW) scan axis: its `move` reuses this file's own :func:`set_rh` MFC
+    # ramp + equilibration and records the *commanded* setpoint (the `rh_setpoint` Signal, also
+    # carried in the baseline as a constant).  The live RH is stamped fresh from
+    # ``readHumidity()`` just before each event by the inner axis (reproducing :func:`rh_point`).
+    def _set(sp):
+        yield from set_rh(sp, tol=equilibration_tol, timeout=equilibration_timeout)
+        rh_setpoint.put(float(sp))
 
-    plan = one_sample_run(_measure, dets, sample_name=sample_name,
-                          scan_name="rh_step_series", geometry=geometry,
-                          md=md, baseline=base)
+    rh_axis_local = ScanAxis("rh", list(rh_setpoints), move=_set, record=rh_setpoint,
+                             speed=SPEED_SLOW)
+
+    def _stamp_live_rh():
+        # Refresh the recorded live-RH Signal from the controller just before each event so the
+        # *recorded* humidity (not a string) drives {rh}.  This is :func:`rh_point`'s pre-read.
+        try:
+            rh.put(float(readHumidity(verbosity=0)))             # noqa: F821
+        except Exception:
+            pass                                                 # keep last value on a glitch
+        yield from bps.null()
+
+    def _setup():
+        if atten_in is not None:
+            yield from atten_in()
+
+    if measure is not None:
+        # SPECIAL CASE: a caller-supplied custom inner that records its OWN events (e.g. a
+        # NEXAFS energy sweep at each RH).  :func:`_compose.acquire` always appends one
+        # ``trigger_and_read``, so we instead nest the RH axis directly over the custom
+        # ``measure`` via the same composition primitives (ScanAxis + nest_axes inside
+        # one_sample_run), keeping the exact legacy behavior.
+        cur = {"sp": None}
+
+        def _set_track(sp):
+            yield from _set(sp)
+            cur["sp"] = sp
+
+        rh_axis_meas = ScanAxis("rh", list(rh_setpoints), move=_set_track,
+                                record=rh_setpoint, reads=[rh], speed=SPEED_SLOW)
+
+        def _body():
+            if atten_in is not None:
+                yield from atten_in()
+            yield from nest_axes([rh_axis_meas], lambda: measure(cur["sp"], rh))
+
+        plan = one_sample_run(_body, dets, sample_name=fname(name, *name_tokens),
+                              scan_name="rh_step_series", geometry=geometry,
+                              md=md, baseline=base)
+    else:
+        # DEFAULT: take ``measure_at_rh`` events at each equilibrated setpoint -- an inner
+        # frame axis (no frame token recorded) whose per-point stamps the live RH.
+        frames = ScanAxis("frame", list(range(int(measure_at_rh))), record=None,
+                          per_point=_stamp_live_rh, reads=[rh], settle=settle,
+                          speed=SPEED_FAST)
+        plan = acquire(name, dets, [rh_axis_local, frames], reads=reads, setup=_setup,
+                       geometry=geometry, scan_name="rh_step_series", md=md, baseline=base,
+                       name_tokens=list(name_tokens), check_order=False)
+
     if dose_motor is not None and dose_step is not None:
         plan = fresh_spot_wrapper(plan, dose_motor, dose_step)
-    if atten_in is not None:
-        plan = ensure_in_wrapper(plan, atten_in)
     return (yield from plan)
 
 
@@ -321,34 +372,79 @@ def rh_swelling_kinetics_run(name, target_rh, *, n_frames=None, duration=None, p
     det_exposure_time(t, t)                                      # noqa: F821
     sample_name = fname(name, *name_tokens)
 
-    def _measure():
+    # Equilibrate (or, for ramp_during, just start the flows without waiting) ONCE before the
+    # time series -- placed in `setup` so it runs inside the run, after open, before frame 0.
+    def _setup():
+        if atten_in is not None:
+            yield from atten_in()
         if ramp_during:
             # Start the flows, do not wait -- capture the swelling transient as RH rises.
             yield from set_rh(target_rh, tol=equilibration_tol, timeout=0.0)
         else:
             yield from set_rh(target_rh, tol=equilibration_tol, timeout=equilibration_timeout)
-        t0 = time.monotonic()
-        i = 0
-        while True:
-            if duration is not None and (time.monotonic() - t0) >= duration:
-                break
-            if n_frames is not None and i >= n_frames:
-                break
-            frame_index.put(i)
-            yield from rh_point(dets, reads + [rh_setpoint, frame_index], rh,
-                                elapsed_sig=elapsed, t0=t0)
-            i += 1
-            if n_frames is not None and i >= n_frames:
-                break
-            yield from bps.sleep(period)
 
-    plan = one_sample_run(_measure, dets, sample_name=sample_name,
-                          scan_name="rh_swelling_kinetics", geometry=geometry,
-                          md=md, baseline=base)
+    clk = {}
+
+    def _stamp():
+        # live RH + elapsed are stamped fresh just before each event (reproducing rh_point):
+        try:
+            rh.put(float(readHumidity(verbosity=0)))             # noqa: F821
+        except Exception:
+            pass
+        elapsed.put(time.monotonic() - clk["t0"])
+        yield from bps.null()
+
+    if n_frames is not None:
+        # FIXED-COUNT: the scan axis is TIME -- a custom :class:`_compose.ScanAxis` over the
+        # frame indices.  Its `move` paces the series (the inter-frame ``period`` sleep precedes
+        # each frame after the first, matching the legacy "measure then sleep(period)" order)
+        # and stamps the frame index; `per_point` stamps the live RH + elapsed time just before
+        # the event.  `rh`, `elapsed` and `frame_index` are recorded each event.
+        def _frame(i):
+            if "t0" not in clk:
+                clk["t0"] = time.monotonic()
+            if i > 0:
+                yield from bps.sleep(period)
+            frame_index.put(int(i))
+
+        time_kinetics_axis = ScanAxis("time", list(range(int(n_frames))), move=_frame,
+                                      record=None, per_point=_stamp,
+                                      reads=[rh, elapsed, frame_index], speed=SPEED_FAST)
+
+        def _setup_clk():
+            yield from _setup()
+            clk["t0"] = time.monotonic()
+
+        plan = acquire(name, dets, [time_kinetics_axis], reads=reads, setup=_setup_clk,
+                       geometry=geometry, scan_name="rh_swelling_kinetics", md=md,
+                       baseline=base, name_tokens=list(name_tokens), check_order=False)
+    else:
+        # SPECIAL CASE: ``duration``-bounded (open-ended) series -- the frame count is unknown,
+        # so a fixed-value ScanAxis does not fit.  Drive it with the same composition envelope
+        # (:func:`_core.one_sample_run`) and an open-ended frame loop that stamps live RH +
+        # elapsed and paces by ``period`` -- behaviorally identical to the legacy while-loop.
+        def _body():
+            yield from _setup()
+            clk["t0"] = time.monotonic()
+            i = 0
+            while (time.monotonic() - clk["t0"]) < duration:
+                frame_index.put(i)
+                try:
+                    rh.put(float(readHumidity(verbosity=0)))     # noqa: F821
+                except Exception:
+                    pass
+                elapsed.put(time.monotonic() - clk["t0"])
+                yield from bps.trigger_and_read(
+                    list(dets) + list(reads) + [rh_setpoint, frame_index, rh, elapsed])
+                i += 1
+                yield from bps.sleep(period)
+
+        plan = one_sample_run(_body, dets, sample_name=sample_name,
+                              scan_name="rh_swelling_kinetics", geometry=geometry,
+                              md=md, baseline=base)
+
     if dose_motor is not None and dose_step is not None:
         plan = fresh_spot_wrapper(plan, dose_motor, dose_step)
-    if atten_in is not None:
-        plan = ensure_in_wrapper(plan, atten_in)
     return (yield from plan)
 
 

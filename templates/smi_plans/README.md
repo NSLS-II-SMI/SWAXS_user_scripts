@@ -1,59 +1,98 @@
-# smi_plans — modern SMI-SWAXS acquisition templates
+# smi_plans — modular, composable SMI-SWAXS acquisition
 
-A modular, GUI-ready library of Bluesky data-acquisition plan templates for the NSLS-II
-SMI-SWAXS beamline. This is the **target style** for new user scripts and the reference for
+A library for building SMI-SWAXS Bluesky experiments by **composing concerns**, plus a set of
+ready-made presets. This is the **target style** for new user scripts and the reference for
 migrating legacy ones.
 
 It is the practical, runnable counterpart to the analysis in `../_analysis/`:
-- `../_analysis/USE_CASE_TAXONOMY.md` — the A–O use-case archetypes (what users do).
+- `../_analysis/USE_CASE_TAXONOMY.md` — the use-case archetypes seen across the corpus.
 - `../_analysis/BEST_PRACTICES_DRAFT.md` — the 10 tenets these templates implement.
 
 ---
 
-## TL;DR
+## How to think about an experiment (the composition model)
+
+A real SMI experiment is **not** "one of A–O". It is an assembly of independent concerns,
+exactly the way you plan a beamtime:
+
+1. **Beam / q-range** — which energ(ies)? which detectors + WAXS-arc positions (the q reach)?
+2. **Apparatus / geometry** — transmission or grazing? Linkam/Lakeshore? RH cell? e-chem?
+3. **Sampling / scanning** — a single spot, 5 locations, a grid, a phi rock, a temperature
+   ramp, an energy sweep — usually *several of these nested together*.
+4. **Manual / interactive** — "swap the bar and type the thickness", "I set T=35 °C, confirm",
+   "wait until I start the pump" — captured as recorded values, not lost prose.
+5. **What to record** — the detectors + context Signals captured at every point.
+
+`smi_plans._compose` lets you express this directly: a **measurement core** wrapped by a
+**stack of scan axes** you nest in any order. The `technique_*` files are *presets* assembled
+from these same pieces — and a GUI assembles them on the fly.
 
 ```python
-# In the beamline IPython session (where bps, piezo, energy, pil2M ... are defined):
-import sys; sys.path.append('/home/xf12id/SWAXS_user_scripts/templates')
-from smi_plans import SampleList
-from smi_plans import technique_A_energy_edge as A
+from smi_plans._compose import (acquire, energy_axis, temperature_axis,
+                                 incidence_axis, motor_axis)
+from smi_plans.technique_C_temperature import linkam_heater
 
-bar = SampleList.from_columns(
-    names=["P3HT_undoped", "P3HT_topdope"],
-    piezo_x=[-56000, -45000], piezo_y=[4000, 4000],
-    md={"project_name": "311234_Demo"},
-)
-energies = A.energy_grid(2822)                 # fine near the Cl K-edge
-RE(A.nexafs_bar(bar, energies, t=1.0, flux_signal=xbpm2.sumX, flux_threshold=50))
+# Beam/q: SAXS+WAXS; geometry: grazing (align in setup); scanning: T -> arc -> ai -> energy -> x
+heater = linkam_heater()
+th0 = piezo.th.position
+axes = [
+    temperature_axis(heater, [30, 60, 90]),                 # slow  -> outermost
+    motor_axis("arc", waxs, [0, 20], speed=2),              # slow, in-vacuum
+    incidence_axis(piezo.th, th0, [0.10, 0.20]),
+    energy_axis(np.linspace(2470, 2490, 41),                # DCM energy sweep
+                flux_signal=xbpm2.sumX, flux_threshold=50),
+    motor_axis("x", piezo.x, [0, 30, 60, 90, 120], speed=0),  # 5 fresh spots -> innermost
+]
+RE(acquire("PS40nm", [pil2M, pil900KW, xbpm2, xbpm3], axes,
+           reads=[energy, waxs], setup=lambda: alignement_gisaxs_hex(0.1),
+           geometry="reflection", scan_name="giwaxs_Tramp_NEXAFS_5loc",
+           md={"project_name": "311234"}))
 ```
 
-That single call produces **one Bluesky run per sample**, records `energy`, `xbpm2/3`,
-`pin_diode` in the stream, names files from those recorded fields, walks to a fresh spot each
-frame, and re-seeks the beam if I0 drops — with no `sample_id`, no per-point runs, no `.get()`
-strings.
+That single call is **one Bluesky run** for the whole sample experiment: temperature is moved
+3×, the in-vacuum arc 6×, and every moved/changed quantity is recorded so the filename can
+reference any of it — with no `sample_id`, no per-point runs, no `.get()` strings. Swap, drop,
+reorder, or add axes (a `manual_step`, an `rh_axis`, a `potential_axis`) to get a different
+experiment. See `recipes_combined.py` for fully-worked combinations.
+
+> Axis order is **yours to choose**, but `acquire` warns (does not block) if you nest a slow
+> axis inside a faster one (i.e. move it more often than necessary). Slow/in-vacuum axes
+> (`waxs.arc`, `prs`, temperature) belong outermost.
+
+### Presets for the common single-concern cases
+
+When you just want the standard thing, the `technique_*` presets pre-assemble it:
+
+```python
+from smi_plans import SampleList, technique_A_energy_edge as A
+bar = SampleList.from_columns(names=["s1", "s2"], piezo_x=[-56000, -45000], piezo_y=[4000, 4000])
+RE(A.nexafs_bar(bar, A.energy_grid(2822), t=1.0, flux_signal=xbpm2.sumX, flux_threshold=50))
+```
 
 ---
 
 ## Why this exists (the 10 tenets, enforced)
 
-Every template obeys these (see `BEST_PRACTICES_DRAFT.md` for the full rationale + the legacy
-anti-patterns each replaces):
+Every template — composed or preset — obeys these (see `BEST_PRACTICES_DRAFT.md` for rationale
++ the legacy anti-patterns each replaces):
 
 1. **One run per logical sample** (or interleaved runs for slow-axis economy) — never one run
    per data point.
 2. **Context is recorded as devices/Signals** in the primary stream (or baseline if constant)
-   — never read with `.get()`/`.position` into a filename.
+   — never read with `.get()`/`.position` into a filename. *This includes values the user
+   types* (a manual step puts them on a recorded Signal).
 3. **Filenames are templated from recorded fields** (`{energy_energy}`, `{xbpm2_sumX}`, …)
    via `fname()` — never hand-formatted strings.
 4. **Intent travels in `md={}`** — never `sample_id(...)` / `RE.md` mutation.
 5. **Plans are generators end-to-end** — never `RE()` inside a plan, never `cam.acquire.put`
-   + busy-wait.
-6. **Slow / in-vacuum axes move sparingly** (`waxs.arc`, `prs` outermost; interleaved runs
-   when needed).
+   + busy-wait. (User prompts use `bps.input_plan`, which the RunEngine drives.)
+6. **Slow / in-vacuum axes move sparingly** (`waxs.arc`, `prs`, temperature outermost;
+   interleaved runs when needed). The composition layer's guardrail enforces this culturally.
 7. **Hard-won physics idioms are preserved** (fresh-spot, beam-loss re-seek, ensure-in,
-   baseline) — via reusable preprocessors, not copy-paste.
+   baseline) — via reusable preprocessors + axis hooks, not copy-paste.
 8. **Sample tables live outside plan bodies** — in a `SampleList`.
-9–10. **Shared infrastructure is centralized** in `_core` / `_preprocessors` / `_samples`.
+9–10. **Shared infrastructure is centralized** in `_compose` / `_core` / `_preprocessors` /
+   `_samples`.
 
 ---
 
@@ -61,12 +100,37 @@ anti-patterns each replaces):
 
 ```
 smi_plans/
-├── __init__.py            Package API: exposes Sample, SampleList, _core, _preprocessors.
+├── __init__.py            Package API: exposes Sample, SampleList, _compose, _core, _preprocessors.
 ├── _samples.py            Sample / SampleList  (PURE PYTHON — safe to import in a GUI).
 ├── _preprocessors.py      Opt-in plan-mutating decorators (the reusable idioms).
 ├── _core.py               Run-shaping primitives (one_sample_run, multi_sample_run, …).
-└── technique_<A–O>_*.py   One file per use-case archetype; clean composable plans + examples.
+├── _compose.py            ★ The composition layer: ScanAxis + axis builders + acquire().
+├── recipes_combined.py    ★ Worked CROSS-CONCERN examples + a GUI-style spec→axes bridge.
+└── technique_<A–O>_*.py   PRESET RECIPES — one per concern-bundle; assembled from _compose.
 ```
+
+### `_compose.py` — the composition layer (start here)
+- `ScanAxis(name, values, move=…/device=…, record=…, settle=…, per_point=…, speed=…)` — one
+  loop dimension: the values, how to *visit* each, and what Signal to *record*.
+- `acquire(name, dets, axes, *, reads, setup, geometry, scan_name, md, baseline, …)` — compose
+  ONE run for ONE sample = `setup` + nested `axes` + `trigger_and_read`, filename auto-built
+  from what the axes record, with the ordering guardrail.
+- `acquire_bar(samples, dets, axes_for, …)` — one run per sample on a `SampleList`.
+- Ready-made axes: `energy_axis`, `temperature_axis`, `incidence_axis`, `motor_axis`
+  (arc/prs/piezo), `spatial_grid_axes` (single/line/grid), `potential_axis`, `rh_axis`,
+  `time_axis`.
+- Manual / interactive: `manual_step` / `manual_value` (collect a hand-set value into a
+  recorded Signal), `manual_axis` (user-driven enumerated loop), `manual_loop` (open-ended
+  "keep going until I stop"), `pause_for_user`.
+- `nest_axes`, `SPEED_SLOW/MEDIUM/FAST`.
+
+### `recipes_combined.py` — worked cross-concern experiments
+- `giwaxs_tempramp_energy_5loc` — grazing + temperature + tender energy + incidence + microraster.
+- `transmission_rh_kinetics` — RH program × time-series.
+- `operando_echem_energy` — applied potential × energy sweep.
+- `giwaxs_manual_swap_bar` — open-ended user-paced bar (manual swaps + typed thickness).
+- `build_axes_from_spec(spec, context)` — turn a declarative axis list (from a GUI/JSON) into a
+  nested `ScanAxis` stack. **This is the GUI ↔ plans bridge.**
 
 ### `_samples.py` — the sample data model (pure Python, GUI-safe)
 - `Sample(name, piezo_x=…, piezo_y=…, …, hexa_x=…, …, incident_angles=[…], md={…})`
@@ -106,61 +170,93 @@ at specific message types and stay inside the document model.
 
 ---
 
-## The technique files (A–O)
+## The preset recipes (A–O) — concern-bundles, not exclusive categories
 
-Each file: a module docstring (archetype + gold/legacy reference), composable plan functions,
-and runnable `example()`s. First arg of a `*_run` plan is the sample's human `name` (string);
-`*_bar` plans take a `SampleList`.
+These files are **presets**: the common single-concern (or common-combination) cases,
+pre-assembled from the composition layer so you can call one function for the standard thing.
+They are **not** a taxonomy you must classify your experiment into — most real experiments
+combine several of these concerns, which is what `_compose` / `recipes_combined` are for. Each
+preset's "main axis" is named in the last column; combine it with others by dropping to
+`acquire(...)`.
 
-| File | Archetype | Key plans |
-|---|---|---|
-| `technique_A_energy_edge.py` | Tender/NEXAFS edge sweeps | `energy_grid`, `nexafs_run`, `nexafs_bar` |
-| `technique_B_grazing.py` | GISAXS/GIWAXS + alignment | `giwaxs_run`, `giwaxs_bar`, `giwaxs_bar_arc_economy` |
-| `technique_C_temperature.py` | Temperature ramp / anneal / melt | `lakeshore_heater`, `linkam_heater`, `temperature_ramp_run`, `isothermal_kinetics_run`, `temperature_bar` |
-| `technique_D_mapping.py` | Microfocus raster mapping | `map_line_run`, `map_grid_run`, `map_spiral_run`, `map_grid_manual_run`, `map_bar` |
-| `technique_E_transmission.py` | Transmission SAXS/WAXS, capillaries | `transmission_run`, `transmission_bar` |
-| `technique_F_kinetics.py` | In-situ time-series (flow, tensile, drying) | `time_series_run`, `kinetics_run`, `blade_coating_run`, `time_series_bar` |
-| `technique_G_humidity.py` | RH / solvent-vapor annealing | `set_rh`, `rh_step_series_run`, `rh_swelling_kinetics_run` |
-| `technique_H_echem.py` | Electrochemistry / operando doping | `potential_step_run`, `operando_kinetics_run`, `doping_state_run` |
-| `technique_I_cdsaxs.py` | CD-SAXS grating metrology | `cdsaxs_rock_run`, `cd_gisaxs_rock_run`, `cdsaxs_pitch_survey`, `cdsaxs_ystitch_run`, `cdsaxs_bar` |
-| `technique_J_xrr.py` | X-ray reflectivity (incl. tender, liquid) | `xrr_run`, `xrr_resonant_run`, `xrr_liquid_run`, `xrr_bar` |
-| `technique_K_tomography.py` | SAXS/WAXS tomography & texture | `tomography_run`, `texture_pole_figure_run`, `tomography_bar` |
-| `technique_L_printing.py` | In-situ 3D-printing (external master) | `printer_triggered_run`, `print_crystallization_followup_run` |
-| `technique_M_autonomous.py` | Closed-loop / ML / agent-driven | `measure_for_agent`, `autonomous_loop`, `align_loop`, `ask_tell_loop` |
-| `technique_N_xpcs.py` | XPCS / coherent speckle bursts | `xpcs_burst_run`, `xpcs_resonant_burst_run`, `xpcs_bar` |
-| `technique_O_commissioning.py` | Staff calibration / commissioning | `agbh_calibration_run`, `attenuator_ladder_run`, `direct_beam_scan_run` |
+Each file: a module docstring (concern + gold/legacy reference), plan functions, and runnable
+`example()`s. First arg of a `*_run` plan is the sample's human `name` (string); `*_bar` plans
+take a `SampleList`.
 
-Three files implement **special, explicitly-flagged run shapes** (see open question #6 in the
-best-practices draft):
+| File | Concern | Main scan axis | Key plans |
+|---|---|---|---|
+| `technique_A_energy_edge.py` | Tender/NEXAFS edge | `energy_axis` | `energy_grid`, `nexafs_run`, `nexafs_bar` |
+| `technique_B_grazing.py` | GISAXS/GIWAXS + alignment | `incidence_axis` + arc | `giwaxs_run`, `giwaxs_bar`, `giwaxs_bar_arc_economy` |
+| `technique_C_temperature.py` | Temperature ramp/anneal/melt | `temperature_axis` | `lakeshore_heater`, `linkam_heater`, `temperature_ramp_run`, `isothermal_kinetics_run`, `temperature_bar` |
+| `technique_D_mapping.py` | Microfocus raster | `spatial_grid_axes` | `map_line_run`, `map_grid_run`, `map_spiral_run`, `map_grid_manual_run`, `map_bar` |
+| `technique_E_transmission.py` | Transmission SAXS/WAXS | (geometry + spatial) | `transmission_run`, `transmission_bar` |
+| `technique_F_kinetics.py` | In-situ time-series | `time_axis` | `time_series_run`, `kinetics_run`, `blade_coating_run`, `time_series_bar` |
+| `technique_G_humidity.py` | RH / solvent-vapor anneal | `rh_axis` | `set_rh`, `rh_step_series_run`, `rh_swelling_kinetics_run` |
+| `technique_H_echem.py` | Electrochemistry / operando | `potential_axis` | `potential_step_run`, `operando_kinetics_run`, `doping_state_run` |
+| `technique_I_cdsaxs.py` | CD-SAXS grating metrology | `prs` rock (`motor_axis`) | `cdsaxs_rock_run`, `cd_gisaxs_rock_run`, `cdsaxs_pitch_survey`, `cdsaxs_ystitch_run`, `cdsaxs_bar` |
+| `technique_J_xrr.py` | X-ray reflectivity | `incidence_axis` | `xrr_run`, `xrr_resonant_run`, `xrr_liquid_run`, `xrr_bar` |
+| `technique_K_tomography.py` | Tomography & texture | `prs` rotation (`motor_axis`) | `tomography_run`, `texture_pole_figure_run`, `tomography_bar` |
+| `technique_L_printing.py` | In-situ 3D-printing | external trigger (monitoring run) | `printer_triggered_run`, `print_crystallization_followup_run` |
+| `technique_M_autonomous.py` | Closed-loop / ML / agent | controller loop (not an axis) | `measure_for_agent`, `autonomous_loop`, `align_loop`, `ask_tell_loop` |
+| `technique_N_xpcs.py` | XPCS / speckle bursts | configured burst | `xpcs_burst_run`, `xpcs_resonant_burst_run`, `xpcs_bar` |
+| `technique_O_commissioning.py` | Staff calibration | (various) | `agbh_calibration_run`, `attenuator_ladder_run`, `direct_beam_scan_run` |
+
+> **Combining presets:** to e.g. run a NEXAFS energy sweep *at each temperature in grazing*,
+> you don't call three preset functions in sequence (that would make three runs); you build one
+> axis stack (`temperature_axis` + `incidence_axis` + `energy_axis`) and `acquire(...)` it as
+> ONE run. `recipes_combined.py` has these worked out. The presets exist for when one concern
+> dominates; `_compose` exists for everything else.
+
+Three concerns are **not** plain nested-axis scans and keep their own run shape (see open
+question #6 in the best-practices draft):
 - **`technique_L_printing.py`** — an "external-master monitoring run": one long-lived run that
   records a frame each time the *printer* fires (EPICS trigger bit), polled via a generator
   (`bps.sleep`), never a busy-wait.
 - **`technique_M_autonomous.py`** — the decision loop is a plain Python function that is the
   **one sanctioned place** `RE(...)` is called; all acquisition still goes through proper
-  single-run plans, results read back from the broker. This is the *opposite* of the Tenet-7
-  anti-pattern (`RE()` inside a plan).
-- **`technique_N_xpcs.py`** — high-frame-rate capture done by configuring `cam.num_images` +
-  a staged `trigger_and_read` so documents are emitted (fixes the legacy `cam.acquire.put` +
+  single-run plans (it can call `acquire`/`measure_for_agent`), results read back from the
+  broker. This is the *opposite* of the Tenet-7 anti-pattern (`RE()` inside a plan).
+- **`technique_N_xpcs.py`** — high-frame-rate capture by configuring `cam.num_images` + a
+  staged `trigger_and_read` so documents are emitted (fixes the legacy `cam.acquire.put` +
   busy-wait + `/ramdisk/` that recorded nothing).
 
 ---
 
-## How to author a new technique (recipe)
+## How to build an experiment (composition-first)
 
-1. Define `SampleList` inputs in an `example()` (never hard-code tables in the plan body).
-2. Write an inner `_measure()` closure that yields `bps.mv(...)` and ends each data point with
-   `yield from bps.trigger_and_read(dets + [context signals])`. Put **everything you want
-   recorded or in the filename** into that read list (including small
-   `Signal(name="...", value=...)` objects you `.put()` each frame).
-3. Build the filename template with `fname(name, "{energy_energy}eV", "ai{incident_angle}", …)`.
-4. Wrap with `one_sample_run(_measure, dets, sample_name=…, scan_name=…, geometry=…, md=…,
-   baseline=[constants])`. For slow-axis economy across a bar, use `multi_sample_run` instead.
-5. Layer opt-in idioms (`fresh_spot_wrapper`, `beam_loss_reseek_wrapper`, `ensure_in_wrapper`)
-   as needed — innermost effect first.
-6. Provide a `*_bar(samples, …)` that loops the run over a `SampleList`.
+For a bespoke experiment (the common case), assemble axes — don't write a monolith:
 
-Copy `technique_A_energy_edge.py` (simplest) or `technique_B_grazing.py` (alignment +
-arc-economy) as your starting point.
+1. **Beam / q:** choose `dets` (e.g. `saxs_waxs_dets()` or an explicit list) and the `reads`
+   you always want recorded (e.g. `[energy, waxs, xbpm2, xbpm3]`).
+2. **Apparatus / geometry:** write a `setup` plan run once per run (align, heater on, atten in,
+   beamstop). Its moves are recorded.
+3. **Sampling / scanning:** build a list of axes (`temperature_axis`, `motor_axis("arc", …)`,
+   `incidence_axis`, `energy_axis`, `spatial_grid_axes`, `time_axis`, …) **outermost first**
+   (slow/in-vacuum first).
+4. **Manual / interactive (if any):** add `manual_step(...)` in `setup` to capture a hand-set
+   value, a `manual_axis(...)` for a user-stepped dimension, or wrap the whole thing in
+   `manual_loop(...)` for an open-ended user-paced bar. Typed values land on recorded Signals.
+5. `acquire(name, dets, axes, reads=…, setup=…, geometry=…, scan_name=…, md=…, baseline=…)`.
+   The filename is auto-built from what the axes record; the order guardrail warns if a slow
+   axis is nested too deep.
+6. For a bar, loop with `acquire_bar(samples, dets, axes_for, …)` (one run/sample) or use
+   `multi_sample_run` for slow-axis economy across the whole bar.
+
+Copy a function from `recipes_combined.py` and edit it. To add a brand-new *kind* of axis
+(some apparatus we don't have yet), construct a `ScanAxis` directly: give it `values`, a
+`move=` plan (how to reach a value) and a `record=` Signal (what to log).
+
+### Authoring a new PRESET (when one concern recurs)
+
+If a single concern keeps coming up, wrap the composition in a preset like the `technique_*`
+files do: build the relevant axis (e.g. `energy_axis`) inside a function and call `acquire`.
+`technique_A_energy_edge.py` is the reference for "preset = a thin recipe over `_compose`".
+
+### Special run shapes (not nested-axis scans)
+
+For an external-master monitoring run (printing), a closed-loop controller (autonomous), or a
+configured detector burst (XPCS), you bypass `acquire` and use `one_sample_run` (or the
+controller pattern) directly — see `technique_L/M/N`. These still obey all the tenets.
 
 ---
 
@@ -178,6 +274,36 @@ mechanism proven by the gold reference `nist/richter/Cl_nexafs.py`.
 
 > Confirm with beamline staff the exact supported token set for your deployment (this is open
 > question #1 in the best-practices draft).
+
+---
+
+## Manual / interactive steps (asking the user, capturing what they say)
+
+Many experiments need a human in the loop: swap a sample bar, dial a hot stage by hand, start a
+pump, or read a value off a prep sheet. These are first-class, composable, and — crucially —
+the value the user types is **recorded as a Signal** (Tenet 2), not lost or baked into a name.
+
+All prompts go through `bps.input_plan` (RunEngine-driven, so pause/resume still works) — never
+a raw `input()`.
+
+- **A hand-set value as run context** — put it in `setup` + `baseline`:
+  ```python
+  thickness = Signal(name="thickness_nm", value=0.0)
+  acquire("S1", dets, axes,
+          setup=lambda: manual_step("Load S1; read the prep sheet", signals=[thickness]),
+          baseline=[thickness])              # -> recorded; usable as {thickness_nm}
+  ```
+- **A user-stepped scan dimension** (e.g. temperatures you dial by hand) — a `manual_axis`:
+  ```python
+  axes = [manual_axis("temp_manual", "Dial the hot stage to", values=[35, 50, 65]),
+          energy_axis(energies)]             # T (manual, outer) x energy (inner), ONE run/T-block
+  ```
+- **An open-ended, user-paced bar** ("keep loading samples until I stop") — `manual_loop`
+  wraps the per-sample plan; see `recipes_combined.giwaxs_manual_swap_bar`.
+- **Just wait** — `pause_for_user("Start the pump, then <enter>")`.
+
+Put manual steps **outermost** (they are the slowest thing in any experiment); the guardrail
+treats them as slow by default.
 
 ---
 

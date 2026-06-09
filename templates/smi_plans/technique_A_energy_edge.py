@@ -7,21 +7,26 @@ Archetype A -- Tender-energy resonant scattering & NEXAFS (TReXS / edge scanning
 Sweep the DCM energy across an absorption edge while collecting scattering (SAXS/WAXS) and/or
 transmitted flux, in transmission or grazing geometry.  This is the most common SMI mode.
 
-Gold reference: ``nist/richter/Cl_nexafs.py`` -- the single cleanest Tier-4 file.  Every
-NEXAFS sweep below is ONE run whose filename is templated from *recorded* fields
-(``{energy_energy}``, ``{xbpm2_sumX}``, ``{pin_diode_current2_mean_value}``), not ``.get()``
-strings.
+**This file is a PRESET RECIPE built on the composition layer (``_compose``).**  "Energy
+sweep" is just one scan axis (:func:`_compose.energy_axis`); this file pre-assembles it with a
+sensible energy grid + I0 re-seek + fresh-spot for the common NEXAFS case.  To *combine* an
+energy sweep with other concerns (temperature, incidence, spatial, manual steps), compose the
+axes directly with :func:`_compose.acquire` -- see ``recipes_combined.py`` and the README.
+
+Gold reference: ``nist/richter/Cl_nexafs.py`` -- the cleanest Tier-4 file.  Every NEXAFS sweep
+below is ONE run whose filename is templated from *recorded* fields (``{energy_energy}``,
+``{xbpm2_sumX}``, ...), not ``.get()`` strings.
 
 What this file gives you
 ------------------------
 * :func:`energy_grid` -- build a fine-near-edge / coarse-wings energy array.
-* :func:`nexafs_point` -- the inner per-energy measurement (one event per energy).
-* :func:`nexafs_run` -- ONE run: up (and optional down) energy sweep on a single sample.
+* :func:`nexafs_run` -- ONE run: up (and optional down) energy sweep on a single sample,
+  assembled from an :func:`_compose.energy_axis`.
 * :func:`nexafs_bar` -- loop :func:`nexafs_run` over a :class:`SampleList` (one run/sample).
 * :func:`example` -- a runnable, fully-specified example.
 
-Idioms preserved (via _preprocessors): beam-loss re-seek, fresh-spot dose walking, ensure
-attenuators in, baseline capture of constants, up/down reversibility passes.
+Idioms preserved: beam-loss re-seek (in the energy axis), fresh-spot dose walking, ensure
+attenuators in, baseline capture, up/down reversibility passes.
 
 .. important::
     Beamline globals required at runtime (injected by the SMI profile collection; not
@@ -30,9 +35,9 @@ attenuators in, baseline capture of constants, up/down reversibility passes.
 """
 
 from ._samples import SampleList
-from ._core import (one_sample_run, goto_sample, saxs_waxs_dets, fname, merge_md)
-from ._preprocessors import (beam_loss_reseek_wrapper, fresh_spot_wrapper,
-                             ensure_in_wrapper, cleanup_wrapper)
+from ._core import goto_sample, merge_md
+from ._compose import acquire, energy_axis, ScanAxis, SPEED_MEDIUM
+from ._preprocessors import fresh_spot_wrapper, ensure_in_wrapper
 
 try:
     import bluesky.plan_stubs as bps
@@ -40,7 +45,7 @@ except Exception:  # pragma: no cover
     bps = None
 
 
-__all__ = ["energy_grid", "nexafs_point", "nexafs_run", "nexafs_bar", "example"]
+__all__ = ["energy_grid", "nexafs_run", "nexafs_bar", "example"]
 
 
 # ---------------------------------------------------------------------------
@@ -67,21 +72,7 @@ def energy_grid(edge, pre=(-30, -2, 5.0), near=(-2, 2, 0.25), post=(2, 60, 5.0))
 
 
 # ---------------------------------------------------------------------------
-# Inner measurement
-# ---------------------------------------------------------------------------
-def nexafs_point(e, dets, reads, *, settle=2.0):
-    """Set the energy, settle, and record ONE event (energy is in the stream -> filename).
-
-    ``reads`` is the list of extra readables (beyond ``dets``) to record each event; include
-    ``energy`` here so ``{energy_energy}`` resolves in the filename.
-    """
-    yield from bps.mv(energy, e)                                # noqa: F821
-    yield from bps.sleep(settle)
-    yield from bps.trigger_and_read(list(dets) + list(reads))
-
-
-# ---------------------------------------------------------------------------
-# One run = one sample, up (+down) energy sweep
+# One run = one sample, up (+down) energy sweep  -- assembled from energy_axis
 # ---------------------------------------------------------------------------
 def nexafs_run(name, energies, *, t=2.0, dets=None, reads=None, geometry="transmission",
                updown=True, settle=2.0, dose_motor=None, dose_step=None,
@@ -89,84 +80,97 @@ def nexafs_run(name, energies, *, t=2.0, dets=None, reads=None, geometry="transm
                md=None, name_tokens=("{energy_energy}eV", "bpm{xbpm2_sumX}")):
     """ONE run: NEXAFS / resonant energy sweep on a single sample.
 
+    Recipe: a single :func:`_compose.energy_axis` (optionally up+down) inside
+    :func:`_compose.acquire`.  All the knobs below map onto that axis / the run envelope.
+
     Parameters
     ----------
     name : str
-        Human sample label (becomes the start of the templated filename).
+        Human sample label (start of the templated filename).
     energies : sequence
         Energies (eV); e.g. from :func:`energy_grid`.
     t : float
         Exposure / averaging time (s).  Applied to detectors and ``pin_diode``.
     dets : list, optional
-        Detectors.  Default ``[pil2M, pin_diode, xbpm2, xbpm3]`` (SAXS + I0 + transmission).
+        Default ``[pil2M, pin_diode, xbpm2, xbpm3]`` (SAXS + I0 + transmission).
     reads : list, optional
         Extra readables recorded each event.  Default ``[energy]`` (so ``{energy_energy}``
-        resolves).  Add any Signal whose name you reference in ``name_tokens``.
+        resolves).
     geometry : str
         ``"transmission"`` or ``"reflection"``.
     updown : bool
-        If True, follow the up-sweep with a reversed down-sweep (reversibility check) in the
-        SAME run.  An ``energy_direction`` Signal is recorded so frames are distinguishable.
+        If True, follow the up-sweep with a reversed down-sweep in the SAME run; an
+        ``energy_direction`` Signal is recorded so frames are distinguishable.
     settle : float
         Sleep after each energy move.
     dose_motor, dose_step : optional
-        If both given, walk ``dose_motor`` by ``dose_step`` after every frame (fresh spot).
+        Walk ``dose_motor`` by ``dose_step`` after every frame (fresh spot).
     flux_signal, flux_threshold : optional
-        If both given, re-seek the energy when I0 drops below threshold before a frame.
+        Re-seek the energy when I0 drops below threshold (handled inside the energy axis).
     atten_in : callable () -> plan, optional
-        Plan that puts attenuators/beamstop in the *measurement* configuration after any prior
-        alignment (runs once at run open).  E.g. ``lambda: bps.mv(att2_9.close_cmd, 1)``.
+        Put attenuators/beamstop in the measurement config after any prior alignment (runs once
+        at run open via :func:`_compose.acquire`'s ``setup``).
     baseline : list, optional
-        Constants to record (default includes SDD ``pil2M_pos.z`` if available).
+        Constants (default adds SDD ``pil2M_pos.z`` if available).
     md : dict, optional
         Caller intent merged into the run md.
     name_tokens : tuple of str
-        ``{field}`` tokens appended to the filename (must correspond to recorded fields).
+        ``{field}`` tokens appended to the filename.
     """
     if dets is None:
         dets = [pil2M, pin_diode, xbpm2, xbpm3]                 # noqa: F821
-    # energy_direction lets up/down frames be told apart in one run.
-    energy_direction = Signal(name="energy_direction", value="up")  # noqa: F821
     if reads is None:
         reads = [energy]                                       # noqa: F821
-    reads = list(reads) + [energy_direction]
 
     if baseline is None:
-        baseline = []
         try:
-            baseline = [pil2M_pos.z]                            # noqa: F821  (SDD)
+            baseline = [pil2M_pos.z]                            # noqa: F821 (SDD)
         except Exception:
             baseline = []
 
     det_exposure_time(t, t)                                     # noqa: F821
-    sample_name = fname(name, *name_tokens)
 
-    def _measure():
+    # energy_direction Signal distinguishes up vs down frames within the single run.
+    energy_direction = Signal(name="energy_direction", value="up")  # noqa: F821
+    all_reads = list(reads) + [energy_direction]
+
+    # Concatenate the up pass (and a reversed down pass) into ONE energy axis so both live in
+    # ONE run; a per-point hook tags each frame's direction and re-seeks the beam.
+    values = list(energies)
+    if updown:
+        values = values + list(energies)[::-1]
+    n_up = len(energies)
+    idx = {"i": 0}
+
+    def _per_point():
+        energy_direction.put("up" if idx["i"] < n_up else "down")
+        idx["i"] += 1
+        if flux_signal is not None and flux_threshold is not None:
+            tries = 0
+            while flux_signal.get() < flux_threshold and tries < 3:
+                yield from bps.mv(energy, energy.position)      # noqa: F821 (re-seek)
+                yield from bps.sleep(settle)
+                tries += 1
+        else:
+            yield from bps.null()
+
+    e_axis = ScanAxis("energy", values, device=energy,          # noqa: F821
+                      settle=settle, per_point=_per_point,
+                      reads=[energy], speed=SPEED_MEDIUM)         # gives {energy_energy}
+
+    def _setup():
         yield from bps.mv(pin_diode.averaging_time, t)         # noqa: F821
+        if atten_in is not None:
+            yield from atten_in()
         energy_direction.put("up")
-        for e in energies:
-            yield from nexafs_point(e, dets, reads, settle=settle)
-        if updown:
-            energy_direction.put("down")
-            for e in list(energies)[::-1]:
-                yield from nexafs_point(e, dets, reads, settle=settle)
 
-    plan = one_sample_run(_measure, dets, sample_name=sample_name,
-                          scan_name="nexafs_energy_sweep", geometry=geometry,
-                          md=md, baseline=baseline)
+    plan = acquire(name, dets, [e_axis], reads=all_reads, setup=_setup,
+                   geometry=geometry, scan_name="nexafs_energy_sweep",
+                   md=md, baseline=baseline, name_tokens=list(name_tokens),
+                   check_order=False)
 
-    # Layer the opt-in idioms (order matters: innermost effect first).
     if dose_motor is not None and dose_step is not None:
         plan = fresh_spot_wrapper(plan, dose_motor, dose_step)
-    if flux_signal is not None and flux_threshold is not None:
-        def _reseek():
-            # gentle: re-command the current energy and wait for the beam to recover
-            yield from bps.mv(energy, energy.position)         # noqa: F821
-            yield from bps.sleep(settle)
-        plan = beam_loss_reseek_wrapper(plan, flux_signal, flux_threshold, _reseek)
-    if atten_in is not None:
-        plan = ensure_in_wrapper(plan, atten_in)
-
     return (yield from plan)
 
 
@@ -179,12 +183,11 @@ def nexafs_bar(samples, energies, *, t=2.0, dets=None, reads=None, geometry="tra
     """Run :func:`nexafs_run` for each sample on the bar (ONE run per sample).
 
     ``samples`` is a :class:`SampleList`.  Each sample is coarse-positioned (piezo/hexapod)
-    then swept.  Per-sample ``incident_angles`` are ignored here (transmission); for grazing
-    NEXAFS use ``technique_B_grazing`` + this energy machinery.
+    then swept.  For grazing NEXAFS, compose an incidence axis too (see ``recipes_combined``).
     """
     for s in samples:
         yield from goto_sample(s)
-        ds_motor = piezo.x if dose_step else None              # noqa: F821 (fresh-spot in x)
+        ds_motor = piezo.x if dose_step else None              # noqa: F821
         yield from nexafs_run(
             s.name, energies, t=t, dets=dets, reads=reads, geometry=geometry,
             updown=updown, settle=settle, dose_motor=ds_motor, dose_step=dose_step,

@@ -12,6 +12,19 @@ only modernization needed is (1) build the filename from those recorded fields (
 ``{piezo_y}``) via ``md={'sample_name': ...}`` rather than ``sample_id`` global state, and
 (2) record transmission/OAV context *in the stream* instead of a ``db[-1].table()`` reach-back.
 
+**This file is a PRESET RECIPE related to the composition layer (``_compose``).**  A spatial
+raster is just a stack of (fast) spatial scan axes (:func:`_compose.spatial_grid_axes`).  The
+coordinated forms (:func:`map_line_run` / :func:`map_grid_run` / :func:`map_spiral_run`) are
+*deliberately kept* on the optimized Bluesky scan plans (``bp.rel_grid_scan`` etc.) -- those
+already produce ONE run, auto-record the scanned motor positions, and snake the inner axis, so
+re-expressing them as hand-nested ``acquire`` axes would be *slower and less faithful*, not
+cleaner.  The hand-built :func:`map_grid_manual_run` -- whose whole purpose is EXTRA per-point
+context (live transmission, OAV, a verbal Signal) -- *is* assembled from
+:func:`_compose.spatial_grid_axes` + :func:`_compose.acquire`, the natural home for that
+per-point control.  The spatial concern is independent and combinable with others (energy,
+temperature, incidence); to mix them, assemble the axes directly -- see ``recipes_combined.py``
+and the README.
+
 Gold reference: ``Commissioning/microlistscan.py`` (the modern ``grid_scan`` /
 ``list_scan`` form with ``md={'sample_name': name+'_x{piezo_x}_y{piezo_y}'}``) and
 ``nist/aiello`` ``run_nist_linescans`` / ``_grids`` / ``_spirals`` (line/grid/spiral idioms,
@@ -22,8 +35,8 @@ What this file gives you
 * :func:`map_line_run`  -- ONE run, 1-D line scan (``bp.rel_scan`` on one fast axis).
 * :func:`map_grid_run`  -- ONE run, 2-D raster (``bp.rel_grid_scan``); positions in-stream.
 * :func:`map_spiral_run` -- ONE run, Archimedean spiral (``bp.rel_spiral``).
-* :func:`map_grid_manual_run` -- ONE run via :func:`_core.one_sample_run` + explicit
-  ``mv`` / ``trigger_and_read`` for when you need EXTRA per-point context (transmission,
+* :func:`map_grid_manual_run` -- ONE run via :func:`_compose.acquire` +
+  :func:`_compose.spatial_grid_axes` for when you need EXTRA per-point context (transmission,
   OAV, a verbal Signal) beyond what the coordinated scan records.
 * :func:`map_bar` -- loop a chosen map plan over a :class:`SampleList` (one map-run/sample).
 * :func:`example`, :func:`example_manual` -- runnable examples.
@@ -40,7 +53,8 @@ fresh sample positioning per map, baseline capture of the SDD.
 """
 
 from ._samples import SampleList
-from ._core import (one_sample_run, goto_sample, saxs_waxs_dets, fname, merge_md)
+from ._core import (goto_sample, saxs_waxs_dets, fname, merge_md)
+from ._compose import acquire, spatial_grid_axes
 from ._preprocessors import baseline_wrapper, cleanup_wrapper
 
 try:
@@ -251,11 +265,14 @@ def map_grid_manual_run(name, m1, m1_positions, m2, m2_positions, *, t=0.5, dets
 
     Use this when the coordinated :func:`map_grid_run` does not give you enough per-point
     control -- e.g. you want to record live transmission (``pin_diode``), an OAV frame, and a
-    verbal context ``Signal`` on *every* point, or step axes in a custom order.  Built on
-    :func:`_core.one_sample_run`, so it shares the one-run-per-map + baseline + md machinery.
+    verbal context ``Signal`` on *every* point, or step axes in a custom order.
 
-    The scanned motors are included in ``reads`` so their positions are recorded (the manual
-    form does not auto-hint them the way ``grid_scan`` does), keeping ``{piezo_x}`` tokens valid.
+    Recipe (built on :func:`_compose.acquire`): the explicit per-point raster is expressed as
+    :func:`_compose.spatial_grid_axes` -- ``m1`` (outer/slow) over ``m1_positions`` and ``m2``
+    (inner/fast) over ``m2_positions``, with the inner axis serpentined when ``snake``.  The
+    scanned motors are recorded by the spatial axes (so ``{piezo_x}``/``{piezo_y}`` tokens stay
+    valid), and ``extra_signals`` are recorded each event via ``reads``.  Kwargs/defaults/
+    behavior are unchanged; only the implementation now assembles axes and calls ``acquire``.
 
     Parameters
     ----------
@@ -265,7 +282,8 @@ def map_grid_manual_run(name, m1, m1_positions, m2, m2_positions, *, t=0.5, dets
     m2, m2_positions :
         Inner (fast) axis and its explicit positions.
     reads : list, optional
-        Extra readables each event (default ``[energy, waxs, xbpm2, xbpm3, m1, m2]``).
+        Extra readables each event (default ``[energy, waxs, xbpm2, xbpm3]``; the scanned
+        motors ``m1``/``m2`` are added by the spatial axes).
     snake : bool
         Serpentine the inner axis to avoid fly-back.
     transmission : bool
@@ -280,9 +298,9 @@ def map_grid_manual_run(name, m1, m1_positions, m2, m2_positions, *, t=0.5, dets
     if dets is None:
         dets = map_dets(transmission=transmission, oav=oav)
     if reads is None:
-        reads = [energy, waxs, xbpm2, xbpm3, m1, m2]                  # noqa: F821
+        reads = [energy, waxs, xbpm2, xbpm3]                          # noqa: F821 (motors via axes)
     else:
-        reads = list(reads) + [m1, m2]
+        reads = list(reads)
     extra_signals = list(extra_signals or [])
     if pos_tokens is None:
         n1 = str(getattr(m1, "name", "m1"))
@@ -292,27 +310,29 @@ def map_grid_manual_run(name, m1, m1_positions, m2, m2_positions, *, t=0.5, dets
         baseline = _map_baseline()
 
     det_exposure_time(t, t)                                           # noqa: F821
-    sample_name = fname(name, *pos_tokens)
 
-    def _measure():
+    # The spatial raster as compose axes: m1 (outer/slow) -> m2 (inner/fast, snaked).  These
+    # record the scanned motor positions in the stream (auto-merged into every event), so the
+    # {piezo_x}/{piezo_y} tokens resolve exactly as the hand-rolled `reads`-of-motors did.
+    axes = spatial_grid_axes(x_motor=m1, x=list(m1_positions),
+                             y_motor=m2, y=list(m2_positions), snake=snake, record=True)
+
+    # extra_signals (e.g. a verbal ROI label) recorded every event: fold them into reads.
+    all_reads = reads + extra_signals
+
+    def _setup():
         if transmission:
             try:
                 yield from bps.mv(pin_diode.averaging_time, t)       # noqa: F821
             except Exception:
-                pass
-        for j, p1 in enumerate(m1_positions):                        # outer/slow axis
-            yield from bps.mv(m1, p1)
-            inner_positions = m2_positions
-            if snake and (j % 2 == 1):
-                inner_positions = list(m2_positions)[::-1]
-            for p2 in inner_positions:                               # inner/fast axis
-                yield from bps.mv(m2, p2)
-                yield from bps.trigger_and_read(
-                    list(dets) + list(reads) + extra_signals)
+                yield from bps.null()
+        else:
+            yield from bps.null()
 
-    plan = one_sample_run(_measure, dets, sample_name=sample_name,
-                          scan_name="map_grid_manual", geometry=geometry,
-                          md=md, baseline=baseline)
+    plan = acquire(name, dets, axes, reads=all_reads, setup=_setup,
+                   geometry=geometry, scan_name="map_grid_manual",
+                   md=md, baseline=baseline, name_tokens=list(pos_tokens),
+                   check_order=False)
     return (yield from plan)
 
 

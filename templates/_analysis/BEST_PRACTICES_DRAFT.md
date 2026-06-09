@@ -33,6 +33,33 @@ migrating toward.
 Each tenet states the principle, the rationale, the **anti-pattern** it replaces, and a
 **concrete exemplar** from the repo.
 
+### Tenet 0 — Compose concerns; don't force the experiment into one category
+**A real experiment is an assembly of independent concerns, not one of N fixed techniques.**
+Users plan a beamtime as: *which energ(ies) / detectors / WAXS-arc (beam + q-range)* × *what
+apparatus / geometry (grazing, Linkam, RH, e-chem)* × *what scanning (single spot, 5 locations,
+grid, energy sweep, temperature ramp — usually several nested)* × *what manual/interactive steps*
+× *what to record*. The acquisition system should let those parts be **combined on the fly**,
+because most real scripts are combinations (e.g. *tender energy sweep + Linkam temperature +
+grazing incidence + 5-location raster* in one run).
+
+- *Rationale:* the survey (`USE_CASE_TAXONOMY.md`) catalogued archetypes A–O, but they are
+  **overlapping concern-bundles, not exclusive bins** — the corpus is full of A+B+C+D
+  combinations. A taxonomy is useful for understanding demand; it is the wrong shape for the
+  *tools*. The tools should expose composable primitives (a measurement core + stackable scan
+  axes) so a bespoke experiment — and eventually a GUI — assembles the right parts.
+- *Implementation:* `smi_plans/_compose.py` — an experiment is a `measurement core` wrapped by a
+  stack of `ScanAxis` loops (`energy_axis`, `temperature_axis`, `incidence_axis`, `motor_axis`,
+  `spatial_grid_axes`, `potential_axis`, `rh_axis`, `time_axis`, `manual_axis`) nested in a
+  user-chosen order via `acquire(...)`. The A–O `technique_*` files are **presets** assembled
+  from these same pieces.
+- *Anti-pattern (retire):* a monolithic per-technique script that bakes the beam config,
+  geometry, and every scan loop together so it cannot be recombined; or "pick one of A–O" as the
+  only entry point.
+- *Exemplar:* `smi_plans/recipes_combined.py::giwaxs_tempramp_energy_5loc` — one run composed
+  from `temperature_axis` + `motor_axis("arc")` + `incidence_axis` + `energy_axis` +
+  `motor_axis("x")`; `build_axes_from_spec(...)` turns a declarative axis list (a GUI/JSON) into
+  the nested stack.
+
 ### Tenet 1 — One run per logical experiment, not per data point
 **A single Bluesky run should hold all the data for one coherent measurement of one sample.**
 Use a single `@bpp.run_decorator(md={...})` + `@bpp.stage_decorator(dets)` around an `inner()`
@@ -58,7 +85,11 @@ temperature to 35 °C") — should be captured as a Bluesky device/Signal in the
 - *Verbal context becomes a Signal:* if a user reports a value the beamline can't read
   (e.g. an offline-set humidity, a sample-prep temperature, a doping level), create a small
   `Signal(name='...', value=...)` and include it in `trigger_and_read` (changing) or in the
-  baseline (constant). Don't put it only in the filename or only in `md` prose.
+  baseline (constant). Don't put it only in the filename or only in `md` prose. Interactive
+  "ask the user" steps are first-class and composable — `smi_plans/_compose.py` provides
+  `manual_step` / `manual_value` (collect a hand-set value onto a recorded Signal),
+  `manual_axis` (a user-stepped scan dimension), `manual_loop` (open-ended user-paced bar), and
+  `pause_for_user`, all via `bps.input_plan` (RunEngine-driven, not raw `input()`).
 - *Anti-pattern (retire):* `T = ls.input_A.get()-273.15; name = f"{sample}_{T}C"` (and all
   `.get()`/`.value()`/`.position`/`time.time()`/`db[-1].table()`-into-string variants).
 - *Exemplar:* `templates/tender.py` records `incident_angle`, `energy_direction`, and the
@@ -297,6 +328,10 @@ best-practices + build tooling:
 ---
 
 ## 5. Pointers
+- **Implementation of these tenets (the target-style library):** `templates/smi_plans/` — start
+  with its `README.md`. The composition layer is `smi_plans/_compose.py`; worked cross-concern
+  examples + the GUI bridge are in `smi_plans/recipes_combined.py`; the A–O presets are the
+  `smi_plans/technique_*.py` recipes.
 - **Use-case taxonomy & per-file evidence:** `USE_CASE_TAXONOMY.md` (this directory).
 - **Per-batch raw analysis:** `legacy_batch_01..10.md`, `folder_CFN.md`, `folder_CDSAXS.md`,
   `folder_small_groups.md` (this directory).

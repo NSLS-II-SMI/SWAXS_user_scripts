@@ -8,18 +8,26 @@ Thin films / surfaces measured at one or more incident angles, across one or mor
 positions, with per-sample alignment.  The dominant SMI orchestration shape is the
 multi-sample "bar".
 
+**This file is a PRESET RECIPE built on the composition layer (``_compose``).**  Grazing
+incidence is just two scan axes -- a (slow) WAXS-arc :func:`_compose.motor_axis` outermost and
+a grazing-angle :func:`_compose.incidence_axis` inside it -- nested inside ONE
+:func:`_compose.acquire` per sample.  Each concern (arc, incidence) is independent and freely
+combinable with others (energy, temperature, spatial); to mix them, assemble the axes directly
+-- see ``recipes_combined.py`` and the README.
+
 This file demonstrates BOTH sanctioned multi-sample strategies:
 
 1. :func:`giwaxs_bar` -- ONE run per sample (simple, the default).  Good when the arc set is
    small or alignment dominates.
 2. :func:`giwaxs_bar_arc_economy` -- MULTIPLE runs open at once so ``waxs.arc`` (slow,
    in-vacuum) moves only once per arc position for the WHOLE bar.  Use when arc travel
-   dominates overhead.  (Built on :func:`_core.multi_sample_run`.)
+   dominates overhead.  (Built on :func:`_core.multi_sample_run`; a different run topology, so
+   it is *not* expressed via :func:`_compose.acquire`.)
 
 Alignment uses the profile-collection routines (``alignement_gisaxs_hex`` /
 ``alignement_gisaxs_doblestack``) -- we call them, we do not reimplement them.  Because
-alignment may leave attenuators out, every measurement run uses ``ensure_in`` to restore the
-measurement configuration.
+alignment may leave attenuators out, every measurement run restores the measurement
+configuration via :func:`_compose.acquire`'s ``setup=`` hook (ensure-attenuators-in).
 
 .. important::
     Beamline globals required at runtime: ``np``, ``bps``, ``Signal``, ``piezo``, ``stage``,
@@ -29,8 +37,8 @@ measurement configuration.
 """
 
 from ._samples import SampleList
-from ._core import (one_sample_run, multi_sample_run, goto_sample, saxs_waxs_dets,
-                    fname, merge_md)
+from ._core import (multi_sample_run, goto_sample, saxs_waxs_dets, merge_md)
+from ._compose import acquire, incidence_axis, motor_axis, SPEED_SLOW
 from ._preprocessors import ensure_in_wrapper, fresh_spot_wrapper, cleanup_wrapper
 
 try:
@@ -40,7 +48,7 @@ except Exception:  # pragma: no cover
 
 
 __all__ = [
-    "default_atten_in", "align_sample", "giwaxs_point", "giwaxs_run",
+    "default_atten_in", "align_sample", "giwaxs_run",
     "giwaxs_bar", "giwaxs_bar_arc_economy", "example", "example_arc_economy",
 ]
 
@@ -76,32 +84,25 @@ def align_sample(sample, *, align, angle=0.1, piezo_th=True):
 
 
 # ---------------------------------------------------------------------------
-# Inner per-(arc, angle) measurement
-# ---------------------------------------------------------------------------
-def giwaxs_point(th_axis, th_value, dets, reads, incident_angle_sig, *, settle=0.0):
-    """Move to an incident angle, record ONE event (angle + context in the stream)."""
-    yield from bps.mv(th_axis, th_value)
-    if settle:
-        yield from bps.sleep(settle)
-    incident_angle_sig.put(float(th_value))
-    yield from bps.trigger_and_read(list(dets) + list(reads) + [incident_angle_sig])
-
-
-# ---------------------------------------------------------------------------
-# One run = one sample, all (arc x incident-angle)
+# One run = one sample, all (arc x incident-angle)  -- assembled from compose axes
 # ---------------------------------------------------------------------------
 def giwaxs_run(name, *, th0, incident_angles, waxs_arc=(0,), t=1.0, dets=None, reads=None,
                th_axis=None, dose_motor=None, dose_step=None, atten_in=None, baseline=None,
                md=None, name_tokens=("ai{incident_angle}", "wa{waxs_arc}", "bpm{xbpm2_sumX}")):
     """ONE run: all incident angles x WAXS-arc positions for a single (pre-aligned) sample.
 
-    Loop order puts ``waxs.arc`` outermost (slow axis), incident angle inner -- consistent
-    with the slow-axis-economy tenet.  ``th0`` is the aligned incident-angle zero (from
-    :func:`align_sample`); measured angles are ``th0 + ai``.
+    Recipe (built on :func:`_compose.acquire`): a (slow) WAXS-arc
+    :func:`_compose.motor_axis` OUTERMOST and a grazing-angle :func:`_compose.incidence_axis`
+    inside it -- consistent with the slow-axis-economy tenet (``waxs.arc`` moves the fewest
+    times).  ``th0`` is the aligned incident-angle zero (from :func:`align_sample`); measured
+    angles are ``th0 + ai``.  Attenuators are restored for the measurement via ``acquire``'s
+    ``setup=`` hook; an optional dose walk keeps a fresh spot.
+
+    The kwargs/defaults/behavior are unchanged from the hand-rolled version; only the
+    implementation now assembles axes and calls :func:`_compose.acquire`.
     """
     if th_axis is None:
         th_axis = piezo.th                                     # noqa: F821
-    incident_angle = Signal(name="incident_angle", value=float(th0))  # noqa: F821
     if reads is None:
         reads = [energy, waxs, xbpm2, xbpm3]                   # noqa: F821
     if baseline is None:
@@ -110,24 +111,30 @@ def giwaxs_run(name, *, th0, incident_angles, waxs_arc=(0,), t=1.0, dets=None, r
         except Exception:
             baseline = []
 
+    dets = dets or _arc_dets()
     det_exposure_time(t, t)                                    # noqa: F821
-    sample_name = fname(name, *name_tokens)
 
-    def _measure():
-        for wa in waxs_arc:                                    # SLOW axis outermost
-            yield from bps.mv(waxs, wa)                        # noqa: F821
-            # arc-aware detector set could be recomputed here if using conditional dets
-            for ai in incident_angles:
-                yield from giwaxs_point(th_axis, th0 + ai, dets or _arc_dets(),
-                                        reads, incident_angle)
-        yield from bps.mv(th_axis, th0)                        # return to aligned zero
+    # The axis stack (outermost first): waxs.arc (slow) -> incident angle.  The incidence axis
+    # records the *relative* angle on an `incident_angle` Signal (-> {incident_angle} token);
+    # the arc motor is recorded via `reads` (so {waxs_arc} resolves).
+    axes = [
+        motor_axis("arc", waxs, list(waxs_arc), record=True, speed=SPEED_SLOW),  # noqa: F821
+        incidence_axis(th_axis, th0, list(incident_angles)),
+    ]
 
-    plan = one_sample_run(_measure, dets or _arc_dets(), sample_name=sample_name,
-                          scan_name="giwaxs", geometry="reflection",
-                          md=md, baseline=baseline)
+    # Restore the measurement configuration (attenuators in) once, just after the run opens.
+    _atten = atten_in or default_atten_in
+
+    def _setup():
+        yield from _atten()
+
+    plan = acquire(name, dets, axes, reads=reads, setup=_setup,
+                   geometry="reflection", scan_name="giwaxs",
+                   md=md, baseline=baseline, name_tokens=list(name_tokens),
+                   check_order=False)
+
     if dose_motor is not None and dose_step is not None:
         plan = fresh_spot_wrapper(plan, dose_motor, dose_step)
-    plan = ensure_in_wrapper(plan, atten_in or default_atten_in)
     return (yield from plan)
 
 
