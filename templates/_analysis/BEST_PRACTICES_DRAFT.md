@@ -92,6 +92,13 @@ temperature to 35 °C") — should be captured as a Bluesky device/Signal in the
   `pause_for_user`, all via `bps.input_plan` (RunEngine-driven, not raw `input()`).
 - *Anti-pattern (retire):* `T = ls.input_A.get()-273.15; name = f"{sample}_{T}C"` (and all
   `.get()`/`.value()`/`.position`/`time.time()`/`db[-1].table()`-into-string variants).
+- *Also keep a structured "hints" bundle:* encoding important values in the filename is a
+  nice-to-have for human browsing and backward compatibility, but the values a user considers
+  important should *also* be stored as a queryable dict — `md['user_hints']` (NOT the reserved
+  bluesky `hints` key) — so downstream analysis reads a structured bundle instead of parsing
+  names. The same intent then lives in three coherent places: recorded stream devices (source of
+  truth), the `{token}` filename (convenience), and `md['user_hints']` (structured hints).
+  `smi_plans.acquire(..., user_hints={...})` does this.
 - *Exemplar:* `templates/tender.py` records `incident_angle`, `energy_direction`, and the
   `target_file_name` as Signals via `trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] +
   atts + [s, incident_angle, energy_direction])`. The 2026 Harvard plans record
@@ -177,17 +184,36 @@ run at each arc position, using run keys.
   Note: with multiple runs open, use a `RunRouter`/per-run `BestEffortCallback` and disable
   interleaved tables; wrap open→…→close in `finalize_wrapper` so all runs close on error.
 
-### Tenet 7 — Plans are generators end-to-end; never call `RE()` from inside a plan
-**A plan must be a single generator the RunEngine consumes.** Never call `RE(...)` inside a
-`for`/`while` loop or helper function, and never trigger detectors with `cam.acquire.put(1)` +
-busy-wait outside the RunEngine.
+### Tenet 7 — A plan contains ONLY messages: generators end-to-end, no `RE()` and no `.put()`/`.get()`
+**A plan must be a single generator of Bluesky messages that the RunEngine consumes.** It must
+NEVER (a) call `RE(...)` inside a `for`/`while`/helper, (b) trigger detectors with
+`cam.acquire.put(1)` + busy-wait, or — and this is the part most legacy code (and even some
+"modern" code) gets wrong — (c) make ANY direct device call: no `signal.put(x)`, no
+`signal.get()`, no `device.set()`, no bare `readHumidity()`/`LThermal.temperature()` inline.
 
-- *Rationale:* `RE()`-in-loops and raw `cam.put` break pause/resume, suspenders, and document
-  generation — and in the `cam.put` case, **no data documents are recorded at all**.
+- *Do this instead:* set a value with `yield from bps.mv(signal, value)` (works on plain
+  `Signal`s, including the artificial ones used to record context); read a value for a decision
+  with `x = yield from bps.rd(signal)`. Both go through the RunEngine as messages.
+- *Rationale:* `RE()`-in-loops and raw `.put()`/`.get()` break pause/resume, suspenders,
+  document generation, and (crucially) any future **queueserver** execution — a qserver worker
+  drives a plan purely by stepping its messages; a plan that pokes a device directly bypasses
+  the engine and silently misbehaves. A plan that is *only* messages runs identically under
+  `RE()` today and a queueserver tomorrow.
+- *When a message can't reach the hardware, fix the ophyd device — not the plan.* If a quantity
+  is only available via a function/method (e.g. `readHumidity()`, `LThermal.temperature()`),
+  wrap it as a proper `bps.rd`-able ophyd Signal (interim: a function-backed Signal), record the
+  **device debt**, and schedule the real fix (an `EpicsSignalRO` on the PV). Never paper over it
+  with an inline call in the plan. (See `smi-plans` `_devices.py` + `docs/DEVICE_DEBT.md`.)
 - *Anti-pattern (retire):* `for x in xs: RE(measure_one(x))`; `trigger_alldet()` doing
-  `cam.acquire.put(1)`; hand-rolled `fly_scan` poking `det.trigger()`.
+  `cam.acquire.put(1)`; hand-rolled `fly_scan` poking `det.trigger()`; **and** the ubiquitous
+  `sig.put(value)` / `xbpm2.sumX.get()` / `ls.input_A.get()` inside plan bodies.
 - *Worst offenders flagged:* SSYang, OGang, QYu, Mao, HZhang, AFurst, JiaLu, SWong*,
-  chen_xpcs, Gergaud `fly_scan_ai`, CFN 2024 drivers.
+  chen_xpcs, Gergaud `fly_scan_ai`, CFN 2024 drivers (`RE()`-in-loop / `cam.put`); and broadly
+  the corpus's `.get()`-into-filename + `.put()`-to-stamp habits.
+- *Sanctioned exception:* a closed-loop **controller** (autonomous experiments) may call `RE()`
+  from plain Python — but that is *above* the plans, never inside one (see
+  `smi-plans technique_M_autonomous`). And `bps.input_plan` is the message-based way to prompt a
+  user from within a plan.
 
 ### Tenet 8 — Separate input selection from the plan logic
 **Keep "what to measure" (sample names, coordinates, energies, angles) out of the plan body.**
