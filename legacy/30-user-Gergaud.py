@@ -2631,3 +2631,122 @@ def scanning_chiandth(t=1):
         sample_name = name_fmt.format(sample=name)
         sample_id(sample_name=sample_name)
         yield from bp.list_scan([pil2M], prs, phi)
+
+
+
+
+
+
+
+def cdsaxsstd_2026_2_nischal(t=1):
+    det = [pil2M]
+    det_exposure_time(t, t)
+
+    phi_offest = -2.75
+    """
+    names = ['c00etched_2p1','c00teched_bkg',
+              'c00litho_2p1', 'c00litho_bkg',
+                  'cm32_2p1',     'cm32_bkg',
+                  'cm30_2p1',     'cm30_bkg']
+    x =     [          16900,          16900,
+                      -12100,         -12100,
+                      -38100,         -38100,
+                      -65100,         -65100]
+    ysmar=  [           9364,           5364,
+                        9364,           5364, 
+                        7364,           9364,
+                        6364,           9364]
+    z=      [           -609,           -609, 
+                         290,           290,
+                         790,           790,
+                        1290,          1290]
+    chi=    [           -0.7,           -0.7,
+                         0.3,            0.3, 
+                        0.45,           0.45, 
+                           0,              0]
+
+    # th = 0.427
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(ysmar), f"len of ysm ({len(ysmar)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    
+    for i in range(1):
+        for name, xs, ys, zs, chis in zip(names, x, ysmar, z, chi):
+            yield from bps.mv(piezo.z, zs,
+                              piezo.ch, chis, 
+                              piezo.x, xs,
+                              piezo.y, ys)
+            
+            # yield from bp
+            if 'bkg' not in name:
+                yield from cd_saxs_newstage(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-A%s'%(i+1), nume=1)
+                yield from cd_saxs_newstage(-60+phi_offest, 60+phi_offest, 61, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
+                yield from cd_saxs_newstage(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
+            else:
+                yield from cd_saxs_newstage(-60+phi_offest, 60+phi_offest, 61, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
+                yield from bps.mv(stage.phi, phi_offest)
+
+    """
+    names = ['c00etched_2p1','c00teched_bkg',
+              'c00litho_2p1', 'c00litho_bkg',
+                  'cm32_2p1',     'cm32_bkg',
+                  'cm30_2p1',     'cm30_bkg']
+    x =     [          16900,          16900,
+                      -12100,         -12100,
+                      -38100,         -38100,
+                      -65100,         -65100]
+    ysmar=  [           9364,           5364,
+                        9364,           5364, 
+                        7364,           9364,
+                        6364,           9364]
+    z=      [           -609,           -609, 
+                         290,           290,
+                         790,           790,
+                        2290,          2290]
+    chi=    [           -0.7,           -0.7,
+                         0.3,            0.3, 
+                        0.45,           0.45, 
+                           0,              0]
+
+    det_exposure_time(3, 3)
+    nume = 200
+    
+    yield from bps.mv(stage.phi, phi_offest)
+    for i in range(1):
+        for name, xs, ys, zs, chis in zip(names, x, ysmar, z, chi):
+            yield from bps.mv(piezo.z, zs,
+                              piezo.ch, chis, 
+                              piezo.x, xs,
+                              piezo.y, ys)
+
+            name_fmt = "{sample}_rugo_up_sdd9p30_16.1keV"
+            sample_name = name_fmt.format(sample=name)
+            print(sample_name)
+            sample_id(sample_name=sample_name)
+            yield from bp.count([pil2M], num=nume)
+
+            yield from bps.mvr(pil2m_pos.y, 4.3)
+            name_fmt = "{sample}_rugo_down_sdd9p30_16.1keV"
+            sample_name = name_fmt.format(sample=name)
+            sample_id(sample_name=sample_name)
+            yield from bp.count([pil2M], num=nume)
+    
+            yield from bps.mvr(pil2m_pos.y, -4.3)
+
+
+
+def cd_saxs_newstage(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2M]):
+
+    det_exposure_time(exp_t, exp_t)
+
+    for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
+        yield from bps.mv(stage.phi, theta)
+        name_fmt = "{sample}_9.3m_16.15keV_num{num}_{th}deg_bpm{bpm}"
+        sample_name = name_fmt.format(sample=sample, num="%2.2d"%num, th="%2.2d"%theta, bpm="%1.3f"%xbpm3.sumX.get())
+        #sample_id(user_name="PG", sample_name=sample_name)
+        sample_id(sample_name=sample_name)
+
+        print(f"\n\t=== Sample: {sample_name} ===\n")
+        yield from bp.count(det, num=nume)
