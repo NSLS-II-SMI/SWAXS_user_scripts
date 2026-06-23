@@ -123,6 +123,23 @@ def run():
     run()
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: loops over your list of samples; for each one it moves to the sample
+    #   (mov_sam) and runs the sulfur-edge energy scan S_edge_one_sample on it.
+    #
+    # 💡 NEWER, EASIER WAY: notice this calls RE(...) inside a normal Python 'for' loop.
+    #   That starts a brand-new run for every sample, so the samples aren't tied together
+    #   in the saved data. The 'smi_plans' helper library can run a whole list of samples
+    #   as ONE coordinated measurement, moving to each sample for you and recording which
+    #   sample each image belongs to. The pattern is a "bar" plan, e.g.:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list, y=y_list)
+    #     RE(nexafs_bar(samples, np.arange(2460, 2480.2, .2), t=1, dets=[pil2M]))
+    #
+    #   (Then you run that ONE line instead of this loop. This is just a tidier option to
+    #    try later — your loop below still works as-is.)
+    # === end smi_plans note ================================================
     for  k  in ks:             
         mov_sam( k )
         RE(  S_edge_one_sample( sample = RE.md['sample']) )
@@ -137,15 +154,42 @@ def S_edge_one_sample(t=1, sample = None, reverse=False, bps_sleep_time=2,  ):
 
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: steps the X-ray energy across the sulfur edge (2460->2480.2 eV in
+    #   0.2 eV steps) and takes a SAXS image at each step; optionally repeats the sweep
+    #   backwards (reverse=True). Beam intensity is read from xbpm2 into the file name.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that does a
+    #   full energy sweep (up, or up+down) in one line and records the energy + beam
+    #   intensity straight into the saved data and the file name — so you don't hand-build
+    #   "{energy}eV_bpm{xbpm}" or read xbpm2 yourself, and it handles the energy settling
+    #   and beam feedback for you. Same scan as below:
+    #
+    #     from smi_plans import nexafs_run         # do this once at the top of your session
+    #     yield from nexafs_run(
+    #         sample,                              # the rest of the file name is added automatically
+    #         np.arange(2460, 2480.2, .2),         # your energies, unchanged
+    #         t=t,                                 # your exposure time, unchanged
+    #         dets=[pil2M],
+    #         updown=reverse,                      # do the down-sweep too when reverse=True
+    #     )
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the 'det_exposure_time' line marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' line below (see the ⚠️ note
+    #   on it). The energy 'sleep' lines still work — they're only flagged 💡 as no longer
+    #   needed once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil2M ] #, pil900KW,  amptek ]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' nexafs_run sets it for you via t=.)
     Elist = np.arange( 2460, 2480.2, .2) #[:2]
 
     name_fmt = "{sample}_pos1_{energy}eV_bpm{xbpm}"
     for e in Elist:        
         yield from bps.mv(energy, e)
-        if bps_sleep_time !=0:
+        if bps_sleep_time !=0:  # 💡 smi_plans: you can drop this settle wait (and the beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(bps_sleep_time)
         if xbpm2.sumX.get() < 100:
             yield from bps.sleep(2)
@@ -161,7 +205,7 @@ def S_edge_one_sample(t=1, sample = None, reverse=False, bps_sleep_time=2,  ):
         name_fmt = "{sample}_pos2_{energy}eV_wa_{wa}_bpm{xbpm}"
         for e in Elist[::-1]:
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: same as the up-sweep above — this settle wait and the beam-recheck are handled for you by move_energy_fb/energy_axis once you migrate. (Not broken, just no longer needed.)
             if xbpm2.sumX.get() < 10:
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, e)

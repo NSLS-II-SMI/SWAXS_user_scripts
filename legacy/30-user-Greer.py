@@ -1,4 +1,29 @@
 def mapping_saxs_Greer(t=5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each WAXS-arc angle, visits each sample and raster-scans a small
+    #   x/y grid (a 2-D map), taking SAXS+WAXS+fluorescence at every grid point.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a ready
+    #   map-runner that does the grid for you and records the WAXS-arc, beam, and detector
+    #   distance into the data + file name (no hand-built "{sam}_wa{waxs}deg"). For a single
+    #   sample's grid it looks like (per-sample x/y ranges as in your x_range/y_range):
+    #
+    #     from smi_plans import map_grid_run         # do this once per session
+    #     yield from map_grid_run(
+    #         "SPYZ_90deg",
+    #         piezo.x, 0, -300, 16,                  # x: start, stop, npts (relative to sample)
+    #         piezo.y, 0, -60, 31,                   # y: start, stop, npts
+    #         t=t, dets=[pil2M, pil900KW, amptek],
+    #     )
+    #     # ...wrap several of these with smi_plans.map_bar(...) to loop the whole bar + arc.
+    #
+    #   (Just a tidier option to try later — your script still works as-is, EXCEPT for the
+    #    lines marked ⚠️ which genuinely need a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this uses the retired 'pil300KW' WAXS detector (use
+    #   'pil900KW'), and the 'det_exposure_time(...)' calls must be run as plans — see the
+    #   ⚠️ notes on those lines.  (amptek is fine — it still works.)
+    # === end smi_plans note ================================================
     # samples = ['SPYZ_new', 'BOYZ', 'SPXZ', 'BOXZ']
 
     # x_list = [29000, 9330, -6470, -28870]
@@ -16,8 +41,8 @@ def mapping_saxs_Greer(t=5):
     y_range = [[0, -60, 31], [0, -60, 31], [0, -60, 31], [0, -60, 31]]
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW, amptek]  # dets = [pil2M,pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW, amptek]  # dets = [pil2M,pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' map_grid_run sets it for you via t=.)
 
     assert len(x_list) == len(
         samples
@@ -49,11 +74,29 @@ def mapping_saxs_Greer(t=5):
             )  # 1 = snake, 0 = not-snake
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): same as above — this "reset to 0.3 s" only takes effect if run as a plan:  yield from det_exposure_time(0.3, 0.3)  (or  RE(det_exposure_time(0.3, 0.3))).
 
 
 def mapping_saxs_test(t=0.1):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tiny test version of the map above — one "sample" at the current
+    #   position, a 2-point x by 1-point y grid, just to check the plumbing.
+    #
+    # 💡 NEWER, EASIER WAY: same as the real map — smi_plans' map_grid_run does the grid and
+    #   records the context for you. A test-sized call:
+    #
+    #     from smi_plans import map_grid_run
+    #     yield from map_grid_run(
+    #         "test",
+    #         piezo.x, 0, 0, 2,                      # 2 points in x (relative)
+    #         piezo.y, 0, 0, 1,                      # 1 point in y
+    #         t=t, dets=[pil2M, pil900KW, amptek],
+    #     )
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: uses the retired 'pil300KW' (use 'pil900KW'), and the
+    #   'det_exposure_time(...)' calls must run as plans — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     samples = ["test"]
     name = "test"
     x_list = [0]
@@ -63,8 +106,8 @@ def mapping_saxs_test(t=0.1):
     y_range = [[0, 0, 1]]
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW, amptek]  # dets = [pil2M,pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW, amptek]  # dets = [pil2M,pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' map_grid_run sets it for you via t=.)
 
     assert len(x_list) == len(
         samples
@@ -92,4 +135,4 @@ def mapping_saxs_test(t=0.1):
         )  # 1 = snake, 0 = not-snake
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): same as above — this "reset to 0.3 s" only takes effect if run as a plan:  yield from det_exposure_time(0.3, 0.3)  (or  RE(det_exposure_time(0.3, 0.3))).

@@ -2,8 +2,28 @@
 
 
 def P_edge_measurments(t=1):
-    dets = [pil2M, pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a phosphorus-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [
         "s05_P3MEEMT_115C_KPF6",
@@ -139,8 +159,22 @@ def P_edge_measurments(t=1):
 
 
 def transition_Cl_S_edges():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: walks the X-ray energy down/up through a list of values, pausing a
+    #   couple of seconds at each step (used to move smoothly between absorption edges).
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans moves the energy for you with move_energy_fb,
+    #   which steps in small hops, settles, and keeps the beam feedback happy — so you
+    #   don't need this hand-written walk with sleeps:
+    #
+    #     from smi_plans import move_energy_fb
+    #     yield from move_energy_fb(2450)     # just go straight to the target energy
+    #
+    #   (The 'sleep' lines below still work — they're only flagged 💡 as no longer needed.)
+    # === end smi_plans note ================================================
+
     yield from bps.mv(energy, 2800)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
     yield from bps.mv(energy, 2780)
     yield from bps.sleep(2)
     yield from bps.mv(energy, 2760)
@@ -174,8 +208,22 @@ def transition_Cl_S_edges():
 
 
 def transition_S_Cl_edges():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: walks the X-ray energy down/up through a list of values, pausing a
+    #   couple of seconds at each step (used to move smoothly between absorption edges).
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans moves the energy for you with move_energy_fb,
+    #   which steps in small hops, settles, and keeps the beam feedback happy — so you
+    #   don't need this hand-written walk with sleeps:
+    #
+    #     from smi_plans import move_energy_fb
+    #     yield from move_energy_fb(2450)     # just go straight to the target energy
+    #
+    #   (The 'sleep' lines below still work — they're only flagged 💡 as no longer needed.)
+    # === end smi_plans note ================================================
+
     yield from bps.mv(energy, 2450)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
     yield from bps.mv(energy, 2475)
     yield from bps.sleep(2)
     yield from bps.mv(energy, 2500)
@@ -209,8 +257,28 @@ def transition_S_Cl_edges():
 
 
 def Cl_edge_vertical(t=1):
-    dets = [pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # name = 's01_P3HT015_un', 's04_P3MEEMT_115_un', 's33_MM460_170_ClO4'
     name = "s33_MM460_170_ClO4"
@@ -255,7 +323,7 @@ def Cl_edge_vertical(t=1):
         name_fmt = "{sample}_vertical_{energy}eV_ai0.8deg_pos1_wa{wax}_bpm{xbpm}"
         for e in energies:
             yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
             bpm = xbpm2.sumX.value
             sample_name = name_fmt.format(
                 sample=name, energy="%6.2f" % e, wax=wa, xbpm="%4.3f" % bpm
@@ -265,7 +333,7 @@ def Cl_edge_vertical(t=1):
             yield from bp.count(dets, num=1)
 
         yield from bps.mv(energy, 2850)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
         yield from bps.mv(energy, 2830)
         yield from bps.sleep(2)
         yield from bps.mv(energy, 2810)
@@ -273,14 +341,31 @@ def Cl_edge_vertical(t=1):
 
 
 def NEXAFS_P_edge(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS energy scan — it steps the X-ray energy across the phosphorus
+    #   edge and takes a detector image (and beam readings) at each energy.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does a full energy scan like this in ONE line and records the energy + beam
+    #   intensity straight into the saved data and the file name for you (so you don't
+    #   hand-build the name or read xbpm by hand), and it handles the energy settling and
+    #   beam feedback. Roughly:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=1, dets=[pil900KW])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     yield from bps.mv(waxs, 45)
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     name = "NEXAFS_s3_test_Pedge_nspot1"
 
     energies = np.linspace(2130, 2180, 51)
     xbpm3_y = np.linspace(1.42, 1.40, 51)
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
     name_fmt = "{sample}_{energy}eV_xbpm{xbpm}"
 
     for e, xbpm3_ys in zip(energies, xbpm3_y):
@@ -298,8 +383,28 @@ def NEXAFS_P_edge(t=0.5):
 
 
 def S_edge_vertical(t=1):
-    dets = [pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # name = 's01_P3HT015_un', 's04_P3MEEMT_115_un', 's33_MM460_170_ClO4'
     name = "MM460_170"
@@ -347,7 +452,7 @@ def S_edge_vertical(t=1):
         name_fmt = "{sample}_vertical_{energy}eV_ai7.7deg_pos1_wa{wax}_bpm{xbpm}"
         for e in energies:
             yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
             bpm = xbpm2.sumX.value
             sample_name = name_fmt.format(
                 sample=name, energy="%6.2f" % e, wax=wa, xbpm="%4.3f" % bpm
@@ -357,7 +462,7 @@ def S_edge_vertical(t=1):
             yield from bp.count(dets, num=1)
 
         yield from bps.mv(energy, 2490)
-        yield from bps.sleep(1)
+        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
         yield from bps.mv(energy, 2470)
         yield from bps.sleep(1)
         yield from bps.mv(energy, 2450)
@@ -365,7 +470,27 @@ def S_edge_vertical(t=1):
 
 
 def giwaxs_Cl_edge_Lee_aois_2121_1(t=1):
-    dets = [pil2M, pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # names =   ['P3HT_600_KCl04_par', 'P3HT_500_KCl04', 'P3HT_neat', 'P3HT_600_KCl']
     # x_piezo = [              -31000,           -41000,      -53000,         -56000]
@@ -377,7 +502,7 @@ def giwaxs_Cl_edge_Lee_aois_2121_1(t=1):
     x_hexa = [0]
     z_piezo = [0]
 
-    dets = [pil2M, pil300KW]
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     waxs_arc = [0, 15]
 
     for numero, (name, xs_piezo, xs_hexa, zs_piezo) in enumerate(
@@ -406,14 +531,14 @@ def giwaxs_Cl_edge_Lee_aois_2121_1(t=1):
 
             for k, e in enumerate(energies):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
                 yield from bps.mv(piezo.x, xs_piezo + k * 600 + i * 200)
 
                 for l, ais in enumerate(ai_list):
                     yield from bps.mv(piezo.th, ai0 + ais)
 
-                    det_exposure_time(t, t)
+                    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
                     name_fmt = (
                         "{sample}_pos1_aiscan_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     )
@@ -432,14 +557,14 @@ def giwaxs_Cl_edge_Lee_aois_2121_1(t=1):
 
             for k, e in enumerate(energies[::-1]):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
                 yield from bps.mv(piezo.x, xs_piezo + 1000 + k * 600 + i * 200)
 
                 for l, ais in enumerate(ai_list):
                     yield from bps.mv(piezo.th, ai0 + ais)
 
-                    det_exposure_time(t, t)
+                    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
                     name_fmt = (
                         "{sample}_pos2_aiscan_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     )
@@ -458,6 +583,23 @@ def giwaxs_Cl_edge_Lee_aois_2121_1(t=1):
 
 
 def SVA_night_12_02(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a absorption-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # === end smi_plans note ================================================
+
     global names, x_hexa, y_hexa, incident_angles, y_hexa_aligned
 
     names = [
@@ -554,7 +696,27 @@ def SVA_night_12_02(t=1):
 
 
 def S_edge_measurments_transmission(t=1):
-    dets = [pil2M, pil900KW, pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # names = ['P3MEEMT_13k_115C', 'P3MEEMT_23k_115C', 'MM460_170C', 'PB2T_TEG_undoped', 'PB2T_TEG_partialCV', 'PB2T_TEG_partial_dedope',
     # 'PB2T_TEG_doped400mV', 'KClO4_neat']
@@ -603,7 +765,7 @@ def S_edge_measurments_transmission(t=1):
     ]
 
     waxs_arc = [23]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     for numb, (name, xs, ys) in enumerate(zip(names, x_piezo, y_piezo)):
         yield from bps.mv(piezo.x, xs)
@@ -618,7 +780,7 @@ def S_edge_measurments_transmission(t=1):
             name_fmt = "{sample}_saxsredo_{energy}eV_pos1_wa{wax}_bpm{xbpm}"
             for e, ysss in zip(energies, yss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(1)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 yield from bps.mv(piezo.y, ysss)
                 bpm = xbpm2.sumX.value
                 sample_name = name_fmt.format(
@@ -632,7 +794,7 @@ def S_edge_measurments_transmission(t=1):
             name_fmt = "{sample}_{energy}eV_pos2_wa{wax}_bpm{xbpm}"
             for e, ysss in zip(energies[::-1], yss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(1)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 yield from bps.mv(piezo.y, ysss)
                 bpm = xbpm2.sumX.value
                 sample_name = name_fmt.format(
@@ -644,7 +806,27 @@ def S_edge_measurments_transmission(t=1):
 
 
 def Cl_edge_measurments_transmission(t=1):
-    dets = [pil2M, pil900KW, pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # names = ['PB2T_TEG_undoped', 'PB2T_TEG_partialCV', 'PB2T_TEG_partial_dedope', 'PB2T_TEG_doped400mV', 'KClO4_neat']
     # x_piezo = [3800, -1800, -7800, -13300, -20000]
@@ -694,7 +876,7 @@ def Cl_edge_measurments_transmission(t=1):
     ]
 
     waxs_arc = [2, 23]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     for numb, (name, xs, ys) in enumerate(zip(names, x_piezo, y_piezo)):
         yield from bps.mv(piezo.x, xs)
@@ -709,7 +891,7 @@ def Cl_edge_measurments_transmission(t=1):
             name_fmt = "{sample}_saxs_{energy}eV_pos1_wa{wax}_bpm{xbpm}"
             for e, ysss in zip(energies, yss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(1)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 yield from bps.mv(piezo.y, ysss)
                 bpm = xbpm2.sumX.value
                 sample_name = name_fmt.format(
@@ -723,7 +905,7 @@ def Cl_edge_measurments_transmission(t=1):
             name_fmt = "{sample}_{energy}eV_pos2_wa{wax}_bpm{xbpm}"
             for e, ysss in zip(energies[::-1], yss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(1)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 yield from bps.mv(piezo.y, ysss)
                 bpm = xbpm2.sumX.value
                 sample_name = name_fmt.format(
@@ -736,12 +918,31 @@ def Cl_edge_measurments_transmission(t=1):
 
 def S_edge_SVA_measurments_2021_3(t=1, offset=1, humidity="test"):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     names = ["PB2T_TEG_doped400mV"]
     x_hexa = [-12500]
     y_hexa = [300]
 
-    dets = [pil2M, pil300KW, pil900KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW, pil900KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     energies = [
         2450.0,
@@ -799,7 +1000,7 @@ def S_edge_SVA_measurments_2021_3(t=1, offset=1, humidity="test"):
                 name_fmt = "{sample}_hum{hum}_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(1)
+                    yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                     yield from bps.mv(stage.x, xs + counter * 0.025)
                     counter += 1
                     bpm = xbpm2.sumX.value
@@ -818,7 +1019,7 @@ def S_edge_SVA_measurments_2021_3(t=1, offset=1, humidity="test"):
                 name_fmt = "{sample}_hum{hum}_{energy}eV_ai{ai}_pos2_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(1)
+                    yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                     yield from bps.mv(stage.x, xs + counter * 0.025)
                     counter += 1
                     bpm = xbpm2.sumX.value
@@ -836,8 +1037,28 @@ def S_edge_SVA_measurments_2021_3(t=1, offset=1, humidity="test"):
 
 
 def Cl_edge_measurments_2022_1(t=1):
-    dets = [pil2M, pil900KW, pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['MM389_submerged', 'MM389_n500mV', 'MM389_n400mV', 'MM389_n300mV', 'MM389_p400mV', 'MM389_n200mV', 'MM389_n100mV', 'MM389_n000mV', 'MM389_p100mV', 'MM389_p200mV',
     # 'MM460_submerged', 'MM460_n500', 'MM460_n400', 'MM460_n300', 'MM460_p400', 'MM460_n200', 'MM460_n100', 'MM460_n000', 'MM460_p100', 'MM460_p200',
@@ -921,12 +1142,12 @@ def Cl_edge_measurments_2022_1(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
 
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW, pil300KW] if wa < 10 else [pil2M, pil900KW, pil300KW]
+            dets = [pil900KW, pil300KW] if wa < 10 else [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
             yield from bps.mv(waxs, wa)
             yield from bps.mv(piezo.x, xs)
@@ -938,8 +1159,8 @@ def Cl_edge_measurments_2022_1(t=1):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 120:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 120:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -961,8 +1182,8 @@ def Cl_edge_measurments_2022_1(t=1):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos2_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 120:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 120:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -1017,8 +1238,28 @@ def Cl_edge_measurments_2022_1(t=1):
 
 
 def K_edge_measurments_2022_1(t=0.5):
-    dets = [pil2M, pil900KW, pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # exploratory K L-edge at 2022-1:
     names = [
@@ -1083,12 +1324,12 @@ def K_edge_measurments_2022_1(t=0.5):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
 
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW, pil300KW] if wa < 10 else [pil2M, pil900KW, pil300KW]
+            dets = [pil900KW, pil300KW] if wa < 10 else [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
             yield from bps.mv(waxs, wa)
             yield from bps.mv(piezo.x, xs)
@@ -1100,8 +1341,8 @@ def K_edge_measurments_2022_1(t=0.5):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 120:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 120:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -1120,7 +1361,7 @@ def K_edge_measurments_2022_1(t=0.5):
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     yield from bp.count(dets, num=1)
                 yield from bps.mv(energy, 3680)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 yield from bps.mv(energy, 3640)
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, 3590)
@@ -1144,12 +1385,32 @@ def K_edge_measurments_2022_1(t=0.5):
                 #     yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (smi_plans' technique runs set it for you via t=.)
 
 
 def S_edge_measurments_2022_1(t=1):
-    dets = [pil2M, pil900KW, pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ["P3HT_TCB1to20_paral_phi8deg"]
     x_piezo = np.asarray([19900])
@@ -1232,26 +1493,26 @@ def S_edge_measurments_2022_1(t=1):
         )  # sometimes doesn't work, belt and suspenders always two twice
 
         # ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             yield from bps.mv(piezo.x, xs)
             counter = 0
-            dets = [pil900KW, pil300KW] if wa < 10 else [pil2M, pil900KW, pil300KW]
+            dets = [pil900KW, pil300KW] if wa < 10 else [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
             for k, ais in enumerate(ai_list):
                 yield from bps.mv(piezo.th, ai0 + ais)
 
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 120:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 120:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(
                             2
                         )  # used to be 5 when fighting RF noise, can be sped up to
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                     yield from bps.mv(piezo.x, xs - counter * 30)
                     counter += 1
 
@@ -1270,8 +1531,8 @@ def S_edge_measurments_2022_1(t=1):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos2_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 120:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 120:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -1324,10 +1585,21 @@ def S_edge_measurments_2022_1(t=1):
                 #     print(f'\n\t=== Sample: {sample_name} ===\n')
                 #     yield from bp.count(dets, num=1)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (smi_plans' technique runs set it for you via t=.)
 
 
 def night_2021_12_15(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     proposal_id("2021_3", "307296_Richter4")
     yield from S_edge_measurments_2021_3(t=t)
 
@@ -1339,6 +1611,17 @@ def night_2022_1(t=1):
     #   removed for night 2, kept bps.mv
     #   proposal_id('2022_1', '309251_Richter_Clnight')
     #   yield from Cl_edge_measurments_2022_1(t=t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     yield from transition_Cl_S_edges()
     yield from bps.mv(xbpm3_pos.y, 1.376)
     proposal_id("2022_1", "309251_Richter_Snight")
@@ -1349,8 +1632,28 @@ def night_2022_1(t=1):
 
 
 def Cl_edge_measurments_2021_3_hex(t=1):
-    dets = [pil2M, pil900KW, pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ["20um_blank"]
     x_hexap = [18]
@@ -1374,7 +1677,7 @@ def Cl_edge_measurments_2021_3_hex(t=1):
         yield from alignement_gisaxs_hex_roughsample(angle=0.45)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -1386,8 +1689,8 @@ def Cl_edge_measurments_2021_3_hex(t=1):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 120:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 120:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(5)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -1409,8 +1712,8 @@ def Cl_edge_measurments_2021_3_hex(t=1):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos2_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 120:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 120:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(5)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -1433,9 +1736,29 @@ def Cl_edge_measurments_2021_3_hex(t=1):
 
 
 def run_waxs_waitwater_2022_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a absorption-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below.
+    # === end smi_plans note ================================================
+
     names = ["KClO4_flow_on_AuNps_2450eV"]
     user = "LR"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
     waxs_arc = [0]
     # Detectors, motors:
     dets = [pil900KW]
@@ -1456,12 +1779,32 @@ def run_waxs_waitwater_2022_1(t=1):
     sample_id(user_name=user, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
 
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' technique runs set it for you via t=.)
 
 
 def Cl_edge_measurments_liquid_cell(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     name = "KClO4_2ndload_flowing_300ssleep"
 
@@ -1477,7 +1820,7 @@ def Cl_edge_measurments_liquid_cell(t=1):
         name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
         for e in energies:
             yield from bps.mv(energy, e)
-            yield from bps.sleep(300)
+            yield from bps.sleep(300)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
             bpm = xbpm3.sumX.get()
             sample_name = name_fmt.format(
@@ -1488,7 +1831,7 @@ def Cl_edge_measurments_liquid_cell(t=1):
             yield from bp.count(dets, num=1)
 
     yield from bps.mv(energy, 2860)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
     yield from bps.mv(energy, 2830)
     yield from bps.sleep(2)
     yield from bps.mv(energy, 2810)
@@ -1497,7 +1840,7 @@ def Cl_edge_measurments_liquid_cell(t=1):
     yield from bps.sleep(300)
 
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['KClO4']
     # name = 'KClO4_2ndload_flowing_300ssleep'
@@ -1514,7 +1857,7 @@ def Cl_edge_measurments_liquid_cell(t=1):
         name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
         for e in energies:
             yield from bps.mv(energy, e)
-            yield from bps.sleep(300)
+            yield from bps.sleep(300)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
             # yield from bps.mvr(stage.y, -0.02)
             # if xbpm2.sumX.get() < 120:
             #     yield from bps.sleep(5)
@@ -1530,7 +1873,7 @@ def Cl_edge_measurments_liquid_cell(t=1):
             yield from bp.count(dets, num=1)
 
     yield from bps.mv(energy, 2860)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
     yield from bps.mv(energy, 2830)
     yield from bps.sleep(2)
     yield from bps.mv(energy, 2810)
@@ -1538,8 +1881,28 @@ def Cl_edge_measurments_liquid_cell(t=1):
 
 
 def PEDOT_Cl_edge_measurments_2022_1(t=1):
-    dets = [pil2M, pil900KW, pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
     #
     # Doped PEDOT PSS Films (run on K) at Cl
     #
@@ -1633,12 +1996,12 @@ def PEDOT_Cl_edge_measurments_2022_1(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
 
             # Do not take SAXS when WAXS detector in the way
-            dets = [pil900KW, pil300KW] if wa < 10 else [pil2M, pil900KW, pil300KW]
+            dets = [pil900KW, pil300KW] if wa < 10 else [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
             yield from bps.mv(waxs, wa)
             yield from bps.mv(piezo.x, xs)
@@ -1650,8 +2013,8 @@ def PEDOT_Cl_edge_measurments_2022_1(t=1):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 120:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 120:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -1670,7 +2033,7 @@ def PEDOT_Cl_edge_measurments_2022_1(t=1):
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     yield from bp.count(dets, num=1)
                 yield from bps.mv(energy, 2860)  # step back gracefully
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 yield from bps.mv(energy, 2830)
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, 2810)
@@ -1689,8 +2052,28 @@ def PEDOT_Cl_edge_measurments_2022_1(t=1):
 
 
 def Cl_edge_measurments_2022_1_hex(t=5, sample="test"):
-    dets = [pil2M, pil900KW, pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [sample]
     x_hexap = [-27.6]
@@ -1741,7 +2124,7 @@ def Cl_edge_measurments_2022_1_hex(t=5, sample="test"):
         #       yield from alignement_gisaxs_hex_roughsample(angle = 0.45) is already aligned
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -1753,8 +2136,8 @@ def Cl_edge_measurments_2022_1_hex(t=5, sample="test"):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 120:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 120:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(5)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -1833,8 +2216,28 @@ def Cl_edge_measurments_2022_1_hex(t=5, sample="test"):
 
 
 def Cl_edge_measurments_2022_1_hex_slide_only(t=5, sample="test"):
-    dets = [pil2M, pil900KW, pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
+    dets = [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [sample]
     x_hexap = [-3.46]
@@ -1887,7 +2290,7 @@ def Cl_edge_measurments_2022_1_hex_slide_only(t=5, sample="test"):
         #       yield from alignement_gisaxs_hex_roughsample(angle = 0.45) is already aligned
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -1899,8 +2302,8 @@ def Cl_edge_measurments_2022_1_hex_slide_only(t=5, sample="test"):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 120:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 120:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(5)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -1920,7 +2323,7 @@ def Cl_edge_measurments_2022_1_hex_slide_only(t=5, sample="test"):
                     yield from bp.count(dets, num=1)
 
     yield from bps.mv(energy, 2860)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
     yield from bps.mv(energy, 2830)
     yield from bps.sleep(2)
     yield from bps.mv(energy, 2810)
@@ -1931,8 +2334,28 @@ def Cl_edge_measurments_2022_1_hex_slide_only(t=5, sample="test"):
 
 
 def Cl_edge_measurments_2022_3_hex(t=5, x=0, sample="test"):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [sample]
     x_hexap = [x]
@@ -1950,7 +2373,7 @@ def Cl_edge_measurments_2022_3_hex(t=5, x=0, sample="test"):
         yield from alignement_gisaxs_hex(angle = 0.8)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
         
         yield from bps.mv(stage.th, ai0 + ai_list[0])
 
@@ -1965,8 +2388,8 @@ def Cl_edge_measurments_2022_3_hex(t=5, x=0, sample="test"):
             name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
             for e in energies:
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                     yield from bps.sleep(5)
                     yield from bps.mv(energy, e)
                     yield from bps.sleep(2)
@@ -1983,8 +2406,8 @@ def Cl_edge_measurments_2022_3_hex(t=5, x=0, sample="test"):
             name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
             for e in energies[::-1]:
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                     yield from bps.sleep(5)
                     yield from bps.mv(energy, e)
                     yield from bps.sleep(2)
@@ -2003,8 +2426,28 @@ def Cl_edge_measurments_2022_3_hex(t=5, x=0, sample="test"):
 
 
 def Cl_edge_measurments_2022_3_hex2(t=5, x=0, sample="test"):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [sample]
     x_hexap = [x]
@@ -2027,7 +2470,7 @@ def Cl_edge_measurments_2022_3_hex2(t=5, x=0, sample="test"):
         yield from bps.mv(stage.x, xs_hexap-0.05)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
         
         yield from bps.mv(stage.th, ai0 + ai_list[0])
 
@@ -2040,8 +2483,8 @@ def Cl_edge_measurments_2022_3_hex2(t=5, x=0, sample="test"):
             name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
             for e in energies:
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                     yield from bps.sleep(5)
                     yield from bps.mv(energy, e)
                     yield from bps.sleep(2)
@@ -2057,8 +2500,8 @@ def Cl_edge_measurments_2022_3_hex2(t=5, x=0, sample="test"):
             name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
             for e in energies[::-1]:
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                     yield from bps.sleep(5)
                     yield from bps.mv(energy, e)
                     yield from bps.sleep(2)
@@ -2079,6 +2522,17 @@ def Cl_edge_measurments_2022_3_hex2(t=5, x=0, sample="test"):
 def Cl_edge_measurments_2022_3_fullcycle(t=1, sample="test"):
     # yield from Cl_edge_measurments_2022_3_hex2(1, x=10, sample='Load5inner_MM460_160C_100mMKClO4_dope_0p6V_1')
     # yield from Cl_edge_measurments_2022_3_hex2(1, x=11.8, sample='Load5inner_MM460_160C_100mMKClO4_dope_0p4V_2')
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     yield from Cl_edge_measurments_2022_3_hex2(1, x=13.5, sample='Load5inner_MM460_160C_100mMKClO4_dope_0p6V_3')
 
     # yield from Cl_edge_measurments_2022_3_hex2(1, x=-18, sample='MM389repeat_160C_100mMKClO4_dedope_n0p6_2')
@@ -2091,6 +2545,17 @@ def Cl_edge_measurments_2022_3_fullcycle(t=1, sample="test"):
 
 
 def Cl_edge_measurments_2022_3_no_energy(t=1, sample="test"):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes images at the current energy/positions without sweeping the
+    #   energy (a quick measurement step).
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' acquire / giwaxs_run take the image(s) and record
+    #   the positions + beam readings into the saved data and file name for you.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below.
+    # === end smi_plans note ================================================
+
     yield from bps.mvr(stage.th, 1)
     yield from bps.mv(waxs, 20)
 
@@ -2098,7 +2563,7 @@ def Cl_edge_measurments_2022_3_no_energy(t=1, sample="test"):
     # dets = [OAV2_writing, pil900KW]
     dets = [OAV2_writing, pil2M]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [sample]
     
@@ -2115,8 +2580,28 @@ def Cl_edge_measurments_2022_3_no_energy(t=1, sample="test"):
 
 
 def Cl_edge_measurments_2022_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['MM389_0p6V_KClO4',    'MM460_0p6V_KClO4', 'MM460_usedfrit_0p6V_KClO4', 'blankFrit', 'PSorPVC', 'PSorPVC2']
     x_piezo = [          -38000,                -26000,                      -15000,       -3000,     12000,      35000]
@@ -2155,7 +2640,7 @@ def Cl_edge_measurments_2022_3(t=1):
         yield from alignement_gisaxs_doblestack(0.8)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             # Do not take SAXS when WAXS detector in the way
@@ -2173,8 +2658,8 @@ def Cl_edge_measurments_2022_3(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2191,8 +2676,8 @@ def Cl_edge_measurments_2022_3(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2209,8 +2694,28 @@ def Cl_edge_measurments_2022_3(t=1):
 
 
 def S_edge_measurments_2022_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['P3DT_un',         'PBTTT_un', 'PR41_un', 'halfP3MEEMT_un', 'P3PAAT_un', 'P3AAPT_un', 'P3MEEMT_un', 
     #  'P3DT_1p2V_KCLO4', 'PBTTT_1p2V_KClO4', 'RP41_0p7_KClO4','halfP3MEEMT_0.7V_KClO4', 'P3PAAT_0p7_KClO4', 'P3AAPT_0p7_KClO4', 'P3MEEMT_0p7_KClO4']
@@ -2252,7 +2757,7 @@ def S_edge_measurments_2022_3(t=1):
         yield from alignement_gisaxs_doblestack(0.8)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -2268,8 +2773,8 @@ def S_edge_measurments_2022_3(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2286,8 +2791,8 @@ def S_edge_measurments_2022_3(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2381,6 +2886,17 @@ def S_edge_measurments_2022_3(t=1):
 
 
 def night_2022_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     proposal_id("2022_3", "310999_Richter9")
     yield from Cl_edge_measurments_2022_3(t=1)
     yield from transition_Cl_S_edges()
@@ -2390,8 +2906,28 @@ def night_2022_3(t=1):
 
 
 def K_edge_measurments_2022_3(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['AcidPEDOTPSS_as',    'AcidPEDOTPSS_exposed', 'AcidPEDOTPSS_0V', 'AcidPEDOTPSS_dedope_n0p6', 'AcidPEDOTPSS_overdope_p0p6', 'AcidPEDOTPSS_NaCl', 'AcidPEDOTPSS_NaBr', 'AcidPEDOTPSS_RbCl', 'AcidPEDOTPSS_RbBr', 'StandardPEDOTPSS_as', 'StandardPEDOTPSS_RbBr', 'StandardPEDOTPSS_NaBr',
     #  'P3MEEMT23k115C_0p7_KTFSI', 'P3MEEMT23k115C_0p4_KTFSI', 'P3MEEMT23k115C_un', 'LiTFSI_PEDOTPSS_as', 'LiTFSI_PEDOTPSS_exposed', 'LiTFSI_PEDOTPSS_0V', 'LiTFSI_PEDOTPSS_dedoped_n0p6', 'LiTFSI_PEDOTPSS_redoped_0V', 'LiTFSI_PEDOTPSS_overdoped_p0p6V', 'LiTFSI_PEDOTPSS_RbBr']
@@ -2430,7 +2966,7 @@ def K_edge_measurments_2022_3(t=0.5):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -2446,8 +2982,8 @@ def K_edge_measurments_2022_3(t=0.5):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2461,7 +2997,7 @@ def K_edge_measurments_2022_3(t=0.5):
                     yield from bp.count(dets, num=1)
 
                 yield from bps.mv(energy, 3680)
-                yield from bps.sleep(3)
+                yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 yield from bps.mv(energy, 3640)
                 yield from bps.sleep(3)
                 yield from bps.mv(energy, 3590)
@@ -2488,15 +3024,35 @@ def K_edge_measurments_2022_3(t=0.5):
                 #     yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (smi_plans' technique runs set it for you via t=.)
 
 
 
 
 
 def S_edge_measurments_2022_3_guillaume(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
 
     names = [    'A1',   'A2',    'A3',   'A4',   'A5',   'A6',  'B1',  'B2',  'B3',  'B4',  'B5',  'B6']
@@ -2523,7 +3079,7 @@ def S_edge_measurments_2022_3_guillaume(t=1):
         yield from alignement_gisaxs_doblestack(0.8)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -2539,8 +3095,8 @@ def S_edge_measurments_2022_3_guillaume(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2560,8 +3116,28 @@ def S_edge_measurments_2022_3_guillaume(t=1):
 
 
 def S_edge_measurments_2023_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['nov_AcidPEDOTPSS_n0p6', 'feb_AcidPEDOTPSS_as', 'new_AcidPEDOTPSS_as']
     x_piezo = [ 15000,-1000, -16000]
@@ -2592,7 +3168,7 @@ def S_edge_measurments_2023_1(t=1):
         yield from alignement_gisaxs(0.8)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -2608,8 +3184,8 @@ def S_edge_measurments_2023_1(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2626,8 +3202,8 @@ def S_edge_measurments_2023_1(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2646,9 +3222,29 @@ def S_edge_measurments_2023_1(t=1):
 
 
 def S_edge_measurments_2023_1_energyshiftstudy(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['nov_AcidPEDOTPSS_n0p6_test_lqrgeoffset']
     x_piezo = [ 15000]
@@ -2679,7 +3275,7 @@ def S_edge_measurments_2023_1_energyshiftstudy(t=1):
         # yield from alignement_gisaxs(0.8)
 
         # ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -2723,12 +3319,12 @@ def S_edge_measurments_2023_1_energyshiftstudy(t=1):
                     # yield from bps.sleep(2)
                     while abs(energy.energy.position-2450)>20: 
                         yield from bps.mv(energy, energy.energy.position-20)
-                        yield from bps.sleep(2)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                     yield from bps.mv(energy, 2450)
                     yield from bps.sleep(2)
                     while abs(e-energy.energy.position)>20: 
                         yield from bps.mv(energy, energy.energy.position+10)
-                        yield from bps.sleep(2)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
                     yield from bps.mv(energy, e)
                     yield from bps.sleep(2)
@@ -2753,8 +3349,28 @@ def S_edge_measurments_2023_1_energyshiftstudy(t=1):
 
 
 def S_edge_measurments_2023_1_night1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['EG_PEDOTPSS_as', 'EG_PEDOTPSS_exp','EG_PEDOTPSS_dedope','EG_PEDOTPSS_redope','EG_PEDOTPSS_overdope','acid_PEDOTPSS_as', 'acid_PEDOTPSS_exp','acid_PEDOTPSS_dedope','acid_PEDOTPSS_redope','acid_PEDOTPSS_overdope',      'NaPSS',          'PVC',  'Si',
                  'P3MEEET_as', 'P3MEEET_exp_KCl',  'P3MEEET_dope_KCl','P3MEEET_dedope_KCl',            'InDTP_as',       'InDTP_exp',        'InDTP_dope',        'InDTP_dedope',           'OutDTP_as',            'OutDTP_exp','OutDTP_dope','OutDTP_dedope']
@@ -2789,7 +3405,7 @@ def S_edge_measurments_2023_1_night1(t=1):
         yield from alignement_gisaxs_doblestack(0.8)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -2805,8 +3421,8 @@ def S_edge_measurments_2023_1_night1(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2823,8 +3439,8 @@ def S_edge_measurments_2023_1_night1(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2842,8 +3458,28 @@ def S_edge_measurments_2023_1_night1(t=1):
 
 
 def Cl_edge_measurments_2023_1_night1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['EG_PEDOTPSS_as', 'EG_PEDOTPSS_exp','EG_PEDOTPSS_dedope','EG_PEDOTPSS_redope','EG_PEDOTPSS_overdope','acid_PEDOTPSS_as', 'acid_PEDOTPSS_exp','acid_PEDOTPSS_dedope','acid_PEDOTPSS_redope','acid_PEDOTPSS_overdope',      'NaPSS',          'PVC',  'Si',
     #              'P3MEEET_as', 'P3MEEET_exp_KCl',  'P3MEEET_dope_KCl','P3MEEET_dedope_KCl',            'InDTP_as',       'InDTP_exp',        'InDTP_dope',        'InDTP_dedope',           'OutDTP_as',            'OutDTP_exp','OutDTP_dope','OutDTP_dedope']
@@ -2888,7 +3524,7 @@ def Cl_edge_measurments_2023_1_night1(t=1):
         yield from alignement_gisaxs_doblestack(0.8)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -2904,8 +3540,8 @@ def Cl_edge_measurments_2023_1_night1(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2922,8 +3558,8 @@ def Cl_edge_measurments_2023_1_night1(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -2944,6 +3580,17 @@ def night_2023_1(t=1):
 
     #proposal_id("2023_1", "310999_Richter_2")
     #yield from S_edge_measurments_2023_1_night1(t=1)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     proposal_id("2023_1", "310999_Richter_3")
     #yield from transition_S_Cl_edges()
     yield from Cl_edge_measurments_2023_1_night1(t=1)
@@ -2952,8 +3599,22 @@ def night_2023_1(t=1):
 
 
 def Cl_edge_xscan_2023_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a spatial line scan — it steps the sample across x and takes an
+    #   image at each position (often at a fixed energy), to scan along a stripe.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' map_line_run does a line scan and records the
+    #   x position + beam readings into the saved data and file name for you:
+    #
+    #     from smi_plans import map_line_run
+    #     yield from map_line_run(name, stage.x, x0, x1, npts, t=1, dets=[pil900KW])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['MM460_KCO4']
     # x_hexa = [-13.5]
@@ -2980,7 +3641,7 @@ def Cl_edge_xscan_2023_1(t=1):
         # yield from alignement_gisaxs_hex(0.4)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -2991,7 +3652,7 @@ def Cl_edge_xscan_2023_1(t=1):
 
             name_fmt = "{sample}_xscan_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
             yield from bps.mv(energy, energies)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
 
             for xss in np.linspace(xs_hexa, xs_hexa-7, 15):
@@ -3007,8 +3668,27 @@ def Cl_edge_xscan_2023_1(t=1):
 
 
 def Cl_edge_measurments_2023_1_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['MM460_KClO4_partialdoped0V']
     # x_hexa = [-18.6]
@@ -3032,7 +3712,7 @@ def Cl_edge_measurments_2023_1_sva(t=1):
         # yield from alignement_gisaxs_hex(0.8)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -3047,8 +3727,8 @@ def Cl_edge_measurments_2023_1_sva(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3064,8 +3744,8 @@ def Cl_edge_measurments_2023_1_sva(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3096,8 +3776,28 @@ def Cl_edge_measurments_2023_1_sva(t=1):
 
 
 def K_edge_measurments_2023_1_night1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['acid_PEDOTPSS_as', 'acid_PEDOTPSS_exp','acid_PEDOTPSS_dedope','acid_PEDOTPSS_redope','acid_PEDOTPSS_overdope', 'PBDF_as', 'PBDF_dope','PBDF_dedope','gNDI_as','gNDI_dope',      'P3MEEET_exp_KClO4',          'P3MEEET_dope_KClO4',  'P3MEEET_dedope_KClO4',
     #              'P3MEEET_as', 'P3MEEET_exp_KCl',  'P3MEEET_dope_KCl','P3MEEET_dedope_KCl',            'InDTP_as',       'InDTP_exp',        'InDTP_dope',        'InDTP_dedope',           'OutDTP_as',            'OutDTP_exp','OutDTP_dope','OutDTP_dedope']
@@ -3152,7 +3852,7 @@ def K_edge_measurments_2023_1_night1(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -3168,8 +3868,8 @@ def K_edge_measurments_2023_1_night1(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3183,7 +3883,7 @@ def K_edge_measurments_2023_1_night1(t=1):
                     yield from bp.count(dets, num=1)
 
                 yield from bps.mv(energy, 3660)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 yield from bps.mv(energy, 3620)
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, 3580)
@@ -3195,8 +3895,28 @@ def K_edge_measurments_2023_1_night1(t=1):
 
 
 def K_edge_measurments_2023_2_night1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['acid_PEDOTPSS_as', 'acid_PEDOTPSS_exp','acid_PEDOTPSS_dedope','acid_PEDOTPSS_redope','acid_PEDOTPSS_overdope', 'PBDF_as', 'PBDF_dope','PBDF_dedope','gNDI_as','gNDI_dope',      'P3MEEET_exp_KClO4',          'P3MEEET_dope_KClO4',  'P3MEEET_dedope_KClO4',
     #              'P3MEEET_as', 'P3MEEET_exp_KCl',  'P3MEEET_dope_KCl','P3MEEET_dedope_KCl',            'InDTP_as',       'InDTP_exp',        'InDTP_dope',        'InDTP_dedope',           'OutDTP_as',            'OutDTP_exp','OutDTP_dope','OutDTP_dedope']
@@ -3251,7 +3971,7 @@ def K_edge_measurments_2023_2_night1(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -3265,7 +3985,7 @@ def K_edge_measurments_2023_2_night1(t=1):
                 yield from bps.mv(piezo.th, ai0 + ais)
 
                 yield from bps.mv(energy, 3580)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 yield from bps.mv(energy, 3620)
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, 3660)
@@ -3275,8 +3995,8 @@ def K_edge_measurments_2023_2_night1(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3293,6 +4013,17 @@ def K_edge_measurments_2023_2_night1(t=1):
 
 
 def night_2023_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     proposal_id("2023_1", "310999_Richter_6")
     yield from K_edge_measurments_2023_1_night1(t=1)
 
@@ -3305,8 +4036,22 @@ def night_2023_2(t=1):
 
 
 def K_edge_xscan_2023_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a spatial line scan — it steps the sample across x and takes an
+    #   image at each position (often at a fixed energy), to scan along a stripe.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' map_line_run does a line scan and records the
+    #   x position + beam readings into the saved data and file name for you:
+    #
+    #     from smi_plans import map_line_run
+    #     yield from map_line_run(name, stage.x, x0, x1, npts, t=1, dets=[pil900KW])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['blank_silicon']
     x_hexa = [-13]
@@ -3330,7 +4075,7 @@ def K_edge_xscan_2023_1(t=1):
 
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -3341,7 +4086,7 @@ def K_edge_xscan_2023_1(t=1):
 
             name_fmt = "{sample}_xscan_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
             yield from bps.mv(energy, energies)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
 
             for xss in np.linspace(xs_hexa, xs_hexa-7, 15):
@@ -3357,8 +4102,27 @@ def K_edge_xscan_2023_1(t=1):
 
 
 def K_edge_measurments_2023_1_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['MM460_KClO4_partialdoped0V']
     # x_hexa = [-18.6]
@@ -3383,7 +4147,7 @@ def K_edge_measurments_2023_1_sva(t=1):
         # yield from alignement_gisaxs_hex(0.8)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -3398,8 +4162,8 @@ def K_edge_measurments_2023_1_sva(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3416,8 +4180,8 @@ def K_edge_measurments_2023_1_sva(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3434,8 +4198,28 @@ def K_edge_measurments_2023_1_sva(t=1):
 
 
 def S_edge_measurments_2023_1_night3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [        'PK_B69',          'PK_B61',            'PK_B48',           'PK_24','              PK_H48',          'PK_H36',            'PK_H24',              'PK_H12',                'PK_H0',            'P3MEEBT_as',      'P3MEEBT_KClO4_0p6', 'P3MEEMT_random115_frit',
                 'P3MTEEBT_as',  'P3MTEEBT_KClO4',           'PBDF_as',  'PBDF_doped_KCl',    'PBDF_dedoped_KCl',         'gNDI_as',        'gNDI_doped',   'P3MEEET_exp_KClO4',  'P3MEEET_doped_KClO4',  'P3MEEET_dedoped_KClO4']
@@ -3470,7 +4254,7 @@ def S_edge_measurments_2023_1_night3(t=1):
         yield from alignement_gisaxs_doblestack(0.8)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -3486,8 +4270,8 @@ def S_edge_measurments_2023_1_night3(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3504,8 +4288,8 @@ def S_edge_measurments_2023_1_night3(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3523,8 +4307,28 @@ def S_edge_measurments_2023_1_night3(t=1):
 
 
 def Cl_edge_measurments_2023_1_night3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [    'P3MEEBT_as',      'P3MEEBT_KClO4_0p6', 'P3MEEMT_random115_frit',
                 'P3MTEEBT_as',  'P3MTEEBT_KClO4',           'PBDF_as',  'PBDF_doped_KCl',    'PBDF_dedoped_KCl',         'gNDI_as',        'gNDI_doped',   'P3MEEET_exp_KClO4',  'P3MEEET_doped_KClO4',  'P3MEEET_dedoped_KClO4']
@@ -3561,7 +4365,7 @@ def Cl_edge_measurments_2023_1_night3(t=1):
         yield from alignement_gisaxs_doblestack(0.8)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -3577,8 +4381,8 @@ def Cl_edge_measurments_2023_1_night3(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3595,8 +4399,8 @@ def Cl_edge_measurments_2023_1_night3(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3617,12 +4421,34 @@ def night_2023_1(t=1):
 
     #proposal_id("2023_1", "310999_Richter_2")
     #yield from S_edge_measurments_2023_1_night1(t=1)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     proposal_id("2023_1", "310999_Richter_3")
     #yield from transition_S_Cl_edges()
     yield from Cl_edge_measurments_2023_1_night1(t=1)
 
 
 def night_2023_3(t=1):
+
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
 
     proposal_id("2023_1", "310999_Richter_9")
     yield from Cl_edge_measurments_2023_1_night3(t=1)
@@ -3635,6 +4461,20 @@ def night_2023_3(t=1):
 
 def x_scan(t=1):
     # Att 2x and 1x of Sn 30um and exposure time of 5s
+
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a spatial line scan — it steps the sample across x and takes an
+    #   image at each position (often at a fixed energy), to scan along a stripe.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' map_line_run does a line scan and records the
+    #   x position + beam readings into the saved data and file name for you:
+    #
+    #     from smi_plans import map_line_run
+    #     yield from map_line_run(name, stage.x, x0, x1, npts, t=1, dets=[pil900KW])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below.
+    # === end smi_plans note ================================================
 
     yield from bps.mv(att1_9.open_cmd, 1)
     yield from bps.sleep(1)
@@ -3649,7 +4489,7 @@ def x_scan(t=1):
     yield from bps.mvr(stage.th, 0.2)
 
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
     dets=[pil900KW]
     name='NDI_T2_3B_wet5mmNaCl'
     x0 = 13
@@ -3670,6 +4510,22 @@ def ai_scan(t=1):
     # Att 2x and 1x of Sn 30um and exposure time of 5s
     #for samp[le in negative x, chi = 0.297
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an incident-angle (and sometimes alignment) scan for grazing
+    #   incidence — it steps the sample tilt (theta) and takes an image at each angle.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans builds the incident-angle sweep with
+    #   incidence_axis (and aligns once via align_sample), recording the angle + beam
+    #   readings into the saved data for you:
+    #
+    #     from smi_plans import acquire, incidence_axis
+    #     yield from acquire(name, [pil900KW],
+    #                        [incidence_axis(stage.th, ai0, angles)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below.
+    # === end smi_plans note ================================================
+
     yield from bps.mv(att1_9.open_cmd, 1)
     yield from bps.sleep(1)
     yield from bps.mv(att1_9.open_cmd, 1)
@@ -3681,7 +4537,7 @@ def ai_scan(t=1):
 
     yield from bps.mv(waxs, 0)
     ai0=stage.th.position
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
     dets=[pil900KW]
 
     name='NDI_T2_3B_wet5mmNaCl_alignmentx18'
@@ -3704,8 +4560,28 @@ def ai_scan(t=1):
             yield from bp.count(dets, num=1)
 
 def K_edge_measurments_2023_2_july_night2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # top left first
     names = [        'BBL_ascast',            'BBL_doped_n0p8V',           'BBL_doped_n1p2V',               'PBDF_ascast',            'PBDF_doped_n1V',            'PBDF_doped_p1V',       'GNDI_ascast',           'GNDI_n1V',              'GNDI_p1V',              'P3MEEMT_0p7V']
@@ -3745,7 +4621,7 @@ def K_edge_measurments_2023_2_july_night2(t=1):
         yield from bps.mv(att2_10.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -3761,8 +4637,8 @@ def K_edge_measurments_2023_2_july_night2(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3776,7 +4652,7 @@ def K_edge_measurments_2023_2_july_night2(t=1):
                     yield from bp.count(dets, num=1)
                 
                 if waxs.arc.position > 15:
-                    det_exposure_time(10, 10)
+                    det_exposure_time(10, 10)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(10, 10)  — or at the prompt:  RE(det_exposure_time(10, 10)). (smi_plans' technique runs set it for you via t=.)
 
                     yield from bps.mv(GV7.close_cmd, 1)
                     yield from bps.sleep(5)
@@ -3795,14 +4671,14 @@ def K_edge_measurments_2023_2_july_night2(t=1):
                     yield from bps.sleep(5)
                     yield from bps.mv(GV7.open_cmd, 1)
                     yield from bps.sleep(5)
-                    det_exposure_time(t, t)
+                    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
 
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3821,8 +4697,28 @@ def K_edge_measurments_2023_2_july_night2(t=1):
 
 
 def Cl_edge_measurments_2023_2_july_day2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # top left first
     names = [              'KPSS',       'acid_PEDOTPSS_Au_as',       'acid_PEDOTPSS_Au_exp',   'acid_PEDOTPSS_Au_dedope',   'acid_PEDOTPSS_Au_redope', 'acid_PEDOTPSS_Au_overdope', 'EG_PEDOTPSS_Au_as', 'EG_PEDOTPSS_Au_exp', 'EG_PEDOTPSS_Au_dedope',     'EG_PEDOTPSS_Au_redope', 'EG_PEDOTPSS_Au_asoverdope',      'PVC',     
@@ -3885,7 +4781,7 @@ def Cl_edge_measurments_2023_2_july_day2(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -3901,8 +4797,8 @@ def Cl_edge_measurments_2023_2_july_day2(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3918,8 +4814,8 @@ def Cl_edge_measurments_2023_2_july_day2(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -3945,6 +4841,20 @@ def x_scan_cl(t=1):
     #MM389_dry_nistfrit -21 to -12.5 chi 0 th 4.457 y 0
     #MM460_dry_nistfrit 10 to 18 chi 0 th 3.457 y 0
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a spatial line scan — it steps the sample across x and takes an
+    #   image at each position (often at a fixed energy), to scan along a stripe.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' map_line_run does a line scan and records the
+    #   x position + beam readings into the saved data and file name for you:
+    #
+    #     from smi_plans import map_line_run
+    #     yield from map_line_run(name, stage.x, x0, x1, npts, t=1, dets=[pil900KW])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below.
+    # === end smi_plans note ================================================
+
     yield from bps.mv(att2_9.open_cmd, 1)
     yield from bps.sleep(1)
     yield from bps.mv(att2_9.open_cmd, 1)
@@ -3953,7 +4863,7 @@ def x_scan_cl(t=1):
 
     yield from bps.mvr(stage.th, 0.8)
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
     dets=[pil900KW, amptek]
     # name='MM389_dry_nistfrit'
     name='PG2T-TT_annealed_dry'
@@ -3979,6 +4889,22 @@ def ai_scan_cl(t=1):
     # Att 2x and 1x of Sn 30um and exposure time of 5s
     #for samp[le in negative x, chi = 0.297
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an incident-angle (and sometimes alignment) scan for grazing
+    #   incidence — it steps the sample tilt (theta) and takes an image at each angle.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans builds the incident-angle sweep with
+    #   incidence_axis (and aligns once via align_sample), recording the angle + beam
+    #   readings into the saved data for you:
+    #
+    #     from smi_plans import acquire, incidence_axis
+    #     yield from acquire(name, [pil900KW],
+    #                        [incidence_axis(stage.th, ai0, angles)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below.
+    # === end smi_plans note ================================================
+
     yield from bps.mv(att1_9.open_cmd, 1)
     yield from bps.sleep(1)
     yield from bps.mv(att1_9.open_cmd, 1)
@@ -3990,7 +4916,7 @@ def ai_scan_cl(t=1):
 
     yield from bps.mv(waxs, 0)
     ai0=stage.th.position
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
     dets=[pil900KW]
 
     name='NDI_T2_3B_wet5mmNaCl_alignmentx18'
@@ -4019,8 +4945,27 @@ def ai_scan_cl(t=1):
 
 
 def KCl_edge_measurments_2023_2_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['MM460_KClO4_partialdoped0V']
     # x_hexa = [-18.6]
@@ -4052,7 +4997,7 @@ def KCl_edge_measurments_2023_2_sva(t=1):
         # yield from bps.sleep(1)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -4068,8 +5013,8 @@ def KCl_edge_measurments_2023_2_sva(t=1):
                 x="%1.2f"%stage.x.position
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -4086,8 +5031,8 @@ def KCl_edge_measurments_2023_2_sva(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -4105,8 +5050,27 @@ def KCl_edge_measurments_2023_2_sva(t=1):
 
 
 def KClO4_edge_measurments_2023_2_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine (ClO4)-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['MM460_KClO4_partialdoped0V']
     # x_hexa = [-18.6]
@@ -4138,7 +5102,7 @@ def KClO4_edge_measurments_2023_2_sva(t=1):
         yield from bps.sleep(1)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -4154,8 +5118,8 @@ def KClO4_edge_measurments_2023_2_sva(t=1):
                 x="%1.2f"%stage.x.position
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -4172,8 +5136,8 @@ def KClO4_edge_measurments_2023_2_sva(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -4189,8 +5153,28 @@ def KClO4_edge_measurments_2023_2_sva(t=1):
 
 
 def Cl_edge_measurments_2023_2_july_day2_dinner(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # top left first
     names = [    'acid_PEDOTPSS_Au_as',      'acid_PEDOTPSS_Au_exp',   'acid_PEDOTPSS_Au_dedope',   'acid_PEDOTPSS_Au_redope', 'acid_PEDOTPSS_Au_overdope',       'PVC',     
@@ -4232,7 +5216,7 @@ def Cl_edge_measurments_2023_2_july_day2_dinner(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -4248,8 +5232,8 @@ def Cl_edge_measurments_2023_2_july_day2_dinner(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -4265,8 +5249,8 @@ def Cl_edge_measurments_2023_2_july_day2_dinner(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -4285,8 +5269,28 @@ def Cl_edge_measurments_2023_2_july_day2_dinner(t=1):
 
 
 def S_edge_measurments_2023_2_night3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
 
     # top left first
@@ -4335,7 +5339,7 @@ def S_edge_measurments_2023_2_night3(t=1):
             yield from alignement_gisaxs_doblestack(0.8)
 
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
@@ -4351,8 +5355,8 @@ def S_edge_measurments_2023_2_night3(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -4369,8 +5373,8 @@ def S_edge_measurments_2023_2_night3(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -4391,8 +5395,28 @@ def S_edge_measurments_2023_2_night3(t=1):
 
 
 def S_edge_measurments_2023_2_morning3(t=10):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [            'PK_B61',                    'PK_B55',                     'PK_B48',                    'PK_B36',                    'PK_B24',               'PK_H48_50nm',      'PK_H48_100nm',       'PK_H48_150nm',           'PK_H36_50nm',                'PK_H36_100nm',             'PK_H36_150nm',    
                     'PK_H24_50nm',              'PK_H24_100nm',               'PK_H24_150nm',               'PK_H12_50nm',              'PK_H12_100nm',              'PK_H12_150nm',        'PK_H0_50nm',        'PK_H0_100nm',        'PK_H0_150nm']
@@ -4438,7 +5462,7 @@ def S_edge_measurments_2023_2_morning3(t=10):
             yield from alignement_gisaxs_doblestack(0.8)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -4454,8 +5478,8 @@ def S_edge_measurments_2023_2_morning3(t=10):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -4472,8 +5496,8 @@ def S_edge_measurments_2023_2_morning3(t=10):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -4491,11 +5515,25 @@ def S_edge_measurments_2023_2_morning3(t=10):
 
 
 def flatfield_S_scan(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a flat-field energy scan — it sweeps the X-ray energy across the
+    #   absorption edge with no sample, to record the detector/beam response for normalisation.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' nexafs_run / energy_axis sweep the energy in one
+    #   line and record the beam intensity into the data for you (and handle energy settling):
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=1, dets=[pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below.
+    # === end smi_plans note ================================================
+
     waxs_arc=np.linspace(30, 51.7511, 619)
     name = 'flatfieldscan_Segde_KPSS_pos1_2515eV_ai0.8deg_1s_camserverenergy2450threshold1600eV'
     name_fmt = "{sample}_wa{wax}"
     det=[pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -4508,11 +5546,25 @@ def flatfield_S_scan(t=1):
 
 
 def flatfield_Cl_scan(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a flat-field energy scan — it sweeps the X-ray energy across the
+    #   absorption edge with no sample, to record the detector/beam response for normalisation.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' nexafs_run / energy_axis sweep the energy in one
+    #   line and record the beam intensity into the data for you (and handle energy settling):
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=1, dets=[pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below.
+    # === end smi_plans note ================================================
+
     waxs_arc=np.linspace(30, 51.7511, 62)
     name = 'flatfieldscan_Clegde_PVC_pos1_2890eV_ai0.8deg_1s_camserverenergy2800threshold1700eV'
     name_fmt = "{sample}_wa{wax}"
     det=[pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -4525,8 +5577,24 @@ def flatfield_Cl_scan(t=1):
 
 
 def bpmvspindiode_Sedge(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: measures the direct-beam intensity vs energy — it steps the X-ray
+    #   energy and, at each step, opens the shutter and reads the pin diode / beam monitors.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans records the pin-diode and beam-monitor readings
+    #   INTO the data automatically as you sweep energy (put e.g. "{pin_diode_current2_mean_value}"
+    #   in the name), so you don't open the shutter and read them by hand. An energy sweep is
+    #   built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis
+    #     yield from acquire(name, [pin_diode, xbpm2, xbpm3], [energy_axis(energies)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     name = 'direct_beam_Sedge_scannormal'
 
@@ -4540,8 +5608,8 @@ def bpmvspindiode_Sedge(t=1):
 
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, e)
             yield from bps.sleep(2)
@@ -4564,8 +5632,8 @@ def bpmvspindiode_Sedge(t=1):
 
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, e)
             yield from bps.sleep(2)
@@ -4588,8 +5656,24 @@ def bpmvspindiode_Sedge(t=1):
 
 
 def bpmvspindiode_Cledge(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: measures the direct-beam intensity vs energy — it steps the X-ray
+    #   energy and, at each step, opens the shutter and reads the pin diode / beam monitors.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans records the pin-diode and beam-monitor readings
+    #   INTO the data automatically as you sweep energy (put e.g. "{pin_diode_current2_mean_value}"
+    #   in the name), so you don't open the shutter and read them by hand. An energy sweep is
+    #   built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis
+    #     yield from acquire(name, [pin_diode, xbpm2, xbpm3], [energy_axis(energies)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     name = 'direct_beam_Cledge_scannormal'
 
@@ -4602,8 +5686,8 @@ def bpmvspindiode_Cledge(t=1):
 
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, e)
             yield from bps.sleep(2)
@@ -4626,8 +5710,8 @@ def bpmvspindiode_Cledge(t=1):
 
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, e)
             yield from bps.sleep(2)
@@ -4649,8 +5733,24 @@ def bpmvspindiode_Cledge(t=1):
 
 
 def bpmvspindiode_Kedge(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: measures the direct-beam intensity vs energy — it steps the X-ray
+    #   energy and, at each step, opens the shutter and reads the pin diode / beam monitors.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans records the pin-diode and beam-monitor readings
+    #   INTO the data automatically as you sweep energy (put e.g. "{pin_diode_current2_mean_value}"
+    #   in the name), so you don't open the shutter and read them by hand. An energy sweep is
+    #   built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis
+    #     yield from acquire(name, [pin_diode, xbpm2, xbpm3], [energy_axis(energies)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     name = 'direct_beam_Kedge_scannormal'
 
@@ -4665,8 +5765,8 @@ def bpmvspindiode_Kedge(t=1):
 
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, e)
             yield from bps.sleep(2)
@@ -4689,8 +5789,8 @@ def bpmvspindiode_Kedge(t=1):
 
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, e)
             yield from bps.sleep(2)
@@ -4713,8 +5813,28 @@ def bpmvspindiode_Kedge(t=1):
 
 
 def Cl_edge_measurments_2023_3_Dec1_Night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # top left first
     names = [    'Ginger_2',     'Ginger_3',      'Ginger_4',     'Ginger_5',  'Ginger_6',   'Ginger_7',  'Ginger_1a',     'Ginger_1b',       
@@ -4759,7 +5879,7 @@ def Cl_edge_measurments_2023_3_Dec1_Night(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -4775,8 +5895,8 @@ def Cl_edge_measurments_2023_3_Dec1_Night(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -4792,8 +5912,8 @@ def Cl_edge_measurments_2023_3_Dec1_Night(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -4812,8 +5932,28 @@ def Cl_edge_measurments_2023_3_Dec1_Night(t=1):
 
 
 def S_edge_measurments_2023_3_Dec1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # top left first
     names = [    'Ginger_2',     'Ginger_3',      'Ginger_4',     'Ginger_5',  'Ginger_6',   'Ginger_7',  'Ginger_1a',     'Ginger_1b',       
@@ -4853,7 +5993,7 @@ def S_edge_measurments_2023_3_Dec1(t=1):
             yield from alignement_gisaxs_doblestack(0.8)
 
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
@@ -4869,8 +6009,8 @@ def S_edge_measurments_2023_3_Dec1(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -4887,8 +6027,8 @@ def S_edge_measurments_2023_3_Dec1(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -4907,6 +6047,17 @@ def S_edge_measurments_2023_3_Dec1(t=1):
 
 
 def night_Dec1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     proposal_id("2023_3", "313690_Richter_01")
     yield from Cl_edge_measurments_2023_3_Dec1_Night(t=t)
 
@@ -4920,8 +6071,22 @@ def night_Dec1(t=1):
 
 
 def K_edge_xscan_2023_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a spatial line scan — it steps the sample across x and takes an
+    #   image at each position (often at a fixed energy), to scan along a stripe.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' map_line_run does a line scan and records the
+    #   x position + beam readings into the saved data and file name for you:
+    #
+    #     from smi_plans import map_line_run
+    #     yield from map_line_run(name, stage.x, x0, x1, npts, t=1, dets=[pil900KW])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW, amptek]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['PBBTme_dry']
     # x_min = [-22]
@@ -4950,7 +6115,7 @@ def K_edge_xscan_2023_3(t=1):
 
             name_fmt = "{sample}_xscan_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
             yield from bps.mv(energy, energies)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
 
             # for ais in np.linspace(0.1, 0.8, 15):
@@ -4969,8 +6134,28 @@ def K_edge_xscan_2023_3(t=1):
 
 
 def K_edge_timescan_2023_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below.
+    # === end smi_plans note ================================================
+
     dets = [pil900KW, amptek]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
     energies=energy.energy.position
     ais=0.8
     wa=0
@@ -4990,8 +6175,28 @@ def K_edge_timescan_2023_3(t=1):
 
 
 def Cl_edge_measurments_2023_3_Dec2_dinner(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [     'dg00',     'dg25',      'dg50',     'dg75',  'dg100',   'ddg75',  'ddg100',       
@@ -5051,7 +6256,7 @@ def Cl_edge_measurments_2023_3_Dec2_dinner(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -5067,8 +6272,8 @@ def Cl_edge_measurments_2023_3_Dec2_dinner(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5084,8 +6289,8 @@ def Cl_edge_measurments_2023_3_Dec2_dinner(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5103,8 +6308,28 @@ def Cl_edge_measurments_2023_3_Dec2_dinner(t=1):
 
 
 def Cl_edge_measurments_2023_3_Dec2_night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [       'acidPEDOT_neat',       'acidPEDOT_exposed_KCl',        'acidPEDOT_dedope_n600mV',      'acidPEDOT_redope_0mV',         'acidPEDOT_overdope_p600mV',        'EG_PEDOT',                 'EG_PEDOT_exposed_KCl',         'EG_PEDOT_dedope_n600mV',      'EG_PEDOT_redope_0mV',      'EG_PEDOT_overdope_p600mV',  
@@ -5160,7 +6385,7 @@ def Cl_edge_measurments_2023_3_Dec2_night(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -5176,8 +6401,8 @@ def Cl_edge_measurments_2023_3_Dec2_night(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5193,8 +6418,8 @@ def Cl_edge_measurments_2023_3_Dec2_night(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5210,8 +6435,28 @@ def Cl_edge_measurments_2023_3_Dec2_night(t=1):
             yield from bps.mv(piezo.th, ai0)
 
 def S_edge_measurments_2023_3_Dec2_night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [       'acidPEDOT_neat',       'acidPEDOT_exposed_KCl',        'acidPEDOT_dedope_n600mV',      'acidPEDOT_redope_0mV',         'acidPEDOT_overdope_p600mV',        'EG_PEDOT',                 'EG_PEDOT_exposed_KCl',         'EG_PEDOT_dedope_n600mV',      'EG_PEDOT_redope_0mV',      'EG_PEDOT_overdope_p600mV',  
@@ -5250,7 +6495,7 @@ def S_edge_measurments_2023_3_Dec2_night(t=1):
             yield from alignement_gisaxs_doblestack(0.8)
 
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
@@ -5266,8 +6511,8 @@ def S_edge_measurments_2023_3_Dec2_night(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -5284,8 +6529,8 @@ def S_edge_measurments_2023_3_Dec2_night(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -5305,6 +6550,17 @@ def S_edge_measurments_2023_3_Dec2_night(t=1):
 
 def night_Dec2(t=1):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     proposal_id("2023_3", "313690_Richter_05")
     yield from S_edge_measurments_2023_3_Dec2_night(t=t)
 
@@ -5317,8 +6573,27 @@ def night_Dec2(t=1):
 
 
 def K_edge_measurments_2023_3_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['pgBTTT_KCl_sample2_600mV_secondpos']
     x_hexa = [16.1]
@@ -5345,7 +6620,7 @@ def K_edge_measurments_2023_3_sva(t=1):
         # yield from bps.sleep(1)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -5361,8 +6636,8 @@ def K_edge_measurments_2023_3_sva(t=1):
                 x="%1.2f"%stage.x.position
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5379,8 +6654,8 @@ def K_edge_measurments_2023_3_sva(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5396,8 +6671,27 @@ def K_edge_measurments_2023_3_sva(t=1):
 
 
 def Cl_edge_measurments_2023_3_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['pgBTTT_KCl_sample2_600mV_secondpos_Cledge_goodthreshold']
 
@@ -5424,7 +6718,7 @@ def Cl_edge_measurments_2023_3_sva(t=1):
         # yield from bps.sleep(1)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -5440,8 +6734,8 @@ def Cl_edge_measurments_2023_3_sva(t=1):
                 x="%1.2f"%stage.x.position
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5458,8 +6752,8 @@ def Cl_edge_measurments_2023_3_sva(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5477,8 +6771,28 @@ def Cl_edge_measurments_2023_3_sva(t=1):
 
 
 def Cl_edge_measurments_2023_3_Dec3_dinner(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [     'AA_co',    'AA_ht',     'AA_mt',   'AA_hTe', 'AA_mTe',   'AA_mB',   'AA_hB', 'PBBT-Me_realdope_p600mV', 'Ginger_6']
@@ -5538,7 +6852,7 @@ def Cl_edge_measurments_2023_3_Dec3_dinner(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -5554,8 +6868,8 @@ def Cl_edge_measurments_2023_3_Dec3_dinner(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5571,8 +6885,8 @@ def Cl_edge_measurments_2023_3_Dec3_dinner(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5589,8 +6903,28 @@ def Cl_edge_measurments_2023_3_Dec3_dinner(t=1):
 
 def K_edge_measurments_downsweeponly_2023_3_night3(t=1, offset=0, prefix='pos1'):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [       'PBDF_as',    'PBDF_n1000mV',       'PBDF_n800mV',       'PBDF_n600mV',         'PBDF_p200mV',        'PBDF_p1000mV',                   'BBL_as',               'BBL_n600mV', 
                  'BBL_n800mV',     'BBL_n1000mV',      'BBL_n1p200mV',    'BBL_n1top600mV',      'acidPEDOT_neat','acidPEDOT_exposed_KCl',  'acidPEDOT_dedope_n600mV',    'acidPEDOT_redope_0mV', 'acidPEDOT_overdope_p600mV',                         'KPSS',       'P3HT']
@@ -5632,7 +6966,7 @@ def K_edge_measurments_downsweeponly_2023_3_night3(t=1, offset=0, prefix='pos1')
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -5646,7 +6980,7 @@ def K_edge_measurments_downsweeponly_2023_3_night3(t=1, offset=0, prefix='pos1')
                 yield from bps.mv(piezo.th, ai0 + ais)
 
                 yield from bps.mv(energy, 3580)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 yield from bps.mv(energy, 3620)
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, 3660)
@@ -5656,8 +6990,8 @@ def K_edge_measurments_downsweeponly_2023_3_night3(t=1, offset=0, prefix='pos1')
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5674,6 +7008,17 @@ def K_edge_measurments_downsweeponly_2023_3_night3(t=1, offset=0, prefix='pos1')
 
 
 def night_Dec3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     proposal_id("2023_3", "313690_Richter_09")
     yield from K_edge_measurments_downsweeponly_2023_3_night3(t=1, offset=0, prefix='position1')
     yield from K_edge_measurments_downsweeponly_2023_3_night3(t=1, offset=-2500, prefix='position2')
@@ -5682,8 +7027,27 @@ def night_Dec3(t=1):
 
 
 def Cl_edge_measurments_2023_3_sva_Dec4(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['pg2TTT_KCl_sample2_sva_dedopedreturn400mV']
     x_hexa = [18.5]
@@ -5709,7 +7073,7 @@ def Cl_edge_measurments_2023_3_sva_Dec4(t=1):
         # yield from bps.sleep(1)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -5725,8 +7089,8 @@ def Cl_edge_measurments_2023_3_sva_Dec4(t=1):
                 x="%1.2f"%stage.x.position
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5743,8 +7107,8 @@ def Cl_edge_measurments_2023_3_sva_Dec4(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5762,8 +7126,28 @@ def Cl_edge_measurments_2023_3_sva_Dec4(t=1):
 
 def K_edge_measurments_2023_3_diner4(t=1, offset=0, prefix='pos1'):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [       'PBDF_as',    'PBDF_n1000mV',       'PBDF_n800mV', 'PBDF_thick_n1000mV',       'acidPEDOT_as',  'acidPEDOT_dedoped_n600mV',   'acidPEDOT_redoped_n600mVto0V' ]
     x_piezo = [        -50000,            -50000,              -39000,              -30000,                -12000,                  4000,                      19000] 
@@ -5800,7 +7184,7 @@ def K_edge_measurments_2023_3_diner4(t=1, offset=0, prefix='pos1'):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -5816,8 +7200,8 @@ def K_edge_measurments_2023_3_diner4(t=1, offset=0, prefix='pos1'):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5834,8 +7218,8 @@ def K_edge_measurments_2023_3_diner4(t=1, offset=0, prefix='pos1'):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5853,8 +7237,24 @@ def K_edge_measurments_2023_3_diner4(t=1, offset=0, prefix='pos1'):
 
 
 def S_edge_measurments_2024_1_incidentangle(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an incident-angle (and sometimes alignment) scan for grazing
+    #   incidence — it steps the sample tilt (theta) and takes an image at each angle.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans builds the incident-angle sweep with
+    #   incidence_axis (and aligns once via align_sample), recording the angle + beam
+    #   readings into the saved data for you:
+    #
+    #     from smi_plans import acquire, incidence_axis
+    #     yield from acquire(name, [pil900KW],
+    #                        [incidence_axis(stage.th, ai0, angles)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [  'P3HT_3000', 'P3HT_1500', 'P3HT_1000']             
@@ -5892,7 +7292,7 @@ def S_edge_measurments_2024_1_incidentangle(t=1):
         yield from alignement_gisaxs_doblestack(0.7)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -5908,8 +7308,8 @@ def S_edge_measurments_2024_1_incidentangle(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5926,8 +7326,8 @@ def S_edge_measurments_2024_1_incidentangle(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -5946,8 +7346,24 @@ def S_edge_measurments_2024_1_incidentangle(t=1):
 
 
 def bpmvspindiode_Sedge_2024_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: measures the direct-beam intensity vs energy — it steps the X-ray
+    #   energy and, at each step, opens the shutter and reads the pin diode / beam monitors.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans records the pin-diode and beam-monitor readings
+    #   INTO the data automatically as you sweep energy (put e.g. "{pin_diode_current2_mean_value}"
+    #   in the name), so you don't open the shutter and read them by hand. An energy sweep is
+    #   built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis
+    #     yield from acquire(name, [pin_diode, xbpm2, xbpm3], [energy_axis(energies)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     name = 'direct_beam_Sedge'
 
@@ -5957,8 +7373,8 @@ def bpmvspindiode_Sedge_2024_1(t=1):
     
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, e)
             yield from bps.sleep(2)
@@ -5982,8 +7398,8 @@ def bpmvspindiode_Sedge_2024_1(t=1):
 
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, e)
             yield from bps.sleep(2)
@@ -6006,8 +7422,24 @@ def bpmvspindiode_Sedge_2024_1(t=1):
 
 
 def bpmvspindiode_Cledge_2024_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: measures the direct-beam intensity vs energy — it steps the X-ray
+    #   energy and, at each step, opens the shutter and reads the pin diode / beam monitors.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans records the pin-diode and beam-monitor readings
+    #   INTO the data automatically as you sweep energy (put e.g. "{pin_diode_current2_mean_value}"
+    #   in the name), so you don't open the shutter and read them by hand. An energy sweep is
+    #   built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis
+    #     yield from acquire(name, [pin_diode, xbpm2, xbpm3], [energy_axis(energies)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     name = 'direct_beam_Cledge_att2_9'
 
@@ -6018,8 +7450,8 @@ def bpmvspindiode_Cledge_2024_1(t=1):
     
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, e)
             yield from bps.sleep(2)
@@ -6043,8 +7475,8 @@ def bpmvspindiode_Cledge_2024_1(t=1):
 
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, e)
             yield from bps.sleep(2)
@@ -6069,8 +7501,24 @@ def bpmvspindiode_Cledge_2024_1(t=1):
     
 
 def Cl_edge_measurments_2024_1_incidentangle(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an incident-angle (and sometimes alignment) scan for grazing
+    #   incidence — it steps the sample tilt (theta) and takes an image at each angle.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans builds the incident-angle sweep with
+    #   incidence_axis (and aligns once via align_sample), recording the angle + beam
+    #   readings into the saved data for you:
+    #
+    #     from smi_plans import acquire, incidence_axis
+    #     yield from acquire(name, [pil900KW],
+    #                        [incidence_axis(stage.th, ai0, angles)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [  'PVC_4000', 'PVC_2000', 'PVC_1000']             
@@ -6116,7 +7564,7 @@ def Cl_edge_measurments_2024_1_incidentangle(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -6132,8 +7580,8 @@ def Cl_edge_measurments_2024_1_incidentangle(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -6147,7 +7595,7 @@ def Cl_edge_measurments_2024_1_incidentangle(t=1):
                     yield from bp.count(dets, num=1)
 
                 dets = [pil900KW, amptek]
-                det_exposure_time(3, 3)
+                det_exposure_time(3, 3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(3, 3)  — or at the prompt:  RE(det_exposure_time(3, 3)). (smi_plans' technique runs set it for you via t=.)
                 yield from bps.sleep(5)
 
                 name_fmt = "{sample}_amptek_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
@@ -6157,14 +7605,14 @@ def Cl_edge_measurments_2024_1_incidentangle(t=1):
                 yield from bp.count(dets, num=1)
                 yield from bps.sleep(5)
 
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
                 dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -6182,8 +7630,28 @@ def Cl_edge_measurments_2024_1_incidentangle(t=1):
 
 
 def Cl_edge_measurments_2024_1_Amalie(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [  'P3HT_1500', 'Co_25mmol_FeCl3', 'hT_25mmol_FeCl3', 'mT_25mmol_FeCl3', 'hTe_25mmol_FeCl3', 'mTe_25mmol_FeCl3', 'mB_25mmol_FeCl3', 'hB_25mmol_FeCl3']             
@@ -6219,7 +7687,7 @@ def Cl_edge_measurments_2024_1_Amalie(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -6235,8 +7703,8 @@ def Cl_edge_measurments_2024_1_Amalie(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -6250,7 +7718,7 @@ def Cl_edge_measurments_2024_1_Amalie(t=1):
                     yield from bp.count(dets, num=1)
 
                 dets = [pil900KW, amptek]
-                det_exposure_time(3, 3)
+                det_exposure_time(3, 3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(3, 3)  — or at the prompt:  RE(det_exposure_time(3, 3)). (smi_plans' technique runs set it for you via t=.)
                 yield from bps.sleep(5)
 
                 name_fmt = "{sample}_amptek_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
@@ -6260,14 +7728,14 @@ def Cl_edge_measurments_2024_1_Amalie(t=1):
                 yield from bp.count(dets, num=1)
                 yield from bps.sleep(5)
 
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
                 dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
 
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -6287,6 +7755,17 @@ def Cl_edge_measurments_2024_1_Amalie(t=1):
 
 
 def lee_2024_night1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     yield from Cl_edge_measurments_2024_1_incidentangle(t=t)
     yield from Cl_edge_measurments_2024_1_Amalie(t=10)
 
@@ -6294,8 +7773,28 @@ def lee_2024_night1(t=1):
 
 
 def Fe_edge_measurments_2024_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a iron-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW, pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [           'Pg2T-TT', 'SolventTreated', 'Doped-FeCl3-0p02', 'Doped-FeCl3-0p05', 'Doped-FeCl3-0p1', 'Doped-FeCl3-0p2', 'Doped-FeCl3-0p5', 'Doped-FeCl3-1p0', 'Substrate']
     x_piezo = [            -46000,           -42000,             -28000,             -11000,             16000,             30000,             45000,             55000,       57000]
@@ -6339,7 +7838,7 @@ def Fe_edge_measurments_2024_2(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -6354,8 +7853,8 @@ def Fe_edge_measurments_2024_2(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 5:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 5:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -6371,8 +7870,8 @@ def Fe_edge_measurments_2024_2(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 5:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm2.sumX.get() < 5:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -6392,8 +7891,28 @@ def Fe_edge_measurments_2024_2(t=1):
 
 
 def S_edge_measurments_2025_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = ['PBTTTC14_as','PBTTTC14_AcN',     'PVC',     'NaPSS', 
@@ -6463,7 +7982,7 @@ def S_edge_measurments_2025_1(t=1):
         yield from alignement_gisaxs_doblestack(0.7)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -6485,8 +8004,8 @@ def S_edge_measurments_2025_1(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -6503,8 +8022,8 @@ def S_edge_measurments_2025_1(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -6525,8 +8044,28 @@ def S_edge_measurments_2025_1(t=1):
 
 
 def Cl_edge_measurments_2025_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # # bottom left first
     # names = [  'PBTTTC14_as', 'PBTTTC14_AcN', 'MoS2_new_80', 'MoS2_new_80_ann',
@@ -6615,7 +8154,7 @@ def Cl_edge_measurments_2025_1(t=1):
 
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -6637,8 +8176,8 @@ def Cl_edge_measurments_2025_1(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -6655,8 +8194,8 @@ def Cl_edge_measurments_2025_1(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -6678,6 +8217,23 @@ def Cl_edge_measurments_2025_1(t=1):
 
 
 def scan_nexafs_Moedge():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS energy scan — it steps the X-ray energy across the molybdenum
+    #   edge and takes a detector image (and beam readings) at each energy.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does a full energy scan like this in ONE line and records the energy + beam
+    #   intensity straight into the saved data and the file name for you (so you don't
+    #   hand-build the name or read xbpm by hand), and it handles the energy settling and
+    #   beam feedback. Roughly:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=1, dets=[pil900KW])
+    #
+    # (Nothing here is broken. The energy 'sleep' lines are flagged 💡 only because they
+    #  become unnecessary once you migrate — smi_plans handles energy settling for you.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
     # energies1 =   np.asarray([2810.0, 2820.0, 2830.0, 2832.0, 2834.0, 2834.5, 2835.0, 2835.5, 2836.0, 2836.5, 2837.0, 2837.5, 2838.0, 2838.5, 2839.0,
     # 2839.5, 2840.0, 2840.5, 2841.0, 2841.5, 2845.0, 2850.0, 2855.0, 2860.0, 2865.0, 2870.0, 2875.0, 2880.0, 2890.0])
@@ -6697,9 +8253,9 @@ def scan_nexafs_Moedge():
 
             for i, e in enumerate(energies):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
-                if xbpm2.sumX.get() < 50:
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                     yield from bps.mv(energy, e)
                 
                 # Metadata
@@ -6717,7 +8273,7 @@ def scan_nexafs_Moedge():
                 yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
 
             yield from bps.mv(energy, 2500)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
     (yield from inner())
 
 
@@ -6730,8 +8286,27 @@ def scan_nexafs_Moedge():
 
 
 def Cl_edge_measurments_2025_1_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['pgBTTT_S1_outer_0p6mV']
     # x_hexa = [18.0]
@@ -6753,7 +8328,7 @@ def Cl_edge_measurments_2025_1_sva(t=1):
         yield from bps.mv(stage.x, xs_hexa)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -6771,8 +8346,8 @@ def Cl_edge_measurments_2025_1_sva(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.030)
@@ -6787,8 +8362,8 @@ def Cl_edge_measurments_2025_1_sva(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.030)
@@ -6808,13 +8383,32 @@ def Cl_edge_measurments_2025_1_sva(t=1):
 
 
 def Cl_edge_measurments_2025_1_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=None):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     if ais:
         print('ai existing')
         aiss=ais
         yss = ys
 
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['pgBTTT_KClO4_n300mV', 'pgBTTT_KClO4_n100mV', 'pgBTTT_KClO4_p100mV', 'pgBTTT_KClO4_p300mV', 'pgBTTT_KClO4_p450mV', 'pgBTTT_KClO4_p600mV'] 
     x_hexa = -x_off + np.asarray([-24.5, -14, -3.5, 5.5, 16, 27])
@@ -6830,7 +8424,7 @@ def Cl_edge_measurments_2025_1_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=
     yss=[]
     ai_ini = 4.3
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     for l, (name, xs_hexa) in enumerate(zip(names, x_hexa)):
         yield from bps.mv(stage.x, xs_hexa)
@@ -6869,8 +8463,8 @@ def Cl_edge_measurments_2025_1_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=
                     name_fmt = "{sample}_hum{humidity}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.030)
@@ -6885,8 +8479,8 @@ def Cl_edge_measurments_2025_1_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=
                     name_fmt = "{sample}_hum{humidity}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.030)
@@ -6905,8 +8499,27 @@ def Cl_edge_measurments_2025_1_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=
 
 
 def Cl_edge_measurments_2025_1_sva_night2(t=1, humidity=0, x_off=0, ais=None, ys=None):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['pgBTTT_KClO4_n100mV', 'pgBTTT_KClO4_p100mV', 'pgBTTT_KClO4_p300mV', 'pgBTTT_KClO4_p450mV', 'pgBTTT_KClO4_p600mV', 'pgBTTT_KClO4_n300mV'] 
     x_hexa = -x_off + np.asarray([-14, -3.5, 5.5, 16, 27, -24.5])
@@ -6921,7 +8534,7 @@ def Cl_edge_measurments_2025_1_sva_night2(t=1, humidity=0, x_off=0, ais=None, ys
     
     waxs_arc = [0]
     ai_list = [1.60]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     for l, (name, xs_hexa) in enumerate(zip(names, x_hexa)):
         yield from bps.mv(stage.x, xs_hexa)
@@ -6945,8 +8558,8 @@ def Cl_edge_measurments_2025_1_sva_night2(t=1, humidity=0, x_off=0, ais=None, ys
                     name_fmt = "{sample}_hum{humidity}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.030)
@@ -6961,8 +8574,8 @@ def Cl_edge_measurments_2025_1_sva_night2(t=1, humidity=0, x_off=0, ais=None, ys
                     name_fmt = "{sample}_hum{humidity}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.030)
@@ -6989,6 +8602,17 @@ def night_02_24_25(t=1):
     #ai_list, y_list = yield from Cl_edge_measurments_2025_1_sva_night(t=t, humidity=humidity, x_off=0, ais=None, ys=None)
     #print(ai_list, y_list)
 
+
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
 
     ai_list = [4.022, 3.928, 3.823, 4.024, 4.089, 4.488]                                                                                                                                                                                             
     y_list = [2.869, 2.778, 2.741, 2.699, 2.661, 2.559]
@@ -7022,6 +8646,17 @@ def night_02_24_25(t=1):
 
 def night_Feb25_25(t=1):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     proposal_id("2023_3", "317550_Richter_08")
     yield from S_edge_measurments_2025_Feb25_night(t=t)
 
@@ -7033,8 +8668,28 @@ def night_Feb25_25(t=1):
 
 
 def S_edge_measurments_2025_Feb25_night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [           'P3HT_as',                   'P3HT_AcN',                    'P3HT_0p02',                    'P3HT_0p05',                       'P3HT_0p1',                          'P3HT_0p2',            'P3HT_0p5',     'P3HT_0p5_washed', 'PBTTT_C14_FeCl3_1p23_NaTFSI_1p23', 'PBTTT_C14_FeCl3_3p08_NaTFSI_308',
@@ -7094,7 +8749,7 @@ def S_edge_measurments_2025_Feb25_night(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -7114,8 +8769,8 @@ def S_edge_measurments_2025_Feb25_night(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -7132,8 +8787,8 @@ def S_edge_measurments_2025_Feb25_night(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -7154,8 +8809,28 @@ def S_edge_measurments_2025_Feb25_night(t=1):
 
 
 def Cl_edge_measurments_2025_Feb25_night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [           'P3HT_as',                   'P3HT_AcN',                    'P3HT_0p02',                    'P3HT_0p05',                       'P3HT_0p1',                          'P3HT_0p2',            'P3HT_0p5',     'P3HT_0p5_washed', 'PBTTT_C14_FeCl3_1p23_NaTFSI_1p23', 'PBTTT_C14_FeCl3_3p08_NaTFSI_308',
@@ -7202,7 +8877,7 @@ def Cl_edge_measurments_2025_Feb25_night(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -7221,8 +8896,8 @@ def Cl_edge_measurments_2025_Feb25_night(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -7239,8 +8914,8 @@ def Cl_edge_measurments_2025_Feb25_night(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -7263,6 +8938,23 @@ def Cl_edge_measurments_2025_Feb25_night(t=1):
 
 
 def scan_nexafs_Caedge():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS energy scan — it steps the X-ray energy across the absorption
+    #   edge and takes a detector image (and beam readings) at each energy.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does a full energy scan like this in ONE line and records the energy + beam
+    #   intensity straight into the saved data and the file name for you (so you don't
+    #   hand-build the name or read xbpm by hand), and it handles the energy settling and
+    #   beam feedback. Roughly:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=1, dets=[pil900KW])
+    #
+    # (Nothing here is broken. The energy 'sleep' lines are flagged 💡 only because they
+    #  become unnecessary once you migrate — smi_plans handles energy settling for you.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
 
     name='nexafs_test_Caedge'
@@ -7279,7 +8971,7 @@ def scan_nexafs_Caedge():
 
             for i, e in enumerate(energies):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(3)
+                yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 
                 # Metadata
                 #e = energy.position.energy / 1000
@@ -7298,7 +8990,7 @@ def scan_nexafs_Caedge():
                 yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
 
             yield from bps.mv(energy, 4050)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
     (yield from inner())
 
 
@@ -7307,8 +8999,27 @@ def scan_nexafs_Caedge():
 
 
 def Ca_edge_measurments_2025_1_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a calcium-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['BBL_CaCl2_0V']
     x_hexa = [9.4]
@@ -7327,7 +9038,7 @@ def Ca_edge_measurments_2025_1_sva(t=1):
         yield from bps.mv(stage.x, xs_hexa)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -7345,8 +9056,8 @@ def Ca_edge_measurments_2025_1_sva(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.020)
@@ -7361,8 +9072,8 @@ def Ca_edge_measurments_2025_1_sva(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.030)
@@ -7380,8 +9091,28 @@ def Ca_edge_measurments_2025_1_sva(t=1):
 
 
 def K_edge_measurments_2025_Feb26_dinner(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [                 'KPSS',             'AcidPEDOT_as',                 'AcidPEDOT_ex',                    'AcidPEDOT_n600mV',         'AcidPEDOT_n300mV',                    'AcidPEDOT_0mV',    'AcidPEDOT_p300mV',     'AcidPEDOT_p600mV']             
@@ -7424,7 +9155,7 @@ def K_edge_measurments_2025_Feb26_dinner(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -7443,8 +9174,8 @@ def K_edge_measurments_2025_Feb26_dinner(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -7461,8 +9192,8 @@ def K_edge_measurments_2025_Feb26_dinner(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -7480,8 +9211,28 @@ def K_edge_measurments_2025_Feb26_dinner(t=1):
         (yield from inner())
 
 def K_edge_measurments_2025_Feb26_night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first 
     names = [                          'PBDF_n1000mV',                  'PBDF_n800mV',                  'PBDF_n600mV',                    'PBDF_n400mV',                          'PBDF_0mV',         'PBDF_p400mV',         'PBDF_p600mV',                       'PBDF_p800mV',     'PBDF_p1000mV',
@@ -7530,7 +9281,7 @@ def K_edge_measurments_2025_Feb26_night(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -7549,8 +9300,8 @@ def K_edge_measurments_2025_Feb26_night(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -7567,8 +9318,8 @@ def K_edge_measurments_2025_Feb26_night(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -7586,8 +9337,27 @@ def K_edge_measurments_2025_Feb26_night(t=1):
         (yield from inner())
 
 def K_edge_measurments_2025_1_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['BBL_KCl_n500']
     x_hexa = [9.4]
@@ -7607,7 +9377,7 @@ def K_edge_measurments_2025_1_sva(t=1):
         yield from bps.mv(stage.x, xs_hexa)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -7625,8 +9395,8 @@ def K_edge_measurments_2025_1_sva(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.020)
@@ -7641,8 +9411,8 @@ def K_edge_measurments_2025_1_sva(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.030)
@@ -7659,8 +9429,28 @@ def K_edge_measurments_2025_1_sva(t=1):
 
 
 def K_edge_measurments_2025_Feb27_day(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW, amptek]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first 
     names = ['MoS2_80_ann_n800mV',      'MoS2_80_n800mV',             'MoS2_BBL_spray_n800mV', 'BBL_spray_n800mV'  ]             
@@ -7703,7 +9493,7 @@ def K_edge_measurments_2025_Feb27_day(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -7722,8 +9512,8 @@ def K_edge_measurments_2025_Feb27_day(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -7740,8 +9530,8 @@ def K_edge_measurments_2025_Feb27_day(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -7761,8 +9551,28 @@ def K_edge_measurments_2025_Feb27_day(t=1):
 
 
 def Cl_edge_measurments_2025_Feb27_day(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [      'PBTTT_C14_FeCl3_3p08_NaTFSI_308',  'PBTTT_C14_FeCl3_1p23_NaTFSI_1p23',            'P3HT_1',         'P3HT_0p5',    'P3HT_0p2', 'P3HT_0p05', 'P3HT_0p1' , 'P3HT_0p02', 'P3HT_AcN', 'P3HT_as' ]             
@@ -7804,7 +9614,7 @@ def Cl_edge_measurments_2025_Feb27_day(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -7823,8 +9633,8 @@ def Cl_edge_measurments_2025_Feb27_day(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -7841,8 +9651,8 @@ def Cl_edge_measurments_2025_Feb27_day(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -7860,8 +9670,24 @@ def Cl_edge_measurments_2025_Feb27_day(t=1):
         (yield from inner())
 
 def S_edge_measurments_2025_Feb27_night_hex_align(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an incident-angle (and sometimes alignment) scan for grazing
+    #   incidence — it steps the sample tilt (theta) and takes an image at each angle.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans builds the incident-angle sweep with
+    #   incidence_axis (and aligns once via align_sample), recording the angle + beam
+    #   readings into the saved data for you:
+    #
+    #     from smi_plans import acquire, incidence_axis
+    #     yield from acquire(name, [pil900KW],
+    #                        [incidence_axis(stage.th, ai0, angles)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [      'W1',       'W2',     'W3',      'W4',     'W5',    'W6',   'P3HT',  'P3HT_F4TCNQ',   'P3HT_EMIMTFSI',        'P3HT_doubledoped',          'AcDOT_C10_155C',   'AcDOT_co_155C',          'Pg2TTT_FeCl3_3p08_NaTFSI_308']     
@@ -7925,7 +9751,7 @@ def S_edge_measurments_2025_Feb27_night_hex_align(t=1):
 
         #ai0 = stage.th.position
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -7947,8 +9773,8 @@ def S_edge_measurments_2025_Feb27_night_hex_align(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -7965,8 +9791,8 @@ def S_edge_measurments_2025_Feb27_night_hex_align(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -7985,8 +9811,24 @@ def S_edge_measurments_2025_Feb27_night_hex_align(t=1):
         (yield from inner())
 
 def Cl_edge_measurments_2025_Feb27_evening_hex_align(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an incident-angle (and sometimes alignment) scan for grazing
+    #   incidence — it steps the sample tilt (theta) and takes an image at each angle.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans builds the incident-angle sweep with
+    #   incidence_axis (and aligns once via align_sample), recording the angle + beam
+    #   readings into the saved data for you:
+    #
+    #     from smi_plans import acquire, incidence_axis
+    #     yield from acquire(name, [pil900KW],
+    #                        [incidence_axis(stage.th, ai0, angles)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [  'P3HT_FeCl3_1p23_NaTFSI_1p23', 'P3HT_FeCl3_3p08_NaTFSI_308','pg2TTT_FeCl3_1p23_NaTFSI_1p23', 'Pg2TTT_FeCl3_3p08_NaTFSI_308', 'P3MEEMT_FeCl3_1p23_NaTFSI_1p23', 'P3MEEMT_C14_FeCl3_3p08_NaTFSI_308',                 'PVC', 'PBTTT_magicblue_0p1M_60s', 'pgTTT_magicblue_0p1M_60s',              'NaPSS']     
@@ -8027,7 +9869,7 @@ def Cl_edge_measurments_2025_Feb27_evening_hex_align(t=1):
         yield from bps.sleep(1)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -8046,8 +9888,8 @@ def Cl_edge_measurments_2025_Feb27_evening_hex_align(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -8064,8 +9906,8 @@ def Cl_edge_measurments_2025_Feb27_evening_hex_align(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -8084,8 +9926,24 @@ def Cl_edge_measurments_2025_Feb27_evening_hex_align(t=1):
 
 
 def S_edge_measurments_2025_Feb25_evening_hex_align(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an incident-angle (and sometimes alignment) scan for grazing
+    #   incidence — it steps the sample tilt (theta) and takes an image at each angle.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans builds the incident-angle sweep with
+    #   incidence_axis (and aligns once via align_sample), recording the angle + beam
+    #   readings into the saved data for you:
+    #
+    #     from smi_plans import acquire, incidence_axis
+    #     yield from acquire(name, [pil900KW],
+    #                        [incidence_axis(stage.th, ai0, angles)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = [  'P3HT_FeCl3_1p23_NaTFSI_1p23', 'P3HT_FeCl3_3p08_NaTFSI_308','pg2TTT_FeCl3_1p23_NaTFSI_1p23', 'Pg2TTT_FeCl3_3p08_NaTFSI_308', 'P3MEEMT_FeCl3_1p23_NaTFSI_1p23', 'P3MEEMT_C14_FeCl3_3p08_NaTFSI_308',                 'PVC', 'PBTTT_magicblue_0p1M_60s', 'pgTTT_magicblue_0p1M_60s',              'NaPSS']     
@@ -8138,7 +9996,7 @@ def S_edge_measurments_2025_Feb25_evening_hex_align(t=1):
         yield from bps.sleep(1)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -8158,8 +10016,8 @@ def S_edge_measurments_2025_Feb25_evening_hex_align(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -8176,8 +10034,8 @@ def S_edge_measurments_2025_Feb25_evening_hex_align(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -8196,6 +10054,17 @@ def S_edge_measurments_2025_Feb25_evening_hex_align(t=1):
 
 def night_2025_Feb27_25(t=1):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     proposal_id("2023_3", "317550_Richter_12")
     yield from S_edge_measurments_2025_Feb25_night(t=t)
 
@@ -8207,8 +10076,24 @@ def night_2025_Feb27_25(t=1):
 
 
 def Cl_edge_measurments_2025_Feb27_day_align_hex(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an incident-angle (and sometimes alignment) scan for grazing
+    #   incidence — it steps the sample tilt (theta) and takes an image at each angle.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans builds the incident-angle sweep with
+    #   incidence_axis (and aligns once via align_sample), recording the angle + beam
+    #   readings into the saved data for you:
+    #
+    #     from smi_plans import acquire, incidence_axis
+    #     yield from acquire(name, [pil900KW],
+    #                        [incidence_axis(stage.th, ai0, angles)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     #names = [      'PBTTT_C14_FeCl3_3p08_NaTFSI_308_redo',  'PBTTT_C14_FeCl3_1p23_NaTFSI_1p23',            'P3HT_1',         'P3HT_0p5',    'P3HT_0p2', 'P3HT_0p05', 'P3HT_0p1' , 'P3HT_0p02', 'P3HT_AcN', 'P3HT_as' ]             
@@ -8258,7 +10143,7 @@ def Cl_edge_measurments_2025_Feb27_day_align_hex(t=1):
         yield from bps.sleep(1)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -8277,8 +10162,8 @@ def Cl_edge_measurments_2025_Feb27_day_align_hex(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -8295,8 +10180,8 @@ def Cl_edge_measurments_2025_Feb27_day_align_hex(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(1)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -8317,14 +10202,31 @@ def Cl_edge_measurments_2025_Feb27_day_align_hex(t=1):
 
 
 def NEXAFS_P_edge(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS energy scan — it steps the X-ray energy across the phosphorus
+    #   edge and takes a detector image (and beam readings) at each energy.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does a full energy scan like this in ONE line and records the energy + beam
+    #   intensity straight into the saved data and the file name for you (so you don't
+    #   hand-build the name or read xbpm by hand), and it handles the energy settling and
+    #   beam feedback. Roughly:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=1, dets=[pil900KW])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing; 'pil300KW' was removed from the beamline — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     yield from bps.mv(waxs, 45)
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     name = "NEXAFS_s3_test_Pedge_nspot1"
 
     energies = np.linspace(2130, 2180, 51)
     xbpm3_y = np.linspace(1.42, 1.40, 51)
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
     name_fmt = "{sample}_{energy}eV_xbpm{xbpm}"
 
     for e, xbpm3_ys in zip(energies, xbpm3_y):
@@ -8346,6 +10248,23 @@ def NEXAFS_P_edge(t=0.5):
 
 
 def scan_nexafs_Pedge():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS energy scan — it steps the X-ray energy across the absorption
+    #   edge and takes a detector image (and beam readings) at each energy.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does a full energy scan like this in ONE line and records the energy + beam
+    #   intensity straight into the saved data and the file name for you (so you don't
+    #   hand-build the name or read xbpm by hand), and it handles the energy settling and
+    #   beam feedback. Roughly:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=1, dets=[pil900KW])
+    #
+    # (Nothing here is broken. The energy 'sleep' lines are flagged 💡 only because they
+    #  become unnecessary once you migrate — smi_plans handles energy settling for you.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
 
     name='nexafs_Pedge_sample4box1'
@@ -8364,9 +10283,9 @@ def scan_nexafs_Pedge():
 
             for i, e in enumerate(energies):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(3)
+                yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
-                if xbpm3.sumX.get() < 50:
+                if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                     yield from bps.mv(energy, e)
                 
                 # Metadata
@@ -8389,8 +10308,28 @@ def scan_nexafs_Pedge():
 
 
 def P_edge_measurments_2025_3_day(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a phosphorus-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['sample01', 'sample02','sample03', 'sample04', 'sample05', 'sample06', 'sample07' , 'sample08']             
     # x_piezo = [   52000,     48000,      30000,      13000,      -4000,     -21000,      -38000,     -44000]
@@ -8433,7 +10372,7 @@ def P_edge_measurments_2025_3_day(t=1):
         yield from alignement_gisaxs_doblestack(0.7)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -8452,8 +10391,8 @@ def P_edge_measurments_2025_3_day(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
-                        if xbpm3.sumX.get() < 50:
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -8470,8 +10409,8 @@ def P_edge_measurments_2025_3_day(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
-                        if xbpm3.sumX.get() < 50:
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -8492,8 +10431,28 @@ def P_edge_measurments_2025_3_day(t=1):
 
 
 def Cl_edge_measurments_2025_3_thursdaynight(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     
 
@@ -8547,7 +10506,7 @@ def Cl_edge_measurments_2025_3_thursdaynight(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -8566,8 +10525,8 @@ def Cl_edge_measurments_2025_3_thursdaynight(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
-                        if xbpm3.sumX.get() < 50:
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -8584,8 +10543,8 @@ def Cl_edge_measurments_2025_3_thursdaynight(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
-                        if xbpm3.sumX.get() < 50:
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -8606,8 +10565,28 @@ def Cl_edge_measurments_2025_3_thursdaynight(t=1):
 
 
 def S_edge_measurments_2025_3_thursdaynight(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     
 
@@ -8663,7 +10642,7 @@ def S_edge_measurments_2025_3_thursdaynight(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -8682,8 +10661,8 @@ def S_edge_measurments_2025_3_thursdaynight(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
-                        if xbpm3.sumX.get() < 50:
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -8700,8 +10679,8 @@ def S_edge_measurments_2025_3_thursdaynight(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
-                        if xbpm3.sumX.get() < 50:
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(1)
@@ -8720,6 +10699,17 @@ def S_edge_measurments_2025_3_thursdaynight(t=1):
 
 
 def night_2025_09_18(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     project_set('317550_Richter_02')
     yield from Cl_edge_measurments_2025_3_thursdaynight(t=t)
 
@@ -8736,8 +10726,27 @@ def night_2025_09_18(t=1):
 
 
 def Cl_edge_measurments_2025_3_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['AM926_n500mV_step07']
     x_hexa = [10.4]
@@ -8763,7 +10772,7 @@ def Cl_edge_measurments_2025_3_sva(t=1):
         yield from bps.mv(stage.x, xs_hexa)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -8781,7 +10790,7 @@ def Cl_edge_measurments_2025_3_sva(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.020)
                         counter += 1
                         
@@ -8794,7 +10803,7 @@ def Cl_edge_measurments_2025_3_sva(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.020)
                         counter += 1
 
@@ -8809,8 +10818,22 @@ def Cl_edge_measurments_2025_3_sva(t=1):
 
 
 def Cl_edge_measurments_2025_3_scanx_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a spatial line scan — it steps the sample across x and takes an
+    #   image at each position (often at a fixed energy), to scan along a stripe.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' map_line_run does a line scan and records the
+    #   x position + beam readings into the saved data and file name for you:
+    #
+    #     from smi_plans import map_line_run
+    #     yield from map_line_run(name, stage.x, x0, x1, npts, t=1, dets=[pil900KW])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below.
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['AM_926_dry']
     # names = ['AM_566_dry']
@@ -8826,7 +10849,7 @@ def Cl_edge_measurments_2025_3_scanx_sva(t=1):
 
     for name in names:
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -8859,8 +10882,28 @@ def Cl_edge_measurments_2025_3_scanx_sva(t=1):
 
 
 def P_edge_measurments_2025_3_20250919(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a phosphorus-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['sample01', 'sample02','sample03', 'sample04', 'sample06', 'sample07', 'sample08', 'sample09', 'NaPSS']             
     x_piezo = [  -56000,     -54000,    -41000,     -24000,     -10000,       9000,      24000,     36000,    44000]
@@ -8903,7 +10946,7 @@ def P_edge_measurments_2025_3_20250919(t=1):
         yield from alignement_gisaxs_doblestack(0.5)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -8922,7 +10965,7 @@ def P_edge_measurments_2025_3_20250919(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(5)
+                        yield from bps.sleep(5)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(piezo.x, xs + counter * x_step)
                         counter += 1
                         
@@ -8936,7 +10979,7 @@ def P_edge_measurments_2025_3_20250919(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(5)
+                        yield from bps.sleep(5)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(piezo.x, xs + counter * x_step)
                         counter += 1
 
@@ -8955,8 +10998,24 @@ def P_edge_measurments_2025_3_20250919(t=1):
 
 
 def bpmvspindiode_Kedge_2025_03(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: measures the direct-beam intensity vs energy — it steps the X-ray
+    #   energy and, at each step, opens the shutter and reads the pin diode / beam monitors.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans records the pin-diode and beam-monitor readings
+    #   INTO the data automatically as you sweep energy (put e.g. "{pin_diode_current2_mean_value}"
+    #   in the name), so you don't open the shutter and read them by hand. An energy sweep is
+    #   built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis
+    #     yield from acquire(name, [pin_diode, xbpm2, xbpm3], [energy_axis(energies)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     name = 'direct_beam_Kedge_att2_10'
 
@@ -8971,7 +11030,7 @@ def bpmvspindiode_Kedge_2025_03(t=1):
 
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(3)
+        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
         fs.open()
         yield from bps.sleep(2)
@@ -8991,7 +11050,7 @@ def bpmvspindiode_Kedge_2025_03(t=1):
 
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(3)
+        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
         fs.open()
         yield from bps.sleep(2)
@@ -9013,8 +11072,24 @@ def bpmvspindiode_Kedge_2025_03(t=1):
 
 
 def bpmvspindiode_Pedge_2025_03(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: measures the direct-beam intensity vs energy — it steps the X-ray
+    #   energy and, at each step, opens the shutter and reads the pin diode / beam monitors.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans records the pin-diode and beam-monitor readings
+    #   INTO the data automatically as you sweep energy (put e.g. "{pin_diode_current2_mean_value}"
+    #   in the name), so you don't open the shutter and read them by hand. An energy sweep is
+    #   built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis
+    #     yield from acquire(name, [pin_diode, xbpm2, xbpm3], [energy_axis(energies)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     name = 'direct_beam_Pedge'
 
@@ -9029,7 +11104,7 @@ def bpmvspindiode_Pedge_2025_03(t=1):
 
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(5)
+        yield from bps.sleep(5)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
         fs.open()
         yield from bps.sleep(2)
@@ -9049,7 +11124,7 @@ def bpmvspindiode_Pedge_2025_03(t=1):
 
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(5)
+        yield from bps.sleep(5)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
         fs.open()
         yield from bps.sleep(2)
@@ -9070,8 +11145,27 @@ def bpmvspindiode_Pedge_2025_03(t=1):
 
 
 def Ca_edge_measurments_2025_3_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a calcium-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['PBDF_2_CaCl2_step7_n1000mV']
     x_hexa = [-20.8]
@@ -9090,7 +11184,7 @@ def Ca_edge_measurments_2025_3_sva(t=1):
         yield from bps.mv(stage.x, xs_hexa)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -9108,7 +11202,7 @@ def Ca_edge_measurments_2025_3_sva(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.020)
                         counter += 1
                         
@@ -9121,7 +11215,7 @@ def Ca_edge_measurments_2025_3_sva(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.020)
                         counter += 1
 
@@ -9139,8 +11233,28 @@ def Ca_edge_measurments_2025_3_sva(t=1):
 
 
 def Ca_edge_measurments_2025_3_20250920(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a calcium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['linkoping_BBL_ascast',    'linkoping_BBL_n800mV',     'Jenekee_BBL_ascast',       'Jenekee_BBL_n800mV',   'PBDF_ascast',  'PBDF_n800mV',      'PBDF_p800mV']             
     x_piezo = [              -54000,                    -43000,                   -19000,                       8000,           25000,          40000,              43000]
@@ -9265,7 +11379,7 @@ def Ca_edge_measurments_2025_3_20250920(t=1):
 
         print(f"AI0: {piezo.th.position}, Y: {piezo.y.position}")
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -9284,7 +11398,7 @@ def Ca_edge_measurments_2025_3_20250920(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(5)
+                        yield from bps.sleep(5)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(piezo.x, xs + counter * x_step)
                         counter += 1
                         
@@ -9298,7 +11412,7 @@ def Ca_edge_measurments_2025_3_20250920(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(5)
+                        yield from bps.sleep(5)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(piezo.x, xs + counter * x_step)
                         counter += 1
 
@@ -9318,8 +11432,28 @@ def Ca_edge_measurments_2025_3_20250920(t=1):
 
 
 def K_edge_measurments_2025_3_20250920(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = [           'PBDF_Si_as',        'PBDF_Si_n1000mV',         'PBDF_Si_n800mV',       'PBDF_Si_n600mV',      'PBDF_Si_n400mV',  'PBDF_Si_n200mV',      'PBDF_Si_n000mV',   'PBDF_ITO_as',    'PBDF_ITO_n1000mV',     'PBDF_ITO_n750mV',
     #                'PBDF_ITO_n500mV',         'PBDF_ITO_n250V',        'PBDF_ITO_p500mV',               'BBL_as',          'BBL_n600mV',      'BBL_n800mV',         'BBL_n1000mV',    'BBL_p600mV',          'BBL_2CN_as',      'BBL_2CN_n800mV',     'BBL_TCN_as',   'BBL_TCN_n800mV']
@@ -9475,7 +11609,7 @@ def K_edge_measurments_2025_3_20250920(t=1):
 
         print(f"AI0: {piezo.th.position}, Y: {piezo.y.position}")
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -9494,7 +11628,7 @@ def K_edge_measurments_2025_3_20250920(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(piezo.x, xs + counter * x_step)
                         counter += 1
                         
@@ -9508,7 +11642,7 @@ def K_edge_measurments_2025_3_20250920(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(piezo.x, xs + counter * x_step)
                         counter += 1
 
@@ -9525,8 +11659,28 @@ def K_edge_measurments_2025_3_20250920(t=1):
 
 
 def ClO4_edge_measurments_2025_3_20250921(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine (ClO4)-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = [         'AM566_ascast',      'AM566_n400mV_KClO4',      'AM566_n200mV_KClO4',     'AM566_00mV_KClO4',  'AM566_p200mV_KClO4', 'AM566_p400mV_KClO4',  'AM566_p600mV_KClO4',     'AM926_ascast',  'AM926_n400mV_KClO4',  'AM926_n200mV_KClO4',  'AM926_00mV_KClO4', 'AM926_p200mV_KClO4', 'AM926_p400mV_KClO4', 'AM926_p600mV_KClO4',
                   'AM566_n400mV_KCl',        'AM566_n200mV_KCl',          'AM566_00mV_KCl',     'AM566_p600mV_KCl',    'AM926_n400mV_KCl',   'AM926_n200mV_KCl',      'AM926_00mV_KCl', 'AM926_p600mV_KCl',  'AM566_n100mV_KClO4',  'AM926_n100mV_KClO4'] 
@@ -9591,7 +11745,7 @@ def ClO4_edge_measurments_2025_3_20250921(t=1):
         yield from bps.sleep(1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -9610,7 +11764,7 @@ def ClO4_edge_measurments_2025_3_20250921(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(piezo.x, xs + counter * x_step)
                         counter += 1
                         
@@ -9624,7 +11778,7 @@ def ClO4_edge_measurments_2025_3_20250921(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(piezo.x, xs + counter * x_step)
                         counter += 1
 
@@ -9640,6 +11794,25 @@ def ClO4_edge_measurments_2025_3_20250921(t=1):
 
 
 def Cl_edge_measurments_2025_3_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=None):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     if ais:
         print('ai existing')
         aiss=ais
@@ -9670,7 +11843,7 @@ def Cl_edge_measurments_2025_3_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=
 
     ai_ini = 4.5
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     for l, (name, xs_hexa) in enumerate(zip(names, x_hexa)):
         yield from bps.mv(stage.th, ai_ini)
@@ -9714,7 +11887,7 @@ def Cl_edge_measurments_2025_3_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=
                     name_fmt = "{sample}_hum{humidity}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.030)
                         counter += 1
                         
@@ -9727,7 +11900,7 @@ def Cl_edge_measurments_2025_3_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=
                     name_fmt = "{sample}_hum{humidity}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.030)
                         counter += 1
 
@@ -9746,6 +11919,17 @@ def Cl_edge_measurments_2025_3_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=
 
 def night_09_22_25(t=1):
     # 0 per humidity
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     setDryFlow(5)
     setWetFlow(0)
     humidity=readHumidity()
@@ -9763,8 +11947,24 @@ def night_09_22_25(t=1):
 
 
 def bpmvspindiode_Cledge_2025_03(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: measures the direct-beam intensity vs energy — it steps the X-ray
+    #   energy and, at each step, opens the shutter and reads the pin diode / beam monitors.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans records the pin-diode and beam-monitor readings
+    #   INTO the data automatically as you sweep energy (put e.g. "{pin_diode_current2_mean_value}"
+    #   in the name), so you don't open the shutter and read them by hand. An energy sweep is
+    #   built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis
+    #     yield from acquire(name, [pin_diode, xbpm2, xbpm3], [energy_axis(energies)])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     name = 'direct_beam_Cledge_KCl_att29'
 
@@ -9781,7 +11981,7 @@ def bpmvspindiode_Cledge_2025_03(t=1):
 
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
         fs.open()
         yield from bps.sleep(2)
@@ -9801,7 +12001,7 @@ def bpmvspindiode_Cledge_2025_03(t=1):
 
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
         fs.open()
         yield from bps.sleep(2)
@@ -9823,8 +12023,28 @@ def bpmvspindiode_Cledge_2025_03(t=1):
 
 
 def S_edge_measurments_2026_March01(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW, pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # bottom left first
     names = ['tropp_a', 'tropp_b', 'tropp_c', 'tropp_d', 'ndi_p100', 'ndi_p90']             
@@ -9877,8 +12097,8 @@ def S_edge_measurments_2026_March01(t=1):
                 for e in energies:
                     yield from bps.mv(piezo.y, yss[counter])
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm3.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -9894,8 +12114,8 @@ def S_edge_measurments_2026_March01(t=1):
                 for e in energies[::-1]:
                     yield from bps.mv(piezo.y, yss[counter])
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm3.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                    if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -9913,8 +12133,27 @@ def S_edge_measurments_2026_March01(t=1):
 
 
 def Cl_edge_measurments_2026_1_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a chlorine-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['PBDF_2_CaCl2_step7_n1000mV']
     x_hexa = [-20.8]
@@ -9932,7 +12171,7 @@ def Cl_edge_measurments_2026_1_sva(t=1):
         yield from bps.mv(stage.x, xs_hexa)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -9950,7 +12189,7 @@ def Cl_edge_measurments_2026_1_sva(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.020)
                         counter += 1
                         
@@ -9963,7 +12202,7 @@ def Cl_edge_measurments_2026_1_sva(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         yield from bps.mv(stage.x, xs_hexa - counter * 0.020)
                         counter += 1
 
@@ -9983,8 +12222,28 @@ def Cl_edge_measurments_2026_1_sva(t=1):
 
 
 def S_edge_measurments_2026_1_mondaynight(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW, pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['ladder_lpbt',  'ladder_ltbt',  'ladder_lpbt-me',   'MoS2_ref', 'MoS2_tbab-ac',   'MoS2_tbab-dc', 'MoS2_tbabpvp-ac', ' tropp_f', 'tropp_e',
              'MoS2_tbab-ac_gold',  'igzo_211-1',  'igzo_211-2',   'igzo_211-5', 'igzo_211-10', 'igzo_811-1', 'igzo_811-2', 'igzo_811-5a', 'igzo_811-5b']
@@ -10042,7 +12301,7 @@ def S_edge_measurments_2026_1_mondaynight(t=1):
             yield from bps.sleep(1)
 
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
             s = Signal(name='target_file_name', value='')
 
@@ -10060,8 +12319,8 @@ def S_edge_measurments_2026_1_mondaynight(t=1):
                         name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                         for e in energies:
                             yield from bps.mv(energy, e)
-                            yield from bps.sleep(2)
-                            if xbpm3.sumX.get() < 50:
+                            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                            if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                                 yield from bps.sleep(2)
                                 yield from bps.mv(energy, e)
                                 yield from bps.sleep(1)
@@ -10078,8 +12337,8 @@ def S_edge_measurments_2026_1_mondaynight(t=1):
                         name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                         for e in energies[::-1]:
                             yield from bps.mv(energy, e)
-                            yield from bps.sleep(2)
-                            if xbpm3.sumX.get() < 50:
+                            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                            if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                                 yield from bps.sleep(2)
                                 yield from bps.mv(energy, e)
                                 yield from bps.sleep(1)
@@ -10103,8 +12362,27 @@ def S_edge_measurments_2026_1_mondaynight(t=1):
 
 
 def K_edge_measurments_2026_1_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge energy scan on a sample under controlled conditions
+    #   (the 'sva'-style runs) — it steps the X-ray energy and takes SAXS/WAXS images,
+    #   nudging the sample spot between energies to limit beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does the energy sweep in one call and records the energy + beam intensity + sample
+    #   into the saved data and file name for you (and handles energy settling/feedback).
+    #   For controlled humidity (true SVA), see set_rh / rh_step_series_run. The energy
+    #   sweep itself is:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['BBL_KCl_p200']
     x_hexa = [-25.85]
@@ -10136,8 +12414,8 @@ def K_edge_measurments_2026_1_sva(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa + counter * 0.020)
@@ -10152,8 +12430,8 @@ def K_edge_measurments_2026_1_sva(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
                         yield from bps.mv(stage.x, xs_hexa + counter * 0.030)
@@ -10175,8 +12453,28 @@ def K_edge_measurments_2026_1_sva(t=1):
 
 
 def In_edge_measurments_2026_1_mondaynight(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a indium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW, pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     # names = ['Edep',  'P100_exp',  'P100_dedoped',   'P100_doped', 'P90_exp',  'P90_dedoped',   'P90_doped', 
     #          'BBL_exp',  'BBL_dedoped',   'BBL_doped']
@@ -10218,7 +12516,7 @@ def In_edge_measurments_2026_1_mondaynight(t=1):
             yield from bps.sleep(1)
 
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
             s = Signal(name='target_file_name', value='')
 
@@ -10236,8 +12534,8 @@ def In_edge_measurments_2026_1_mondaynight(t=1):
                         name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                         for e in energies:
                             yield from bps.mv(energy, e)
-                            yield from bps.sleep(2)
-                            if xbpm3.sumX.get() < 50:
+                            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                            if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                                 yield from bps.sleep(2)
                                 yield from bps.mv(energy, e)
                                 yield from bps.sleep(1)
@@ -10254,8 +12552,8 @@ def In_edge_measurments_2026_1_mondaynight(t=1):
                         name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                         for e in energies[::-1]:
                             yield from bps.mv(energy, e)
-                            yield from bps.sleep(2)
-                            if xbpm3.sumX.get() < 50:
+                            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                            if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                                 yield from bps.sleep(2)
                                 yield from bps.mv(energy, e)
                                 yield from bps.sleep(1)
@@ -10277,6 +12575,23 @@ def In_edge_measurments_2026_1_mondaynight(t=1):
 
 
 def nexafs_Inedge_2026_1():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS energy scan — it steps the X-ray energy across the absorption
+    #   edge and takes a detector image (and beam readings) at each energy.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that
+    #   does a full energy scan like this in ONE line and records the energy + beam
+    #   intensity straight into the saved data and the file name for you (so you don't
+    #   hand-build the name or read xbpm by hand), and it handles the energy settling and
+    #   beam feedback. Roughly:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=1, dets=[pil900KW])
+    #
+    # (Nothing here is broken. The energy 'sleep' lines are flagged 💡 only because they
+    #  become unnecessary once you migrate — smi_plans handles energy settling for you.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW]
 
     name='nexafs_bbl_doped_Inedge_ai1.6deg'
@@ -10294,7 +12609,7 @@ def nexafs_Inedge_2026_1():
 
             for i, e in enumerate(energies):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 
                 # Metadata
                 wa = str(np.round(float(wa), 1)).zfill(4)
@@ -10313,8 +12628,28 @@ def nexafs_Inedge_2026_1():
 
 
 def K_edge_measurments_2026_1_mondaynight(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a potassium-edge measurement — for each sample it moves into place
+    #   (often aligning grazing incidence), then steps the X-ray energy across the edge and
+    #   takes SAXS/WAXS images at each energy, nudging the spot between energies.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs
+    #   a whole bar of samples and sweeps the energy in one coordinated measurement, recording
+    #   the energy + beam intensity + which sample each image is into the saved data and file
+    #   name for you (so you don't keep parallel x/name lists or read xbpm by hand), and it
+    #   handles the energy settling/feedback. The energy sweep is built with energy_axis:
+    #
+    #     from smi_plans import acquire, energy_axis, saxs_waxs_dets
+    #     yield from acquire(name, saxs_waxs_dets(), [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3])
+    #     # ...or use giwaxs_bar(SampleList.from_columns(...), ...) for the per-sample loop.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line(s) are now "plans", so the plain calls do nothing — see the ⚠️
+    #   notes on those lines below. (Energy 'sleep' lines are only flagged 💡: they still work, just no longer needed.)
+    # === end smi_plans note ================================================
+
     dets = [pil900KW, pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     names = ['P100_doped', 'P100_dedoped', 'P90_doped', 'P90_dedoped',  'BBL_doped', 'BBL_dedoped',
              'InOx_dartmouth', 'BBL_prisitne', 'P90_prisitne', 'P100_prisitne',]
@@ -10350,7 +12685,7 @@ def K_edge_measurments_2026_1_mondaynight(t=1):
             yield from bps.sleep(1)
 
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
             s = Signal(name='target_file_name', value='')
 
@@ -10368,8 +12703,8 @@ def K_edge_measurments_2026_1_mondaynight(t=1):
                         name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                         for e in energies:
                             yield from bps.mv(energy, e)
-                            yield from bps.sleep(2)
-                            if xbpm3.sumX.get() < 50:
+                            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                            if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                                 yield from bps.sleep(2)
                                 yield from bps.mv(energy, e)
                                 yield from bps.sleep(1)
@@ -10386,8 +12721,8 @@ def K_edge_measurments_2026_1_mondaynight(t=1):
                         name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                         for e in energies[::-1]:
                             yield from bps.mv(energy, e)
-                            yield from bps.sleep(2)
-                            if xbpm3.sumX.get() < 50:
+                            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and any beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                            if xbpm3.sumX.get() < 50:  # 💡 smi_plans: this beam re-seek isn't needed once you migrate — move_energy_fb/energy_axis already manage the beam feedback and re-seek if the beam dips. (Not broken, just no longer needed.)
                                 yield from bps.sleep(2)
                                 yield from bps.mv(energy, e)
                                 yield from bps.sleep(1)
@@ -10408,6 +12743,17 @@ def K_edge_measurments_2026_1_mondaynight(t=1):
 
 
 def night_03March2026(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — it runs several measurement plans in sequence
+    #   (and sets the proposal/sample folder), by calling the other plans in this file.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', and
+    #   each plan it calls can usually be replaced by a one-line smi_plans run that also
+    #   records the energy, beam intensity, etc. into the saved data automatically. You
+    #   can keep chaining them with 'yield from' just like here. (Nothing in this driver
+    #   is broken — but the plans it calls may have ⚠️ items; see their own notes.)
+    # === end smi_plans note ================================================
+
     project_set('314483_Freychet_41')
     yield from K_edge_measurments_2026_1_mondaynight(t=t)
     

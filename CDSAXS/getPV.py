@@ -1,3 +1,4 @@
+# smi_plans: no acquisition logic here — nothing to migrate. (This is a standalone PV/camera-frame grabber using caget + p4p, not a Bluesky plan; it does not use bps/bp./device objects, so the smi_plans library does not apply.)
 import ast
 import numpy as np
 import time, os

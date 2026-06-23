@@ -107,6 +107,22 @@ pxy_dict = {
 
 
 def measure_samples_saxs_map_923Ngt():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a top-level run-book — for a handful of samples it does a single
+    #   y-scan, and for the rest it does full 2-D maps (top and bottom regions) plus a
+    #   y-scan, by calling the do_one_yscan / do_one_map helpers below.
+    #
+    # 💡 NEWER, EASIER WAY: the helpers this calls start a brand-new run with RE(...) for
+    #   each step. The 'smi_plans' helper library can run a whole list of samples as ONE
+    #   coordinated mapping measurement and record which sample each frame belongs to. See
+    #   map_bar / map_grid_run / map_line_run, e.g.:
+    #
+    #     from smi_plans import map_bar, SampleList
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list, y=y_list)
+    #     RE(map_bar(samples, ...))     # one coordinated run instead of many
+    #
+    #   (Just a tidier option to try later — the run-book below still works as-is.)
+    # === end smi_plans note ================================================
     for i in [1, 2, 3, 4, 5, 7]:
         do_one_yscan(i)
     do_one_map(6, xstart=-4200, ystart_up=-5600, ystart_bot=-1800)
@@ -124,10 +140,25 @@ def measure_samples_saxs_map_923Ngt():
 
 
 def movx(dx):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a shortcut to nudge the sample left/right (piezo.x) by dx.
+    #
+    # 💡 NEWER, EASIER WAY: this calls RE(...) inside a function, which only works when you
+    #   type it at the prompt — it can't be used inside a "plan" (a recipe other plans run).
+    #   Inside a plan you'd write  yield from bps.mv(piezo.x, new_position). At the prompt,
+    #   RE(bps.mvr(piezo.x, dx)) is fine as-is. (Nothing here is broken.)
+    # === end smi_plans note ================================================
     RE(bps.mvr(piezo.x, dx))
 
 
 def movy(dy):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a shortcut to nudge the sample up/down (piezo.y) by dy.
+    #
+    # 💡 NEWER, EASIER WAY: same idea as movx — RE(...) inside a function only works at the
+    #   prompt, not inside a plan; inside a plan use  yield from bps.mv(piezo.y, ...).
+    #   (Nothing here is broken.)
+    # === end smi_plans note ================================================
     RE(bps.mvr(piezo.y, dy))
 
 
@@ -136,18 +167,47 @@ def get_posxy():
 
 
 def move_waxs(waxs_angle=8.0):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: swings the WAXS detector arc to the given angle.
+    #
+    # 💡 NEWER, EASIER WAY: like the movers above, RE(...) inside a function only works at
+    #   the prompt; inside a plan use  yield from bps.mv(waxs, angle). In smi_plans the arc
+    #   position is usually handled for you by saxs_waxs_dets / the grazing presets.
+    #   (Nothing here is broken.)
+    # === end smi_plans note ================================================
     RE(bps.mv(waxs, waxs_angle))
 
 
 def move_waxs_off(waxs_angle=8.0):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: swings the WAXS arc (same as move_waxs). 💡 RE(...) inside a function
+    #   only works at the prompt; inside a plan use  yield from bps.mv(waxs, angle).
+    #   (Nothing here is broken.)
+    # === end smi_plans note ================================================
     RE(bps.mv(waxs, waxs_angle))
 
 
 def move_waxs_on(waxs_angle=0.0):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: swings the WAXS arc back toward 0. 💡 RE(...) inside a function only
+    #   works at the prompt; inside a plan use  yield from bps.mv(waxs, angle).
+    #   (Nothing here is broken.)
+    # === end smi_plans note ================================================
     RE(bps.mv(waxs, waxs_angle))
 
 
 def mov_sam(pos):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves to a numbered sample — it looks up that sample's x/y from
+    #   pxy_dict, moves piezo.x and piezo.y there, and stashes the sample name in RE.md.
+    #
+    # 💡 NEWER, EASIER WAY: with the 'smi_plans' helper library you describe your samples
+    #   once as a SampleList (name + x/y/z), and the plans move to each sample for you and
+    #   record which sample each frame belongs to — so you don't keep parallel dicts or poke
+    #   RE.md['sample'] by hand. See SampleList.from_columns(...) and goto_sample. (Note: this
+    #   uses RE(...) inside a function, which only works at the prompt; inside a plan you'd
+    #   use  yield from bps.mv(...). Nothing here is broken.)
+    # === end smi_plans note ================================================
     px, py = pxy_dict[pos]
     RE(bps.mv(piezo.x, px))
     RE(bps.mv(piezo.y, py))
@@ -157,6 +217,14 @@ def mov_sam(pos):
 
 
 def check_saxs_sample_loc(sleep=5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a quick visual check — steps through every sample position (via
+    #   mov_sam) pausing a few seconds at each so you can confirm the coordinates.
+    #
+    # 💡 NEWER, EASIER WAY: nothing here is broken. With smi_plans you'd describe the
+    #   positions once as a SampleList and could step through them with goto_sample; this
+    #   loop is fine as a quick eyeball check.
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())
     for k in ks:
         mov_sam(k)
@@ -164,20 +232,53 @@ def check_saxs_sample_loc(sleep=5):
 
 
 def snap_waxs(t=0.1):
-    dets = [pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a single quick WAXS snapshot (a test image).
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans has a one-shot acquire that records the beam readings
+    #   into the saved data for you, e.g.  yield from acquire("test", [pil900KW], []).
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(t)' is now a "plan" (plain call does
+    #   nothing); (2) 'pil300KW' was removed. See the ⚠️ notes below. (Heads up: there is a
+    #   SECOND snap_waxs defined later in this file that overrides this one — that later copy
+    #   uses the current 'pil900KW'.)
+    # === end smi_plans note ================================================
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(t)
+    det_exposure_time(t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t)  — or at the prompt:  RE(det_exposure_time(t)). (smi_plans' technique runs set it for you via t=.)
     yield from (bp.count(dets, num=1))
 
 
 def snap_saxs(t=0.1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a single quick SAXS snapshot (a test image).
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans has a one-shot acquire that records the beam readings
+    #   into the saved data for you, e.g.  yield from acquire("test", [pil2M], []).
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(t)' is now a "plan" (plain call does
+    #   nothing) — see the ⚠️ note below.
+    # === end smi_plans note ================================================
     dets = [pil2M]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(t)
+    det_exposure_time(t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t)  — or at the prompt:  RE(det_exposure_time(t)). (smi_plans' technique runs set it for you via t=.)
     yield from (bp.count(dets, num=1))
 
 
 def measure_samples_saxs_map1():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book that picks an x/y grid (the later xlist/ylist assignments
+    #   below win) and then runs a SAXS map over it via measure_saxs_map.
+    #
+    # 💡 NEWER, EASIER WAY: the 'smi_plans' helper library has ready-made mapping plans that
+    #   raster a grid and record the positions + beam readings into the saved data for you:
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes
+    #     RE(map_grid_run("HZ", *spatial_grid_axes(piezo.x, xlist, piezo.y, ylist),
+    #                     dets=[pil2M]))
+    #
+    #   (Just a tidier option to try later — your run-book below still works as-is.)
+    # === end smi_plans note ================================================
     mov_sam(0)
     # xlist = np.linspace( 38000, 41600, 121 )  #[ 38700,   39100,    39500,  39900, 40100   ]
     # ylist = [ ]
@@ -219,6 +320,15 @@ def measure_samples_saxs_map1():
 
 
 def do_one_yscan(sam_id):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves to a numbered sample, then runs a 220-point y-scan on it
+    #   (via measure_saxs_scany), tagging the name with "ScanY".
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' map_line_run does a line scan and records the
+    #   positions for you, e.g.  RE(map_line_run(name, piezo.y, y0, y1, 220, dets=[pil2M])).
+    #   (This calls RE(...) inside a function, which only works at the prompt. Nothing here
+    #   is broken.)
+    # === end smi_plans note ================================================
     mov_sam(sam_id)
     sample = RE.md["sample"] + "ScanY"
     RE(
@@ -233,6 +343,21 @@ def do_one_yscan(sam_id):
 
 
 def do_one_map(sam_id, xstart, ystart_up, ystart_bot, dia=3):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves to a numbered sample and maps it — a 2-D SAXS map over the
+    #   "Up" region, another over the "Bot" region, then a y-scan, by calling
+    #   measure_saxs_map / measure_saxs_scany.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' map_grid_run rasters a 2-D grid in one coordinated
+    #   run and records the positions for you, so you don't start three separate RE(...)
+    #   runs per sample:
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes
+    #     RE(map_grid_run(sample, *spatial_grid_axes(piezo.x, xlist, piezo.y, ylist),
+    #                     dets=[pil2M]))
+    #
+    #   (Just a tidier option to try later — the run-book below still works as-is.)
+    # === end smi_plans note ================================================
     mov_sam(sam_id)
     if dia == 3:
         Nx = 18
@@ -276,6 +401,14 @@ def do_one_map(sam_id, xstart, ystart_up, ystart_bot, dia=3):
 
 
 def measure_samples_saxs_map():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book that maps each of samples 1-7 in turn by calling do_one_map.
+    #
+    # 💡 NEWER, EASIER WAY: with smi_plans you can describe the samples once as a SampleList
+    #   and run the whole bar of maps as one coordinated measurement via map_bar, so each
+    #   frame knows which sample it belongs to. (Just a tidier option to try later — this
+    #   run-book still works as-is.)
+    # === end smi_plans note ================================================
     do_one_map(1, xstart=35600, ystart_up=-7800, ystart_bot=-1900)
     do_one_map(2, xstart=28400, ystart_up=-7300, ystart_bot=-2900)
     do_one_map(3, xstart=20500, ystart_up=-4200, ystart_bot=300)
@@ -293,6 +426,28 @@ def measure_saxs_map(
     sample=None,
     att="None",
 ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: rasters the sample over a 2-D grid (every x in xlist × every y in
+    #   ylist) and takes a SAXS image at each point, building the file name from the live
+    #   positions and detector distance.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   ready-made grid map. It records the x/y positions, detector distance, beam readings,
+    #   etc. straight INTO the saved data and fills the file name from them — so you don't
+    #   read piezo.x.position / pil2M_pos.z.position by hand. Also note: right now this takes
+    #   a separate "run" per point; map_grid_run does the whole grid as ONE run:
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes
+    #     yield from map_grid_run(sample,
+    #                             *spatial_grid_axes(piezo.x, xlist, piezo.y, ylist),
+    #                             t=t, dets=[pil2M])
+    #
+    #   (Just a tidier option to try later — your loop below still works as-is, except the
+    #    'det_exposure_time' line marked ⚠️.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' line below (see the ⚠️ note
+    #   on it).
+    # === end smi_plans note ================================================
     if sample is None:
         sample = RE.md["sample"]
     dets = [pil2M]
@@ -310,7 +465,7 @@ def measure_saxs_map(
                 att=att,
                 scan_id=RE.md["scan_id"],
             )
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' map_grid_run sets it for you via t=.)
             sample_id(user_name=user_name, sample_name=sample_name)
             yield from bp.count(dets, num=1)
 
@@ -322,6 +477,24 @@ def measure_saxs_scany(
     sample=None,
     att="None",
 ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes N SAXS images, stepping piezo.y by +30 between each (a y-scan),
+    #   building the file name from the live positions and detector distance.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' map_line_run does a line scan as ONE coordinated run
+    #   and records the y position (and beam readings) into the saved data and file name for
+    #   you — so you don't read piezo.y.position by hand or take a separate run per step:
+    #
+    #     from smi_plans import map_line_run
+    #     y0 = piezo.y.position
+    #     yield from map_line_run(sample, piezo.y, y0, y0 + 30*(N-1), N, t=t, dets=[pil2M])
+    #
+    #   (Just a tidier option to try later — your loop below still works as-is, except the
+    #    'det_exposure_time' line marked ⚠️.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' line below (see the ⚠️ note
+    #   on it).
+    # === end smi_plans note ================================================
     if sample is None:
         sample = RE.md["sample"]
     dets = [pil2M]
@@ -336,7 +509,7 @@ def measure_saxs_scany(
             att=att,
             scan_id=RE.md["scan_id"],
         )
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' map_line_run sets it for you via t=.)
         sample_id(user_name=user_name, sample_name=sample_name)
         yield from bp.count(dets, num=1)
         # yield from   bps.mv(piezo.y, 30)  #here is something wrong, should move a relative postion, have to redo this y scan!!!! NOTE at Thursady afternoon (9/23)
@@ -346,6 +519,16 @@ def measure_saxs_scany(
 
 
 def measure_pindiol_current():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: opens the fast shutter, reads the pin-diode current once, closes the
+    #   shutter, and returns that current — a quick beam-intensity check.
+    #
+    # 💡 NEWER, EASIER WAY: nothing here is broken. In smi_plans the pin-diode reading is
+    #   recorded INTO the data automatically during a scan (you can put it in the file name
+    #   as e.g. "{pin_diode_current2_mean_value}"), so you rarely need to read it by hand
+    #   like this. (Heads up: this function is defined twice in this file — the later copy is
+    #   identical.)
+    # === end smi_plans note ================================================
     fs.open()
     yield from bps.sleep(0.3)
     pd_curr = pdcurrent1.value
@@ -364,6 +547,15 @@ def measure_series_saxs(
         -2000,
     ],
 ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — for every sample, and every y-offset, and every exposure
+    #   time, it runs a single SAXS measurement (via the measure_saxs helper).
+    #
+    # 💡 NEWER, EASIER WAY: with smi_plans you describe the samples once as a SampleList and
+    #   run them as one coordinated transmission/SAXS measurement (e.g. transmission_bar),
+    #   recording which sample/offset each frame belongs to instead of starting a fresh
+    #   RE(...) run each time. (Just a tidier option to try later — this run-book still works.)
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())
     for k in ks:
         mov_sam(k)
@@ -383,6 +575,15 @@ def measure_series_waxs(
         -2000,
     ],
 ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book — for the first 8 samples, and every y-offset, and every
+    #   exposure time, it runs a single WAXS measurement (via the measure_waxs helper).
+    #
+    # 💡 NEWER, EASIER WAY: like measure_series_saxs, smi_plans can run the whole sample bar
+    #   as one coordinated measurement and record which sample/offset/arc each frame is,
+    #   instead of one RE(...) run per point. (Just a tidier option to try later — this
+    #   run-book still works as-is.)
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())[:8]
     for k in ks:
         mov_sam(k)
@@ -400,6 +601,28 @@ def measure_waxs_multi_angles(
     waxs_angles=[0.0, 6.5, 13.0],
     inverse_angle=False,
 ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: steps the WAXS detector arc through several angles and takes an image
+    #   at each (optionally adding the SAXS detector at the widest angle), building the file
+    #   name from the live x/y/z positions and the arc angle.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that sweeps
+    #   the arc as a proper scan axis and records the positions + arc angle + beam readings
+    #   into the saved data and file name for you (so you don't read piezo.x/y/z.position by
+    #   hand). Roughly:
+    #
+    #     from smi_plans import acquire, motor_axis, saxs_waxs_dets
+    #     yield from acquire(RE.md["sample"], saxs_waxs_dets(),
+    #                        [motor_axis("waxs", waxs.arc, [0.0, 6.5, 13.0])])
+    #
+    #   (Just a tidier option to try later — your loop below still works as-is, except the
+    #    ⚠️ lines, which need a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) the 'det_exposure_time(...)' lines are now "plans"
+    #   (plain calls do nothing); (2) 'pil300KW' was removed. See the ⚠️ notes below. (The
+    #   'rayonix' / 'pil300KW' text in the comment further down is just a comment, so it's
+    #   harmless — but don't bring rayonix back: it was removed with no replacement.)
+    # === end smi_plans note ================================================
 
     # waxs_angles = np.linspace(0, 65, 11)   #the max range
     # waxs_angles =   np.linspace(0, 65, 11),
@@ -408,7 +631,7 @@ def measure_waxs_multi_angles(
     waxs_angle_array = np.array(waxs_angles)
     if inverse_angle:
         waxs_angle_array = waxs_angle_array[::-1]
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     max_waxs_angle = np.max(waxs_angle_array)
     for waxs_angle in waxs_angle_array:
         yield from bps.mv(waxs, waxs_angle)
@@ -430,35 +653,64 @@ def measure_waxs_multi_angles(
             if waxs_angle == max_waxs_angle:
                 dets = [
                     pil2M,
-                    pil300KW,
+                    pil300KW,  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (different camera; check calibration).
                 ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
             else:
-                dets = [pil300KW]
+                dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (different camera; check calibration).
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
         sample_id(user_name=user_name, sample_name=sample_name)
         print(f"\n\t=== Sample: {sample_name} ===\n")
         # yield from bp.scan(dets, waxs, *waxs_arc)
         yield from bp.count(dets, num=1)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this resets the exposure, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)).
 
 
 def snap_waxs(t=0.1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a single quick WAXS snapshot (a test image). This is the SECOND
+    #   snap_waxs in the file, so this is the one that actually runs (it correctly uses the
+    #   current WAXS detector 'pil900KW').
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans has a one-shot acquire that records the beam readings
+    #   into the saved data for you, e.g.  yield from acquire("test", [pil900KW], []).
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(t)' is now a "plan" (plain call does
+    #   nothing) — see the ⚠️ note below. (The detector here, 'pil900KW', is fine.)
+    # === end smi_plans note ================================================
     dets = [pil900KW]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(t)
+    det_exposure_time(t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t)  — or at the prompt:  RE(det_exposure_time(t)). (smi_plans' technique runs set it for you via t=.)
     yield from (bp.count(dets, num=1))
 
 
 def snap_saxs(t=0.1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a single quick SAXS snapshot (a test image). This is the SECOND
+    #   snap_saxs in the file, so this is the one that actually runs.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans has a one-shot acquire that records the beam readings
+    #   into the saved data for you, e.g.  yield from acquire("test", [pil2M], []).
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(t)' is now a "plan" (plain call does
+    #   nothing) — see the ⚠️ note below.
+    # === end smi_plans note ================================================
     dets = [pil2M]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(t)
+    det_exposure_time(t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t)  — or at the prompt:  RE(det_exposure_time(t)). (smi_plans' technique runs set it for you via t=.)
     yield from (bp.count(dets, num=1))
 
 
 def measure_pindiol_current():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: opens the fast shutter, reads the pin-diode current once, closes it,
+    #   and returns that current. This is the SECOND (identical) copy in the file.
+    #
+    # 💡 NEWER, EASIER WAY: nothing here is broken. In smi_plans the pin-diode reading is
+    #   recorded INTO the data automatically during a scan (put it in the file name as e.g.
+    #   "{pin_diode_current2_mean_value}"), so you rarely read it by hand like this.
+    # === end smi_plans note ================================================
     fs.open()
     yield from bps.sleep(0.3)
     pd_curr = pdcurrent1.value

@@ -12,6 +12,23 @@
 #logbooks_default = ['User Experiments']
 #tags_default = ['CFN Soft-Bio']
 
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# HEADS-UP: this is a CMS (NSLS-II 11-BM) user file — it uses the CMS framework (cms.*,
+#   detselect, pilatus2M/pilatus8002, the Sample/Holder objects with sample.measure(...),
+#   and RE(mov(...)) called from inside methods). The 'smi_plans' helper library is written
+#   for the SMI-SWAXS beamline (12-ID) and references SMI devices (pil2M, pil900KW, piezo,
+#   stage, energy, ...), so its functions do NOT drop straight into this CMS code.
+#
+# 💡 If/when this gets ported to SMI: the one habit worth carrying over is to let the
+#   acquisition run THROUGH the RunEngine as a plan (so every frame is recorded as a proper
+#   data document with metadata), instead of poking RE() from inside a Python loop or calling
+#   sample.measure() directly. On SMI that role is played by smi_plans' technique runners
+#   (e.g. transmission_run / time_series_run / map_grid_run) plus a SampleList for the bar.
+#   On CMS, keep using the CMS tools — nothing here is "broken", it just lives on a different
+#   beamline than smi_plans targets.  (Human reviewer: confirm whether CMS files belong in
+#   this migration sweep at all.)
+# === end smi_plans note ================================================
+
 import pickle
 import os
 from shutil import copyfile

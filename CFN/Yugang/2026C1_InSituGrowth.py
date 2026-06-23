@@ -1,3 +1,23 @@
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS FILE DOES: an in-situ growth run-book — config (sample positions in
+#   'pxy_dict', names in 'sample_dict') at the top, then helpers to move to a sample,
+#   measure SAXS/WAXS, loop over samples/angles, and a NanoSyn class that re-measures a
+#   spot over time while nudging x/y to spread the dose.
+#
+# 💡 NEWER, EASIER WAY: the 'smi_plans' library (a helper library the beamline now
+#   provides) covers these patterns and records the energy, beam intensity, position,
+#   detector distance, etc. straight INTO the saved data (so they don't have to be packed
+#   into the file name by hand):
+#     - one transmission shot  ->  from smi_plans import transmission_run
+#     - a whole bar of samples ->  transmission_bar / giwaxs_bar with a SampleList
+#     - "watch one spot over time" (the NanoSyn loop) -> time_series_run / kinetics_run
+#   A SampleList (smi_plans' way of listing samples) can be built straight from your
+#   dicts, e.g. SampleList.from_columns(name=[...], x=[...], y=[...]).
+#
+#   See the per-function notes below for concrete examples with your own numbers. Your
+#   code still works as-is, EXCEPT for the lines marked ⚠️ (the det_exposure_time calls)
+#   which genuinely need a fix to run now.
+# === end smi_plans note ================================================
 '''
 saf=
 proposal: 318527
@@ -151,6 +171,20 @@ motorZ = MDrive.m3
 
 
 def mov_sam(pos, dx = 0, dy=0):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: jumps the sample stage to the saved x/y position for sample number
+    #   'pos' (from pxy_dict) and records its name in RE.md.
+    #
+    # 💡 NEWER, EASIER WAY: in the 'smi_plans' library you list your samples once (as a
+    #   SampleList) and the run helpers move to each one and record its name into the data
+    #   for you — so you don't move-then-stash-the-name by hand:
+    #     from smi_plans import SampleList, goto_sample
+    #     samples = SampleList.from_columns(name=list(sample_dict.values()),
+    #                                       x=[v[0] for v in pxy_dict.values()],
+    #                                       y=[v[1] for v in pxy_dict.values()])
+    #     yield from goto_sample(samples[pos])     # moves there inside a plan
+    #   (Nothing here is broken; this just becomes built-in once you migrate.)
+    # === end smi_plans note ================================================
     px, py = pxy_dict[pos]
     RE(bps.mv(piezo.x, px + dx ))
     RE(bps.mv(piezo.y, py + dy))
@@ -161,6 +195,14 @@ def mov_sam(pos, dx = 0, dy=0):
 
 
 def mov_sam_re(pos, dx =0, dy=0   ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the plan version of mov_sam — moves to sample 'pos' from inside a
+    #   plan (so it can be used with 'yield from') and records its name.
+    #
+    # 💡 NEWER, EASIER WAY: same as mov_sam above — 'smi_plans' moves to each sample and
+    #   records its name for you when you list samples as a SampleList and use goto_sample
+    #   / the bar run helpers. (Nothing here is broken; just becomes built-in.)
+    # === end smi_plans note ================================================
     #M, _, _ = get_motor( )  
     px, py = pxy_dict[pos]
     yield from bps.mv(piezo.x, px + dx)
@@ -208,6 +250,30 @@ def name_sam(pos):
 
 def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=20, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False):
     """RE( measure_transmission_xs( sample = 'test' ) )"""
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the core single-shot measurement — picks SAXS and/or WAXS detectors,
+    #   optionally moves the WAXS arc, builds a long file name from the current positions,
+    #   sets the exposure, and takes one image.
+    #
+    # 💡 NEWER, EASIER WAY: the 'smi_plans' library has a one-line transmission run that
+    #   sets the exposure (via t=) and records the positions/detector-distance/beam into
+    #   the image for you (so you don't have to read piezo.x / pil2m_pos.z by hand and
+    #   stuff them into the name — smi_plans fills tokens like {energy_energy} from the data):
+    #
+    #     from smi_plans import transmission_run
+    #     yield from transmission_run(
+    #         sample,                             # rest of the file name is added automatically
+    #         t=t,                                # exposure time, unchanged (sets the camera for you)
+    #         dets=[pil2M, pil900KW],             # SAXS and/or WAXS, as you choose with 'mode'
+    #     )
+    #     # (for WAXS, move the arc first or pass it as an axis; smi_plans records the angle)
+    #
+    #   (Just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the line marked ⚠️ which genuinely needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' line below no longer sets
+    #   the exposure unless run as a plan (see the ⚠️ note on it). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     
     if user_name is None:        
         user_name = RE.md["user_name"]         
@@ -239,7 +305,7 @@ def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=20, att="None", dx=
         t=t,
         #scan_id=RE.md["scan_id"],
     )
-    det_exposure_time(t, t) 
+    det_exposure_time(t, t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")
@@ -254,18 +320,39 @@ def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=20, att="None", dx=
 
 def measure_saxs(t=1, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False):
     """RE( measure_saxs( sample = 'AgBH_12keV' ) )"""    
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a shortcut that takes a single SAXS-only shot (it just calls
+    #   measure_transmission_xs with mode=['saxs']).
+    # 💡 NEWER, EASIER WAY:  from smi_plans import transmission_run
+    #     yield from transmission_run(sample, t=t, dets=[pil2M])   # sets exposure + records context
+    #   (See the fuller note on measure_transmission_xs above. Nothing here is broken.)
+    # === end smi_plans note ================================================
     return measure_transmission_xs(t=t, mode = ['saxs'], att=att, dx=dx, dy=dy, user_name=user_name, sample=sample, take_camera = take_camera)   
 
 def measure_waxs( t=1, waxs_angle=15, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False ):
     """ 
     RE(  measure_waxs() )  # take default parameters
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a shortcut that moves the WAXS arc and takes a single WAXS-only shot
+    #   (it just calls measure_transmission_xs with mode=['waxs']).
+    # 💡 NEWER, EASIER WAY:  from smi_plans import giwaxs_run
+    #     yield from giwaxs_run(sample, t=t, dets=[pil900KW], arc=[waxs_angle])  # records arc + context
+    #   (See the fuller note on measure_transmission_xs above. Nothing here is broken.)
+    # === end smi_plans note ================================================
     return measure_transmission_xs(t=t, waxs_angle = waxs_angle, mode = ['waxs'], att=att, dx=dx, dy=dy, user_name=user_name, sample=sample,  take_camera = take_camera) 
 
 def measure_wsaxs( t=1, waxs_angle=20, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False ):
     """ 
     RE(  measure_wsaxs() )  # take default parameters
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a shortcut that takes a single SAXS+WAXS shot at once (it just calls
+    #   measure_transmission_xs with mode=['saxs','waxs']).
+    # 💡 NEWER, EASIER WAY:  from smi_plans import giwaxs_run
+    #     yield from giwaxs_run(sample, t=t, dets=[pil2M, pil900KW], arc=[waxs_angle])
+    #   (See the fuller note on measure_transmission_xs above. Nothing here is broken.)
+    # === end smi_plans note ================================================
     return measure_transmission_xs(t=t, waxs_angle = waxs_angle, mode = ['saxs', 'waxs' ], att=att, dx=dx, dy=dy, user_name=user_name, sample=sample,  take_camera = take_camera)     
     
 
@@ -277,6 +364,25 @@ def measure_multi_waxs_loop_angles(  t= [1], waxs_angles=[0, 15, 20, 40   ],
     t0=time.time();RE(measure_multi_waxs_loop_angles());run_time(t0)    
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: loops over a set of WAXS arc angles and, for each, visits every
+    #   sample in sample_dict and a few x/y offsets, taking WAXS (and SAXS at the biggest
+    #   angle) at each spot.
+    #
+    # 💡 NEWER, EASIER WAY: "run a bar of samples and sweep the WAXS arc" is exactly the
+    #   'smi_plans' GIWAXS bar helper; give it your samples as a SampleList and it visits,
+    #   sweeps the arc, names, and records the arc/position/beam into each image:
+    #
+    #     from smi_plans import giwaxs_bar, SampleList
+    #     samples = SampleList.from_columns(name=list(sample_dict.values()),
+    #                                       x=[v[0] for v in pxy_dict.values()],
+    #                                       y=[v[1] for v in pxy_dict.values()])
+    #     yield from giwaxs_bar("InSitu", samples, arc=[0, 15, 20, 40], t=t[0],
+    #                           dets=[pil2M, pil900KW])
+    #
+    #   (Just a tidier option to try later — your script below works as-is; nothing here
+    #    is broken. (internal: Tier 1.))
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())   
     maxA = np.max(waxs_angles)
     take_camera = False
@@ -314,6 +420,23 @@ def measure_multi_saxs_loop_angles(  t= [1],  dxs=[0], dys=[0], user_name= user_
     t0=time.time();RE(measure_multi_waxs_loop_angles());run_time(t0)    
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits every sample in sample_dict (and a few x/y offsets) and takes
+    #   a SAXS shot at each.
+    #
+    # 💡 NEWER, EASIER WAY: running a bar of SAXS samples is one call in the 'smi_plans'
+    #   library; give it your samples as a SampleList and it visits, names, and records the
+    #   position/beam into each image:
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=list(sample_dict.values()),
+    #                                       x=[v[0] for v in pxy_dict.values()],
+    #                                       y=[v[1] for v in pxy_dict.values()])
+    #     yield from transmission_bar("InSitu", samples, t=t[0], dets=[pil2M])
+    #
+    #   (Just a tidier option to try later — your script below works as-is; nothing here
+    #    is broken. (internal: Tier 1.))
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())   
     take_camera = False
     for k in ks:
@@ -346,6 +469,27 @@ class NanoSyn( ):
 
 
     def measure( self,sample_name=None,  t=1, take_camera = False ):
+        # === smi_plans note (REVIEW 2026-06-22) ================================
+        # WHAT THIS DOES: takes one SAXS+WAXS image of the current sample, building a long
+        #   file name from the current motor positions and detector distance.
+        #
+        # 💡 NEWER, EASIER WAY: the 'smi_plans' library takes a single shot in one line and
+        #   records the positions/detector-distance/beam into the image for you (so you
+        #   don't read motorX/pil2m_pos.z by hand and pack them into the name):
+        #
+        #     from smi_plans import transmission_run
+        #     yield from transmission_run(sample, t=t, dets=[pil2M, pil900KW])
+        #
+        #   (Heads-up: this method calls RE(bp.count(...)) directly. In smi_plans you write
+        #    the measurement as a plan and 'yield from' it, which lets the time-loop in
+        #    run() below schedule everything cleanly instead of starting a new run each shot.)
+        #
+        #   (Just a tidier option to try later — your code still works as-is,
+        #    EXCEPT for the line marked ⚠️ which genuinely needs a fix to run now.)
+        #
+        # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' line below no longer sets
+        #   the exposure unless run as a plan (see the ⚠️ note on it). (internal: Tier 0.)
+        # === end smi_plans note ================================================
         waxs_angle = 20 #15 #if need change waxs angle, do     move_waxs(  waxs_angle ),  
         dets = [  pil2M, pil900KW ]
         if sample_name is not None:
@@ -370,7 +514,7 @@ class NanoSyn( ):
         print("Collect data here....")
         #yield from bp.count(dets, num=1)
         #RE( bp.count(dets, num=1))
-        det_exposure_time(t, t) 
+        det_exposure_time(t, t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         RE(bp.count(  dets ))
         if take_camera:
             scan_id=RE.md["scan_id"]
@@ -391,6 +535,27 @@ class NanoSyn( ):
         sam.run( sample_name = 'Au111125_ASP_Thiol_HT', sleep_time=30, run_time = 3600*6  )
 
         '''
+        # === smi_plans note (REVIEW 2026-06-22) ================================
+        # WHAT THIS DOES: watches one growing sample over time — it re-measures every few
+        #   seconds for up to many hours, nudging x/y a little each time so the beam
+        #   doesn't dwell on one spot, until the run time is up.
+        #
+        # 💡 NEWER, EASIER WAY: "keep measuring over time" is the 'smi_plans' time-series /
+        #   kinetics idea. Instead of a hand-rolled 'while time.time() < ...' loop that
+        #   calls RE() each pass, you write the measurement as a plan and let a kinetics run
+        #   repeat it for a set number of frames (or a duration), recording the time/position
+        #   into each frame:
+        #
+        #     from smi_plans import time_series_run, kinetics_run
+        #     # take a frame every 'sleep_time' seconds for the duration, dose-spread x/y:
+        #     yield from kinetics_run(sample_name,
+        #                             lambda: transmission_run(sample_name, t=t,
+        #                                                      dets=[pil2M, pil900KW]),
+        #                             period=sleep_time)
+        #
+        #   (Just a tidier option to try later — your loop below works as-is; nothing here
+        #    is broken. (internal: Tier 0 — RE-in-a-while-loop time series.))
+        # === end smi_plans note ================================================
         
         t0 = time.time()        
         print('Starting measurements for %.2f min.'%( run_time/60))

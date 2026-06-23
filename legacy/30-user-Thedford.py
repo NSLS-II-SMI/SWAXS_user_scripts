@@ -3,6 +3,26 @@ import numpy as np
 
 
 def mapping_saxs_Thed(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: raster-scans each sample in x/y and takes a SAXS/WAXS image at every grid point (a microfocus map).
+    #
+    # 👍 Nice — you're already using ONE coordinated grid scan per map (bp.rel_grid_scan),
+    #   the tidy "one run per map" shape smi_plans is built around.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a microfocus map (grid scan) over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import map_grid_run, map_dets, map_bar
+    #     # map_grid_run does one grid per sample; map_bar drives the whole bar.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     samples = ["PT10E-001La", "PT10E-001M", "PT10E-001G", "PT10E-001H", "PT10E-001I"]
     x_list = [-45700, -45700, -17600, -2600, 27200]
     y_list = [-1900, 5200, -2600, -1600, -2900]
@@ -20,7 +40,7 @@ def mapping_saxs_Thed(t=1):
 
     # Detectors, motors:
     dets = [pil2M]  # dets = [pil2M,pil300KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -44,10 +64,30 @@ def mapping_saxs_Thed(t=1):
     # #yield from bp.rel_grid_scan(dets, piezo.x, *x_r, piezo.y, *y_r, 0) #1 = snake, 0 = not-snake
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def mapping2_saxs_Thed(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: raster-scans each sample in x/y and takes a SAXS/WAXS image at every grid point (a microfocus map).
+    #
+    # 👍 Nice — you're already using ONE coordinated grid scan per map (bp.rel_grid_scan),
+    #   the tidy "one run per map" shape smi_plans is built around.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a microfocus map (grid scan) over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import map_grid_run, map_dets, map_bar
+    #     # map_grid_run does one grid per sample; map_bar drives the whole bar.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     samples = [
         "PT10E-001A",
         "PT10E-001B",
@@ -80,7 +120,7 @@ def mapping2_saxs_Thed(t=1):
 
     # Detectors, motors:
     dets = [pil2M]  # dets = [pil2M,pil300KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -92,10 +132,30 @@ def mapping2_saxs_Thed(t=1):
         yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def mapping3_saxs_Thed(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: raster-scans each sample in x/y and takes a SAXS/WAXS image at every grid point (a microfocus map).
+    #
+    # 👍 Nice — you're already using ONE coordinated grid scan per map (bp.rel_grid_scan),
+    #   the tidy "one run per map" shape smi_plans is built around.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a microfocus map (grid scan) over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import map_grid_run, map_dets, map_bar
+    #     # map_grid_run does one grid per sample; map_bar drives the whole bar.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     samples = [
         "PT10E-001B",
         "PT10E-001C",
@@ -128,7 +188,7 @@ def mapping3_saxs_Thed(t=1):
 
     # Detectors, motors:
     dets = [pil2M]  # dets = [pil2M,pil300KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -140,10 +200,27 @@ def mapping3_saxs_Thed(t=1):
         yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def capillaries_saxs_Thed(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row of capillaries and takes SAXS (and WAXS) at each, often averaging several frames.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a capillary SAXS/WAXS survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, transmission_dets
+    #     # transmission_bar drives the whole capillary bar; transmission_run = one sample.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     samples = [
         "LT666",
         "LT670",
@@ -232,7 +309,7 @@ def capillaries_saxs_Thed(t=1):
 
     # Detectors, motors:
     dets = [pil2M]  # dets = [pil2M,pil300KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -247,10 +324,28 @@ def capillaries_saxs_Thed(t=1):
         yield from bp.count(dets, num=10)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def gisaxs_Thed1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns each sample, then sweeps the WAXS arc and a few incident angles taking grazing-incidence images.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a grazing-incidence (GIWAXS) survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import giwaxs_bar, incidence_axis, align_sample
+    #     # giwaxs_bar aligns + measures each sample on the bar; see giwaxs_run for one.
+    #     # (alignement_gisaxs -> align_sample.)
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     samples = [
         "FY5",
         "FY6",
@@ -270,8 +365,8 @@ def gisaxs_Thed1(t=1):
     angle = [0.1, 0.15, 0.2]
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -284,7 +379,7 @@ def gisaxs_Thed1(t=1):
 
         yield from alignement_gisaxs(0.08)
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
         name_fmt = "{sample}_ai{angle}deg_wa{waxs}"
         for j, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -301,10 +396,28 @@ def gisaxs_Thed1(t=1):
                 yield from bps.mvr(piezo.th, -an)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def saxs_well_Thed_2021(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     # samples = [
     # 'bkg27',      'PT10E_027A', 'PT10E_027B', 'PT10E_027C', 'PT10E_027D', 'PT10E_027E',
     # 'PT10E_027F', 'PT10E_027G', 'PT10E_027H', 'PT10E_027I', 'PT10E_027J', 'PT10E_027K',
@@ -440,7 +553,7 @@ def saxs_well_Thed_2021(t=1):
     # dets = [pil300KW, pil2M]
     dets = [pil2M]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -458,7 +571,7 @@ def saxs_well_Thed_2021(t=1):
 
             sample_id(user_name="PT", sample_name=sample)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
             name_fmt = "{sample}_sdd5m_16.1keV_wa{waxs}"
 
             sample_name = name_fmt.format(sample=sample, waxs="%2.1f" % wa)
@@ -468,10 +581,28 @@ def saxs_well_Thed_2021(t=1):
             yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def saxs_well_Thed_2021_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     # samples = [
     # 'bkg43',      'PT10E_043A', 'PT10E_043B', 'PT10E_043C', 'PT10E_043D', 'PT10E_043E',
     # 'PT10E_043F', 'PT10E_043G', 'PT10E_043H', 'PT10E_043I', 'PT10E_043J', 'PT10E_043K',
@@ -582,7 +713,7 @@ def saxs_well_Thed_2021_3(t=1):
 
     # Detectors, motors:
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -600,7 +731,7 @@ def saxs_well_Thed_2021_3(t=1):
 
             sample_id(user_name="PT", sample_name=sample)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
             name_fmt = "{sample}_sdd5m_14.0keV_wa{waxs}"
 
             sample_name = name_fmt.format(sample=sample, waxs="%2.1f" % wa)
@@ -610,10 +741,28 @@ def saxs_well_Thed_2021_3(t=1):
             yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def saxs_well_rot_Thed_2021_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each sample, rotates the sample (the old 'prs' stage) through angles and takes a SAXS/WAXS image at each.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a rotation series (SAXS/WAXS vs sample rotation). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import acquire, motor_axis
+    #     # the rotation that used to be 'prs' is now 'stage.phi':
+    #     #   motor_axis("phi", stage.phi, angle_list)   # recorded rotation axis
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this uses 'prs' (the old rotation stage, now
+    #   'stage.phi'), and 'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
 
     samples = [
         "PT10E_049F",
@@ -640,7 +789,7 @@ def saxs_well_rot_Thed_2021_3(t=1):
     # Detectors, motors:
     dets = [pil2M, pil900KW]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -658,11 +807,11 @@ def saxs_well_rot_Thed_2021_3(t=1):
 
             for prs_an in np.linspace(-2.5, 2.5, 51):
                 # for prs_an in np.linspace(-45, 45, 19):
-                yield from bps.mv(prs, prs_an)
+                yield from bps.mv(prs, prs_an)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
 
                 sample_id(user_name="PT", sample_name=sample)
 
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
                 name_fmt = "{sample}_sdd5m_14.0keV_prs{prs}_wa{waxs}"
 
                 sample_name = name_fmt.format(
@@ -674,13 +823,31 @@ def saxs_well_rot_Thed_2021_3(t=1):
                 yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def saxs_well_rot_Thed_2021(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each sample, rotates the sample (the old 'prs' stage) through angles and takes a SAXS/WAXS image at each.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a rotation series (SAXS/WAXS vs sample rotation). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import acquire, motor_axis
+    #     # the rotation that used to be 'prs' is now 'stage.phi':
+    #     #   motor_axis("phi", stage.phi, angle_list)   # recorded rotation axis
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this uses 'prs' (now 'stage.phi') and 'pil300KW'
+    #   (removed), and 'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     waxs_arc = np.linspace(0, 58.5, 10)
-    dets = [pil2M, pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     for j, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
@@ -704,7 +871,7 @@ def saxs_well_rot_Thed_2021(t=1):
             y_list
         ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(y_list)})"
 
-        yield from bps.mv(prs, 0)
+        yield from bps.mv(prs, 0)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         for x, y, sample in zip(x_list, y_list, samples):
             yield from bps.mv(piezo.x, x)
             yield from bps.mv(piezo.y, y)
@@ -735,7 +902,7 @@ def saxs_well_rot_Thed_2021(t=1):
             y_list
         ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(y_list)})"
 
-        yield from bps.mv(prs, -30)
+        yield from bps.mv(prs, -30)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         for x, y, sample in zip(x_list, y_list, samples):
             yield from bps.mv(piezo.x, x)
             yield from bps.mv(piezo.y, y)
@@ -766,7 +933,7 @@ def saxs_well_rot_Thed_2021(t=1):
             y_list
         ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(y_list)})"
 
-        yield from bps.mv(prs, 30)
+        yield from bps.mv(prs, 30)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         for x, y, sample in zip(x_list, y_list, samples):
             yield from bps.mv(piezo.x, x)
             yield from bps.mv(piezo.y, y)
@@ -778,10 +945,28 @@ def saxs_well_rot_Thed_2021(t=1):
 
             yield from bp.count(dets, num=1)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def gisaxs_Thed_2021_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns each sample, then sweeps the WAXS arc and a few incident angles taking grazing-incidence images.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a grazing-incidence (GIWAXS) survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import giwaxs_bar, incidence_axis, align_sample
+    #     # giwaxs_bar aligns + measures each sample on the bar; see giwaxs_run for one.
+    #     # (alignement_gisaxs -> align_sample.)
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
 
     global names, x_piezo, z_piezo, incident_angles, y_piezo_aligned, xs_hexa
 
@@ -919,8 +1104,8 @@ def gisaxs_Thed_2021_1(t=1):
     waxs_arc = np.linspace(0, 58.5, 10)
     angle = [0.1, 0.15, 0.2]
 
-    dets = [pil2M, pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -946,10 +1131,27 @@ def gisaxs_Thed_2021_1(t=1):
                 yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def capillaries_saxs_Thed_2021_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row of capillaries and takes SAXS (and WAXS) at each, often averaging several frames.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a capillary SAXS/WAXS survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, transmission_dets
+    #     # transmission_bar drives the whole capillary bar; transmission_run = one sample.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     # samples = ['LT1',  'LT2',  'LT3',  'LT4',  'LT5',  'LT6',  'LT7',  'LT8',  'LT9', 'LT10', 'LT11', 'LT12', 'LT13', 'LT14',
     #           'LT15', 'LT16', 'LT17', 'LT18', 'LT19', 'LT20', 'LT21', 'LT22', 'LT23', 'LT24', 'LT25', 'LT26', 'LT27']
 
@@ -1083,7 +1285,7 @@ def capillaries_saxs_Thed_2021_3(t=1):
 
     # Detectors, motors:
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1104,10 +1306,27 @@ def capillaries_saxs_Thed_2021_3(t=1):
         yield from bp.count(dets, num=10)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def capillaries_saxs_Thed_2021_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row of capillaries and takes SAXS (and WAXS) at each, often averaging several frames.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a capillary SAXS/WAXS survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, transmission_dets
+    #     # transmission_bar drives the whole capillary bar; transmission_run = one sample.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     # samples = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9', 'L10', 'L11', 'L12', 'L13', 'L14', 'L15', 'L16', 'L17', 'L18', 'L19', 'L20',
     # 'L21', 'L22', 'L23', 'L24', 'L25', 'L26']
 
@@ -1125,7 +1344,7 @@ def capillaries_saxs_Thed_2021_1(t=1):
 
     # Detectors, motors:
     dets = [pil2M]  # dets = [pil2M,pil300KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1146,10 +1365,28 @@ def capillaries_saxs_Thed_2021_1(t=1):
         yield from bp.count(dets, num=10)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def gisaxs_Thed2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns each sample, then sweeps the WAXS arc and a few incident angles taking grazing-incidence images.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a grazing-incidence (GIWAXS) survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import giwaxs_bar, incidence_axis, align_sample
+    #     # giwaxs_bar aligns + measures each sample on the bar; see giwaxs_run for one.
+    #     # (alignement_gisaxs -> align_sample.)
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     samples = ["FY1", "FY2", "FY3", "FY4"]
 
     x_list = [-41470, -22470, 2530, 27530]
@@ -1159,7 +1396,7 @@ def gisaxs_Thed2(t=1):
 
     # Detectors, motors:
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1171,7 +1408,7 @@ def gisaxs_Thed2(t=1):
 
         yield from alignement_gisaxs(0.08)
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
         name_fmt = "{sample}_ai{angle}deg_wa{waxs}"
         for j, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -1188,10 +1425,28 @@ def gisaxs_Thed2(t=1):
                 yield from bps.mvr(piezo.th, -an)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def gisaxs_Thed_2021_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns each sample, then sweeps the WAXS arc and a few incident angles taking grazing-incidence images.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a grazing-incidence (GIWAXS) survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import giwaxs_bar, incidence_axis, align_sample
+    #     # giwaxs_bar aligns + measures each sample on the bar; see giwaxs_run for one.
+    #     # (alignement_gisaxs -> align_sample.)
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     # samples = ['FY1', 'FY2', 'FY3', 'FY4', 'FY5', 'FY6', 'FY7', 'FY8', 'FY9', 'FY10', 'FY11', 'FY12', 'FY13', 'FY14', 'FY15', 'FY16', 'FY17', 'FY18', 'FY19',
     # 'FY20', 'FY23', 'FY24', 'FY25', 'FY26', 'FY27', 'FY28', 'FY29', 'FY30', 'FY31', 'FY32', 'FY33']
 
@@ -1245,8 +1500,8 @@ def gisaxs_Thed_2021_2(t=1):
     angle = [0.1, 0.15]
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1265,7 +1520,7 @@ def gisaxs_Thed_2021_2(t=1):
 
         ai0 = piezo.th.position
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
         name_fmt = "{sample}_8.3m_16.1keV_ai{angle}deg_wa{waxs}"
         for j, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -1284,10 +1539,28 @@ def gisaxs_Thed_2021_2(t=1):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def gisaxs_Thed_2021_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns each sample, then sweeps the WAXS arc and a few incident angles taking grazing-incidence images.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a grazing-incidence (GIWAXS) survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import giwaxs_bar, incidence_axis, align_sample
+    #     # giwaxs_bar aligns + measures each sample on the bar; see giwaxs_run for one.
+    #     # (alignement_gisaxs -> align_sample.)
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
 
     #     samples = ['FY37', 'FY38', 'FY39', 'FY40']
     #     x_list = [  57000,  57000,  55000,  45000]
@@ -1345,7 +1618,7 @@ def gisaxs_Thed_2021_3(t=1):
 
     # Detectors, motors:
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1365,7 +1638,7 @@ def gisaxs_Thed_2021_3(t=1):
 
         ai0 = piezo.th.position
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
         name_fmt = "{sample}_8.3m_16.1keV_ai{angle}deg_wa{waxs}"
         for j, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -1384,7 +1657,7 @@ def gisaxs_Thed_2021_3(t=1):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
     # samples = ['FY46', 'FY47', 'FY48', 'FY49', 'FY50']
     # x_list = [ -11000, -24000, -37000, -50000, -53000]
@@ -1398,7 +1671,7 @@ def gisaxs_Thed_2021_3(t=1):
 
     # Detectors, motors:
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1418,7 +1691,7 @@ def gisaxs_Thed_2021_3(t=1):
 
         ai0 = piezo.th.position
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
         name_fmt = "{sample}_8.3m_16.1keV_ai{angle}deg_wa{waxs}"
         for j, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -1437,10 +1710,28 @@ def gisaxs_Thed_2021_3(t=1):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def gisaxs_2021_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns each sample, then sweeps the WAXS arc and a few incident angles taking grazing-incidence images.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a grazing-incidence (GIWAXS) survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import giwaxs_bar, incidence_axis, align_sample
+    #     # giwaxs_bar aligns + measures each sample on the bar; see giwaxs_run for one.
+    #     # (alignement_gisaxs -> align_sample.)
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
 
     samples = ["FY40"]
 
@@ -1451,8 +1742,8 @@ def gisaxs_2021_2(t=1):
     angle = [0.1, 0.15]
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1471,7 +1762,7 @@ def gisaxs_2021_2(t=1):
 
         ai0 = piezo.th.position
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
         name_fmt = "{sample}_8.3m_16.1keV_ai{angle}deg_wa{waxs}"
         for j, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -1490,10 +1781,28 @@ def gisaxs_2021_2(t=1):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def gisaxs_finestep_Thed_2021_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns each sample, then sweeps the WAXS arc and a few incident angles taking grazing-incidence images.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a grazing-incidence (GIWAXS) survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import giwaxs_bar, incidence_axis, align_sample
+    #     # giwaxs_bar aligns + measures each sample on the bar; see giwaxs_run for one.
+    #     # (alignement_gisaxs -> align_sample.)
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
 
     samples = ["FY21", "FY22"]
 
@@ -1504,8 +1813,8 @@ def gisaxs_finestep_Thed_2021_2(t=1):
     angle = np.linspace(0.05, 0.2, 16)
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1524,7 +1833,7 @@ def gisaxs_finestep_Thed_2021_2(t=1):
 
         ai0 = piezo.th.position
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
         name_fmt = "{sample}_8.3m_16.1keV_ai{angle}deg_wa{waxs}"
         for j, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -1543,10 +1852,28 @@ def gisaxs_finestep_Thed_2021_2(t=1):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def saxs_well_Thed(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     samples = [
         "PT10E_002AgB",
         "PT10E_002A",
@@ -1695,8 +2022,8 @@ def saxs_well_Thed(t=1):
     waxs_arc = np.linspace(0, 58.5, 10)
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1711,7 +2038,7 @@ def saxs_well_Thed(t=1):
 
             sample_id(user_name="PT", sample_name=sample)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
             name_fmt = "{sample}_wa{waxs}"
 
             sample_name = name_fmt.format(sample=sample, waxs="%2.1f" % wa)
@@ -1721,10 +2048,28 @@ def saxs_well_Thed(t=1):
             yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def saxs_well2_Thed(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     samples = [  #'PT10E_003E', 'PT10E_003K','PT10E_003Q', 'PT10E_003W',
         # 'PT10E_004AgB','PT10E_004A','PT10E_004B','PT10E_004C','PT10E_004D', 'PT10E_004E',
         # 'PT10E_004F','PT10E_004G','PT10E_004H','PT10E_004I','PT10E_004J','PT10E_004K',
@@ -1764,8 +2109,8 @@ def saxs_well2_Thed(t=1):
     waxs_arc = np.linspace(13, 13, 1)
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1780,7 +2125,7 @@ def saxs_well2_Thed(t=1):
 
             sample_id(user_name="PT", sample_name=sample)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
             name_fmt = "{sample}_wa{waxs}"
 
             sample_name = name_fmt.format(sample=sample, waxs="%2.1f" % wa)
@@ -1790,10 +2135,30 @@ def saxs_well2_Thed(t=1):
             yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' presets set exposure via t=.)
 
 
 def run_saxsmapPT(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: raster-scans each sample in x/y and takes a SAXS/WAXS image at every grid point (a microfocus map).
+    #
+    # 👍 Nice — you're already using ONE coordinated grid scan per map (bp.rel_grid_scan),
+    #   the tidy "one run per map" shape smi_plans is built around.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a microfocus map (grid scan) over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import map_grid_run, map_dets, map_bar
+    #     # map_grid_run does one grid per sample; map_bar drives the whole bar.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     samples = ["AS1-090", "AS1-100"]
     x_list = [12000, 33000]
     y_list = [1500, 1400]
@@ -1805,7 +2170,7 @@ def run_saxsmapPT(t=1):
 
     # Detectors, motors:
     dets = [pil2M]  # dets = [pil2M,pil300KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(x_list) == len(
         samples
@@ -1831,11 +2196,29 @@ def run_saxsmapPT(t=1):
     # yield from bp.rel_grid_scan(dets, piezo.x, *x_r, piezo.y, *y_r, 0) #1 = snake, 0 = not-snake
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def run_waxslongPT(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
     xlocs = [-38000, -33000, -20000, -8000, 5000, 18000, 31000]
     ylocs = [-8400, 0, 0, 0, 0, 0, 0]
     names = [
@@ -1848,7 +2231,7 @@ def run_waxslongPT(t=1):
         "Se_2000nm",
     ]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
     # what we run now
     assert len(curr_tray) == len(
         curr_names
@@ -1861,11 +2244,29 @@ def run_waxslongPT(t=1):
         yield from bp.scan(dets, waxs, *waxs_range)
 
         sample_id(user_name="test", sample_name="test")
-        det_exposure_time(0.3, 0.3)
+        det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def run_waxsshortPT(t=0.25):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
     xlocs = [
         -36000,
         -25000,
@@ -1919,14 +2320,14 @@ def run_waxsshortPT(t=0.25):
         "offsetSAXS_tape_blank",
     ]
     user = "PT"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
     assert len(xlocs) == len(
         names
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
     waxs_range = np.linspace(0, 58.5, 10)
     for wa in waxs_range:
         yield from bps.mv(waxs, wa)
@@ -1940,10 +2341,28 @@ def run_waxsshortPT(t=0.25):
             yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def gisaxs_tempPT(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns each sample and sweeps the WAXS arc / incident angle at a set temperature (grazing-incidence + heating).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a grazing-incidence (GIWAXS) series with temperature. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import giwaxs_bar, goto_temperature, temperature_axis
+    #     # giwaxs_bar aligns + measures each sample; goto_temperature/temperature_axis
+    #     # drive the heater. (ls/LThermal are fine.)
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     # Slowest cycle:
     temperatures = [120]
     x_list = [-24500, -8500, 7500, 21500]
@@ -1952,7 +2371,7 @@ def gisaxs_tempPT(t=1):
 
     # Detectors, motors:
     # dets = [pil2M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
-    dets = [pil2M, pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE
+    dets = [pil2M, pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
     angle_offset = [0.1, 0.15]
     waxs_range = [0, 58.5, 10]
     waxs_range_rev = [58.5, 0, 10]
@@ -1973,7 +2392,7 @@ def gisaxs_tempPT(t=1):
             a_off = piezo.th.position
             for i, an in enumerate(angle_offset):
                 yield from bps.mv(piezo.th, a_off + an)
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
                 temp = ls.ch1_read.value
                 name_fmt = "{sample}_{temper}C_{angl}deg"
                 yield from bps.mv(piezo.x, x + i * 200)
@@ -1987,10 +2406,28 @@ def gisaxs_tempPT(t=1):
             yield from bps.mv(piezo.th, a_off)
 
         sample_id(user_name="test", sample_name="test")
-        det_exposure_time(0.3, 0.3)
+        det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def gisaxs_PT(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns each sample, then sweeps the WAXS arc and a few incident angles taking grazing-incidence images.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a grazing-incidence (GIWAXS) survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import giwaxs_bar, incidence_axis, align_sample
+    #     # giwaxs_bar aligns + measures each sample on the bar; see giwaxs_run for one.
+    #     # (alignement_gisaxs -> align_sample.)
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
     # Slowest cycle:
 
     x_list = [1500, -7500, -12500, -17500, -22500, -27000, -35000, -47000]
@@ -2024,7 +2461,7 @@ def gisaxs_PT(t=1):
         a_off = piezo.th.position
         for i, an in enumerate(angle_offset):
             yield from bps.mv(piezo.th, a_off + an)
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
             name_fmt = "{sample}_{angl}deg"
             sample_name = name_fmt.format(sample=s, angl=an)
             sample_id(user_name="FY", sample_name=sample_name)
@@ -2032,7 +2469,7 @@ def gisaxs_PT(t=1):
             yield from bp.count(dets, num=1)
 
         sample_id(user_name="test", sample_name="test")
-        det_exposure_time(0.3, 0.3)
+        det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def run_swaxs_Fei_2022_3(t=1):
@@ -2043,6 +2480,24 @@ def run_swaxs_Fei_2022_3(t=1):
     then offsets from central positions with x_off and y_off. Run
     WAXS arc as the slowest motor.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
 
     # 1 sample row
     names_1   = [   'Q1',   'Q2',   'Q3',   'Q4',   'Q5',   'Q6']
@@ -2088,7 +2543,7 @@ def run_swaxs_Fei_2022_3(t=1):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
         dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
         for name, x, y, in zip(names, piezo_x, piezo_y):
 
@@ -2120,7 +2575,7 @@ def run_swaxs_Fei_2022_3(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def run_swaxs_Fei_2023_1(t=1):
@@ -2131,6 +2586,24 @@ def run_swaxs_Fei_2023_1(t=1):
     then offsets from central positions with x_off and y_off. Run
     WAXS arc as the slowest motor. SAXS sdd 5.0 m.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
 
     # 1 sample row
     #names_1   = [ '1A1',  '1A2', '1A3', '1B1', '1B2', '1B3', '1C1',  '1C2',  '1C3',  '1D1',  '1D2',  '1D3']
@@ -2174,7 +2647,7 @@ def run_swaxs_Fei_2023_1(t=1):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
         dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
         for name, x, y, in zip(names, piezo_x, piezo_y):
 
@@ -2206,7 +2679,7 @@ def run_swaxs_Fei_2023_1(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 
@@ -2220,6 +2693,24 @@ def run_swaxs_Fei_2023_2(t=1):
     then offsets from central positions with x_off and y_off. Run
     WAXS arc as the slowest motor. SAXS sdd 5.0 m.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
 
     # names_1   = [   'A6',   'A5',   'A4',   'A3',   'A2',   'A1',   'B1',   'B2',   'B3',   'B4',   'B5',   'B6',   'C6',   'C5',   'C4',   
     #                 'C3',   'C2',   'C1',   'D1',   'D2',   'D3',   'D4',   'D5',   'D6']
@@ -2296,7 +2787,7 @@ def run_swaxs_Fei_2023_2(t=1):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
         dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
         for name, x, y, y_hexa in zip(names, piezo_x, piezo_y, hexa_y):
 
@@ -2330,7 +2821,7 @@ def run_swaxs_Fei_2023_2(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def run_swaxs_Fei_2023_3(t=1):
@@ -2341,6 +2832,24 @@ def run_swaxs_Fei_2023_3(t=1):
     then offsets from central positions with x_off and y_off. Run
     WAXS arc as the slowest motor. SAXS sdd 5.0 m.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
 
     names_1   = [  'A1',  'B1',  'C1',  'D1',  'E1',  'A2',  'B2',  'C2',  'D2', '86AF', '86BF',  '86A',  '86B', 'AJDPI']
     piezo_x_1 = [ 39500, 34500, 30400, 24300, 19500, 38500, 34500, 29500, 24500,   5500,  -4000, -15000, -24000,  -32500]
@@ -2378,7 +2887,7 @@ def run_swaxs_Fei_2023_3(t=1):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
         dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
         for name, x, y, y_hexa in zip(names, piezo_x, piezo_y, hexa_y):
 
@@ -2412,7 +2921,7 @@ def run_swaxs_Fei_2023_3(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 
@@ -2425,6 +2934,24 @@ def run_swaxs_Fei_2024_1(t=1):
     then offsets from central positions with x_off and y_off. Run
     WAXS arc as the slowest motor. SAXS sdd 4.0 m.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
 
     names   = [  'A1',  'A2',  'A3',  'A4',  'A5',  'A6',  'B1',  'B2',  'B3',  'B4',  'B5',  'B6',  'C1',  'C2',  'C3',  'C4',  'C5',  'C6',  'D1',  'D2',  'D3',  'D4',  'D5',  'D6',
                  'E1',  'E2',  'E3',  'E4',  'E5',  'E6',  'F1',  'F2',  'F3',  'F4',  'F5',  'F6',  'G1',  'G2',  'G3',  'G4',  'G5',  'G6',  'H1',  'H2',  'H3',  'H4',  'H5',  'H6']
@@ -2454,7 +2981,7 @@ def run_swaxs_Fei_2024_1(t=1):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
         dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
         for name, x, y, y_hexa in zip(names, piezo_x, piezo_y, hexa_y):
 
@@ -2475,7 +3002,7 @@ def run_swaxs_Fei_2024_1(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def run_swaxs_Feicap_2024_1(t=1):
@@ -2486,6 +3013,23 @@ def run_swaxs_Feicap_2024_1(t=1):
     then offsets from central positions with x_off and y_off. Run
     WAXS arc as the slowest motor. SAXS sdd 4.0 m.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row of capillaries and takes SAXS (and WAXS) at each, often averaging several frames.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a capillary SAXS/WAXS survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, transmission_dets
+    #     # transmission_bar drives the whole capillary bar; transmission_run = one sample.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
 
     names   = [ 'C01', 'C04', 'C03', 'C05', 'C07', 'C08', 'C09', 'C10', 'C11', 'C12', 'C13', 'C15', 'C17', 'C18']
     piezo_x = [ 45000, 38900, 32000, 26100, 19400, 12900,  7700,   700, -6300,-12700,-18700,-25400,-31000,-37100]
@@ -2510,7 +3054,7 @@ def run_swaxs_Feicap_2024_1(t=1):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
         dets = [pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
         for name, x, y in zip(names, piezo_x, piezo_y):
 
@@ -2527,7 +3071,7 @@ def run_swaxs_Feicap_2024_1(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 def run_Fei_manualcap_2024_1(t=1, name='test'):
@@ -2538,6 +3082,23 @@ def run_Fei_manualcap_2024_1(t=1, name='test'):
     then offsets from central positions with x_off and y_off. Run
     WAXS arc as the slowest motor. SAXS sdd 4.0 m.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row of capillaries and takes SAXS (and WAXS) at each, often averaging several frames.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a capillary SAXS/WAXS survey over a bar of samples. It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, transmission_dets
+    #     # transmission_bar drives the whole capillary bar; transmission_run = one sample.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
 
     # Offsets for taking a few points per sample
     y_off = [-600, -400, -200, 0, 200, 400, 600]
@@ -2552,7 +3113,7 @@ def run_Fei_manualcap_2024_1(t=1, name='test'):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
         dets = [pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
         y=piezo.y.position
 
         for yy, y_of in enumerate(y_off):
@@ -2565,7 +3126,7 @@ def run_Fei_manualcap_2024_1(t=1, name='test'):
     
     yield from bps.mv(piezo.y, y)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 
@@ -2579,6 +3140,24 @@ def run_swaxs_Fei_2024_3(t=1):
     then offsets from central positions with x_off and y_off. Run
     WAXS arc as the slowest motor. SAXS sdd 4.0 m.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
 
     names   = ['195A','187K','195Ah','187Kh',
                  'A1',  'B1',   'C1',   'D1',  'E1',  'A2',  'B2',  'C2',  'D2',  'E2']
@@ -2608,7 +3187,7 @@ def run_swaxs_Fei_2024_3(t=1):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
         dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
         for name, x, y, y_hexa in zip(names, piezo_x, piezo_y, hexa_y):
 
@@ -2629,7 +3208,7 @@ def run_swaxs_Fei_2024_3(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
 
 
@@ -2643,6 +3222,24 @@ def run_swaxs_Fei_2025_1(t=1):
     then offsets from central positions with x_off and y_off. Run
     WAXS arc as the slowest motor. SAXS sdd 4.0 m.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits a row/grid of samples and takes SAXS/WAXS at each (with a few offset points per sample for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   preset for a multi-sample SWAXS survey (a few points per sample for averaging). It records energy, beam, SDD, positions, etc. straight INTO
+    #   the saved data (and the file name), so you don't read them off devices / db[-1]
+    #   and hand-build the name. Roughly:
+    #
+    #     from smi_plans import transmission_bar, map_grid_run, map_dets
+    #     # transmission_bar drives the whole bar; map_grid_run does the little x/y offset
+    #     # grid per sample. SAXS is enabled for you when the WAXS arc is out of the way.
+    #
+    #   (A suggestion to try later — your script below still works as-is, except for
+    #    anything marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note(s) on that line.
+    # === end smi_plans note ================================================
 
     # names   = [  'A6',  'A5',  'A4',  'A3',  'A2',  'A1',  
     #              'B6',  'B5',  'B4',  'B3',  'B2',  'B1',
@@ -2741,7 +3338,7 @@ def run_swaxs_Fei_2025_1(t=1):
         yield from bps.mv(waxs, wa)
         # Detectors, disable SAXS when WAXS in the way
         dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' presets set exposure via t=.)
 
         for name, x, y, x_hexa in zip(names, piezo_x, piezo_y, hexa_x):
 
@@ -2764,6 +3361,6 @@ def run_swaxs_Fei_2025_1(t=1):
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' presets set exposure via t=.)
 
     

@@ -1,8 +1,37 @@
 
 
 def angle_dependant_temp_Sedge(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence sulfur-edge scan — for each incident angle it
+    #   steps the X-ray energy across the S edge (~2450-2515 eV) and takes a WAXS image at
+    #   each energy, recording the Linkam temperature too. ("Grazing incidence" = the beam
+    #   skims the sample surface at a shallow angle set by piezo.th.)
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that builds
+    #   this kind of nested scan from small reusable pieces, and writes the energy, angle,
+    #   beam intensity and temperature straight into the saved data + file name for you (so
+    #   you don't hand-build "{energy}eV_ai{ai}_..._degC{temp}" or read xbpm2/LThermal by
+    #   hand). It also handles the energy-move settling and beam feedback. Sketch:
+    #
+    #     from smi_plans import acquire, incidence_axis, energy_axis
+    #     energies = [2450, 2455, 2460, 2465, 2470, 2472.5, 2475, 2480, 2490, 2500, 2515]
+    #     yield from acquire(
+    #         "Lucas_sample2",
+    #         [pil900KW],                                   # WAXS detector
+    #         [incidence_axis(piezo.th, ai0, np.linspace(.5, 4, 15)),  # outer: incident angle
+    #          energy_axis(energies)],                       # inner: energy sweep
+    #         reads=[xbpm2, xbpm3, LThermal.temperature_setpoint])
+    #
+    #     # ...or use the higher-level giwaxs_run preset and pass an energy axis to it.
+    #
+    #   (This is just a tidier option to try later — the science is identical.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the two 'det_exposure_time(t, t)' lines below (see the ⚠️
+    #   notes on them). The energy 'sleep' lines still work — they're only flagged 💡 as no
+    #   longer needed once you switch to smi_plans.
+    # === end smi_plans note ================================================
     dets = [pil900KW,LThermal.temperature_current,LThermal.temperature_setpoint]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
 
 
@@ -41,7 +70,7 @@ def angle_dependant_temp_Sedge(t=1):
         yield from bps.sleep(1)
 
         ai0 = ai0_all
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): same as above — this used to set the exposure but is now a "plan", so the plain call does nothing. Write  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt. (smi_plans sets it for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 
@@ -61,7 +90,7 @@ def angle_dependant_temp_Sedge(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}_degC{temp}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and the beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
@@ -80,7 +109,7 @@ def angle_dependant_temp_Sedge(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
+                        yield from bps.sleep(2)  # 💡 smi_plans: same as the up-sweep above — this settle wait and the beam-recheck are handled for you by move_energy_fb/energy_axis once you migrate. (Not broken, just no longer needed.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)

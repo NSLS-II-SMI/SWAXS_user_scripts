@@ -2,7 +2,30 @@ import numpy as np
 
 
 def saxs_waxs_yuchung(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each WAXS-arc angle, visits each sample and runs a small x/y
+    #   list-scan grid, taking SAXS+WAXS at every point (a hard-X-ray map per sample).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has 'smi_plans' with a map runner that does the
+    #   grid for you and records the WAXS-arc, beam, and detector distance into the data +
+    #   file name. For one sample's grid:
+    #
+    #     from smi_plans import map_grid_run        # do this once per session
+    #     yield from map_grid_run(
+    #         "99PL_1PP",
+    #         piezo.x, -500, 500, 3,                # x: start, stop, npts (relative to sample)
+    #         piezo.y, -500, 500, 51,               # y: start, stop, npts
+    #         t=t, dets=[pil2M, pil900KW],
+    #     )
+    #     # ...wrap several with smi_plans.map_bar(...) to loop the whole bar + arc.
+    #
+    #   (Just a tidier option to try later — your script still works as-is, EXCEPT for the
+    #    line marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: uses the retired 'pil300KW' WAXS detector — use 'pil900KW'.
+    #   See the ⚠️ note on that line.
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # waxs_arc = np.linspace(13, 26, 3)
 
@@ -66,9 +89,29 @@ def saxs_waxs_yuchung(t=1):
 
 
 def saxs_waxs_yuchung_2021_1(t=1):
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each WAXS-arc angle, visits each sample and takes one SAXS+WAXS
+    #   frame (a hard-X-ray bar at 16.1 keV, sdd 8.3 m).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has 'smi_plans' with a ready bar runner that
+    #   loops samples + WAXS-arc and records the arc, beam, and detector distance into the
+    #   data + file name (no hand-built "{sample}_16100eV_sdd8.3_wa{wax}"). Same idea:
+    #
+    #     from smi_plans import SampleList, transmission_bar      # do this once per session
+    #     bar = SampleList.from_columns(
+    #         names=["80PP20GNP_245C_F3200_core", "..."],     # your names list
+    #         piezo_x=[-15000, ...], piezo_y=[6050, ...],     # your x / y lists
+    #     )
+    #     yield from transmission_bar(bar, t=t, waxs_arc=tuple(np.linspace(0, 26, 5)))
+    #
+    #   (Just a tidier option to try later — EXCEPT the lines marked ⚠️ which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: uses the retired 'pil300KW' (use 'pil900KW'), and the
+    #   'det_exposure_time(...)' call must run as a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans technique runs set it for you via t=.)
 
-    dets = [pil300KW, pil2M]
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     waxs_arc = np.linspace(0, 26, 5)
 
@@ -223,9 +266,26 @@ def timeresolved(name="test", t=0.2, tt=60):
         t (float): exposure time for single detector frame,
         tt (float): total detector exposure.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a single in-situ SAXS+WAXS snapshot at WAXS arc 14.5 deg, with the
+    #   energy and detector distance written into the file name.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has 'smi_plans'. For an in-situ time series it
+    #   has a dedicated runner that records as ONE run with the timing/energy/distance stamped
+    #   in (instead of building the name by hand):
+    #
+    #     from smi_plans import time_series_run      # do this once per session
+    #     yield from time_series_run("test", n_frames=1, t=t,
+    #                                dets=[pil2M, pil900KW], reads=[energy])
+    #
+    #   (Just a tidier option to try later — EXCEPT the lines marked ⚠️ which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: uses the retired 'pil300KW' (use 'pil900KW'), and the
+    #   'det_exposure_time(...)' call must run as a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     # for 2022_1  cycle
-    det_exposure_time(t, tt)
-    dets = [pil300KW, pil2M, pil900KW]
+    det_exposure_time(t, tt)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, tt)  — or at the prompt:  RE(det_exposure_time(t, tt)). (smi_plans technique runs set it for you via t=.)
+    dets = [pil300KW, pil2M, pil900KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' (already in this list) — drop 'pil300KW'. (Note pil900KW is a different camera, so check beam-center/calibration.)
     wa = 14.5
     yield from bps.mv(waxs, wa)
 
@@ -254,8 +314,26 @@ def postprint_yscan(name="test", t=0.5, ystart=2.8, ystop=5, npoint=111):
         ystop (float): absolute stop position for y hexapod scan in mm,
         npoint (int): number of scan points in the y hexapod range scan.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each WAXS-arc angle, takes one SAXS+WAXS run while scanning the
+    #   hexapod height (stage.y), with energy/distance written into the file name.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has 'smi_plans' that can do a SAXS+WAXS scan
+    #   along a motor in one call and record energy/distance/arc into the data + file name:
+    #
+    #     from smi_plans import map_line_run         # do this once per session
+    #     yield from map_line_run("test", stage.y, ystart, ystop, npoint,
+    #                             t=t, dets=[pil2M, pil900KW], reads=[energy])
+    #
+    #   (The "drop SAXS when WAXS is in the way" trick is built into smi_plans' arc-aware
+    #    detector helper saxs_waxs_dets(). Just a tidier option to try later — EXCEPT the ⚠️
+    #    lines which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls must run as plans — see
+    #   the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     y_range = [ystart, ystop, npoint]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans technique runs set it for you via t=.)
     waxs_arc = np.linspace(0, 20, 2)
 
     for wa in waxs_arc:
@@ -274,12 +352,35 @@ def postprint_yscan(name="test", t=0.5, ystart=2.8, ystop=5, npoint=111):
         print(f"\n\t=== Sample: {sample_name} ===\n")
         yield from bp.scan(dets, stage.y, *y_range)
 
-    det_exposure_time(0.2, 60)
+    det_exposure_time(0.2, 60)  # ⚠️ FIXME(smi_plans): same as above — this "reset to 0.2/60 s" only takes effect if run as a plan:  yield from det_exposure_time(0.2, 60)  (or  RE(det_exposure_time(0.2, 60))).
     yield from bps.mv(waxs, 14.5)
 
 
 def trigger_alldet(tt=0.2, t=2):
-    det_exposure_time(tt, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: pokes each camera to "go expose now" by writing 1 straight to its
+    #   acquire control (pil2M/pil900KW/pil300KW.cam.acquire.put(1)).
+    #
+    # ⚠️ HEADS-UP — this does NOT record your data the normal way. Writing to .cam.acquire
+    #   directly fires the detector OUTSIDE Bluesky's RunEngine, so NO data documents are
+    #   written: there is no "run", no scan_id, no metadata, and the frames are not catalogued
+    #   the way every other plan here saves them (they just land wherever the camera dumps
+    #   them). It can be handy for a quick "is the detector alive?" poke, but you generally
+    #   should NOT use it to take real measurements.
+    #
+    # 💡 NEWER, EASIER WAY: to actually record a frame (with metadata, in the catalog), run a
+    #   real acquisition through the RunEngine. The simplest equivalent:
+    #
+    #     RE(bp.count([pil2M, pil900KW], num=1))          # one properly-recorded frame
+    #     # or, with smi_plans (records timing + builds the file name for you):
+    #     from smi_plans import time_series_run
+    #     RE(time_series_run("test", n_frames=1, t=t, dets=[pil2M, pil900KW]))
+    #     # smi_plans technique_N_xpcs (xpcs_burst_run) is the right home for fast burst runs.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: it also references the retired 'pil300KW' (use 'pil900KW'),
+    #   and the 'det_exposure_time(...)' call must run as a plan — see the ⚠️ notes below.
+    # === end smi_plans note ================================================
+    det_exposure_time(tt, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tt, t)  — or at the prompt:  RE(det_exposure_time(tt, t)). (smi_plans technique runs set it for you via t=.)
     pil2M.cam.acquire.put(1)
     pil900KW.cam.acquire.put(1)
-    pil300KW.cam.acquire.put(1)
+    pil300KW.cam.acquire.put(1)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' (already poked above) — drop this line. (And see the heads-up above: triggering via .cam.acquire records no data documents.)

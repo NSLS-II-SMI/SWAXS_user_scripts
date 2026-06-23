@@ -1,6 +1,27 @@
 def waxs_S_edge_cherun(t=1):
 
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: at each WAXS-arc position, steps the X-ray energy across the
+    #   sulfur edge and takes a WAXS+SAXS image at each energy (a tender-energy WAXS
+    #   edge scan on one spot).
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans has an energy/NEXAFS preset that sweeps the
+    #   energy in one call and records the energy + beam intensity INTO each file (so
+    #   you don't build the long "{energy}eV_bpm{xbpm}" name or read xbpm2 by hand):
+    #
+    #     from smi_plans import nexafs_run, energy_axis
+    #     # nexafs_run("bar3_sa07", energies, t=t, dets=[pil2M, ...], geometry="reflection")
+    #     # builds the energy sweep for you; energy_axis(energies) is the building block,
+    #     # and it manages the beam feedback + settling automatically (see the 💡 notes).
+    #
+    #   (Optional. Your loop still works EXCEPT for the ⚠️ line below; the 💡 lines
+    #    are things that simply become unnecessary once you migrate.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
+
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
 
     # yield from bps.mv(stage.th, 0)
     # yield from bps.mv(stage.y, 6)
@@ -105,11 +126,11 @@ def waxs_S_edge_cherun(t=1):
             yield from bps.mv(piezo.x, xs)
             yield from bps.mv(piezo.y, ys)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt. (smi_plans' nexafs_run sets exposure via t=.)
             name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e in energies:
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(1)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this wait once you migrate — move_energy_fb/energy_axis already pause after each energy move, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
 
                 bpm = xbpm2.sumX.value
 
@@ -120,15 +141,38 @@ def waxs_S_edge_cherun(t=1):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-            yield from bps.mv(energy, 2490)
+            yield from bps.mv(energy, 2490)  # 💡 smi_plans: this step-down to a "parking" energy (2490→2470→2450) was a way to lower energy gently. energy_axis/move_energy_fb already step in ≤50 eV hops with settling, so you can just move straight to your target once you migrate. (Not broken, just no longer needed.)
             yield from bps.mv(energy, 2470)
             yield from bps.mv(energy, 2450)
 
 
 def nexafs_S_edge_cherun(t=1):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a sulfur-edge NEXAFS — steps the X-ray energy and takes a WAXS
+    #   image at each step, while also nudging the sample (piezo.y) to a fresh spot at
+    #   every energy so the beam doesn't damage one place.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' 'nexafs_run' does an energy sweep in one call
+    #   and records the energy + beam intensity INTO each file automatically (no
+    #   hand-built "{energy}eV_bpm{xbpm}" name, no reading xbpm2 yourself):
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run("nexafs_sam2_ex_situ", energies, t=t,
+    #                           dets=[pil900KW], geometry="reflection")
+    #     # nexafs_run manages the beam feedback + settling for you (see the 💡 notes).
+    #     # (If you need the per-energy spot move, keep it as a small custom step, or
+    #     #  compose with energy_axis + a piezo.y motor_axis.)
+    #
+    #   (Optional. Your loop still works EXCEPT for the ⚠️ lines below; the 💡 lines
+    #    just become unnecessary after migrating.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
+
     yield from bps.mv(waxs, 52.5)
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration).
 
     names = ["nexafs_sam2_ex_situ"]
 
@@ -145,12 +189,12 @@ def nexafs_S_edge_cherun(t=1):
 
         # yield from bps.mv(piezo.th, 1.5)
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt. (smi_plans' nexafs_run sets exposure via t=.)
         name_fmt = "{sample}_{energy}eV_wa52.5_bpm{xbpm}"
         for e, yss in zip(energies, ys):
             yield from bps.mv(piezo.y, yss)
             yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this wait once you migrate — move_energy_fb/energy_axis already pause after each energy move, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
             bpm = xbpm2.sumX.value
             sample_name = name_fmt.format(
                 sample=name, energy="%6.2f" % e, xbpm="%4.3f" % bpm
@@ -159,15 +203,34 @@ def nexafs_S_edge_cherun(t=1):
             print(f"\n\t=== Sample: {sample_name} ===\n")
             yield from bp.count(dets, num=1)
 
-        yield from bps.mv(energy, 2490)
+        yield from bps.mv(energy, 2490)  # 💡 smi_plans: this gentle step-down to a parking energy (2490→2470→2450) is no longer needed — energy_axis/move_energy_fb step in ≤50 eV hops with settling, so you can move straight to your target after migrating. (Not broken, just no longer needed.)
         yield from bps.mv(energy, 2470)
         yield from bps.mv(energy, 2450)
 
 
 def instec_insitu_hard_xray(t=0.5):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ temperature series on an Instec hot stage — for each
+    #   temperature it drives the heater there, waits to equilibrate, nudges the sample
+    #   to a fresh spot, then sweeps the WAXS arc taking an image at each angle.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans has a temperature preset that drives the heater,
+    #   waits for equilibrium, and measures at each setpoint, recording the actual
+    #   temperature INTO the data for you (no reading ls.input_C / building the name):
+    #
+    #     from smi_plans import temperature_ramp_run, lakeshore_heater, temperature_axis
+    #     # temperature_ramp_run measures at each T in your list; temperature_axis builds
+    #     # the setpoint list; goto_temperature waits for equilibrium. (Lakeshore 'ls' is fine.)
+    #
+    #   (Optional. Your loop still works EXCEPT for the ⚠️ line below.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note on that line.
+    # === end smi_plans note ================================================
+
     dets = [pil900KW, pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt. (smi_plans' temperature presets set exposure via t=.)
 
     name = "sampleA"
     # temperatures = np.arange(150, 130, -5).tolist() + np.arange(130, 115, -1).tolist() + np.arange(115, 100, -0.5).tolist()
@@ -212,8 +275,32 @@ def instec_insitu_hard_xray(t=0.5):
 
 def instec_insitu_tender_xray(t=0.5):
 
-    dets = [pil300KW, pil2M]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ temperature series at TENDER energies — for each
+    #   temperature (driven on the Instec stage, then equilibrated) it sweeps the WAXS
+    #   arc and, at each arc position, steps through a couple of X-ray energies, taking
+    #   an image at each. A temperature + energy combo on one spot.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans can pair a temperature ramp with an energy sweep
+    #   and record temperature + energy + beam INTO each file. The cleanest building
+    #   blocks are 'temperature_ramp_run' (or 'temperature_axis' / 'goto_temperature')
+    #   combined with 'energy_axis' for the energy steps; there is also a ready-made
+    #   combined recipe 'giwaxs_tempramp_energy_5loc' in smi_plans.recipes_combined:
+    #
+    #     from smi_plans import temperature_axis, energy_axis
+    #     # build a temperature axis and an energy axis and hand both to acquire(...),
+    #     # OR see smi_plans.recipes_combined.giwaxs_tempramp_energy_5loc for a preset.
+    #     # energy_axis manages the beam feedback + settling (see the 💡 note below).
+    #
+    #   (Optional. Your loop still works EXCEPT for the ⚠️ lines below; the 💡 line
+    #    becomes unnecessary after migrating.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' is now a plan — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
+
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt. (smi_plans' temperature/energy presets set exposure via t=.)
 
     energies = [2460, 2475]
 
@@ -254,7 +341,7 @@ def instec_insitu_tender_xray(t=0.5):
 
             for k, energ in enumerate(energies):
                 yield from bps.mv(energy, energ)
-                yield from bps.sleep(1)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this wait once you migrate — move_energy_fb/energy_axis already pause after each energy move, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
                 # yield from bps.mv(stage.x, x + (k * 0.1))
 
                 name_fmt = "{sample}_{temperature}C_wa{waxs}_sdd1.6m_{ener}eV"
@@ -284,6 +371,28 @@ def single_scan_instec_insitu_hard_2022_2(t=0.5):
     While changing samples, disengage the heater, click and change
     Range X to OFF in Lakeshore CSS tab.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a single measurement on the Instec stage at whatever temperature
+    #   you've already set on the CSS screen — sweeps the WAXS arc (SAXS enabled only
+    #   when WAXS is out of the way) and records one image per arc position, stamping
+    #   energy/temperature/SDD/scan-id into the file name.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans records energy, temperature, SDD, etc. INTO the
+    #   saved data automatically and fills them into the file name from the recorded
+    #   values, so you don't read ls.input_C / db[-1] and hand-format the name. For a
+    #   single temperature point use 'goto_temperature' + 'acquire', or the temperature
+    #   preset; the detector pick (SAXS off when WAXS is in front) is built into the
+    #   SAXS/WAXS helpers:
+    #
+    #     from smi_plans import acquire, saxs_waxs_dets, goto_temperature
+    #     # yield from acquire("Silver_Behenate", saxs_waxs_dets(), [], md=...)
+    #
+    #   (Optional. Your code still works EXCEPT for the ⚠️ line below. Note: pil2M_pos.z
+    #    (the SDD), sample_id and ls are all fine — not flagged.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note on that line.
+    # === end smi_plans note ================================================
     user_name = "user_name"
     name = "Silver_Behenate"
 
@@ -291,7 +400,7 @@ def single_scan_instec_insitu_hard_2022_2(t=0.5):
     name = name.translate({ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ "})
     user_name = user_name.translate({ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ "})
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt. (smi_plans presets set exposure via t=.)
     waxs_arc = [0, 20]
 
     # Read T and convert to deg C
@@ -338,6 +447,27 @@ def tender_single_scan_instec_insitu_2022_2(t=0.5):
     Range X to OFF in Lakeshore CSS tab.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a single TENDER-energy measurement on the Instec stage at the
+    #   temperature you've set on the CSS screen — sweeps the WAXS arc (here a single
+    #   arc position) and saves one image, stamping energy/temperature/SDD/scan-id into
+    #   the file name.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans records energy, temperature, SDD, etc. INTO the
+    #   data and fills them into the file name from the recorded values for you, so you
+    #   don't read ls.input_C / db[-1] by hand. For one point use 'goto_temperature' +
+    #   'acquire' (or the temperature preset):
+    #
+    #     from smi_plans import acquire, saxs_waxs_dets, goto_temperature
+    #     # yield from acquire("S_100p", saxs_waxs_dets(), [], md=...)
+    #
+    #   (Optional. Your code still works EXCEPT for the ⚠️ line below. Note: pil2M_pos.z,
+    #    sample_id and ls are all fine — not flagged.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ note on that line.
+    # === end smi_plans note ================================================
+
     user_name = "RT12127A"
     name = "S_100p"
 
@@ -345,7 +475,7 @@ def tender_single_scan_instec_insitu_2022_2(t=0.5):
     name = name.translate({ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ "})
     user_name = user_name.translate({ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ "})
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt. (smi_plans presets set exposure via t=.)
     waxs_arc = [3]
 
     # Read T and convert to deg C

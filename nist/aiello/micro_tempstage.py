@@ -20,6 +20,27 @@
     # LThermal.temperatureRate() # reads back the current temperature
 
 def run_nist_temp_micro(name_base='test', t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a micro temperature study on the Linkam stage — at room temp,
+    #   then +85 C, then -40 C, it runs a fine line-scan in y (167 points over ±250 µm)
+    #   at two WAXS arc positions, recording the stage temperature and beam into the
+    #   data. (The nested 'inner(...)' helper is just the per-temperature line-scan it
+    #   reuses — it's covered by this note, no separate migration needed.)
+    #
+    # 👍 Nice — you're already letting the file name fill in from recorded values
+    #   (e.g. '{stage_y}', '{pin_diode_current2_mean_value}'), which is exactly the
+    #   modern smi_plans style, and you record LThermal.temperature_current as a channel.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans has Linkam temperature helpers that drive the
+    #   heater, wait for equilibrium, and measure, plus a line-scan map preset — so the
+    #   set/equilibrate/scan dance becomes a couple of calls:
+    #
+    #     from smi_plans import linkam_heater, goto_temperature, map_line_run
+    #     # goto_temperature(85, ...) drives + waits; map_line_run scans stage.y and
+    #     # records everything. (LThermal, stage.x/y, pin_diode, get_scan_md are all fine.)
+    #
+    #   (Optional — nothing here is broken; this whole routine runs as-is.)
+    # === end smi_plans note ================================================
     # get starting y position
     y0 = stage.y.position
     waxs_arc = [0, 20]
@@ -101,6 +122,28 @@ def run_exsitu_hard_2025_2(t=1):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an ex-situ hard-X-ray survey of a bar of samples — for each WAXS
+    #   arc position and each sample, it takes a few points (a small x/y grid of offsets)
+    #   and saves an image at each, with SAXS enabled only when the WAXS arc is out of
+    #   the way.
+    #
+    # 👍 You already let the file name fill in from recorded values via get_scan_md() —
+    #   that's the modern smi_plans style.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans has map/averaging presets that take a few points
+    #   per sample across a whole bar and record energy/beam/positions INTO each file:
+    #
+    #     from smi_plans import map_grid_run, map_dets, map_bar
+    #     # map_grid_run does the little x/y offset grid per sample; map_bar drives the
+    #     # whole bar. (pil900KW and pil2M here are both fine.)
+    #
+    #   (Optional. Your loop still works EXCEPT for the ⚠️ lines below.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the
+    #   ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
+
     names_1   = [  'vacuum', 'PP_fresh_tr', 'EVA_block', 'EVA_pass', 'POE_block', 'POE_pass']
     piezo_x_1 = [    -29000,        -21000,      -11700,      -4700,        3750,      13250]
     piezo_y_1 = [      2000,          2000,        2000,       2000,        2000,       2000]
@@ -123,7 +166,7 @@ def run_exsitu_hard_2025_2(t=1):
     y_off = [-50, 50]
 
     user = "AA"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt. (smi_plans' map presets set exposure via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -158,4 +201,4 @@ def run_exsitu_hard_2025_2(t=1):
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): same as above — this exposure reset is now a "plan" and does nothing called plain. Use  yield from det_exposure_time(0.3, 0.3)  inside a plan, or  RE(det_exposure_time(0.3, 0.3))  at the prompt.

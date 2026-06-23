@@ -35,6 +35,17 @@ WAXS: 16 deg
 
 
 '''
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS FILE IS: a per-experiment setup + a small NanoSyn measuring class. The top sets
+#   the sample table (sample_dict / pxy_dict) and which MDrive motors are X/Z; NanoSyn.measure
+#   takes one SAXS+WAXS frame and NanoSyn.run repeats it for a while.
+#
+# 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans'. Two ideas it would
+#   tidy up here: (1) keep the sample table as a SampleList instead of loose dicts; and (2)
+#   take frames as real Bluesky *plans* (recipes the RunEngine runs) rather than calling RE()
+#   from inside a method — see the per-method notes below. (Nothing at the top here is broken;
+#   pil2M / pil900KW / pil2m_pos are the current device names.)
+# === end smi_plans note ================================================
 username = 'SZ'
 user_name = 'SZ'
 sample_dict =  {1: 'SampleX_SMI'}
@@ -66,6 +77,23 @@ class NanoSyn( ):
 
 
     def measure( self,sample_name=None,  t=1, take_camera = False ):
+        # === smi_plans note (REVIEW 2026-06-22) ================================
+        # WHAT THIS DOES: takes one SAXS+WAXS frame (WAXS arc 16 deg) and bakes the motor
+        #   positions + detector distance into the file name by reading .position and pasting
+        #   them in. It runs RE(bp.count(...)) directly, so this method is NOT itself a plan.
+        #
+        # 💡 NEWER, EASIER WAY: the beamline now has 'smi_plans'. Two improvements: it records
+        #   the positions/distance INTO the data and fills them into the file name from the
+        #   recorded values (no .position-into-string), and it gives you a plain *plan* you run
+        #   through the RunEngine (instead of calling RE() inside a method). For example:
+        #
+        #     from smi_plans import transmission_run     # do this once per session
+        #     RE(transmission_run(sample, t=t, dets=[pil2M, pil900KW],
+        #                         reads=[pil2m_pos.z]))  # filename tokens filled from the stream
+        #
+        #   (Nothing here is broken — pil2M / pil900KW / pil2m_pos are the current names, and
+        #    det_exposure_time is already commented out. This is just a tidier pattern.)
+        # === end smi_plans note ================================================
         waxs_angle = 16 #15 #if need change waxs angle, do     move_waxs(  waxs_angle ),  
         dets = [  pil2M, pil900KW ]
         if sample_name is not None:
@@ -105,6 +133,21 @@ class NanoSyn( ):
       
 
         '''
+        # === smi_plans note (REVIEW 2026-06-22) ================================
+        # WHAT THIS DOES: repeatedly calls measure() in a Python while-loop (with a pause
+        #   between) until a wall-clock time runs out — a long in-situ time series.
+        #
+        # 💡 NEWER, EASIER WAY: kicking off a fresh RE(...) run for every frame inside a Python
+        #   loop makes lots of tiny separate runs. The beamline now has 'smi_plans' with a
+        #   time-series runner that records the whole sequence as ONE run, with the timing
+        #   stamped in, and you launch it once:
+        #
+        #     from smi_plans import time_series_run      # do this once per session
+        #     RE(time_series_run(sample_name, duration=run_time, period=sleep_time, t=1,
+        #                        dets=[pil2M, pil900KW]))
+        #
+        #   (Nothing here is broken — this is a tidier, better-recorded way to do the same run.)
+        # === end smi_plans note ================================================
   
         t0 = time.time()        
         print('Starting measurements for %.2f min.'%( run_time/60))

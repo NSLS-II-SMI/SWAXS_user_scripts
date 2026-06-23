@@ -202,6 +202,37 @@ motorZ = MDrive.m3
 
 
 class DropletReactor( ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: drives the autonomous droplet/flow reactor — it knows the hole/tube
+    #   positions on the rack, moves the sample stage to a reaction spot, takes SAXS/WAXS
+    #   images over time, and (in the Run_* methods) talks to an external optimizer
+    #   (BoTorch, via 'Batch_push.npz' / 'Batch_T_t_dict.npz') to decide the next batch:
+    #   a closed-loop, self-driving experiment.
+    #
+    # 💡 NEWER, EASIER WAY (and an important gotcha): the beamline now has a helper
+    #   library, 'smi_plans', with an "autonomous" group built for exactly this kind of
+    #   self-driving loop. The key idea is that the DECISION-MAKING (ask the optimizer
+    #   what to do next) should sit ABOVE the measurement, and the measurement should be a
+    #   normal *plan* (a recipe Bluesky runs) that the controller calls each step:
+    #
+    #     from smi_plans import autonomous_loop, ask_tell_loop, measure_for_agent, read_back_result
+    #     # autonomous_loop / ask_tell_loop run the "ask optimizer -> measure -> tell optimizer"
+    #     # cycle for you; measure_for_agent is the per-point measurement; read_back_result
+    #     # hands the analysed result back to the optimizer. (No hand-rolled while/np.load loop.)
+    #
+    #   ⚠️ Why this matters (the gotcha): several methods below call 'RE(...)' (the Bluesky
+    #   run-engine) INSIDE plain Python 'while'/'for' loops (e.g. measure(), goto_Pos(),
+    #   Run_*). Each RE(...) starts and stops a *separate* run, so the whole sequence can't
+    #   be paused/resumed or cleanly aborted as one experiment, and you lose the single
+    #   timeline. The smi_plans way is: write ONE plan that 'yield from's its steps, and let
+    #   the controller drive it — then Ctrl-C/pause/resume work across the whole run. See
+    #   'collect_wsaxs' near the bottom of this file for the correct shape (it 'yield from's
+    #   instead of calling RE). (internal: Tier 0)
+    #
+    #   (Nothing here is "broken" in the crash sense — it runs — but the RE-inside-loops
+    #    structure is fragile, and the only line that needs a real fix to take effect is the
+    #    commented/old det_exposure_time pattern; see the ⚠️ notes where it appears below.)
+    # === end smi_plans note ================================================
     def __init__(  self, sample='Au_NPs'):
         '''
 
@@ -379,7 +410,7 @@ class DropletReactor( ):
         x0, y0 = x, y 
         print( x0, y0 )
 
-        RE(bps.mv( motorX , x0, motorZ, y0 ) )
+        RE(bps.mv( motorX , x0, motorZ, y0 ) )  # 💡 smi_plans: calling RE(...) here (inside a helper used by Python loops) starts a separate run each time and breaks pause/resume for the experiment as a whole. The smi_plans way: make this a plan step ( yield from bps.mv(motorX, x0, motorZ, y0) ) and let an autonomous_loop/ask_tell_loop controller drive it. See the class note above. (Not a crash, but fragile.)
         
         #time.sleep(3)
         #RE(bps.mv( motorX , x, motorZ, y ) )
@@ -430,7 +461,7 @@ class DropletReactor( ):
         print("Collect data here....")
         #yield from bp.count(dets, num=1)
         #RE( bp.count(dets, num=1))
-        RE(bp.count(  dets ))
+        RE(bp.count(  dets ))  # 💡 smi_plans: this is the actual data-taking step, but RE(...) inside this method (which the Run_* loops call repeatedly) means each shot is its own run with no shared timeline/pause-resume. The smi_plans way: make 'measure' a plan ( yield from acquire(...) / yield from bp.count(dets) ) and call it from measure_for_agent inside an autonomous_loop. See the class note above.
         if take_camera:
             scan_id=RE.md["scan_id"]
             sample_name_ova =  user_name +  '_' + sample_name + 'id_%s'%scan_id
@@ -1261,6 +1292,11 @@ ks =  np.array(list( ( sample_dict.keys()) ) )
 
 
 def setup_run( waxs_angle=15  ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tiny setup helper — readies the OAV camera and parks the WAXS arc
+    #   before a run. (No data is taken here; nothing is broken.) In smi_plans the
+    #   detector/geometry setup is handled inside the technique presets' setup= hook.
+    # === end smi_plans note ================================================
     setup_ova(   )
     move_waxs(waxs_angle)
 
@@ -1270,6 +1306,16 @@ def setup_run( waxs_angle=15  ):
 
 
 def flow_227():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a one-line "run-book" entry — waits a bit, then kicks off a timed
+    #   acquisition via run(...) for a particular sample/recipe. The many other flow_* /
+    #   flow_6xx_* functions below are the SAME shape (a sleep + a run(...) call) for
+    #   different samples, so the same migration applies to all of them:
+    #
+    # 💡 NEWER, EASIER WAY: the migration lives in run() (see its note) — point these
+    #   wrappers at the smi_plans time-series preset (time_series_run) once and they all
+    #   come along. (These wrappers themselves have nothing broken.)
+    # === end smi_plans note ================================================
     time.sleep( 0*60 )
     run(  'SMI_AuSyn_TwoRec_0227_RUN0_100C_80ulM' , exposure_time=1, maxTime= 6*3600 + 1, interval=5 )
 
@@ -1468,10 +1514,32 @@ def run(    sample,  exposure_time=1, maxTime=12 * 3600 + 1, interval= 20,  came
 
     ''' 
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a time-series acquisition for the droplet reactor — on a fixed time
+    #   interval it snakes the sample stage over a little x/y position map and takes a
+    #   SAXS/WAXS image at each trigger, saving an OAV camera image too.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans has time-series / kinetics presets that take frames
+    #   on a clock and record the elapsed time + positions + beam INTO each file, AND a
+    #   spatial-grid helper for the snaking x/y map — so you don't manage time.time()/the
+    #   position index by hand:
+    #
+    #     from smi_plans import time_series_run, time_axis, spatial_grid_axes
+    #     # time_series_run takes frames over time; spatial_grid_axes builds the x/y map.
+    #
+    # ⚠️ TWO things to fix/Improve to run cleanly now:
+    #   1) 'det_exposure_time(...)' below is now a "plan" and does nothing called plain
+    #      (see the ⚠️ note on that line).
+    #   2) the loop calls 'RE(...)' (bp.count / bps.mv) INSIDE a Python for-loop — each is
+    #      a separate run, which breaks pause/resume of the time series as one experiment.
+    #      Write this as one plan that 'yield from's its steps (like collect_wsaxs below)
+    #      and let a controller drive it; see the 💡 notes on those RE lines.
+    # === end smi_plans note ================================================
+
     dets = [ pil2M, pil900KW  ]
     #dets = [ pil2M   ]
     #waxs_angle = 15    #   move_waxs(15)
-    det_exposure_time(exposure_time, exposure_time) 
+    det_exposure_time(exposure_time, exposure_time)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exposure_time, exposure_time)  — or at the prompt:  RE(det_exposure_time(exposure_time, exposure_time)). (smi_plans' time_series presets set exposure via t=.)
     t0 = time.time()
     start_time = 0
     trigger_time = np.arange(start_time, maxTime, interval)
@@ -1499,7 +1567,7 @@ def run(    sample,  exposure_time=1, maxTime=12 * 3600 + 1, interval= 20,  came
         if camera:
             sample_name_oav = '%s_%s_id%s_OAV'%( user_name, sample_name,RE.md['scan_id'] )
             save_ova(  sample = sample_name_oav, setup= False )             
-        RE(  bp.count(dets, num=1)  )
+        RE(  bp.count(dets, num=1)  )  # 💡 smi_plans: RE(...) inside this for-loop makes every frame a separate run (no shared timeline, no clean pause/resume). The smi_plans way: turn this whole function into one plan that 'yield from's its steps (see collect_wsaxs below) and drive it with time_series_run / an autonomous_loop.
         fid+=1    
         pos_indx = fid%Npxy         
         RE(  bps.mv(stage.x, pxy1[ pos_indx ][0] )     )  
@@ -1514,10 +1582,23 @@ def run_nobeam(    sample,  exposure_time=1, maxTime=12 * 3600 + 1, interval= 20
     run(  'SMI_CuSyn_161Rec_105C_40ulM'  )  #Cu, interval=20,  #20221029 nite, 1:30 am     
     ''' 
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a "dry run" version of run() with the X-ray exposure turned OFF
+    #   (the bp.count line is commented out) — it just walks the clock and saves OAV camera
+    #   images, e.g. to rehearse timing without using beam.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' time-series presets (time_series_run / time_axis)
+    #   give you the timed loop; a "no-beam" rehearsal is just the same plan with the
+    #   detector trigger left out. (Camera/OAV_writing is fine.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' below is now a plan and does
+    #   nothing called plain — see the ⚠️ note on that line.
+    # === end smi_plans note ================================================
+
     #dets = [ pil2M, pil900KW  ]
     #dets = [ pil2M   ]
     #waxs_angle = 15    #   move_waxs(15)
-    det_exposure_time(exposure_time, exposure_time) 
+    det_exposure_time(exposure_time, exposure_time)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(exposure_time, exposure_time)  inside a plan, or  RE(det_exposure_time(exposure_time, exposure_time))  at the prompt. (smi_plans' presets set exposure via t=.)
     t0 = time.time()
     start_time = 0
     trigger_time = np.arange(start_time, maxTime, interval)
@@ -1549,8 +1630,23 @@ def collect_one_data(    sample,  exposure_time=1,   camera=False, fid=0    ):
 
     ''' 
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a single SAXS/WAXS image right now (plus an OAV camera image),
+    #   stamping the time and a frame id into the file name.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' 'acquire(...)' takes the shot AND records time,
+    #   positions, beam, etc. INTO the data for you, and sets exposure via 't='. As a plan:
+    #
+    #     from smi_plans import acquire, saxs_waxs_dets
+    #     yield from acquire(sample, saxs_waxs_dets(), [], reads=None)   # [] = one shot
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan (see the ⚠️ note
+    #   on that line); and 'RE(bp.count(...))' here runs as its own engine call — inside a
+    #   plan you'd write 'yield from bp.count(...)' instead (see the 💡 note + collect_wsaxs).
+    # === end smi_plans note ================================================
+
     dets = [ pil2M, pil900KW  ]
-    det_exposure_time(exposure_time, exposure_time) 
+    det_exposure_time(exposure_time, exposure_time)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(exposure_time, exposure_time)  inside a plan, or  RE(det_exposure_time(exposure_time, exposure_time))  at the prompt. (smi_plans' acquire sets exposure via t=.)
     tf = get_current_time()
     extra =  '%s_'%tf + '%06d_'%fid   
     _sample =  extra + sample 
@@ -1562,11 +1658,30 @@ def collect_one_data(    sample,  exposure_time=1,   camera=False, fid=0    ):
     if camera:
         sample_name_oav = '%s_%s_id%s_OAV'%( user_name, sample_name,RE.md['scan_id'] )
         save_ova(  sample = sample_name_oav, setup= False ) 
-    RE(  bp.count(dets, num=1)  )
+    RE(  bp.count(dets, num=1)  )  # 💡 smi_plans: fine for a one-off at the prompt, but if you fold this into a larger plan use  yield from bp.count(dets, num=1)  (or  yield from acquire(...)) instead of RE(...), so it composes and supports pause/resume. See collect_wsaxs below.
 []   
 
 
 def collect_wsaxs(  t=1, sample=None, waxs_angle = 20  ):
+
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves the WAXS arc, picks SAXS+WAXS (or WAXS-only at 0°), and takes
+    #   one image, stamping x/y/SDD/waxs-angle/exposure into the file name.
+    #
+    # 👍 This is the CORRECT shape — it's a real *plan*: it uses 'yield from bps.mv(...)'
+    #   and 'yield from bp.count(...)' instead of RE(...), so it composes with other plans
+    #   and supports pause/resume. (Use this as the template for the reactor's measure step.)
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans would also record x/y/SDD/waxs-angle/beam INTO the
+    #   data and fill the file name from those recorded values, so you don't read
+    #   stage.x/pil2M_pos.z and hand-build the name:
+    #
+    #     from smi_plans import acquire, saxs_waxs_dets
+    #     # yield from acquire(sample, saxs_waxs_dets(arc_block_deg=...), [], md=...)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' is now a plan — see the ⚠️ note
+    #   on that line (here, since this is already a plan, just add 'yield from').
+    # === end smi_plans note ================================================
 
     yield from bps.mv(waxs, waxs_angle)
     if waxs_angle !=0:
@@ -1583,7 +1698,7 @@ def collect_wsaxs(  t=1, sample=None, waxs_angle = 20  ):
         t=t,
         #scan_id=RE.md["scan_id"],
     )
-    det_exposure_time(t, t) 
+    det_exposure_time(t, t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Since this function is already a plan, just add 'yield from':  yield from det_exposure_time(t, t). (smi_plans' acquire sets exposure via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")

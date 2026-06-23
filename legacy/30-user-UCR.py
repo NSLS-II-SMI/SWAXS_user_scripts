@@ -3,6 +3,29 @@ import numpy as np
 
 
 def run_mesh_fastUCR(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each WAXS-arc position, raster-scans the sample in x/y and
+    #   takes a SAXS/WAXS image at every grid point (a microfocus map / mesh scan).
+    #
+    # 👍 Nice — you're already using ONE coordinated grid scan per map
+    #   (bp.rel_grid_scan), which is exactly the tidy pattern smi_plans is built around
+    #   (one "run" per map instead of one file per point). The migration is mostly a
+    #   rename to the preset, which also records energy/beam/positions into the data:
+    #
+    #     from smi_plans import map_grid_run, map_dets
+    #     yield from map_grid_run(
+    #         "sample1_real_watertest", map_dets(),    # detector set chosen for you
+    #         x=piezo.x, x_range=(0, 0, 1),            # your x grid, unchanged
+    #         y=piezo.y, y_range=(0, 600, 151),        # your y grid, unchanged
+    #         t=t,
+    #     )
+    #     # (loop the WAXS-arc positions around it, or see map_bar for whole-bar maps.)
+    #
+    #   (Optional. Your code still works EXCEPT for the ⚠️ lines, which need a small fix.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure
+    #   on its own — see the ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     samples = ["sample1_real_watertest_4um_step_"]
     x_list = [-34889]
     y_list = [-7610]
@@ -14,7 +37,7 @@ def run_mesh_fastUCR(t=0.5):
 
     # Detectors, motors:
     dets = [pil900KW]  # dets = [pil2M,pil300KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt. (smi_plans' map presets set exposure via t=.)
     assert len(x_list) == len(
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
@@ -35,15 +58,36 @@ def run_mesh_fastUCR(t=0.5):
             )  # 1 = snake, 0 = not-snake
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): same as above — this exposure reset is now a "plan" and does nothing called plain. Use  yield from det_exposure_time(0.3, 0.3)  inside a plan, or  RE(det_exposure_time(0.3, 0.3))  at the prompt.
     yield from bps.mv(waxs, 0)
 
 
 def run_mesh_fastUCI(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: raster-scans each sample in x/y at several WAXS-arc positions,
+    #   taking a WAXS image at every grid point — a multi-sample microfocus map.
+    #
+    # 👍 You're already doing ONE coordinated grid scan per map (bp.rel_grid_scan),
+    #   the same tidy "one run per map" shape smi_plans uses. The migration is mostly
+    #   swapping in the preset (which also records energy/beam/positions for you):
+    #
+    #     from smi_plans import map_grid_run, map_dets
+    #     # for each sample: map_grid_run(name, map_dets(),
+    #     #                                y=piezo.y, y_range=(0, 200, 101),   # your y grid
+    #     #                                x=piezo.x, x_range=(0, 125, 6),     # your x grid
+    #     #                                t=t)
+    #     # see map_bar to drive a whole bar of samples at once.
+    #
+    #   (Optional. Your code still works EXCEPT for the ⚠️ lines below.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' no longer sets the exposure on its own — see the
+    #   ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     waxs_range = [0, 6.5, 13, 19.5, 26]
     name = "TW"
-    dets = [pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt.
 
     samples = [
         "tooth4_bot",
@@ -114,14 +158,33 @@ def run_mesh_fastUCI(t=1):
             yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): same as above — this exposure reset is now a "plan" and does nothing called plain. Use  yield from det_exposure_time(0.3, 0.3)  inside a plan, or  RE(det_exposure_time(0.3, 0.3))  at the prompt.
 
 
 def mesh_UCI_2020_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: raster-scans three samples (T1/T2/T3) in x/y at several WAXS-arc
+    #   positions, taking a WAXS image at every grid point — a multi-sample map.
+    #
+    # 👍 Already ONE coordinated grid scan per map (bp.rel_grid_scan) — the same tidy
+    #   shape smi_plans uses. Swap in the preset to also record energy/beam/positions:
+    #
+    #     from smi_plans import map_grid_run, map_dets
+    #     # per sample: map_grid_run(name, map_dets(),
+    #     #                          y=piezo.y, y_range=(0, 400, 201),   # your y grid
+    #     #                          x=piezo.x, x_range=(0, 450, 19),    # your x grid
+    #     #                          t=t)   # see map_bar for the whole bar at once.
+    #
+    #   (Optional. Your code still works EXCEPT for the ⚠️ lines below.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' no longer sets the exposure on its own — see the
+    #   ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     waxs_range = [0, 6.5, 13, 19.5, 26]
     name = "TW"
-    dets = [pil300KW]
-    det_exposure_time(t, t)
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration).
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt.
 
     samples = ["T1", "T2", "T3"]
     x_list = [10270, 2715, -3465]
@@ -144,15 +207,35 @@ def mesh_UCI_2020_3(t=1):
             yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): same as above — this exposure reset is now a "plan" and does nothing called plain. Use  yield from det_exposure_time(0.3, 0.3)  inside a plan, or  RE(det_exposure_time(0.3, 0.3))  at the prompt.
 
 
 def mesh_UCI_2021_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: raster-scans a set of samples in x/y at several WAXS-arc
+    #   positions (here recording both WAXS and SAXS at every grid point) — a
+    #   multi-sample microfocus map.
+    #
+    # 👍 Already ONE coordinated grid scan per map (bp.rel_grid_scan). Swap in the
+    #   preset to also record energy/beam/positions automatically:
+    #
+    #     from smi_plans import map_grid_run, map_dets
+    #     # per sample: map_grid_run(name, map_dets(),
+    #     #                          y=piezo.y, y_range=(0, 300, 31),    # your y grid
+    #     #                          x=piezo.x, x_range=(0, 200, 9),     # your x grid
+    #     #                          t=t)   # see map_bar for the whole bar at once.
+    #
+    #   (Optional. Your code still works EXCEPT for the ⚠️ lines below.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' no longer sets the exposure on its own — see the
+    #   ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     waxs_range = np.linspace(0, 26, 5)
 
     name = "TW"
-    dets = [pil300KW, pil2M]
-    det_exposure_time(t, t)
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (it's a different camera, so check beam-center/calibration). (pil2M is fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt.
 
     # Finished at -17300 in X
 
@@ -220,15 +303,36 @@ def mesh_UCI_2021_2(t=1):
             yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): same as above — this exposure reset is now a "plan" and does nothing called plain. Use  yield from det_exposure_time(0.3, 0.3)  inside a plan, or  RE(det_exposure_time(0.3, 0.3))  at the prompt.
 
 
 def mesh_UCI_2021_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: raster-scans several samples in x/y at two WAXS-arc positions
+    #   (recording WAXS + SAXS at every grid point), moving each sample to its own
+    #   x/y/z/chi/hexapod position first — a multi-sample microfocus map.
+    #
+    # 👍 Already ONE coordinated grid scan per map (bp.rel_grid_scan), and you set
+    #   proposal_id/sample names per sample — both still work. smi_plans' preset does
+    #   the same map while recording energy/beam/positions into the data for you:
+    #
+    #     from smi_plans import map_grid_run, map_dets
+    #     # per sample (after moving x/y/z/chi/hexapod): map_grid_run(name, map_dets(),
+    #     #     y=piezo.y, y_range=(0, 1300, 66), x=piezo.x, x_range=(0, 5700, 115), t=t)
+    #     # see map_bar to drive the whole bar at once.
+    #
+    #   (Optional. Your code still works EXCEPT for the ⚠️ lines below. Note:
+    #    piezo.ch, stage.y, proposal_id and sample_id are all fine — not flagged.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the detector list uses 'pil300KW' (removed), and
+    #   'det_exposure_time(...)' no longer sets the exposure on its own — see the
+    #   ⚠️ notes on those lines.
+    # === end smi_plans note ================================================
     waxs_range = [0, 20]
 
     name = "WY"
-    dets = [pil300KW, pil900KW, pil2M]
-    det_exposure_time(t, t)
+    dets = [pil300KW, pil900KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' (already in this list) — drop pil300KW and keep pil900KW (note: different camera from pil300KW, so check beam-center/calibration). pil900KW and pil2M are fine.
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Use  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt.
 
     # these samples are done.
     # samples = ['SS_BPS', 'SS_HSLD', 'SS_FVST',  'SS_TCSS',  'SS_SVSTt', 'SS_SVSTb',   'SS_BOSV','SS_BOFV',  'RS_FVSAMT','RS_SVSAMTt','RS_SVSAMTb', 'RS_FVS']
@@ -306,4 +410,4 @@ def mesh_UCI_2021_3(t=1):
             yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): same as above — this exposure reset is now a "plan" and does nothing called plain. Use  yield from det_exposure_time(0.3, 0.3)  inside a plan, or  RE(det_exposure_time(0.3, 0.3))  at the prompt.

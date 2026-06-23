@@ -2,6 +2,27 @@
 
 
 def run_gi_sweden_SAXS(tim=0.5, sample="Test", ti_sl=60):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence SAXS run — aligns the surface, takes a y-scan
+    #   image set, then repeatedly nudges piezo.x and takes more y-scans, pausing between
+    #   passes (a slow time series across a surface/interface).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that records
+    #   the angle, positions, beam intensity and elapsed time straight into the saved data
+    #   and the file name (so you don't hand-build "{angle}deg_{ti}sec"). Alignment is done
+    #   once via align_sample, and a y line-scan is map_line_run; for the repeated passes use
+    #   a kinetics helper. Roughly:
+    #
+    #     from smi_plans import giwaxs_run, map_line_run, time_series_run
+    #     # ...align once with align_sample, then per pass:
+    #     yield from map_line_run(sample, piezo.y, -20, 20, 41, dets=[pil2M])
+    #
+    #   (Just a tidier option to try later — your script below still works as-is, except the
+    #    'det_exposure_time' lines marked ⚠️.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' lines below (see the ⚠️ notes
+    #   on them).
+    # === end smi_plans note ================================================
     # Slowest cycle:
     name = "TP"
     num = 2
@@ -23,7 +44,7 @@ def run_gi_sweden_SAXS(tim=0.5, sample="Test", ti_sl=60):
     yield from alignement_gisaxs(angle)
     yield from bps.mvr(piezo.th, angle)
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (smi_plans' technique runs set it for you via t=.)
     sample_id(user_name=name, sample_name=surface_sample)
     yield from bp.rel_scan(dets, piezo.y, *piezo_y_range)
 
@@ -48,10 +69,33 @@ def run_gi_sweden_SAXS(tim=0.5, sample="Test", ti_sl=60):
             yield from bps.sleep(ti_sl)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(1, 1)
+    det_exposure_time(1, 1)  # ⚠️ FIXME(smi_plans): this resets the exposure, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(1, 1)  — or at the prompt:  RE(det_exposure_time(1, 1)).
 
 
 def gisaxs_KTH_2021_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a multi-sample grazing-incidence (GISAXS) run — it aligns each sample
+    #   in turn (recording its incident angle and aligned height), then revisits each sample
+    #   and takes SAXS images while stepping the incident angle and nudging piezo.x.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs a
+    #   whole bar of grazing samples in one call — it moves to each sample, aligns it, loops
+    #   the incident angles, and records which sample/angle (and beam readings) each image
+    #   belongs to, so you don't keep your own incident_angles/y_piezo_aligned lists or
+    #   build "{angle}deg_pos{pos}" by hand. The pattern is:
+    #
+    #     from smi_plans import giwaxs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo,
+    #                                       z=z_piezo, hexa_x=x_hexa)
+    #     yield from giwaxs_bar(samples, incident_angles=np.linspace(0.08, 0.4, 17),
+    #                           t=t, align=align_sample)
+    #
+    #   (Just a tidier option to try later — your script below still works as-is, except the
+    #    'det_exposure_time' lines marked ⚠️.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' lines below (see the ⚠️ notes
+    #   on them).
+    # === end smi_plans note ================================================
 
     global names, x_piezo, z_piezo, incident_angles, y_piezo_aligned, xs_hexa
 
@@ -113,7 +157,7 @@ def gisaxs_KTH_2021_1(t=1):
 
     angle = [0.1]
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
 
     for name, xs, zs, aiss, ys, xs_hexa in zip(
         names, x_piezo, z_piezo, incident_angles, y_piezo_aligned, x_hexa
@@ -139,7 +183,7 @@ def gisaxs_KTH_2021_1(t=1):
 
     angle = np.linspace(0.08, 0.4, 17)
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): same as above — this used to set the exposure but is now a "plan", so the plain call does nothing. Write  yield from det_exposure_time(t, t)  inside a plan, or  RE(det_exposure_time(t, t))  at the prompt.
 
     for name, xs, zs, aiss, ys, xs_hexa in zip(
         names, x_piezo, z_piezo, incident_angles, y_piezo_aligned, x_hexa
@@ -161,10 +205,29 @@ def gisaxs_KTH_2021_1(t=1):
             yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this resets the exposure, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)).
 
 
 def run_gi_sweden_GISAXS(tim=0.5, sample="Test", ti_sl=77):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence run that repeatedly nudges piezo.x and takes a
+    #   y-scan image set at each spot, pausing between passes (a slow time series across a
+    #   surface/interface). The alignment lines here are commented out.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that records
+    #   the angle, positions, beam intensity and elapsed time into the saved data and the
+    #   file name (so you don't hand-build "{angle}deg_{ti}sec"). A y line-scan is
+    #   map_line_run; for the repeated passes use a kinetics helper. Roughly:
+    #
+    #     from smi_plans import map_line_run, time_series_run
+    #     yield from map_line_run(sample, piezo.y, -20, 20, 41, dets=[pil2M])
+    #
+    #   (Just a tidier option to try later — your script below still works as-is, except the
+    #    'det_exposure_time' lines marked ⚠️.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' lines below (see the ⚠️ notes
+    #   on them).
+    # === end smi_plans note ================================================
     # Slowest cycle:
     name = "TP"
     num = 1
@@ -187,7 +250,7 @@ def run_gi_sweden_GISAXS(tim=0.5, sample="Test", ti_sl=77):
     # yield from alignement_gisaxs(angle)
     # yield from bps.mvr(piezo.th, angle)
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (smi_plans' technique runs set it for you via t=.)
     sample_id(user_name=name, sample_name=surface_sample)
     # yield from bp.rel_scan(dets, piezo.y, *piezo_y_range)
 
@@ -216,12 +279,21 @@ def run_gi_sweden_GISAXS(tim=0.5, sample="Test", ti_sl=77):
             yield from bps.sleep(ti_sl)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(1, 1)
+    det_exposure_time(1, 1)  # ⚠️ FIXME(smi_plans): this resets the exposure, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(1, 1)  — or at the prompt:  RE(det_exposure_time(1, 1)).
 
 def alignment_start(sample_name='alignment'):
     """
     Attenuators in, beamstop out, ROI1 set to direct beam
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: puts the beamline into "alignment mode" (attenuators in, beamstop out)
+    #   and sets the direct-beam region-of-interest, ready for you to align by hand.
+    #
+    # 💡 NEWER, EASIER WAY: with the 'smi_plans' helper library you don't usually flip into
+    #   alignment mode by hand around each measurement. Alignment is done once up front via
+    #   align_sample (or align=... inside the grazing presets), which handles mode-switching
+    #   and ROIs and records the result with your data. (Nothing here is broken.)
+    # === end smi_plans note ================================================
 
     smi = SMI_Beamline()
     yield from smi.modeAlignment()
@@ -237,6 +309,14 @@ def alignment_start_angle(angle=0.10):
     """
     Attenuators in, beamstop out, ROI1 set to direct beam
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: puts the beamline into alignment mode and sets the *reflected*-beam
+    #   ROI for the given grazing angle, ready for reflected-beam alignment.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' align_sample does the direct- and reflected-beam
+    #   alignment for you (including setting these ROIs) and records the result with your
+    #   data, so this manual step isn't needed once you migrate. (Nothing here is broken.)
+    # === end smi_plans note ================================================
 
     smi = SMI_Beamline()
     yield from smi.modeAlignment()
@@ -249,6 +329,14 @@ def alignment_stop():
     """
     Attenuators out, beamstop in,
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: puts the beamline back into "measurement mode" (attenuators out,
+    #   beamstop in) once alignment is finished.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' align_sample / grazing presets switch back to
+    #   measurement mode for you after aligning, so this manual step isn't needed once you
+    #   migrate. (Nothing here is broken.)
+    # === end smi_plans note ================================================
 
     smi = SMI_Beamline()
     yield from smi.modeMeasurement()
@@ -259,6 +347,14 @@ def alignment_org(angle=0.1):
     """
     Align using an original script
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: runs the older multi-sample GISAXS alignment helper and stashes the
+    #   resulting flat-sample angle in RE.md['ai_0'] for later use.
+    #
+    # 💡 NEWER, EASIER WAY: smi_plans' align_sample aligns the sample and records the
+    #   aligned angle WITH the data automatically (no need to stash it in RE.md by hand),
+    #   and the grazing presets can call it for you via align=... (Nothing here is broken.)
+    # === end smi_plans note ================================================
     proposal_id('2023_2', '311564_test')
     yield from alignement_gisaxs_multisample(angle=angle)
     RE.md['ai_0'] = piezo.th.user_setpoint.get()
@@ -283,6 +379,28 @@ def run_loop_measurement(t=0.5, name='test', loops=4, pump_t=180, total_t=600, j
         jump_x (foat): relative move in piezo x after each y scan, in um,
             (be careful on the direction, move relative to - jump below).
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ time-loop measurement on a pre-aligned sample — each cycle
+    #   it waits for a pump step, then takes grazing-incidence y-scans at a couple of
+    #   incident angles and WAXS-arc positions, then waits out the rest of the cycle time,
+    #   repeating for several loops.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with
+    #   time-series/kinetics helpers that schedule the cycles and record the elapsed time +
+    #   angle + positions + beam readings into the saved data for you (so you don't manage
+    #   time.time() bookkeeping or build "{name}_time..._ai{ai}" by hand). The y-scan is a
+    #   map_line_run. Roughly:
+    #
+    #     from smi_plans import kinetics_run, map_line_run
+    #     # ...within each cycle, per (arc, angle):
+    #     yield from map_line_run(name, piezo.y, -16, 16, 33, dets=[pil2M, pil900KW])
+    #
+    #   (Just a tidier option to try later — your loop below still works as-is, except the
+    #    'det_exposure_time' lines marked ⚠️.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' lines below (see the ⚠️ notes
+    #   on them).
+    # === end smi_plans note ================================================
 
     incident_angles = [0.1, 0.4]
     waxs_arc = [20, 0]
@@ -335,7 +453,7 @@ def run_loop_measurement(t=0.5, name='test', loops=4, pump_t=180, total_t=600, j
                 yield from bps.mvr(piezo.x, - jump_x)
 
                 t2 = 2 * t if ai == 0.4 else t
-                det_exposure_time(t2, t2)
+                det_exposure_time(t2, t2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t2, t2)  — or at the prompt:  RE(det_exposure_time(t2, t2)). (smi_plans' technique runs set it for you via t=.)
 
                 try:
                     y_range = ranges[ai]
@@ -361,7 +479,7 @@ def run_loop_measurement(t=0.5, name='test', loops=4, pump_t=180, total_t=600, j
                 yield from bps.sleep(1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this resets the exposure, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 """
