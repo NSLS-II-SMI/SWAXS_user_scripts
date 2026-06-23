@@ -10,6 +10,27 @@ def run_capillaries_Alexandra_2023_3(ts=0.5, tl=5, waxs_only=False):
     RE(count([pil900KW]))
     
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a transmission SAXS/WAXS run on a row of capillaries — for each sample it
+    #   moves there, sweeps the WAXS arc, reads the pin-diode current (for transmission), and takes
+    #   short + long exposures at a couple of y spots along the capillary.
+    #
+    # 💡 NEWER, EASIER WAY: capillary/transmission measurements are 'smi_plans' transmission_bar;
+    #   you give it the sample list once and it loops, records the pin-diode/beam INTO the data, and
+    #   fills the file name for you (instead of f'{name}_exp..._pd{pd}{get_scan_md()}'):
+    #
+    #     from smi_plans import transmission_bar, SampleList, motor_axis, manual_axis
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #     yield from transmission_bar(
+    #         samples, dets=[pil2M, pil900KW, pin_diode],
+    #         exposures=[ts, tl],                    # your two exposures, unchanged
+    #         axes=[motor_axis("waxs_arc", waxs, [0, 20])],
+    #     )
+    #   (records pin_diode for transmission; 'waxs', 'piezo.*' all still work.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes on them below).
+    # === end smi_plans note ================================================
     # yield from bps.sleep(1500)
     names = ['NAP7_100mM_correct_more']
     # names = ['EC_H_DCM_10mgml_waxs']
@@ -62,7 +83,7 @@ def run_capillaries_Alexandra_2023_3(ts=0.5, tl=5, waxs_only=False):
                 yield from bps.mv(piezo.y, y + y_of)
 
                 for exp in exposures:
-                    det_exposure_time(exp, exp)
+                    det_exposure_time(exp, exp)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp, exp)  — or at the prompt:  RE(det_exposure_time(exp, exp)). (The smi_plans technique runs set exposure for you via t=.)
                     yield from bps.sleep(2)
 
                     exp_save = str(int(np.round(exp, 0))).zfill(2)
@@ -74,7 +95,7 @@ def run_capillaries_Alexandra_2023_3(ts=0.5, tl=5, waxs_only=False):
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 def run_temp_capillaries_Alexandra_2023_3(ts=0.5, tl=1, waxs_only=False):
@@ -91,6 +112,25 @@ def run_temp_capillaries_Alexandra_2023_3(ts=0.5, tl=1, waxs_only=False):
     RE(count([pil900KW]))
     
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: same capillary transmission run as above, but first ramps the resistive
+    #   heating stage (the Lakeshore 'ls') to a set temperature, waits for it to equalise, then
+    #   measures each capillary (short + long exposures) at that temperature.
+    #
+    # 💡 NEWER, EASIER WAY: heating to a temperature and then running a transmission bar is the
+    #   'smi_plans' temperature + transmission combination; goto_temperature handles the ramp/soak
+    #   and transmission_bar loops the samples, recording the temperature and pin-diode INTO the data:
+    #
+    #     from smi_plans import goto_temperature, transmission_bar, SampleList, lakeshore_heater
+    #     for temperature in temperatures:
+    #         yield from goto_temperature(lakeshore_heater(ls), temperature)   # ramp + wait, recorded
+    #         samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #         yield from transmission_bar(samples, dets=[pil2M, pil900KW, pin_diode], exposures=[ts, tl])
+    #   ('ls', the Lakeshore, still works as-is — goto_temperature just wraps the ramp/equalise loop.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes on them below).
+    # === end smi_plans note ================================================
     # yield from bps.sleep(1500)
     names = ['sample41_43C','sample42_43C','sample43_43C','sample44_43C','sample45_43C','sample46_43C']
     piezo_x = [6600, 12800,19400, 25600, 32000,38400]
@@ -178,7 +218,7 @@ def run_temp_capillaries_Alexandra_2023_3(ts=0.5, tl=1, waxs_only=False):
                     yield from bps.mv(piezo.y, y + y_of)
 
                     for exp in exposures:
-                        det_exposure_time(exp, exp)
+                        det_exposure_time(exp, exp)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp, exp)  — or at the prompt:  RE(det_exposure_time(exp, exp)). (The smi_plans technique runs set exposure for you via t=.)
                         yield from bps.sleep(2)
 
                         exp_save = str(int(np.round(exp, 0))).zfill(2)
@@ -190,7 +230,7 @@ def run_temp_capillaries_Alexandra_2023_3(ts=0.5, tl=1, waxs_only=False):
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 def run_capillaries_Chen_2024_1_saxsonly(ts1=10,ts2=20,tl=30):
@@ -207,6 +247,22 @@ def run_capillaries_Chen_2024_1_saxsonly(ts1=10,ts2=20,tl=30):
 
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS-only transmission run on a capillary — moves to the sample and takes
+    #   three increasing exposures at a y spot, reading the pin-diode current for transmission.
+    #
+    # 💡 NEWER, EASIER WAY: this is a 'smi_plans' transmission_run (one sample, several exposures);
+    #   it records the pin-diode/beam INTO the data and fills the file name for you:
+    #
+    #     from smi_plans import transmission_run
+    #     yield from transmission_run(
+    #         "H3_4longer", dets=[pil2M, pin_diode],
+    #         exposures=[ts1, ts2, tl],              # your three exposures, unchanged
+    #     )
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes on them below).
+    # === end smi_plans note ================================================
     # yield from bps.sleep(1500)
     
     #names =   ['PN13-3','PN14-3','PN15-3','PN16-3','PN17-3','PN18-3','PN19-3','PN20-3','PN21-3','PN22-3','PN23-3','PN24-3','PN25-3','PN-empty-3']
@@ -264,7 +320,7 @@ def run_capillaries_Chen_2024_1_saxsonly(ts1=10,ts2=20,tl=30):
             yield from bps.mv(piezo.y, y + y_of)
 
             for exp in exposures:
-                det_exposure_time(exp, exp)
+                det_exposure_time(exp, exp)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp, exp)  — or at the prompt:  RE(det_exposure_time(exp, exp)). (The smi_plans technique runs set exposure for you via t=.)
                 yield from bps.sleep(2)
 
                 exp_save = str(int(np.round(exp, 0))).zfill(2)
@@ -276,7 +332,7 @@ def run_capillaries_Chen_2024_1_saxsonly(ts1=10,ts2=20,tl=30):
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 
@@ -292,6 +348,24 @@ def run_capillaries_Chen_2024_1_waxs(ts1=0.5, ts2=1):
     RE(count([pil900KW]))
     
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a WAXS+SAXS transmission run on a row of capillaries — for each sample it
+    #   sweeps the WAXS arc, reads the pin-diode (for transmission), and takes two exposures.
+    #
+    # 💡 NEWER, EASIER WAY: this is a 'smi_plans' transmission_bar with a WAXS-arc axis; it loops
+    #   the samples and records the pin-diode/beam and arc INTO the data and the file name:
+    #
+    #     from smi_plans import transmission_bar, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #     yield from transmission_bar(
+    #         samples, dets=[pil2M, pil900KW, pin_diode],
+    #         exposures=[ts1, ts2],                  # your two exposures, unchanged
+    #         axes=[motor_axis("waxs_arc", waxs, [0, 20])],
+    #     )
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes on them below).
+    # === end smi_plans note ================================================
     # yield from bps.sleep(1500)
     #names =   [ 'AgB-2m']
     #piezo_x = [  -38900 ]
@@ -341,7 +415,7 @@ def run_capillaries_Chen_2024_1_waxs(ts1=0.5, ts2=1):
                 yield from bps.mv(piezo.y, y + y_of)
 
                 for exp in exposures:
-                    det_exposure_time(exp, exp)
+                    det_exposure_time(exp, exp)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp, exp)  — or at the prompt:  RE(det_exposure_time(exp, exp)). (The smi_plans technique runs set exposure for you via t=.)
                     yield from bps.sleep(2)
 
                     exp_save = str(int(np.round(exp, 0))).zfill(2)
@@ -353,7 +427,7 @@ def run_capillaries_Chen_2024_1_waxs(ts1=0.5, ts2=1):
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 
@@ -370,6 +444,22 @@ def run_capillaries_Chen_2024_1_saxs_time(exp_time=0.5, delay_sec=300,num=7):
     RE(count([pil900KW]))
     
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a time-resolved SAXS run on one capillary — takes a series of images of the
+    #   same spot with a fixed delay between them (here num frames, delay_sec apart).
+    #
+    # 💡 NEWER, EASIER WAY: a repeated-frames-over-time measurement is 'smi_plans' time_series_run,
+    #   which records the time of each frame INTO the data so you don't track it by hand:
+    #
+    #     from smi_plans import time_series_run
+    #     yield from time_series_run(
+    #         "TC5-thf-timestudy", dets=[pil2M], t=exp_time,
+    #         num=num, delay=delay_sec,              # your frame count + delay, unchanged
+    #     )
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes on them below).
+    # === end smi_plans note ================================================
     # yield from bps.sleep(1500)
     names =   [ 'TC5-thf-timestudy']
     piezo_x = [ -28400]
@@ -410,7 +500,7 @@ def run_capillaries_Chen_2024_1_saxs_time(exp_time=0.5, delay_sec=300,num=7):
             yield from bps.mv(piezo.y, y + y_of)
 
             for exp in exposures:
-                det_exposure_time(exp, exp)
+                det_exposure_time(exp, exp)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp, exp)  — or at the prompt:  RE(det_exposure_time(exp, exp)). (The smi_plans technique runs set exposure for you via t=.)
                 yield from bps.sleep(2)
 
                 exp_save = str(int(np.round(exp, 0))).zfill(2)
@@ -422,4 +512,4 @@ def run_capillaries_Chen_2024_1_saxs_time(exp_time=0.5, delay_sec=300,num=7):
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).

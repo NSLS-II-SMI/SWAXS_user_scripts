@@ -27,15 +27,35 @@
 # beamstop_save()
 
 def move_waxs(waxs_angle=20):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a one-line helper that moves the WAXS detector arc to an angle.
+    #
+    # 💡 smi_plans: nothing to migrate — this is a single motor move, not a measurement.
+    #   (smi_plans sets the WAXS arc for you inside its runs.) Nothing is broken.
+    # === end smi_plans note ================================================
     yield from bps.mv(waxs, waxs_angle)
 
 # RE(measure_saxs(t=5, user_name="MM", sample='Bar1sam1', xr_list = [-200, 0]))
 def measure_saxs(t=1, user_name="MM", sample='Bar1sam1', xr_list = [0], yr_list = [0]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a SAXS+WAXS image at a few x/y offsets on one sample (for averaging).
+    #
+    # 💡 NEWER, EASIER WAY: taking SAXS/WAXS at several positions is the beamline 'smi_plans'
+    #   helper library's transmission run. It loops the positions and records each one + the
+    #   beam into the saved data + file name (so you can drop the hand-built name strings):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list, y=y_list)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME note(s) on those lines).
+    # === end smi_plans note ================================================
     x0 = piezo.x.position
     y0 = -4500 #piezo.y.position
     #y0 = piezo.y.position
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for xr in xr_list:
         for yr in yr_list:
@@ -59,13 +79,27 @@ def measure_saxs(t=1, user_name="MM", sample='Bar1sam1', xr_list = [0], yr_list 
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     
 # RE(measure_saxs_bar(t=5, user_name="MM_Bar3", xr_list = [-200, 0], yr_list = [400, 0]))
 def measure_saxs_bar(t=1, user_name="MM_Bar2", y0=-6000, xr_list = [-200, 0], yr_list = [400, 0]):
     #z -3000
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: steps along a bar of samples and takes a SAXS+WAXS image at a few x/y offsets on each.
+    #
+    # 💡 NEWER, EASIER WAY: taking SAXS/WAXS at several positions is the beamline 'smi_plans'
+    #   helper library's transmission run. It loops the positions and records each one + the
+    #   beam into the saved data + file name (so you can drop the hand-built name strings):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list, y=y_list)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME note(s) on those lines).
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)   
+    det_exposure_time(t, t)     # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_list = [41000, -400, -42000]
     y_list = [-6000, -3500, -500]
@@ -96,13 +130,31 @@ def measure_saxs_bar(t=1, user_name="MM_Bar2", y0=-6000, xr_list = [-200, 0], yr
     yield from bps.mv(piezo.y, y0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 #### In-situ 2024Jan
 def measure_insitu(tstatic=5, t=0.2, t2=5, t0=None, syringe=False, user_name="Insitu", sample='test1', n0=0, Nin=2, Nmax=999, time_sleep_sec=15):
     #x0 = -20500 #piezo.x.position #30800 #piezo.x.position
     #y0 = -3000 #piezo.y.position #-600 #piezo.y.position
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ syringe-flow run — takes a few static frames, then loops over time taking
+    #   frames (optionally starting the syringe pump on the first frame), then static frames.
+    #
+    # 💡 NEWER, EASIER WAY: an in-situ run that takes frames over time while a syringe pump
+    #   infuses is the beamline 'smi_plans' helper library's time-series/kinetics run plus its
+    #   syringe helper. It loops frames, stamps each with elapsed time, and can start the pump
+    #   for you, recording everything into the saved data + file name:
+    #
+    #     from smi_plans import time_series_run, syringe_infuse
+    #     yield from syringe_infuse(...)          # start the pump (replaces bps.mv(syringe_pu.x3, 1))
+    #     yield from time_series_run(sample, n=Nmax, t=t, period=time_sleep_sec, dets=[pil2M])
+    #
+    #   (The 'sleep' waits here are just frame spacing / burst-mode helpers — NOT broken.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME note(s) on those lines).
+    # === end smi_plans note ================================================
     x0 = piezo.x.position #30800 #piezo.x.position
     y0 = piezo.y.position #-600 #piezo.y.position
     #z0 = 17500
@@ -120,7 +172,7 @@ def measure_insitu(tstatic=5, t=0.2, t2=5, t0=None, syringe=False, user_name="In
     t_list = [tstatic, t]
     print("\nStatic in the beginning")
     for t in t_list:
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         yield from bps.sleep(0.5)
         sample_name = "{sample}_n00_t{time:07.2f}s_x{x:06.0f}_y{y:06.0f}_sdd2200_waxs20_{t}s".format(
             sample=sample,
@@ -136,12 +188,12 @@ def measure_insitu(tstatic=5, t=0.2, t2=5, t0=None, syringe=False, user_name="In
 
     ### In-situ
     if 1: ##Somehow maybe this helps with data saving in burst mode
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         yield from bps.sleep(0.5)
         sample_id(user_name="test", sample_name="test")
         yield from bp.count(dets, num=1)
         
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         yield from bps.sleep(0.5)
         sample_id(user_name="test", sample_name="test")
         yield from bp.count(dets, num=1)
@@ -171,7 +223,7 @@ def measure_insitu(tstatic=5, t=0.2, t2=5, t0=None, syringe=False, user_name="In
         print(f"\n\t=== Sample: {sample_name} ===\n")
 
         if nn+n0==0:
-            det_exposure_time(t, t2)
+            det_exposure_time(t, t2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t2)  — or at the prompt:  RE(det_exposure_time(t, t2)). (The smi_plans technique runs set exposure for you via t=.)
             yield from bps.sleep(0.5) ##Somehow maybe this helps with data saving in burst mode
             if syringe==True:
                 print(f"!!!!! Syringe pump infusing...\n")
@@ -188,7 +240,7 @@ def measure_insitu(tstatic=5, t=0.2, t2=5, t0=None, syringe=False, user_name="In
         #     yield from bps.sleep(0.5)
 
         if nn+n0 >= Nin:
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             yield from bps.sleep(0.5)
         
             print("\nSleeping for {}s".format(time_sleep_sec))
@@ -212,7 +264,7 @@ def measure_insitu(tstatic=5, t=0.2, t2=5, t0=None, syringe=False, user_name="In
 
     t_list = [tstatic]
     for t in t_list:
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         yield from bps.sleep(0.5)
         sample_name = "{sample}_n{nn}_t{time:07.2f}s_x{x:06.0f}_y{y:06.0f}_sdd2200_waxs20_{t}s".format(
             sample=sample,
@@ -228,13 +280,31 @@ def measure_insitu(tstatic=5, t=0.2, t2=5, t0=None, syringe=False, user_name="In
         yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     #yield from bp.count(dets, num=1)
 
 
 def measure_scan(t=0.2, t0=None, step=[100, 30], syringe=False, user_name="Insitu", sample='test1', n0=0, Nmax=999, time_sleep_sec=15):
     #x0 = -20500 #piezo.x.position #30800 #piezo.x.position
     #y0 = -3000 #piezo.y.position #-600 #piezo.y.position
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ syringe-flow run that also steps the sample across a small x/y grid as it
+    #   takes frames over time (optionally starting the syringe pump at the start).
+    #
+    # 💡 NEWER, EASIER WAY: an in-situ run that takes frames over time while a syringe pump
+    #   infuses is the beamline 'smi_plans' helper library's time-series/kinetics run plus its
+    #   syringe helper. It loops frames, stamps each with elapsed time, and can start the pump
+    #   for you, recording everything into the saved data + file name:
+    #
+    #     from smi_plans import time_series_run, syringe_infuse
+    #     yield from syringe_infuse(...)          # start the pump (replaces bps.mv(syringe_pu.x3, 1))
+    #     yield from time_series_run(sample, n=Nmax, t=t, period=time_sleep_sec, dets=[pil2M])
+    #
+    #   (The 'sleep' waits here are just frame spacing / burst-mode helpers — NOT broken.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME note(s) on those lines).
+    # === end smi_plans note ================================================
     print("\nCheck camera for sample position, should be around x=-20500, y=-4000")
     x0 = piezo.x.position #30800 #piezo.x.position
     y0 = piezo.y.position #-600 #piezo.y.position
@@ -251,7 +321,7 @@ def measure_scan(t=0.2, t0=None, step=[100, 30], syringe=False, user_name="Insit
 
     ### In-situ
     if 1: ##Somehow maybe this helps with data saving in burst mode
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         yield from bps.sleep(0.5)
         sample_id(user_name="test", sample_name="test")
         yield from bp.count(dets, num=1)
@@ -261,7 +331,7 @@ def measure_scan(t=0.2, t0=None, step=[100, 30], syringe=False, user_name="Insit
     
     print("\nStart in-situ")
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bps.sleep(0.5)
 
     for nn in range(Nmax):
@@ -303,7 +373,7 @@ def measure_scan(t=0.2, t0=None, step=[100, 30], syringe=False, user_name="Insit
         #     det_exposure_time(t, t)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     #yield from bp.count(dets, num=1)
 
 
@@ -312,6 +382,24 @@ def measure_scan(t=0.2, t0=None, step=[100, 30], syringe=False, user_name="Insit
 # RE(measure_series(t=0.1, t0=None, user_name="Insitu", sample='test1', Nmax=999))
 # RE(measure_series(tstatic=5, t=0.2, t2=180, t0=None, user_name="Insitu", sample='water1', n0=0, Nmax=2, time_period_sec=180, time_sleep_sec=2))
 def measure_series(tstatic=5, t=0.2, t2=5, burst=1, t0=None, user_name="Insitu", sample='test1', n0=0, Nmax=999, time_period_sec=200, time_sleep_sec=15):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ syringe-flow time series — takes a static frame (or a burst), starts the
+    #   syringe pump, then loops over time taking frames with periodic pauses.
+    #
+    # 💡 NEWER, EASIER WAY: an in-situ run that takes frames over time while a syringe pump
+    #   infuses is the beamline 'smi_plans' helper library's time-series/kinetics run plus its
+    #   syringe helper. It loops frames, stamps each with elapsed time, and can start the pump
+    #   for you, recording everything into the saved data + file name:
+    #
+    #     from smi_plans import time_series_run, syringe_infuse
+    #     yield from syringe_infuse(...)          # start the pump (replaces bps.mv(syringe_pu.x3, 1))
+    #     yield from time_series_run(sample, n=Nmax, t=t, period=time_sleep_sec, dets=[pil2M])
+    #
+    #   (The 'sleep' waits here are just frame spacing / burst-mode helpers — NOT broken.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME note(s) on those lines).
+    # === end smi_plans note ================================================
     x0 = piezo.x.position #30800 #piezo.x.position
     y0 = piezo.y.position #-600 #piezo.y.position
     dets = [pil2M] #, pil900KW]
@@ -321,7 +409,7 @@ def measure_series(tstatic=5, t=0.2, t2=5, burst=1, t0=None, user_name="Insitu",
         print(t0)
    
     if tstatic>0:
-        det_exposure_time(tstatic, tstatic)
+        det_exposure_time(tstatic, tstatic)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tstatic, tstatic)  — or at the prompt:  RE(det_exposure_time(tstatic, tstatic)). (The smi_plans technique runs set exposure for you via t=.)
         sample_name = "{sample}_n00_t{time:07.2f}s_x{x:06.0f}_y{y:06.0f}_sdd2200_waxs20_{t}s".format(
             sample=sample,
             time = time.time()-t0,
@@ -338,15 +426,15 @@ def measure_series(tstatic=5, t=0.2, t2=5, burst=1, t0=None, user_name="Insitu",
     else: ## insitu
     
         if 1:
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             sample_id(user_name="test", sample_name="test")
             yield from bp.count(dets, num=1)
             
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             sample_id(user_name="test", sample_name="test")
             yield from bp.count(dets, num=1)
 
-        det_exposure_time(t, t2)
+        det_exposure_time(t, t2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t2)  — or at the prompt:  RE(det_exposure_time(t, t2)). (The smi_plans technique runs set exposure for you via t=.)
 
         for nn in range(Nmax):
             print(f"\n\t##### nn {nn} #####\n")
@@ -377,21 +465,31 @@ def measure_series(tstatic=5, t=0.2, t2=5, burst=1, t0=None, user_name="Insitu",
             if (time.time()-t0) > time_period_sec:
                 print("\nnn={}, time {:.0f}min; Sleeping for {}s".format(nn+n0, (time.time()-t0)/60, time_sleep_sec))
                 yield from bps.sleep(time_sleep_sec) 
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     #yield from bps.mv(piezo.y, y0)
     time.sleep(1)  
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     #yield from bp.count(dets, num=1)
 
 ####
 def test_measure(t=1, waxs_angle=0, user_name="test", sample_name='EmptyKapton', dets = [pil2M, pil900KW]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a quick test — sets exposure and takes one SAXS+WAXS image of a sample.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline 'smi_plans' helper library takes one labelled image
+    #   in a single call (acquire(sample_name, saxs_waxs_dets(), [])), recording the beam/
+    #   positions into the data + file name.
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME note(s) on those lines).
+    # === end smi_plans note ================================================
     yield from bps.mv(waxs, waxs_angle)
     sample_id(user_name=user_name, sample_name=sample_name)
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (The smi_plans technique runs set exposure for you via t=.)
 

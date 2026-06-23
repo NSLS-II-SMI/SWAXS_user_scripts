@@ -2,6 +2,28 @@ import numpy as np
 
 
 def run_giwaxs_2020_3(t=0.5):  # 2020C1
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GIWAXS bar — for each sample it moves x and aligns, then for each WAXS
+    #   arc and incident angle takes a WAXS image (nudging x a little per angle), packing the
+    #   angle/arc/x into the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library called 'smi_plans' that runs a
+    #   grazing-incidence bar like this for you — align_sample aligns each sample and saves the
+    #   result with the data, and giwaxs_bar sweeps the incident angle (add the WAXS arc as an
+    #   extra axis), writing the angle/arc/position/beam straight INTO each image:
+    #
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList   # once per session
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list)
+    #     yield from giwaxs_bar("AT", samples, incident_angles=[0.08, 0.10, 0.12, 0.30], t=t,
+    #                           dets=[pil900KW], align=align_sample)
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the lines marked ⚠️ which genuinely need a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the
+    #   'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see
+    #   ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # define names of samples on sample bar
 
     sample_list = ["JM_1", "JM_2", "JM_3", "JM_4", "JM_5", "JM_6", "JM_7", "JM_8"]
@@ -15,7 +37,7 @@ def run_giwaxs_2020_3(t=0.5):  # 2020C1
     # if 12, 3: up to q=2.199
     # if 18, 4: up to q=3.04
 
-    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
+    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('rayonix'/MAXS in the comment was also removed with no replacement.)
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
 
         yield from bps.mv(piezo.x, x)  # move to next sample
@@ -26,7 +48,7 @@ def run_giwaxs_2020_3(t=0.5):  # 2020C1
         )  # np.array([0.10 + piezo.th.position, 0.20 + piezo.th.position])
         th_real = angle_arc
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         x_meas = x
 
         for waxs_angle in waxs_angle_array:
@@ -57,10 +79,23 @@ def run_giwaxs_2020_3(t=0.5):  # 2020C1
                 yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_giwaxs(t=0.5):  # 2020C1
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a single-sample GIWAXS scan — moves x, aligns, then for each WAXS arc and
+    #   incident angle takes a WAXS image (nudging x a little each time).
+    # 💡 NEWER, EASIER WAY:  from smi_plans import giwaxs_run, align_sample
+    #     yield from giwaxs_run("ZQ_PM6Y6_20pASSQ_No32d", incident_angles=[0.12], t=t,
+    #                           dets=[pil900KW], align=align_sample)   # sweep WAXS arc as an axis
+    #   (records the angle/arc/position/beam into each image and fills the file name for you.)
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the
+    #   'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see
+    #   ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # define names of samples on sample bar
 
     sample_list = ["ZQ_PM6Y6_20pASSQ_No32d"]
@@ -73,7 +108,7 @@ def run_giwaxs(t=0.5):  # 2020C1
     )  # (0, 18, 4)   # q=4*3.14/0.77*np.sin((max angle+3.5)/2*3.14159/180)
     # if 12, 3: up to q=2.199
     # if 18, 4: up to q=3.04
-    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
+    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('rayonix'/MAXS in the comment was also removed with no replacement.)
     for x, sample in zip(x_list, sample_list):  # loop over samples on bar
 
         yield from bps.mv(piezo.x, x)  # move to next sample
@@ -89,7 +124,7 @@ def run_giwaxs(t=0.5):  # 2020C1
             angle_arc + piezo.th.position
         )  # np.array([0.10 + piezo.th.position, 0.20 + piezo.th.position])
         th_real = angle_arc
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         x_meas = x
         for waxs_angle in waxs_angle_array:
             yield from bps.mv(waxs, waxs_angle)
@@ -119,10 +154,24 @@ def run_giwaxs(t=0.5):  # 2020C1
                     yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def do_twaxs_scanx(meas_t=1):  # 2019_2
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an x-line scan in transmission WAXS — for each WAXS arc it steps x across a
+    #   range and takes an image at each, putting the arc/x/y into the file name.
+    # 💡 NEWER, EASIER WAY: a line scan like this maps to a 'smi_plans' map/line run, which
+    #   records the x/y position and beam into each image and fills the file name for you:
+    #     from smi_plans import map_line_run
+    #     yield from map_line_run("ultimate_MXene_2", dets=[pil900KW],
+    #                             x=(11719-300, 11719+600, 31))   # sweep WAXS arc as an extra axis
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the
+    #   'det_exposure_time(...)' call no longer sets the exposure unless run as a plan (see the
+    #   ⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # x_list = [-37000]
     # sample_list = ['blank_kapton']
     # x_list = [-19000, -1000, 17000 ]
@@ -139,7 +188,7 @@ def do_twaxs_scanx(meas_t=1):  # 2019_2
     # x_list = [-38280, -23279, 34719]
     # sample_list = ['mechanically_exfoliated_mxene_1', 'mechanically_exfoliated_mxene_2', 'mechanically_exfoliated_on_glass']
 
-    dets = [pil300KW]  # , pil2M, rayonix]
+    dets = [pil300KW]  # , pil2M, rayonix]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('rayonix'/MAXS in the comment was also removed with no replacement.)
 
     # waxs_angle_array = np.linspace(0, 24, 5)
     waxs_angle_array = np.linspace(0, 12, 1)
@@ -157,7 +206,7 @@ def do_twaxs_scanx(meas_t=1):  # 2019_2
 
             for x_meas in x_pos_array:
                 yield from bps.mv(piezo.x, x_meas)
-                det_exposure_time(meas_t, meas_t)
+                det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(meas_t, meas_t)  — or at the prompt:  RE(det_exposure_time(meas_t, meas_t)). (The smi_plans technique runs set exposure for you via t=.)
 
                 sample_name = name_fmt.format(
                     sample=sample,

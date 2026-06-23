@@ -1,4 +1,27 @@
 def giwaxs_giri_2021_3(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence WAXS (GIWAXS) run over a bar of samples — for each
+    #   sample it moves there, runs the alignment routine, then takes a WAXS image at a set
+    #   incident angle and WAXS arc position.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a GIWAXS bar helper that loops your samples, aligns
+    #   each one and SAVES the alignment result with the data, and sweeps the incident angle while
+    #   recording it (so you don't rebuild the "_ai{angle}deg_wa{waxs}" name by hand):
+    #
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList, incidence_axis
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, z=z_piezo)
+    #     yield from giwaxs_bar(
+    #         samples, t=t, dets=[pil900KW],
+    #         incident_angles=[0.15],               # your angle, unchanged
+    #         arc_angles=[9],                       # your WAXS arc, unchanged
+    #         align=align_sample,                   # aligns each sample and records the result
+    #     )
+    #   (align_sample replaces the alignement_gisaxs call; incidence_axis records the angle into
+    #    the data. 'stage.x', 'piezo.*' all still work as-is.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
     user = "GG"
 
     # names = ['P1-1','P1-2','P2-1','P2-2','P3-1','P3-2','P4-1','P4-2','P5-1','P5-2','P6-1','P6-2','P7-1','P7-2','P8-1','P8-2','P9-1','P9-2']
@@ -91,7 +114,7 @@ def giwaxs_giri_2021_3(t=0.5):
     angle = [0.15]
 
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for name, xs, zs, ys, xs_hexa in zip(names, x_piezo, z_piezo, y_piezo, x_hexa):
         yield from bps.mv(stage.x, xs_hexa)

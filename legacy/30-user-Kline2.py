@@ -32,6 +32,18 @@ def gen_grid_points_yx(region_of_interest_yx, center_yx, beam_size_yx, grid_poin
 
 
 def write_to_log_file(log_filename, sample_filename, sample_phi_deg, exposure_time_s):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a bookkeeping helper — it reads the current motor positions,
+    #   detector distance, and beam intensity and appends a row to a CSV log file so
+    #   you have a record of what each saved image's conditions were.
+    #
+    # 💡 NEWER, EASIER WAY: with the beamline's 'smi_plans' helper library you usually
+    #   don't need a separate log file at all. When you acquire through smi_plans it
+    #   records all of this (positions, detector distance, beam, energy, etc.) straight
+    #   INTO the saved data for every image, and can template the file name from those
+    #   recorded values. So this manual logging step becomes optional once you migrate.
+    #   (Nothing here is broken — it's just extra plumbing smi_plans handles for you.)
+    # === end smi_plans note ================================================
     # get all current motor positions
     # add sample_phi_deg motor position if we can figure that out during beamtime
     sdd_cm = pil2M.sample_distance_mm.get()/10
@@ -69,7 +81,24 @@ def write_to_log_file(log_filename, sample_filename, sample_phi_deg, exposure_ti
 
  
 def measure(det=[pil2M], sample='test',  t=1):
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a quick one-shot — set the exposure, name the file, take a single
+    #   SAXS image of one sample.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline's 'smi_plans' helper library takes a single
+    #   labelled image in one call and records the beam/positions into the data and the
+    #   file name for you (no hand-built name needed):
+    #
+    #     from smi_plans import acquire, saxs_waxs_dets
+    #     yield from acquire("test", saxs_waxs_dets(use_waxs=False), [])  # one SAXS frame
+    #     # (the exposure is set for you via the technique's t= argument)
+    #
+    #   (Just a tidier option to try later — your script below works as-is, EXCEPT for
+    #    the one line marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' line below (see ⚠️ note).
+    # === end smi_plans note ================================================
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     sample_name = "{sample}".format(sample=sample)
     sample_id(user_name="JK", sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
@@ -77,8 +106,26 @@ def measure(det=[pil2M], sample='test',  t=1):
 
 
 def measure_single_position(theta, exp_t=1, sample='test', nume=1, det=[pil2M], log_filepath="log_default_SMI_Kline_Nov2025.csv"):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes ONE SAXS image at the current sample position, builds a long
+    #   descriptive file name, writes a row to the CSV log, and counts. Several of the
+    #   grid/scan functions in this file call this for each grid point.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline's 'smi_plans' helper library takes a labelled
+    #   image in one call and records the positions/beam/detector-distance into the
+    #   saved data (and the file name), so the manual name string + CSV log become
+    #   unnecessary:
+    #
+    #     from smi_plans import acquire, saxs_waxs_dets
+    #     yield from acquire(sample, saxs_waxs_dets(use_waxs=False), [])  # one frame
+    #
+    #   (Just a tidier option to try later — your script below works as-is, EXCEPT for
+    #    the one line marked ⚠️ which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line below (see ⚠️ note).
+    # === end smi_plans note ================================================
 
-    det_exposure_time(exp_t, exp_t*nume)
+    det_exposure_time(exp_t, exp_t*nume)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t*nume)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t*nume)). (The smi_plans technique runs set exposure for you via t=.)
 
     sdd_cm = pil2M.sample_distance_mm.get()/10
     name_fmt = "{sample}_sdd_cm_{sdd_cm}_energy_ev_16100_sample_phi_deg_{th}_exposure_time_s_{et}_bpm_{bpm}_posx_um_{posx}_posy_um_{posy}_posz_um_{posz}"
@@ -108,11 +155,32 @@ def measure_single_position(theta, exp_t=1, sample='test', nume=1, det=[pil2M], 
 
 
 def cd_saxs(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2M], log_filepath="./log_SMI_Kline_Nov2025.csv"):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the older "rock" routine — it steps the rotation stage from
+    #   th_ini to th_fin and takes a SAXS image at each angle, building a long file name
+    #   and a CSV log row each time. (The Nov2025 run-books below call this.)
+    #
+    # 💡 NEWER, EASIER WAY: this file already contains a much tidier version,
+    #   'cd_saxs_modern' (just below), which does the whole rock as ONE coordinated scan
+    #   and records the angle into the data. The beamline's 'smi_plans' helper library
+    #   wraps that same idea as a CD-SAXS "rock run":
+    #
+    #     from smi_plans import cdsaxs_rock_run
+    #     yield from cdsaxs_rock_run(sample, np.linspace(th_ini, th_fin, th_st), t=exp_t)
+    #     # smi_plans rocks 'stage.phi' and records the angle/beam into the data + name.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'prs' is the OLD rotation-stage name and no longer
+    #   exists — it's now 'stage.phi' (⚠️ note on the 'bps.mv(prs, ...)' line). (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️
+    #   note). (internal: Tier 1 — compare with cd_saxs_modern's Tier-2 list_scan.)
+    # === end smi_plans note ================================================
 
-    det_exposure_time(exp_t, exp_t*nume)
+    det_exposure_time(exp_t, exp_t*nume)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t*nume)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t*nume)). (The smi_plans technique runs set exposure for you via t=.)
 
     for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
-        yield from bps.mv(prs, theta)
+        yield from bps.mv(prs, theta)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         sdd_cm = pil2M.sample_distance_mm.get()/10
         name_fmt = "{sample}_sdd_cm_{sdd_cm}_energy_ev_16100_sample_phi_deg_{th}_exposure_time_s_{et}_bpm_{bpm}_posx_um_{posx}_posy_um_{posy}_posz_um_{posz}_num_{num}"
 
@@ -144,8 +212,32 @@ def cd_saxs(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2M], 
 
 
 def cd_saxs_modern(th_ini, th_fin, th_st, exp_t=1, user_name='CW', samplename='test', nume=1, repeats=1, det=[pil2M]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the tidy "rock" routine — it does the whole phi rock as ONE
+    #   coordinated scan (bp.list_scan over the rotation stage) and reads the detector
+    #   plus all the positions/beam at each angle, templating the actual rotation angle
+    #   ({stage_phi_real}) into the file name from the recorded data.
+    #
+    # 💡 NICE WORK — this is exactly the modern style we're encouraging: one clean
+    #   coordinated run per rock, with the angle/positions/beam recorded as channels and
+    #   the file name built from recorded fields instead of hand-formatted strings. The
+    #   beamline's 'smi_plans' helper library packages this same approach as a ready-made
+    #   CD-SAXS rock run, so you don't have to re-assemble the detector list each time:
+    #
+    #     from smi_plans import cdsaxs_rock_run
+    #     yield from cdsaxs_rock_run(
+    #         samplename, np.linspace(th_ini, th_fin, th_st), t=exp_t,
+    #     )                                       # repeats -> call in a loop, or use its repeat arg
+    #
+    #   (Optional — your function works as-is, EXCEPT for the one ⚠️ line below.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: only the 'det_exposure_time(...)' line no longer sets
+    #   the exposure unless run as a plan (⚠️ note). Everything else here is fine — note
+    #   it rocks 'stage_pseudo.phi', NOT the retired 'prs', so no rotation-stage fix is
+    #   needed. (internal: Tier 2.)
+    # === end smi_plans note ================================================
 
-    det_exposure_time(exp_t, exp_t*nume)
+    det_exposure_time(exp_t, exp_t*nume)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t*nume)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t*nume)). (The smi_plans technique runs set exposure for you via t=.)
     dets = det + [piezo.x, piezo.y, piezo.z,pil2M.sample_distance_mm, stage_pseudo, xbpm3.sumX]
     name_fmt = "{sample}_sdd_cm_{sdd_cm}_energy_ev_16100_exposure_time_s_{et}_num_{repeat}_phi_{{stage_phi_real}}"
     sdd_cm = pil2M.sample_distance_mm.get()/10
@@ -162,8 +254,26 @@ def cd_saxs_modern(th_ini, th_fin, th_st, exp_t=1, user_name='CW', samplename='t
         yield from bp.list_scan(dets,stage_pseudo.phi,np.linspace(th_ini, th_fin, th_st))
 
 def x_scan(x_ini, x_fin, x_st, exp_t=1, user_name='CW', samplename='test', nume=1, repeats=1, det=[pil2M]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: sweeps the sample in x as ONE coordinated scan (bp.list_scan over
+    #   piezo.x), reading the detector and positions/beam at each x — handy for finding
+    #   where the sample is or mapping across it.
+    #
+    # 💡 NICE WORK — modern style, same as cd_saxs_modern. In the beamline's 'smi_plans'
+    #   helper library a one-axis sweep like this is an "axis builder" fed to acquire,
+    #   which records the position into the data and templates the file name:
+    #
+    #     from smi_plans import acquire, motor_axis, saxs_waxs_dets
+    #     yield from acquire(samplename, saxs_waxs_dets(use_waxs=False),
+    #                        [motor_axis("x", piezo.x, np.linspace(x_ini, x_fin, x_st))])
+    #
+    #   (Optional — your function works as-is, EXCEPT for the one ⚠️ line below.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: only the 'det_exposure_time(...)' line no longer sets
+    #   the exposure unless run as a plan (⚠️ note). (internal: Tier 2.)
+    # === end smi_plans note ================================================
 
-    det_exposure_time(exp_t, exp_t*nume)
+    det_exposure_time(exp_t, exp_t*nume)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t*nume)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t*nume)). (The smi_plans technique runs set exposure for you via t=.)
     dets = det + [piezo.x, piezo.y, piezo.z,pil2M.sample_distance_mm, stage_pseudo, xbpm3.sumX]
     name_fmt = "{sample}_sdd_cm_{sdd_cm}_energy_ev_16100_exposure_time_s_{et}_num_{repeat}"
     sdd_cm = pil2M.sample_distance_mm.get()/10
@@ -190,6 +300,24 @@ def cdsaxs_Nov2025_template(t=1):
     images each with an expsoure time of t at each position during
     the cd-saxs scan.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book template — holds a sample table (names +
+    #   x/y/z/chi/th) and, for each sample, moves there and does a -60..+60 deg rock
+    #   (via cd_saxs) with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline's 'smi_plans' helper library turns a sample
+    #   table + "rock each one" into a single call, recording each sample's name and
+    #   coordinates into the data:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is. The real ⚠️ fixes live in
+    #    cd_saxs(): the retired 'prs' stage and the det_exposure_time "plan" issue. You
+    #    could also switch the cd_saxs() calls to cd_saxs_modern() — the tidy version in
+    #    this same file — to avoid 'prs' entirely.)
+    # === end smi_plans note ================================================
     det = [pil2M]
     
     phi_offset = 0
@@ -248,6 +376,23 @@ def cdsaxs_Nov2025_template_odds_evens(t=1):
     the cd-saxs scan.
     """
     
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book that splits the rock into even-degree and odd-degree angle
+    #   sets; for each sample it moves there and calls cd_saxs() for each set, with
+    #   reference shots in between.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline's 'smi_plans' helper library loops a
+    #   sample table and rocks each sample for you in one call, recording each
+    #   sample's name/coordinates and the rock angle into the saved data:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is. The real ⚠️ fixes
+    #    live in cd_saxs(): the retired 'prs' stage and the det_exposure_time
+    #    "plan" issue. Tip: cd_saxs_modern() here already avoids 'prs'.)
+    # === end smi_plans note ================================================
     det = [pil2M]
     
     phi_offset = 0
@@ -311,6 +456,21 @@ def cdsaxs_Nov2025_template_grid_scans(t=1):
     images each with an expsoure time of t at each position during
     the cd-saxs scan.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book template that, for each sample, visits a small grid of
+    #   spots around the sample center and measures each (via measure_single_position).
+    #
+    # 💡 NEWER, EASIER WAY: visiting a regular grid of spots and taking an image
+    #   at each is what the 'smi_plans' helper library calls a grid map. It
+    #   builds the x/y grid and records each point's position into the data:
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes
+    #     # spatial_grid_axes builds the grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is. The det_exposure_time
+    #    "plan" fix lives in measure_single_position(), flagged with ⚠️ there.)
+    # === end smi_plans note ================================================
     det = [pil2M]
     
     phi_offset = 0
@@ -390,6 +550,23 @@ def cdsaxs_Nov2025_template_motor_scan(t=1):
     the cd-saxs scan.
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an alignment/survey template — for each sample it can step one chosen motor
+    #   (x/y/z/chi/th/phi) across a range and take an image at each step, to find the
+    #   best position before measuring.
+    #
+    # 💡 NEWER, EASIER WAY: a position/angle survey like this (step a motor, take
+    #   an image, repeat) is built into the 'smi_plans' helper library as axis
+    #   builders fed to acquire (motor_axis for one motor, spatial_grid_axes for
+    #   an x/y grid), which record the readings into the data; the phi rock is
+    #   cdsaxs_rock_run / motor_axis(stage.phi, ...).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'prs' rotation stage was retired — it's now
+    #   'stage.phi' (⚠️ notes on the 'bps.mv(prs, ...)' lines below). The
+    #   det_exposure_time "plan" fix lives in measure_single_position() (⚠️ there).
+    # === end smi_plans note ================================================
     det = [pil2M]
 
     phi_offset = 0
@@ -442,7 +619,7 @@ def cdsaxs_Nov2025_template_motor_scan(t=1):
         for nn, (name, xs, ys, zs, chis, ths) in enumerate(zip(names, x, y, z)):
 
             if nn>=start_at:
-                yield from bps.mv(prs, phi_offset)
+                yield from bps.mv(prs, phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                 yield from bps.mv(piezo.ch, chis)
                 yield from bps.mv(piezo.th, ths)
                 yield from bps.mv(piezo.z, zs)
@@ -463,7 +640,7 @@ def cdsaxs_Nov2025_template_motor_scan(t=1):
 
                 for scan_motor in scans:
                     print (f'====== SCANNING {scan_motor} =======')
-                    yield from bps.mv(prs, phi_offset)
+                    yield from bps.mv(prs, phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                     yield from bps.mv(piezo.ch, chis)
                     yield from bps.mv(piezo.th, ths)
                     yield from bps.mv(piezo.z, zs)
@@ -493,7 +670,7 @@ def cdsaxs_Nov2025_template_motor_scan(t=1):
                         elif scan_motor == 'th':
                             yield from bps.mv(piezo.th, position + ths)
                         elif scan_motor == 'phi':
-                            yield from bps.mv(prs, position + phi_offset)
+                            yield from bps.mv(prs, position + phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                         else:
                             print("!!!!!!!! DIDN'T RECOGNIZE SCAN MOTOR !!!!!!!!")
                             continue
@@ -514,6 +691,21 @@ def cdsaxs_Nov2025_grid_scans_CaitlynRoundRobin1(t=10):
     images each with an expsoure time of t at each position during
     the cd-saxs scan.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS round-robin run-book — for each of many samples it visits a small
+    #   grid of spots and measures each (via measure_single_position).
+    #
+    # 💡 NEWER, EASIER WAY: visiting a regular grid of spots and taking an image
+    #   at each is what the 'smi_plans' helper library calls a grid map. It
+    #   builds the x/y grid and records each point's position into the data:
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes
+    #     # spatial_grid_axes builds the grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is. The det_exposure_time
+    #    "plan" fix lives in measure_single_position(), flagged with ⚠️ there.)
+    # === end smi_plans note ================================================
     det = [pil2M]
 
     phi_offset = -6
@@ -590,6 +782,21 @@ def cdsaxs_Nov2025_grid_scans_CaitlynRoundRobin2(t=1):
     images each with an expsoure time of t at each position during
     the cd-saxs scan.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a second CD-SAXS round-robin grid run-book — for each sample it visits a grid
+    #   of spots and measures each (via measure_single_position).
+    #
+    # 💡 NEWER, EASIER WAY: visiting a regular grid of spots and taking an image
+    #   at each is what the 'smi_plans' helper library calls a grid map. It
+    #   builds the x/y grid and records each point's position into the data:
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes
+    #     # spatial_grid_axes builds the grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is. The det_exposure_time
+    #    "plan" fix lives in measure_single_position(), flagged with ⚠️ there.)
+    # === end smi_plans note ================================================
     det = [pil2M]
 
     phi_offset = -6
@@ -674,6 +881,22 @@ def cdsaxs_Nov2025_misalignment_scan_CaitlynRoundRobin1():
     the cd-saxs scan.
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a misalignment survey — for each sample it rocks phi and scans across spots,
+    #   measuring each, to map out alignment errors.
+    #
+    # 💡 NEWER, EASIER WAY: a position/angle survey like this (step a motor, take
+    #   an image, repeat) is built into the 'smi_plans' helper library as axis
+    #   builders fed to acquire (motor_axis for one motor, spatial_grid_axes for
+    #   an x/y grid), which record the readings into the data; the phi rock is
+    #   cdsaxs_rock_run / motor_axis(stage.phi, ...).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'prs' rotation stage was retired — it's now
+    #   'stage.phi' (⚠️ notes on the 'bps.mv(prs, ...)' lines below). The
+    #   det_exposure_time "plan" fix lives in measure_single_position() (⚠️ there).
+    # === end smi_plans note ================================================
     det = [pil2M]
 
     phi_offset = -6
@@ -729,7 +952,7 @@ def cdsaxs_Nov2025_misalignment_scan_CaitlynRoundRobin1():
                     t = 0.1
                 print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
                 print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
-                yield from bps.mv(prs, phi_offset)
+                yield from bps.mv(prs, phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                 yield from bps.mv(piezo.ch, chis)
                 yield from bps.mv(piezo.th, ths)
                 yield from bps.mv(piezo.z, zs)
@@ -745,7 +968,7 @@ def cdsaxs_Nov2025_misalignment_scan_CaitlynRoundRobin1():
                 for sm, scan_motor in enumerate(scans[0]):
                     print(f'====== SCANNING {scan_motor} =======')
                     print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
-                    yield from bps.mv(prs, phi_offset)
+                    yield from bps.mv(prs, phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                     yield from bps.mv(piezo.ch, chis)
                     yield from bps.mv(piezo.th, ths)
                     yield from bps.mv(piezo.z, zs)
@@ -780,7 +1003,7 @@ def cdsaxs_Nov2025_misalignment_scan_CaitlynRoundRobin1():
                             yield from bps.mv(piezo.th, position + ths)
                         elif scan_motor == 'phi':
                             print('moving prs', position+phi_offset)
-                            yield from bps.mv(prs, position + phi_offset)
+                            yield from bps.mv(prs, position + phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                         else:
                             print("!!!!!!!! DIDN'T RECOGNIZE SCAN MOTOR !!!!!!!!")
                             continue
@@ -803,6 +1026,22 @@ def cdsaxs_Nov2025_misalignment_rescan_CaitlynRoundRobin1():
     the cd-saxs scan.
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a follow-up misalignment survey (re-scan) — rocks phi and scans spots for each
+    #   sample, measuring each, to re-check alignment.
+    #
+    # 💡 NEWER, EASIER WAY: a position/angle survey like this (step a motor, take
+    #   an image, repeat) is built into the 'smi_plans' helper library as axis
+    #   builders fed to acquire (motor_axis for one motor, spatial_grid_axes for
+    #   an x/y grid), which record the readings into the data; the phi rock is
+    #   cdsaxs_rock_run / motor_axis(stage.phi, ...).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'prs' rotation stage was retired — it's now
+    #   'stage.phi' (⚠️ notes on the 'bps.mv(prs, ...)' lines below). The
+    #   det_exposure_time "plan" fix lives in measure_single_position() (⚠️ there).
+    # === end smi_plans note ================================================
     det = [pil2M]
 
     phi_offset = -6
@@ -882,7 +1121,7 @@ def cdsaxs_Nov2025_misalignment_rescan_CaitlynRoundRobin1():
                     t = 0.1
                 print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
                 print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
-                yield from bps.mv(prs, phi_offset)
+                yield from bps.mv(prs, phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                 yield from bps.mv(piezo.ch, chis)
                 yield from bps.mv(piezo.th, ths)
                 yield from bps.mv(piezo.z, zs)
@@ -898,7 +1137,7 @@ def cdsaxs_Nov2025_misalignment_rescan_CaitlynRoundRobin1():
                 for sm, scan_motor in enumerate(scans):
                     print(f'====== SCANNING {scan_motor} =======')
                     print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
-                    yield from bps.mv(prs, phi_offset)
+                    yield from bps.mv(prs, phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                     yield from bps.mv(piezo.ch, chis)
                     yield from bps.mv(piezo.th, ths)
                     yield from bps.mv(piezo.z, zs)
@@ -936,7 +1175,7 @@ def cdsaxs_Nov2025_misalignment_rescan_CaitlynRoundRobin1():
                             yield from bps.mv(piezo.th, position + ths)
                         elif scan_motor == 'phi':
                             print('moving prs', position+phi_offset)
-                            yield from bps.mv(prs, position + phi_offset)
+                            yield from bps.mv(prs, position + phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                         else:
                             print("!!!!!!!! DIDN'T RECOGNIZE SCAN MOTOR !!!!!!!!")
                             continue
@@ -960,6 +1199,22 @@ def cdsaxs_Nov2025_misalignment_scan_dupont2():
     the cd-saxs scan.
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a misalignment survey for the DuPont samples — rocks phi and scans spots,
+    #   measuring each, to map alignment errors.
+    #
+    # 💡 NEWER, EASIER WAY: a position/angle survey like this (step a motor, take
+    #   an image, repeat) is built into the 'smi_plans' helper library as axis
+    #   builders fed to acquire (motor_axis for one motor, spatial_grid_axes for
+    #   an x/y grid), which record the readings into the data; the phi rock is
+    #   cdsaxs_rock_run / motor_axis(stage.phi, ...).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'prs' rotation stage was retired — it's now
+    #   'stage.phi' (⚠️ notes on the 'bps.mv(prs, ...)' lines below). The
+    #   det_exposure_time "plan" fix lives in measure_single_position() (⚠️ there).
+    # === end smi_plans note ================================================
     det = [pil2M]
 
     phi_offset = -6
@@ -1012,7 +1267,7 @@ def cdsaxs_Nov2025_misalignment_scan_dupont2():
                 t=1
                 print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
                 print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
-                yield from bps.mv(prs, phi_offset)
+                yield from bps.mv(prs, phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                 yield from bps.mv(piezo.ch, chis)
                 yield from bps.mv(piezo.th, ths)
                 yield from bps.mv(piezo.z, zs)
@@ -1028,7 +1283,7 @@ def cdsaxs_Nov2025_misalignment_scan_dupont2():
                 for sm, scan_motor in enumerate(scans):
                     print(f'====== SCANNING {scan_motor} =======')
                     print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
-                    yield from bps.mv(prs, phi_offset)
+                    yield from bps.mv(prs, phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                     yield from bps.mv(piezo.ch, chis)
                     yield from bps.mv(piezo.th, ths)
                     yield from bps.mv(piezo.z, zs)
@@ -1060,7 +1315,7 @@ def cdsaxs_Nov2025_misalignment_scan_dupont2():
                             yield from bps.mv(piezo.ch, position + chis)
                         elif scan_motor == 'th':
                             print('moving th', position+ths)
-                            yield from bps.mv(prs, 39)
+                            yield from bps.mv(prs, 39)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                             yield from bps.mv(piezo.th, position + ths)
                         elif scan_motor == 'phi':
                             print('moving prs', position+phi_offset)
@@ -1076,7 +1331,7 @@ def cdsaxs_Nov2025_misalignment_scan_dupont2():
                             theta_pass, exp_t=t, sample=f'{name}_{scan_motor}-scan'+'%s'%(ii+1), nume=repeats, log_filepath='log_dupont2_misalignments_KlineNov25.csv'
                         )
 
-                    yield from bps.mv(prs, phi_offset)
+                    yield from bps.mv(prs, phi_offset)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
 
 
 
@@ -1091,6 +1346,22 @@ def cdsaxs_Nov2025_itri(t=0.5):
     images each with an expsoure time of t at each position during
     the cd-saxs scan.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the ITRI samples — for each sample, move there and call
+    #   cd_saxs() for a -60..+60 deg rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline's 'smi_plans' helper library loops a
+    #   sample table and rocks each sample for you in one call, recording each
+    #   sample's name/coordinates and the rock angle into the saved data:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is. The real ⚠️ fixes
+    #    live in cd_saxs(): the retired 'prs' stage and the det_exposure_time
+    #    "plan" issue. Tip: cd_saxs_modern() here already avoids 'prs'.)
+    # === end smi_plans note ================================================
     det = [pil2M]
     
     phi_offset = -6
@@ -1149,6 +1420,22 @@ def cdsaxs_Nov2025_chicago(t=5):
     images each with an expsoure time of t at each position during
     the cd-saxs scan.
     """  
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the Chicago samples — for each sample, move there and
+    #   call cd_saxs() for a -60..+60 deg rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline's 'smi_plans' helper library loops a
+    #   sample table and rocks each sample for you in one call, recording each
+    #   sample's name/coordinates and the rock angle into the saved data:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is. The real ⚠️ fixes
+    #    live in cd_saxs(): the retired 'prs' stage and the det_exposure_time
+    #    "plan" issue. Tip: cd_saxs_modern() here already avoids 'prs'.)
+    # === end smi_plans note ================================================
     det = [pil2M]
     
     phi_offset = -6
@@ -1208,6 +1495,22 @@ def cdsaxs_Nov2025_dupont_1(t=10):
     images each with an expsoure time of t at each position during
     the cd-saxs scan.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the first DuPont sample set — for each sample, move
+    #   there and call cd_saxs() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline's 'smi_plans' helper library loops a
+    #   sample table and rocks each sample for you in one call, recording each
+    #   sample's name/coordinates and the rock angle into the saved data:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is. The real ⚠️ fixes
+    #    live in cd_saxs(): the retired 'prs' stage and the det_exposure_time
+    #    "plan" issue. Tip: cd_saxs_modern() here already avoids 'prs'.)
+    # === end smi_plans note ================================================
     det = [pil2M]
     
     phi_offset = -6
@@ -1281,6 +1584,22 @@ def cdsaxs_Nov2025_dupont_2(t=10):
     images each with an expsoure time of t at each position during
     the cd-saxs scan.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the second DuPont sample set — for each sample, move
+    #   there and call cd_saxs() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline's 'smi_plans' helper library loops a
+    #   sample table and rocks each sample for you in one call, recording each
+    #   sample's name/coordinates and the rock angle into the saved data:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is. The real ⚠️ fixes
+    #    live in cd_saxs(): the retired 'prs' stage and the det_exposure_time
+    #    "plan" issue. Tip: cd_saxs_modern() here already avoids 'prs'.)
+    # === end smi_plans note ================================================
     det = [pil2M]
     
     phi_offset = -6
@@ -1351,6 +1670,22 @@ def cdsaxs_May2026_template(t=1, user_name='CW'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book template (May 2026) — for each sample, move there and call
+    #   the tidy cd_saxs_modern() for a -60..+60 deg rock with reference shots.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -1403,6 +1738,22 @@ def cdsaxs_May2026_imec_gate(t=0.2, user_name='JK_imec_gate'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the IMEC 'gate' samples — for each, move there and call
+    #   cd_saxs_modern() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -1457,6 +1808,22 @@ def cdsaxs_May2026_imec_fin(t=0.2):
     the cd-saxs scan.
     """
     #Joe's Samples
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the IMEC 'fin' samples — for each, move there and call
+    #   cd_saxs_modern() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -1558,6 +1925,13 @@ def cdsaxs_May2026_imec_fin(t=0.2):
     yield from vent_waxs()
 
 def test_fin ():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tiny manual test — moves the SAXS detector (pil2M) along its
+    #   Z rail to 5000. No data is taken; it's just checking the motor moves.
+    #
+    # 💡 smi_plans: nothing to migrate here — this is a one-off device move, not a
+    #   measurement. (Nothing is broken.)
+    # === end smi_plans note ================================================
     print('TESTING pilatus move in Z')
     yield from bps.mv(pil2M.motor.z, 5000)
     # print('TESTING vent function')
@@ -1575,6 +1949,22 @@ def cdsaxs_May2026_APTgrid(t=10, user_name='KD'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the APT grid samples — for each, move there and call
+    #   cd_saxs_modern() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -1627,6 +2017,22 @@ def cdsaxs_May2026_srm_XRW344(t=0.1, user_name='CW'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the SRM XRW344 sample(s) — move there and call
+    #   cd_saxs_modern() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -1682,6 +2088,22 @@ def cdsaxs_May2026_QnityBeamDamage(t=5, user_name='MW_Q'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS beam-damage run-book for the Qnity samples — move there and call
+    #   cd_saxs_modern() for repeated rocks to watch for radiation damage.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -1738,6 +2160,22 @@ def cdsaxs_May2026_QnityBeamDamage_2(t=5, user_name='MW_Q_adjX'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS beam-damage run-book (variant 2, adjusted x) for the Qnity samples —
+    #   move there and call cd_saxs_modern() for repeated rocks.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -1806,6 +2244,22 @@ def cdsaxs_May2026_QnityBeamDamage_3(t=5, user_name='MW_Q_adjX'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS beam-damage run-book (variant 3, adjusted x) for the Qnity samples —
+    #   move there and call cd_saxs_modern() for repeated rocks.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = 52
     stop_phi = 60
@@ -1874,6 +2328,22 @@ def cdsaxs_May2026_QnityBar(t=5, user_name='MW_Q_adjX'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS 'bar' run-book for the Qnity samples — loops the sample table and
+    #   calls cd_saxs_modern() for a rock on each.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -1936,6 +2406,22 @@ def cdsaxs_May2026_QnityBar_restartAfterDump(t=5, user_name='MW_Q_adjX'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS Qnity bar run-book set up to RESTART partway through (after a beam
+    #   dump) — loops the remaining samples and rocks each with cd_saxs_modern().
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -1990,6 +2476,22 @@ def cdsaxs_May2026_QnityBar_lastTwo(t=5, user_name='MW_Q_adjX'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS Qnity bar run-book for just the LAST TWO samples — moves to each and
+    #   rocks with cd_saxs_modern().
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -2053,6 +2555,22 @@ def cdsaxs_May2026_QnityBar_XPosCheck(t=1, user_name='MW_Q_XCheck'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS Qnity bar run-book that double-checks the x position of each sample
+    #   before rocking with cd_saxs_modern().
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     x_diff = 1000
 
@@ -2123,6 +2641,22 @@ def cdsaxs_May2026_Intel1(t=1, user_name='JK_INT'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the Intel samples — for each, move there and call
+    #   cd_saxs_modern() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -2178,6 +2712,22 @@ def cdsaxs_May2026_srm_top4(t=0.2, user_name='CW'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the top-4 SRM samples — for each, move there and call
+    #   cd_saxs_modern() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -2230,6 +2780,22 @@ def cdsaxs_May2026_imec_cfet_fin(t=0.1, user_name='JK'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the IMEC CFET 'fin' samples — for each, move there and
+    #   call cd_saxs_modern() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -2284,6 +2850,22 @@ def cdsaxs_May2026_imec_cfet_noetch_fin(t=5, user_name='JK'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the IMEC CFET no-etch 'fin' samples — for each, move
+    #   there and call cd_saxs_modern() for a rock with reference shots.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -2338,6 +2920,22 @@ def cdsaxs_May2026_srm_bottom3(t=0.2, user_name='CW'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the bottom-3 SRM samples — for each, move there and
+    #   call cd_saxs_modern() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -30
     stop_phi = 30
@@ -2392,6 +2990,22 @@ def cdsaxs_May2026_srm_k5h12(t=0.1, user_name='CW'):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the SRM K5/H12 samples — for each, move there and call
+    #   cd_saxs_modern() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60
@@ -2445,6 +3059,22 @@ def cdsaxs_May2026_srm_j5(t=1):
     the cd-saxs scan.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS run-book for the SRM J5 sample(s) — move there and call
+    #   cd_saxs_modern() for a rock with reference shots before and after.
+    #
+    # 💡 NEWER, EASIER WAY: this run-book already uses the tidy cd_saxs_modern()
+    #   (one coordinated scan per rock, angles recorded into the data — nice!).
+    #   The 'smi_plans' helper library can also loop the whole sample table for
+    #   you with a single 'bar' call:
+    #
+    #     from smi_plans import SampleList, cdsaxs_bar
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z, chi=chi, th=th)
+    #     yield from cdsaxs_bar(samples, t=t)
+    #
+    #   (Optional — your script below works as-is. The only ⚠️ fix is the
+    #    det_exposure_time "plan" issue inside cd_saxs_modern(); no 'prs' here.)
+    # === end smi_plans note ================================================
     phi_offset = 1.3
     start_phi = -60
     stop_phi = 60

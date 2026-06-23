@@ -41,6 +41,13 @@ import numpy as np
 
 
 def align_gisaxs_th_stage(rang=0.3, point=31):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a theta-alignment step — sweeps the rotation stage theta (stage.th) over a
+    #   small range, finds the peak, and moves there.
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' grazing alignment is done once with align_sample, and the
+    #   aligned angle is saved with the data (so you don't re-run these scans by hand). ('stage.th',
+    #   'pil2M', 'bp.rel_scan' all still work.)
+    # === end smi_plans note ================================================
     yield from bp.rel_scan([pil2M], stage.th, -rang, rang, point)
     ps()
     yield from bps.mv(stage.th, ps.peak)
@@ -48,8 +55,21 @@ def align_gisaxs_th_stage(rang=0.3, point=31):
 
 def alignment_gisaxs_stage(angle=0.15):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the full grazing-incidence (GISAXS) alignment routine on the rotation stage —
+    #   switches to alignment mode, scans theta and height a few times to find the surface, sets the
+    #   incidence angle, then returns to measurement mode.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' bundles all of this into align_sample, which you run once per
+    #   sample and which SAVES the alignment result with the data automatically:
+    #     from smi_plans import align_sample
+    #     yield from align_sample(angle=angle)      # aligns and records the result
+    #   (Then your GISAXS scans can pass align=align_sample so each sample is aligned and logged.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure unless
+    #   run as a plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
+
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
     smi = SMI_Beamline()
     yield from smi.modeAlignment()
@@ -84,6 +104,26 @@ def alignment_gisaxs_stage(angle=0.15):
 
 # 2022C3
 def run_scan_ET(t=1):  
+
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence WAXS map at a fixed rotation angle — sets the rotation
+    #   stage and theta, then rasters the sample x and z taking a WAXS image at each spot.
+    #
+    # 💡 NEWER, EASIER WAY: a 2D x/z raster that records the positions into the data is 'smi_plans'
+    #   map_grid_run; you give it the grid and it fills the file name for you (no hand-built
+    #   "_x{x}_z{z}_th{th}" string):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, motor_axis
+    #     yield from bps.mv(stage.phi, 0)           # 'prs' is now 'stage.phi' — see ⚠️ below
+    #     yield from map_grid_run(
+    #         "Sam5p4_scan_prs0", dets=[pil900KW], t=t,
+    #         axes=spatial_grid_axes(piezo.x, x_list, piezo.z, z_list),
+    #     )
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'prs' no longer exists — it's now 'stage.phi' (the 'mv(prs, 0)'
+    #   line below would error); (2) 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (⚠️ notes below). (The big '''...''' block is commented-out and isn't run.)
+    # === end smi_plans note ================================================
 
     waxs_angle_array = np.array([10])
     print('{}'.format(waxs_angle_array))
@@ -121,7 +161,7 @@ def run_scan_ET(t=1):
 
     '''
     sample = "Sam5p4_scan_prs0"
-    yield from bps.mv(prs, 0)
+    yield from bps.mv(prs, 0)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     #x_list = np.arange(-200, 1600+1, 30)
     #z_list = np.arange(-3000, 1500+1, 30)
     x_list = np.arange(-200, 1300+1, 30)
@@ -134,7 +174,7 @@ def run_scan_ET(t=1):
     for waxs_angle in waxs_angle_array:  # loop through waxs angles
         yield from bps.mv(waxs, waxs_angle)
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         for ii, x in enumerate(x_list):  # loop over samples on bar
             yield from bps.mv(piezo.x, x)  # move to next sample
@@ -154,12 +194,35 @@ def run_scan_ET(t=1):
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)).
 
 
 
 # 2020C1
 def run_tomo_ET(t=0.5):  # 2020C1
+
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tomography-style scan — for each WAXS arc angle it steps the sample x across
+    #   the beam and, at each x, rotates the stage (prs) through a set of angles (zig/zag) taking a
+    #   WAXS+SAXS image at each rotation.
+    #
+    # 💡 NEWER, EASIER WAY: rotating the sample while recording the angle is 'smi_plans'
+    #   tomography_run (or a motor_axis over the rotation stage); it records the rotation angle into
+    #   the data and fills the file name for you:
+    #
+    #     from smi_plans import tomography_run, motor_axis
+    #     for x in x_list:
+    #         yield from bps.mv(stage.x, x)
+    #         yield from tomography_run(
+    #             "Sam5p4_scan", dets=[pil900KW, pil2M], t=t,   # current WAXS detector — see ⚠️
+    #             rotation=motor_axis("phi", stage.phi, prs_angles_zig),   # prs is now stage.phi — see ⚠️
+    #         )
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'prs' no longer exists — it's now 'stage.phi' (the two
+    #   'bp.scan(dets, prs, ...)' lines below would error); (2) 'pil300KW' was retired — it's now
+    #   'pil900KW'; (3) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan
+    #   (⚠️ notes below).
+    # === end smi_plans note ================================================
 
     sample = "Sam5p4_scan"
     # x_list = [47200.000,37200.000,23700.000,15700.000]
@@ -177,7 +240,7 @@ def run_tomo_ET(t=0.5):  # 2020C1
     )  # (0, 18, 4)   # q=4*3.14/0.77*np.sin((max angle+3.5)/2*3.14159/180)
     prs_angles_zig = [-90, 90.1, 120]
     prs_angles_zag = [90, -90 - 0.1, 120]
-    dets = [pil300KW, pil2M]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
+    dets = [pil300KW, pil2M]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # yield from bps.mv(piezo.th, 0)
     # yield from alignement_gisaxs(0.1) #run alignment routine
@@ -199,9 +262,9 @@ def run_tomo_ET(t=0.5):  # 2020C1
         yield from bps.mv(waxs, waxs_angle)
 
         if waxs_angle == 0:
-            det_exposure_time(0.1, 0.1)
+            det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)).
         else:
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         for ii, x in enumerate(x_list):  # loop over samples on bar
             yield from bps.mv(stage.x, x)  # move to next sample
 
@@ -214,15 +277,36 @@ def run_tomo_ET(t=0.5):  # 2020C1
             print(f"\n\t=== Sample: {sample_name} ===\n")
 
             if ii % 2 == 0:
-                yield from bp.scan(dets, prs, *prs_angles_zig)
+                yield from bp.scan(dets, prs, *prs_angles_zig)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
             else:
-                yield from bp.scan(dets, prs, *prs_angles_zag)
+                yield from bp.scan(dets, prs, *prs_angles_zag)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)).
 
 
 def run_gisaxsAngle_ET(t=1):  # 2020C1
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence WAXS scan — aligns the sample, then steps through several
+    #   incident angles (piezo.th) and, at each, shifts x a little and sweeps the WAXS arc, taking
+    #   an image at each combination.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the incident angle + WAXS arc while recording is the 'smi_plans'
+    #   GIWAXS preset; align_sample aligns once and saves the result, and incidence_axis/motor_axis
+    #   record the angle/arc into the data:
+    #
+    #     from smi_plans import giwaxs_run, align_sample, incidence_axis, motor_axis
+    #     yield from giwaxs_run(
+    #         sample, dets=[pil900KW], t=t,          # current WAXS detector — see ⚠️
+    #         incident_angles=[0.08, 0.1, 0.15, 0.2],   # your angles, unchanged
+    #         arc_angles=list(np.linspace(0, 19.5, 4)),
+    #         align=align_sample,
+    #     )
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    #   (Heads-up for a human: 'x_list' and 'x' aren't defined in this function — pre-existing issues.)
+    # === end smi_plans note ================================================
     # define names of samples on sample bar
 
     sample_list = ["tomosample"]
@@ -235,7 +319,7 @@ def run_gisaxsAngle_ET(t=1):  # 2020C1
     )  # (0, 18, 4)   # q=4*3.14/0.77*np.sin((max angle+3.5)/2*3.14159/180)
     # if 12, 3: up to q=2.199
     # if 18, 4: up to q=3.04
-    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
+    dets = [pil300KW]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # for x, sample in zip(x_list,sample_list): #loop over samples on bar
     if 1:
@@ -255,7 +339,7 @@ def run_gisaxsAngle_ET(t=1):  # 2020C1
         )  # np.array([0.10 + piezo.th.position, 0.20 + piezo.th.position])
         th_real = angle_arc
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         x_meas = x
 
         # for waxs_angle in waxs_angle_array: # loop through waxs angles
@@ -289,7 +373,7 @@ def run_gisaxsAngle_ET(t=1):  # 2020C1
                     yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)).
 
 
 def piezo_pos():
@@ -298,7 +382,12 @@ def piezo_pos():
 
 
 def stage_pos():
-    for ii in [stage.x, stage.th, prs]:
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: prints the current positions of the hexapod x, theta, and the rotation stage.
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'prs' no longer exists — it's now 'stage.phi' (this line would
+    #   error on 'prs'). 'stage.x' and 'stage.th' still work.
+    # === end smi_plans note ================================================
+    for ii in [stage.x, stage.th, prs]:  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         print(ii.name, ii.position)
 
 

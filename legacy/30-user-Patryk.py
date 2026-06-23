@@ -3,6 +3,26 @@ def patryk_saxs_overnight(t=1):
     SAXS mapping
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight SAXS map — for each sample it snaps the on-axis camera then rasters a
+    #   grid of points (rel_grid_scan), taking a SAXS image at each.
+    #
+    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
+    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
+    #   it has grid maps; for 'a few points per sample for averaging' it has the
+    #   transmission/map runs. Either way it records each position/beam into the
+    #   saved data and templates the file name from them (no hand-built name + no
+    #   manual sample_id call needed):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
+    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =     ['ORF7A-C-60um', 'ORF7A-C-60um-bkg', 'ORF7A-D-50um-wet', 'ORF7A-D-50um-wet-bkg', 
              'ORF7A-D-50um-dry', 'ORF7A-D-50um-dry-bkg', ]
 
@@ -25,7 +45,7 @@ def patryk_saxs_overnight(t=1):
     if waxs.arc.position < 19.5:
         yield from bps.mv(waxs, 20)
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z):
         yield from bps.mv(piezo.x, x,
@@ -62,6 +82,25 @@ def run_swaxs_Dominik_2023_1(t=0.1):
     WAXS arc as the slowest motor.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes WAXS and SAXS at a few spots on each sample (and at two WAXS arc
+    #   positions) so the frames can be averaged — a multi-point transmission run.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names_1   = [   'D123', 'FeEDTA', 'Ni5Z30', '10RhZ23', 'D133', '1.0Pdfresh',   '1.0Pdcalc',]
     piezo_x_1 = [  -28600,    -20600,   -14000,     -2600,  13400,        27000,         39000,]
     piezo_y_1 = [   -2000,     -1500,    -1500,     -2000,  -2000,        -2000,         -2000,]
@@ -93,7 +132,7 @@ def run_swaxs_Dominik_2023_1(t=0.1):
         yield from bps.mv(waxs, wa)
         
         dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         for name, x, y, hex_y in zip(names, piezo_x, piezo_y, stage_y):
 
@@ -115,7 +154,7 @@ def run_swaxs_Dominik_2023_1(t=0.1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.1, 0.1)
+    det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 # RE.md['SAF_number'] = 311069
@@ -129,6 +168,24 @@ def run_swaxs_fibres_2023_1(t=1):
     WAXS arc as the slowest motor.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes WAXS and SAXS at a few spots per fibre sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names_1   = [ '4-pgsk-fib-1', '4-pgsk-fib-2', '4-pgsk-fib-3', '3-sk-fib-1', '3-sk-fib-2', '3-sk-fib-3', 'bkg_vcm', ]
     piezo_x_1 = [            700,           1850,           4010,        15810,        17310,        19500,     20500, ]
     piezo_y_1 = [          -1850,          -1850,          -2400,        -2400,        -2400,        -1000,     -1000, ]
@@ -159,7 +216,7 @@ def run_swaxs_fibres_2023_1(t=1):
         
         #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         dets = [pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         for name, x, y, hex_y in zip(names, piezo_x, piezo_y, stage_y):
 
@@ -188,7 +245,7 @@ def run_swaxs_fibres_2023_1(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_swaxs_textile_2023_2(t=0.5):
@@ -196,6 +253,24 @@ def run_swaxs_textile_2023_2(t=0.5):
     Take WAXS and SAXS at a few sample positions for averaging
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes WAXS and SAXS at a few spots per textile sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names   = [  's01']#, 's02', 's03', 's04', 's05',  'bkg', ]
     piezo_x = [  -37900]#, 33000, 18000,  4500, -8000, -18000, ]
     piezo_y = [  3200 for n in names ]
@@ -219,7 +294,7 @@ def run_swaxs_textile_2023_2(t=0.5):
 
         #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         dets = [pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         for name, x, y, hex_y in zip(names, piezo_x, piezo_y, stage_y):
 
@@ -250,7 +325,7 @@ def run_swaxs_textile_2023_2(t=0.5):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_swaxs_workaround_2023_2(t=0.5):
@@ -258,6 +333,24 @@ def run_swaxs_workaround_2023_2(t=0.5):
     Take WAXS and SAXS at a few sample positions for averaging
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes WAXS and SAXS at a few spots per sample for averaging (a workaround variant).
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names   = [  's01', 's02', 's03', 's04', 's05',  'bkg', ]
     piezo_x = [  44000, 33000, 18000,  4500, -8000, -18000, ]
     piezo_y = [  2000 for n in names ]
@@ -281,7 +374,7 @@ def run_swaxs_workaround_2023_2(t=0.5):
 
         #dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
         dets = [pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         for name, x, y, hex_y in zip(names, piezo_x, piezo_y, stage_y):
 
@@ -308,13 +401,28 @@ def run_swaxs_workaround_2023_2(t=0.5):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 def move_energy_slowly(target_e, e_step=100):
     """
     Move energy gently using feedback
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: gently steps the X-ray energy to a target in small hops, toggling the beam
+    #   feedback off/on and pausing at each step (this used to be needed because energy
+    #   moves were flaky).
+    #
+    # 💡 NEWER, EASIER WAY: the beamline 'smi_plans' helper library has a single
+    #   energy-move plan that does ALL of this for you — it pauses the feedback, steps
+    #   in <=50 eV hops, settles, turns feedback back on, and re-seeks if the beam dips:
+    #
+    #     from smi_plans import move_energy_fb
+    #     yield from move_energy_fb(target_e)        # replaces this whole routine
+    #
+    #   So this hand-rolled feedback/sleep dance becomes unnecessary once you migrate.
+    #   (Nothing here is broken — see the 💡 note on the settle 'sleep'.)
+    # === end smi_plans note ================================================
     current_e = energy.position.energy
     
 
@@ -326,7 +434,7 @@ def move_energy_slowly(target_e, e_step=100):
 
             feedback('off')
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             feedback('on')
             yield from bps.sleep(5)
     else:
@@ -339,11 +447,32 @@ def test_DI(t=1):
     Test duplicated images
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a test that takes images while stepping the X-ray energy over a few values
+    #   (checking for duplicated images).
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     user_name = "test"
 
     names = ["test2", "test3"]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # Energies for calcium K edge, coarse resolution
     energies_coarse = np.concatenate(
@@ -391,6 +520,24 @@ def test_example_SWAXS_2023_3(t=0.5):
     Standard SWAXS scan
     """
     
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an example SWAXS run — takes WAXS/SAXS at a few spots per sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [ 'AgBH-1', 'AgBH-2', 'empty', ]
     piezo_x = [   -45400,   -44400,  -19000, ] 
     piezo_y = [     3800,     4200,    4200, ]
@@ -402,7 +549,7 @@ def test_example_SWAXS_2023_3(t=0.5):
 
     user = 'test'
     waxs_arc = [40, 20, 0]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -420,7 +567,7 @@ def test_example_SWAXS_2023_3(t=0.5):
             yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 # DT-313930
 
@@ -429,6 +576,16 @@ def get_more_md(temp=25, tender=True, bpm=True):
     Add temperature and XBPM3 readings into the scan metadata
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: builds extra text (temperature + beam reading) to tack onto a sample's file name.
+    #   (Heads-up: there are TWO functions named 'get_more_md' in this file — the lower
+    #   definition is the one Python keeps, so the upper one is shadowed/ignored.)
+    #
+    # 💡 NEWER, EASIER WAY: with the beamline 'smi_plans' helper library you don't
+    #   hand-build the file name — it records the temperature, beam, energy, etc. into
+    #   the saved data and fills them into the name via tokens like {energy_energy}.
+    #   So this naming helper becomes unnecessary once you migrate. (Nothing is broken.)
+    # === end smi_plans note ================================================
     more_md = f'{get_scan_md(tender=tender)}'
 
     if temp:
@@ -447,6 +604,16 @@ def take_single_temp_frame(name='test', temp=25):
     After reaching T, take data
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: after the sample reaches a target temperature, takes one WAXS image (labelled
+    #   with the temperature).
+    #
+    # 💡 NEWER, EASIER WAY: in the beamline 'smi_plans' helper library the temperature
+    #   is recorded INTO the data automatically, so a single frame is just
+    #   acquire(name, saxs_waxs_dets(use_saxs=False), []) and the degC ends up in the
+    #   data/file name for you (no manual get_more_md(temp) string needed).
+    #   (Nothing here is broken.)
+    # === end smi_plans note ================================================
     dets = [pil900KW]
 
 
@@ -460,6 +627,28 @@ def take_energy_temp_scan(name='test', temp=25):
     After reaching T, take data
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: after the sample reaches a target temperature, sweeps the X-ray energy across the
+    #   edge and takes WAXS(/SAXS) at each energy.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     e = np.around(energy.position.energy)
     energies = np.concatenate((
         np.arange(e - 5, e - 2, 1),
@@ -471,8 +660,8 @@ def take_energy_temp_scan(name='test', temp=25):
 
     for nrg in energies:
         yield from bps.mv(energy, nrg)
-        yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, nrg)
             yield from bps.sleep(2)
@@ -489,6 +678,15 @@ def create_timestamp():
     """
     store in RE.md and print
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: stores the current time in RE.md (so later file names/metadata can reference it)
+    #   and prints it.
+    #   (Heads-up: there are TWO functions named 'create_timestamp' in this file — the
+    #   lower definition is the one Python keeps, so the upper one is shadowed/ignored.)
+    #
+    # 💡 smi_plans: nothing to migrate here — it's just a metadata timestamp, not
+    #   acquisition. (smi_plans timestamps every run for you anyway.) Nothing is broken.
+    # === end smi_plans note ================================================
     RE.md['tstamp'] = time.time()
     print('\nTime stamp created in RE.md')
     tstamp = RE.md['tstamp']
@@ -508,6 +706,23 @@ def run_Linkam_temp_run(name, t=0.5, td= 4 * 60, frames=600):
         frames (int): number of franes.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: sets a Linkam temperature ramp, timestamps it, and takes a series of frames over
+    #   time while the temperature changes.
+    #
+    # 💡 NEWER, EASIER WAY: ramping/holding temperature (Linkam or Lakeshore) while
+    #   collecting is the beamline 'smi_plans' helper library's temperature run. It
+    #   drives the heater, waits for setpoints, and records the temperature into the
+    #   saved data + file name for you:
+    #
+    #     from smi_plans import temperature_ramp_run, isothermal_kinetics_run, goto_temperature
+    #     # e.g. hold at T and take frames over time: isothermal_kinetics_run(...)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     try:
         tstamp = RE.md['tstamp']
     except:
@@ -516,7 +731,7 @@ def run_Linkam_temp_run(name, t=0.5, td= 4 * 60, frames=600):
         print(f'\nTime stamp created in RE.md: {tstamp}')
 
     waxs_arc = [0, 20]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     user = 'PW'
 
     for spoint in range(frames):
@@ -552,6 +767,24 @@ def run_swaxs_2024_1_slk(t=1):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes WAXS and SAXS at a few spots per sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names_1 = ['flm-100-0-MeOH', 'flm-90-10-MeOH', 'flm-80-20-MeOH', 'flm-70-30-MeOH', 'flm-50-50-MeOH',]           
     piezo_x_1 = [        -43200,           -37000,           -32000,           -24500,           -17500,]         
     piezo_y_1 = [          1000,              600,             1000,             1200,             1200,]
@@ -569,7 +802,7 @@ def run_swaxs_2024_1_slk(t=1):
     waxs_arc = [0, 20]
 
     user = "PW"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -605,7 +838,7 @@ def run_swaxs_2024_1_slk(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def run_swaxs_2024_1_par(t=1):
     """
@@ -615,6 +848,24 @@ def run_swaxs_2024_1_par(t=1):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes WAXS and SAXS at a few spots per sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [  'AgBH', 'PSTFSI-Li-10to1',]           
     piezo_x = [  -44000,            -11200, ]         
     piezo_y = [   -4000,              6400, ]
@@ -626,7 +877,7 @@ def run_swaxs_2024_1_par(t=1):
     waxs_arc = [0, 20]
 
     user = "PW"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -657,7 +908,7 @@ def run_swaxs_2024_1_par(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 
@@ -666,6 +917,16 @@ def get_more_md(tender=True, bpm=True):
     Add temperature and XBPM2 readings into the scan metadata
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: builds extra text (temperature + beam reading) to tack onto a sample's file name.
+    #   (Heads-up: there are TWO functions named 'get_more_md' in this file — the lower
+    #   definition is the one Python keeps, so the upper one is shadowed/ignored.)
+    #
+    # 💡 NEWER, EASIER WAY: with the beamline 'smi_plans' helper library you don't
+    #   hand-build the file name — it records the temperature, beam, energy, etc. into
+    #   the saved data and fills them into the name via tokens like {energy_energy}.
+    #   So this naming helper becomes unnecessary once you migrate. (Nothing is broken.)
+    # === end smi_plans note ================================================
     more_md = f'{get_scan_md(tender=tender)}'
 
     if bpm:
@@ -679,6 +940,27 @@ def take_energy_scan_2024_1(t=1):
     """
     Energy scan
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: sweeps the X-ray energy across an edge and takes WAXS(/SAXS) at each energy.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names =   [ 'SLi10-nexafs-3', ]           
     piezo_x = [           -31650, ]         
     piezo_y = [            -7800, ]
@@ -692,7 +974,7 @@ def take_energy_scan_2024_1(t=1):
     waxs_arc = [ 60 ]
 
     user = "PW"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     energies = np.concatenate((
         np.arange(2445, 2470, 5),
@@ -713,8 +995,8 @@ def take_energy_scan_2024_1(t=1):
 
             for nrg in energies:
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -735,6 +1017,24 @@ def run_swaxs_2024_1_par2(t=2):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes WAXS and SAXS at a few spots per sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [  'mpt1.5', 'mpt1.0',  'SLi10',  'SNa10',  'MLi10',  'MNa10', 'SNa0', 'SLi0', 'MLi0',  'MNa0', 'SLi5', 'MNa5', 'SNa5', ]           
     piezo_x = [   -44100,    -37500,   -31650,   -24600,   -18000,   -12600,  -5250,    600,   6900,   13500,  20200,  25400,  32100, ]         
     piezo_y = [     6000,      6000,    -7800,    -8600,    -8400,    -8600,  -7400,   1750,  -6500,   -8900,  -7200,  -8500,   1550, ]
@@ -746,7 +1046,7 @@ def run_swaxs_2024_1_par2(t=2):
     waxs_arc = [0, 20]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -777,7 +1077,7 @@ def run_swaxs_2024_1_par2(t=2):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def run_swaxs_2024_1_par2tender(t=5):
     """
@@ -787,6 +1087,26 @@ def run_swaxs_2024_1_par2tender(t=5):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each sample, takes WAXS/SAXS at the tender-energy condition.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [  'mpt1.5', 'mpt1.0',  'SLi10',  'SNa10',  'MLi10',  'MNa10', 'SNa0', 'SLi0', 'MLi0',  'MNa0', 'SLi5', 'MNa5', 'SNa5', ]           
     piezo_x = [   -44200,    -37600,   -31650,   -24600,   -18000,   -12600,  -5250,    750,   7000,   13500,  20200,  25700,  32100, ]         
     piezo_y = [     6000,      6000,    -6000,    -8100,    -8300,    -8300,  -7300,   1550,  -6500,   -8900,  -7400,  -8500,   1350, ]
@@ -798,7 +1118,7 @@ def run_swaxs_2024_1_par2tender(t=5):
     waxs_arc = [0, 20]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -829,7 +1149,7 @@ def run_swaxs_2024_1_par2tender(t=5):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_swaxs_2024_1_par2tender_energy(t=2):
@@ -840,6 +1160,28 @@ def run_swaxs_2024_1_par2tender_energy(t=2):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each sample, sweeps the X-ray energy across the tender edge and takes
+    #   WAXS/SAXS at each energy.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names =   [  'mpt1.5', 'mpt1.0',  'SLi10',  'SNa10',  'MLi10',  'MNa10', 'SNa0', 'SLi0', 'MLi0',  'MNa0', 'SLi5', 'MNa5', 'SNa5', ]           
     piezo_x = [   -44200,    -37600,   -31650,   -24600,   -18000,   -12600,  -5250,    750,   7000,   13500,  20200,  25700,  32100, ]         
     piezo_y = [     6000,      6000,    -6000,    -8100,    -8300,    -8300,  -7300,   1550,  -6500,   -8900,  -7400,  -8500,   1350, ]
@@ -856,7 +1198,7 @@ def run_swaxs_2024_1_par2tender_energy(t=2):
     ))
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -876,8 +1218,8 @@ def run_swaxs_2024_1_par2tender_energy(t=2):
 
             for nrg in energies:
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -889,7 +1231,7 @@ def run_swaxs_2024_1_par2tender_energy(t=2):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_swaxs_2024_1_par3(t=2):
@@ -900,6 +1242,24 @@ def run_swaxs_2024_1_par3(t=2):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes WAXS and SAXS at a few spots per sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [  'mpt1.5', 'mpt1.0',  'SLi10',  'SNa10',  'MLi10',  'MNa10', 'SNa0', 'SLi0', 'MLi0',  'MNa0', 'SLi5', 'MNa5', 'SNa5', ]           
     piezo_x = [   -44100,    -37500,   -31650,   -24600,   -18100,   -12700,  -5650,    600,   6900,   13300,  20200,  25800,  32900, ]         
     piezo_y = [     6000,      6000,    -8100,    -8900,    -8400,    -8800,  -7400,   1650,   7700,    3500,  -7200,  -7200,   1350, ]
@@ -911,7 +1271,7 @@ def run_swaxs_2024_1_par3(t=2):
     waxs_arc = [ 20, 0 ]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -942,7 +1302,7 @@ def run_swaxs_2024_1_par3(t=2):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def grazing_brsc_zinc_2024_2(t=3):
@@ -950,6 +1310,28 @@ def grazing_brsc_zinc_2024_2(t=3):
     standard GI-S/WAXS across energies
     """
     
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing run near the zinc edge — sweeps energy and incident angle on
+    #   each sample.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names   = [    'S01',    'S02',   'S03',   'S04',   'S05',   'S06',  'S07', 'A02', 'A08', 'A11', 'A13', 'A0B', 'A21', 'A81', ]
     piezo_x = [   -55300,   -47000,  -36000,  -38000,  -28000,  -17000,  -6500,  5000, 15000, 26000, 36000, 46000, 45000, 55000, ]
     piezo_y = [     7700,     7700,    7700,    7500,    7500,    7500,   7500,  7100,  7100,  7100,  7100,  7100,  7100,  7100, ]          
@@ -997,7 +1379,7 @@ def grazing_brsc_zinc_2024_2(t=3):
 
         # Sample flat at ai0
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
@@ -1011,7 +1393,7 @@ def grazing_brsc_zinc_2024_2(t=3):
                 for en in energies:
                     
                     yield from bps.mv(energy, en)
-                    yield from bps.sleep(3)
+                    yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     for ai in incident_angles:
                         yield from bps.mv(piezo.th, ai0 + ai)
 
@@ -1021,11 +1403,11 @@ def grazing_brsc_zinc_2024_2(t=3):
                         print(f"\n\n\n\t=== Sample: {sample_name} ===")
                         yield from bp.count(dets)
                 yield from bps.mv(energy, energies[0])
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def grazing_brsc_2024_2(t=1):
@@ -1033,6 +1415,25 @@ def grazing_brsc_2024_2(t=1):
     standard GI-S/WAXS
     """
     
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence S/WAXS run — for each sample it aligns, then takes WAXS/SAXS
+    #   at several incident angles.
+    #
+    # 💡 NEWER, EASIER WAY: aligning each sample then sweeping incident angle / WAXS
+    #   arc is the beamline 'smi_plans' helper library's GIWAXS run. align_sample
+    #   aligns and saves the result, and incidence_axis sweeps the angle while
+    #   recording it into the data:
+    #
+    #     from smi_plans import giwaxs_bar, SampleList, incidence_axis, align_sample
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #     yield from giwaxs_bar(samples, incidence_axis(piezo.th, ai0, incident_angles),
+    #                           t=t, align=align_sample)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names   = [  'S01',  'S02',  'S03',  'S04',  'S05',  'S06', 'S07','A02', 'A08', 'A11', 'A13', 'A0B', 'A21', 'A81', ]
     piezo_x = [ -55000, -46500, -35500, -37500, -27500, -16500, -6000, 5500, 15500, 26500, 36500, 46500, 45500, 55200, ]
     piezo_y = [   7700,   7700,   7700,   7500,   7500,   7500,  7500, 7100,  7100,  7100,  7100,  7100,  7100,  7100, ]          
@@ -1066,7 +1467,7 @@ def grazing_brsc_2024_2(t=1):
 
         # Sample flat at ai0
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
@@ -1089,7 +1490,7 @@ def grazing_brsc_2024_2(t=1):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     proposal_id('2024_2', '000000_tests')
 
 
@@ -1101,6 +1502,27 @@ def run_swaxs_2024_2_Paren_tender(t=2):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each sample, sweeps the tender-energy edge and takes WAXS/SAXS at each energy.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names =   [ 'SLi0-edge', 'SLi10', 'SLi10-edge', 'MNa10', 'MNa10-edge', 'MLi0-edge', 'MLi10-edge', 'MNa0-edge', 'SNa10', 'SNa10-edge', 'SNa0-edge',  'blank', 'darks', ]           
     piezo_x = [       42150,   35600,        36000,   28400,        29900,       22500,        16400,       11200,    5200,         4900,       -3250,    -9300,  -21300, ]         
     piezo_y = [       -5900,   -5900,        -5900,   -5900,        -4900,       -5200,        -5200,       -4700,   -5900,        -5900,       -4750,    -6100,   -6100, ]
@@ -1120,7 +1542,7 @@ def run_swaxs_2024_2_Paren_tender(t=2):
     ))
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     step = 1000 / len(energies)
 
@@ -1142,8 +1564,8 @@ def run_swaxs_2024_2_Paren_tender(t=2):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1163,7 +1585,7 @@ def run_swaxs_2024_2_Paren_tender(t=2):
                     yield from bp.count([OAV_writing])
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_swaxs_2024_2_Paren_tender_long_exposure(t=7):
@@ -1174,6 +1596,27 @@ def run_swaxs_2024_2_Paren_tender_long_exposure(t=7):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a long-exposure tender-energy sweep for each sample.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names_1   = [ 'SLi0-a', 'SLi0-b', 'SLi0-c',  'SLi10-a', 'SLi10-b', 'SLi10-c',  'MNa10-a', 'MNa10-b', 'MNa10-c', ]
     piezo_x_1 = [    42150,    42150,    43350,      36000,     35900,     35900,      29900,     28400,     29000, ]
     piezo_y_1 = [    -5900,    -4500,    -4500,      -5900,     -5400,     -4600,      -4900,     -5900,     -5000, ]
@@ -1197,7 +1640,7 @@ def run_swaxs_2024_2_Paren_tender_long_exposure(t=7):
     energies = [ 2445, 2474, 2476, 2478.25, 2500 ]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
 
     msg = "Wrong number of coordinates"
@@ -1218,8 +1661,8 @@ def run_swaxs_2024_2_Paren_tender_long_exposure(t=7):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1235,7 +1678,7 @@ def run_swaxs_2024_2_Paren_tender_long_exposure(t=7):
                     yield from bp.count([OAV_writing])
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_swaxs_2024_2_Paren_tender_nexafs(t=2):
@@ -1246,6 +1689,27 @@ def run_swaxs_2024_2_Paren_tender_nexafs(t=2):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS-style fine energy sweep across the edge for each sample.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names_1   = [ 'SLi0-a', 'SLi0-b', 'SLi0-c',  'SLi10-a', 'SLi10-b', 'SLi10-c',  'MNa10-a', 'MNa10-b', 'MNa10-c', ]
     piezo_x_1 = [    42150,    42150,    43350,      36000,     35900,     35900,      29900,     28400,     29000, ]
     piezo_y_1 = [    -5900,    -4500,    -4500,      -5900,     -5400,     -4600,      -4900,     -5900,     -5000, ]
@@ -1276,7 +1740,7 @@ def run_swaxs_2024_2_Paren_tender_nexafs(t=2):
     ))
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
 
     msg = "Wrong number of coordinates"
@@ -1304,8 +1768,8 @@ def run_swaxs_2024_2_Paren_tender_nexafs(t=2):
 
                 for i, nrg in enumerate(energies):
                     yield from bps.mv(energy, nrg)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, nrg)
                         yield from bps.sleep(2)
@@ -1321,13 +1785,22 @@ def run_swaxs_2024_2_Paren_tender_nexafs(t=2):
                         yield from bp.count([OAV_writing])
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def run_tender_overnight_Paren_2024_2():
     '''
     Run overnight all samples across 5 energies,
     then nexafs for all, and 0, 20, 40, for -c samples
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: runs the overnight tender long-exposure sweep and then the NEXAFS sweep, one after
+    #   the other, for all samples.
+    #
+    # 💡 NEWER, EASIER WAY: this just runs several of the measurement functions above
+    #   back-to-back. In the beamline 'smi_plans' helper library you'd chain the
+    #   matching 'bar'/run plans the same way (one `yield from` each), and each keeps
+    #   recording its own metadata into the data. Nothing here is broken.
+    # === end smi_plans note ================================================
     yield from run_swaxs_2024_2_Paren_tender_long_exposure(t=7)
     yield from run_swaxs_2024_2_Paren_tender_nexafs(t=2)
     print('All done!!!')
@@ -1341,6 +1814,24 @@ def run_swaxs_2024_2_Paren_hard(t=2):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a hard-X-ray transmission run — WAXS/SAXS at a few spots per sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names_1   = [ 'SLi0-a', 'SLi0-b', 'SLi0-c',  'SLi10-a', 'SLi10-b', 'SLi10-c',  'MNa10-a', 'MNa10-b', 'MNa10-c', ]
     piezo_x_1 = [    42150,    42150,    43350,      36000,     35900,     35900,      29900,     28400,     29000, ]
     piezo_y_1 = [    -5900,    -4500,    -4500,      -5900,     -5400,     -4600,      -4900,     -5900,     -5000, ]
@@ -1361,7 +1852,7 @@ def run_swaxs_2024_2_Paren_hard(t=2):
 
     user = "BP"
     waxs_arc = [ 0, 20, 40 ]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
 
     msg = "Wrong number of coordinates"
@@ -1393,7 +1884,7 @@ def run_swaxs_2024_2_Paren_hard(t=2):
                 yield from bp.count([OAV_writing])
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_swaxs_2024_2_Paren_tender_long_exposure2(t=10):
@@ -1404,6 +1895,27 @@ def run_swaxs_2024_2_Paren_tender_long_exposure2(t=10):
     then offsets from central positions with x_off and y_off.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a second long-exposure tender-energy sweep for each sample.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names_1   = [ 'SLi0-a', 'SLi0-b', 'SLi0-c',  'SLi10-a', 'SLi10-b', 'SLi10-c',  'MNa10-a', 'MNa10-b', 'MNa10-c', ]
     piezo_x_1 = [    42150,    42150,    43350,      36000,     35900,     35900,      29900,     28400,     29000, ]
     piezo_y_1 = [    -5900,    -4500,    -4500,      -5900,     -5400,     -4600,      -4900,     -5900,     -5000, ]
@@ -1427,7 +1939,7 @@ def run_swaxs_2024_2_Paren_tender_long_exposure2(t=10):
     energies = [ 2445, 2474, 2476, 2478.25, 2500 ]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
 
     msg = "Wrong number of coordinates"
@@ -1453,8 +1965,8 @@ def run_swaxs_2024_2_Paren_tender_long_exposure2(t=10):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1470,12 +1982,33 @@ def run_swaxs_2024_2_Paren_tender_long_exposure2(t=10):
                     yield from bp.count([OAV_writing])
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def run_Paren_tender_initial_nexafs(t=2):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an initial NEXAFS energy sweep across the edge for each sample.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names   = [ 'SNa0-b2', ]# 'SNa0-a1', ]
     piezo_x = [     36300, ]#    36300, ]
     piezo_y = [      5500, ]#     5100,]
@@ -1501,7 +2034,7 @@ def run_Paren_tender_initial_nexafs(t=2):
         ))
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
 
     msg = "Wrong number of coordinates"
@@ -1523,8 +2056,8 @@ def run_Paren_tender_initial_nexafs(t=2):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1540,13 +2073,34 @@ def run_Paren_tender_initial_nexafs(t=2):
                     yield from bp.count([OAV_writing])
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_Paren_tender_2024_3(t=1):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tender-energy sweep across the edge for each sample.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names_1   = [ 'SLi0-a',  'SNa0-c', 'MLi0-a',  'MNa0-a',  'SLi10-a',  'SNa10-a',    'MLi10-a',  'MNa10-a', ]
     piezo_x_1 = [    41900,     36300,    29400,     23000,      15800,       4200,         7000,       -200, ]
     piezo_y_1 = [     4400,      5800,     4600,      5200,       5500,      -7000,         5500,       5500, ]
@@ -1568,7 +2122,7 @@ def run_Paren_tender_2024_3(t=1):
     ))
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -1589,8 +2143,8 @@ def run_Paren_tender_2024_3(t=1):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1606,13 +2160,29 @@ def run_Paren_tender_2024_3(t=1):
                     yield from bp.count([OAV_writing])
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_Paren_tender_darks_2024_3(t=1):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: collects DARK reference frames across the tender energies (beam blocked) for later
+    #   background subtraction.
+    #
+    # 💡 NEWER, EASIER WAY: collecting flat-field / dark reference frames is just
+    #   repeated acquisition with the beam set up a certain way; the beamline
+    #   'smi_plans' helper library can take those frames with acquire(...) (or a
+    #   transmission run) and record the conditions into the data automatically, so
+    #   you don't hand-build the reference file names.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     yield from shclose()
     print('Photo Shutter Closed!')
     yield from bps.sleep(2)
@@ -1626,7 +2196,7 @@ def run_Paren_tender_darks_2024_3(t=1):
     ))
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -1635,8 +2205,8 @@ def run_Paren_tender_darks_2024_3(t=1):
         for name in names:
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1654,13 +2224,34 @@ def run_Paren_tender_darks_2024_3(t=1):
     yield from bps.sleep(2)
     print('Photo Shutter Open!')
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_Paren_tender_overnight_2024_3(t=3):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight tender-energy sweep across the edge for all samples.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names_1   = [ 'SLi0-b',  'SNa0-d', 'MLi0-b',  'MNa0-b',  'SLi10-b',  'SNa10-b',    'MLi10-b',  'MNa10-b', ]
     piezo_x_1 = [    41900,     36300,    29400,     23000,      15800,       4200,         7000,       -200, ]
     piezo_y_1 = [     4900,      6000,     4400,      5400,       5800,      -7200,         5800,       5800, ]
@@ -1683,7 +2274,7 @@ def run_Paren_tender_overnight_2024_3(t=3):
     ))
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -1704,8 +2295,8 @@ def run_Paren_tender_overnight_2024_3(t=3):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1721,9 +2312,17 @@ def run_Paren_tender_overnight_2024_3(t=3):
                     yield from bp.count([OAV_writing])
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def Paren_overnight_2024_3():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: runs the overnight tender sweep and then the dark-frame collection, back-to-back.
+    #
+    # 💡 NEWER, EASIER WAY: this just runs several of the measurement functions above
+    #   back-to-back. In the beamline 'smi_plans' helper library you'd chain the
+    #   matching 'bar'/run plans the same way (one `yield from` each), and each keeps
+    #   recording its own metadata into the data. Nothing here is broken.
+    # === end smi_plans note ================================================
     yield from run_Paren_tender_overnight_2024_3(t=3)
     yield from run_Paren_tender_darks_2024_3(t=3)
 
@@ -1731,6 +2330,21 @@ def run_Paren_flatfield(t=30):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: collects FLAT-FIELD reference frames (uniform illumination) for later correction.
+    #
+    # 💡 NEWER, EASIER WAY: collecting flat-field / dark reference frames is just
+    #   repeated acquisition with the beam set up a certain way; the beamline
+    #   'smi_plans' helper library can take those frames with acquire(...) (or a
+    #   transmission run) and record the conditions into the data automatically, so
+    #   you don't hand-build the reference file names.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     name =   'flatfield-MLi10-c-30s'
     x =      7400
     y =      4200
@@ -1747,7 +2361,7 @@ def run_Paren_flatfield(t=30):
     ))
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     y_step = 30 #(5800 - 4200) / len(energies)
 
@@ -1762,7 +2376,7 @@ def run_Paren_flatfield(t=30):
         yield from bps.mv(energy, nrg,
                             piezo.y, y + (i + 1) * y_step)
         yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, nrg)
             yield from bps.sleep(2)
@@ -1774,7 +2388,7 @@ def run_Paren_flatfield(t=30):
         yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_Paren_hard_2024_3(t=2):
@@ -1785,6 +2399,24 @@ def run_Paren_hard_2024_3(t=2):
     #piezo_x_1 = [    -4400,      800,       7800,      14600,      24400,      29400,      33400,     37800,  ]
     #piezo_y_1 = [     5600,     5600,       5600,       5600,       5600,       5600,       5000,      5800,  ]
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a hard-X-ray transmission run — WAXS/SAXS at a few spots per sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names_1   = [ 'EmptyCap-c',  'BaeS4RH-c', 'BaeS3RH-c',  'BaeS2RH-c',  'BaeS1RH-c', ]
     piezo_x_1 = [       -12000,        -5600,        1000,         7200,        13400, ]
     piezo_y_1 = [         4000,         4800,        4800,          400,         5000, ]
@@ -1805,7 +2437,7 @@ def run_Paren_hard_2024_3(t=2):
     #y_off = [ 0, ] # 250, 600 ]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -1840,12 +2472,34 @@ def run_Paren_hard_2024_3(t=2):
                 yield from bp.count([OAV_writing])
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def grazing(t=0.5):
     """
     standard GI-S/WAXS on double stack holder
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the standard grazing-incidence S/WAXS run on the double-stack holder — for each
+    #   sample it aligns, parks the SAXS beamstop rod, then takes WAXS/SAXS at several
+    #   incident angles and WAXS arc positions.
+    #
+    # 💡 NEWER, EASIER WAY: aligning each sample then sweeping incident angle / WAXS
+    #   arc is the beamline 'smi_plans' helper library's GIWAXS run. align_sample
+    #   aligns and saves the result, and incidence_axis sweeps the angle while
+    #   recording it into the data:
+    #
+    #     from smi_plans import giwaxs_bar, SampleList, incidence_axis, align_sample
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #     yield from giwaxs_bar(samples, incidence_axis(piezo.th, ai0, incident_angles),
+    #                           t=t, align=align_sample)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the
+    #   exposure unless run as a plan (⚠️ notes). (2) 'pil2M_bs_rod' (the SAXS
+    #   beamstop rod) was renamed to 'pil2M.beamstop.x_rod' (⚠️ note on that line).
+    #   The energy settles/re-seeks are NOT broken — smi_plans handles them (💡).
+    # === end smi_plans note ================================================
     """
     # Top sample bar O1, to be measured, position needs to be checked
     names_1   = ['H400nmTcom16-minus42C-b801-85C', 'H400nmTcom16-minus42C-b849-110C', 'H400nmTcom16-minus42C-b897-160C', 'H400nmTcom16-minus42C-b996-60C', 'H400nmTcom16-minus42C-b948-40C', 'H400nmTcom16-minus42C-b995-60C', 'H400nmTcom16-minus42C-B270-110C', 'H400nmTcom16-minus42C-b1062-RT','H400nmTcom15-minus9C-b848-110C', 'H400nmTcom15-minus9C-b993-60C', 'H400nmTcom15-minus9C-b994-60C', 'H400nmTcom15-minus9C-b1061-RT', 'OG-600nm-b1077-RT-20240725',] 
@@ -1911,7 +2565,7 @@ def grazing(t=0.5):
     incident_angles = [ 0.10, 0.25 ]
     user_name = 'TT'
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     bp_pos_x = 1.95
 
@@ -1939,7 +2593,7 @@ def grazing(t=0.5):
 
         # Sample flat at ai0
         ai0 = piezo.th.position
-        yield from bps.mv(pil2M_bs_rod.x, bp_pos_x)
+        yield from bps.mv(pil2M_bs_rod.x, bp_pos_x)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
@@ -1960,7 +2614,7 @@ def grazing(t=0.5):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 def get_scan_time(scan_id=-1):
     """
@@ -1968,6 +2622,13 @@ def get_scan_time(scan_id=-1):
     db = Broker.named('smi')
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a small utility that reads a finished scan from the database and reports how long
+    #   each point took. No data is collected.
+    #
+    # 💡 smi_plans: nothing to migrate here — this is analysis/reporting, not
+    #   acquisition. (Nothing is broken.)
+    # === end smi_plans note ================================================
     h = db[scan_id]
 
     tpp = (h.stop['time'] - h.start['time']) / h.start['num_points']
@@ -1979,6 +2640,27 @@ def overnight_mapping(t=0.5):
     two samples 700 x 700
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight SAXS/WAXS raster map over a grid of points.
+    #   (Heads-up: there are TWO functions named 'overnight_mapping' in this file — the
+    #   lower definition is the one Python keeps, so the upper one is shadowed/ignored.)
+    #
+    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
+    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
+    #   it has grid maps; for 'a few points per sample for averaging' it has the
+    #   transmission/map runs. Either way it records each position/beam into the
+    #   saved data and templates the file name from them (no hand-built name + no
+    #   manual sample_id call needed):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
+    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [   'N4',    'N2'    ]
     piezo_x = [ -29910,   -16560,  ]
     piezo_y = [   1340,      920,  ]
@@ -1990,7 +2672,7 @@ def overnight_mapping(t=0.5):
     assert len(piezo_x) == len(piezo_z), msg
 
     waxs_arc = [ 20, 0 ]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
 
@@ -2011,13 +2693,32 @@ def overnight_mapping(t=0.5):
             yield from bp.rel_grid_scan(dets, piezo.y, -350, 350, 291,  piezo.x, -350, 350, 29, 0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     
 def overday_mapping(t=2):
     """
     two samples 400 x 400
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a daytime SAXS/WAXS raster map over a grid of points.
+    #
+    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
+    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
+    #   it has grid maps; for 'a few points per sample for averaging' it has the
+    #   transmission/map runs. Either way it records each position/beam into the
+    #   saved data and templates the file name from them (no hand-built name + no
+    #   manual sample_id call needed):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
+    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [   'N4',    'N2',   'bkg-N4',   'bkg-2', ]
     piezo_x = [ -29780,   -16240,    -28380,    -14440, ]
     piezo_y = [  -3900,    -4340,     -3800,     -4380, ]
@@ -2029,7 +2730,7 @@ def overday_mapping(t=2):
     assert len(piezo_x) == len(piezo_z), msg
 
     waxs_arc = [ 0 , 20]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
 
@@ -2053,13 +2754,34 @@ def overday_mapping(t=2):
                 yield from bp.rel_grid_scan(dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 11, 0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 def overnight_mapping(t=1):
     """
     two samples 400 x 400
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight SAXS/WAXS raster map over a grid of points.
+    #   (Heads-up: there are TWO functions named 'overnight_mapping' in this file — the
+    #   lower definition is the one Python keeps, so the upper one is shadowed/ignored.)
+    #
+    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
+    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
+    #   it has grid maps; for 'a few points per sample for averaging' it has the
+    #   transmission/map runs. Either way it records each position/beam into the
+    #   saved data and templates the file name from them (no hand-built name + no
+    #   manual sample_id call needed):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
+    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [   'N4',    'bkg-N4',   ]
     piezo_x = [ -29780,     -28380,    ]
     piezo_y = [  -3900,       -3800,   ]
@@ -2071,7 +2793,7 @@ def overnight_mapping(t=1):
     assert len(piezo_x) == len(piezo_z), msg
 
     waxs_arc = [ 0 , 20]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
 
@@ -2095,12 +2817,31 @@ def overnight_mapping(t=1):
                 yield from bp.rel_grid_scan(dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 11, 0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     
     
 def take_bkg(name='bkg4-N2', t=2):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a small background raster (a few points) for a named background sample.
+    #
+    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
+    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
+    #   it has grid maps; for 'a few points per sample for averaging' it has the
+    #   transmission/map runs. Either way it records each position/beam into the
+    #   saved data and templates the file name from them (no hand-built name + no
+    #   manual sample_id call needed):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
+    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     waxs_arc = [ 0 ]#, 20]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -2113,9 +2854,17 @@ def take_bkg(name='bkg4-N2', t=2):
         yield from bp.rel_grid_scan(dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 11, 0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 def rh(prefix='_RH'):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: builds a short '_RH<value>' tag (the current humidity) to add to a file name.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline 'smi_plans' helper library records the humidity
+    #   into the saved data and can template it into the file name for you (and its RH
+    #   plans like rh_step_series_run set/track humidity directly), so this naming helper
+    #   becomes unnecessary once you migrate. (Nothing is broken.)
+    # === end smi_plans note ================================================
     rh  = str(np.round(readHumidity(verbosity=0), 2)).zfill(4)
     return f'{prefix}{rh}'
 
@@ -2126,6 +2875,24 @@ def run_Ray_swaxs_2024_3(t=1):
     Make sample names unique for each scan point
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: SWAXS on a humidity-cell point, making each scan point's name unique.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   ['CEC-Anneal','CEC-WT','CEC-L44A',]
     #stage_x = [ -7.4 , -1.0, 5.3,]
     #stage_x = [-13.7 , -7.4 , -1.0, 5.3, 11.6, 17.9, 24.3, 30.548]
@@ -2145,7 +2912,7 @@ def run_Ray_swaxs_2024_3(t=1):
     waxs_arc = [ 0 ]
     #use just [0] if we just want to run quick WAXS with no SAXS
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for name, x, y in zip(names, stage_x, stage_y):
         
@@ -2165,7 +2932,7 @@ def run_Ray_swaxs_2024_3(t=1):
             yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_Ray_swaxs_2024_3_single(t=1):
@@ -2176,6 +2943,24 @@ def run_Ray_swaxs_2024_3_single(t=1):
 
     # names =   ['LP-Can-XT-UnT-a', 'LP-Can-XT-MeOH-a', 'LP-Can-T-UnT-a','LP-Can-T-MeOH-a','LP-Can-M-UnT-a','LP-Can-M-MeOH-a','LP-Can-S-UnT-a','LP-Can-S-MeOH-a', ]
     # stage_x = [-13.7 , -7.4 , -1.0, 5.3, 11.6, 17.9, 24.3, 30.548]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: SWAXS on a single humidity-cell point.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   ['LP-Can-S-MeOH-a' ]
     stage_x = [30.548]
     #stage_y = [   2.2,     2.2, ]
@@ -2190,7 +2975,7 @@ def run_Ray_swaxs_2024_3_single(t=1):
     #waxs_arc = [ 0 ]
     #use this if we just want to run quick WAXS with no SAXS
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for name, x, y in zip(names, stage_x, stage_y):
         
@@ -2210,13 +2995,32 @@ def run_Ray_swaxs_2024_3_single(t=1):
             yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def andrew_mapping_2025_1(t=3):
     """
     Grid mapping on samples
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS raster map over a grid of points.
+    #
+    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
+    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
+    #   it has grid maps; for 'a few points per sample for averaging' it has the
+    #   transmission/map runs. Either way it records each position/beam into the
+    #   saved data and templates the file name from them (no hand-built name + no
+    #   manual sample_id call needed):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
+    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [         'Claw',        'bkg-Claw',          'Club1',      'bkg-Club1',         'Chitin',         'Club2',       'bkg-Club2', ]
     piezo_x = [          23500,             24250,            -2230,            -2980,            42450,           13790,             14540, ]
     piezo_y = [           -570,              -570,              110,              110,             -650,            -260,              -260, ]
@@ -2234,7 +3038,7 @@ def andrew_mapping_2025_1(t=3):
     assert len(piezo_x) == len(x_range), msg
 
     waxs_arc = [ 0 ]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -2255,13 +3059,34 @@ def andrew_mapping_2025_1(t=3):
             yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
             
             sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_Paren_tender_overnight_2025_1(t=2):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight tender-energy sweep across the edge for all samples.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names_1   = [ 'MNa20', 'MLi20', 'SNa20', 'SLi20', 'MNa10r', 'MLi10r', 'SLi5', 'vacuum', ]
     piezo_x_1 = [  -13700,   -9600,   -3600,    1600,     6800,    12000,  21800,    35800, ]
     piezo_y_1 = [   -5700,   -5800,   -5600,   -6600,    -7150,    -6500,  -6900,    -6650, ]
@@ -2285,7 +3110,7 @@ def run_Paren_tender_overnight_2025_1(t=2):
 
     step_y = 15
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -2308,7 +3133,7 @@ def run_Paren_tender_overnight_2025_1(t=2):
                 yield from bps.mv(energy, nrg)
                 yield from bps.mv(piezo.y, y + i * step_y)
                 yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -2324,12 +3149,27 @@ def run_Paren_tender_overnight_2025_1(t=2):
                 #    yield from bp.count([OAV_writing])
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def run_Paren_flatfield_2025_1(t=10):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: collects FLAT-FIELD reference frames across the tender energies for later correction.
+    #
+    # 💡 NEWER, EASIER WAY: collecting flat-field / dark reference frames is just
+    #   repeated acquisition with the beam set up a certain way; the beamline
+    #   'smi_plans' helper library can take those frames with acquire(...) (or a
+    #   transmission run) and record the conditions into the data automatically, so
+    #   you don't hand-build the reference file names.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     name =   'flatfield-MNa20-30s'
     x =      -14900
     y =      -5600
@@ -2346,7 +3186,7 @@ def run_Paren_flatfield_2025_1(t=10):
     ))
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     y_step = 15 #(5800 - 4200) / len(energies)
 
@@ -2363,7 +3203,7 @@ def run_Paren_flatfield_2025_1(t=10):
             piezo.y, y + i  * y_step,
             )
         yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, nrg)
             yield from bps.sleep(2)
@@ -2375,10 +3215,18 @@ def run_Paren_flatfield_2025_1(t=10):
         yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bps.mv(waxs, 0)
 
 def run_scans_Paren_2025_1():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: runs the overnight tender sweep and then the flat-field collection, back-to-back.
+    #
+    # 💡 NEWER, EASIER WAY: this just runs several of the measurement functions above
+    #   back-to-back. In the beamline 'smi_plans' helper library you'd chain the
+    #   matching 'bar'/run plans the same way (one `yield from` each), and each keeps
+    #   recording its own metadata into the data. Nothing here is broken.
+    # === end smi_plans note ================================================
     yield from run_Paren_tender_overnight_2025_1(t=2)
     yield from run_Paren_flatfield_2025_1(t=30)
 
@@ -2386,6 +3234,24 @@ def run_Paren_hard_2025_1(t=5):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a hard-X-ray transmission run — WAXS/SAXS at a few spots per sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names_1   = [ 'MNa20-b', 'MLi20-b', 'SNa20-b', 'SLi20-b', 'MNa10r-b', 'MLi10r-b', 'SLi5-b', 'vacuum', ]
     piezo_x_1 = [   -14600,      -9200,     -3200,      2000,       7300,      12400,    22200,    35800, ]
     piezo_y_1 = [    -5550,      -5800,     -5800,     -5800,      -6400,      -6400,    -6400,    -6650, ]
@@ -2411,7 +3277,7 @@ def run_Paren_hard_2025_1(t=5):
     waxs_arc = [ 0, 20, 40 ]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -2438,12 +3304,26 @@ def run_Paren_hard_2025_1(t=5):
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def run_Paren_flatfield_hard_2025_1(t=30):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: collects hard-X-ray FLAT-FIELD reference frames for later correction.
+    #
+    # 💡 NEWER, EASIER WAY: collecting flat-field / dark reference frames is just
+    #   repeated acquisition with the beam set up a certain way; the beamline
+    #   'smi_plans' helper library can take those frames with acquire(...) (or a
+    #   transmission run) and record the conditions into the data automatically, so
+    #   you don't hand-build the reference file names.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     name =   'flatfield-SNa0-30s'
     x =      37400
     y =       6700
@@ -2454,7 +3334,7 @@ def run_Paren_flatfield_hard_2025_1(t=30):
     dets = [pil900KW, pil2M]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
 
     yield from bps.mv(
@@ -2471,10 +3351,18 @@ def run_Paren_flatfield_hard_2025_1(t=30):
     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bps.mv(waxs, 0)
 
 def run_scans_hard_Paren_2025_1():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: runs the hard transmission run and then the hard flat-field collection, back-to-back.
+    #
+    # 💡 NEWER, EASIER WAY: this just runs several of the measurement functions above
+    #   back-to-back. In the beamline 'smi_plans' helper library you'd chain the
+    #   matching 'bar'/run plans the same way (one `yield from` each), and each keeps
+    #   recording its own metadata into the data. Nothing here is broken.
+    # === end smi_plans note ================================================
     yield from run_Paren_hard_2025_1(t=5)
     yield from run_Paren_flatfield_hard_2025_1()
 
@@ -2485,6 +3373,25 @@ def overnight_mapping_Das_2025_1(t=2):
 
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight SAXS-priority raster map (large grid) for the Das samples.
+    #
+    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
+    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
+    #   it has grid maps; for 'a few points per sample for averaging' it has the
+    #   transmission/map runs. Either way it records each position/beam into the
+    #   saved data and templates the file name from them (no hand-built name + no
+    #   manual sample_id call needed):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
+    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [   'S1',   'S2',   'S3',   'S4',  'S5',  'S6',  'S7',  'bkg', ]
     piezo_x = [ -39000, -28000,  14000,   2000, 15000, 28000, 41000,  45000, ]
     piezo_y = [    500,    500,    500,    500,   500,   600,   900,    900, ]
@@ -2496,7 +3403,7 @@ def overnight_mapping_Das_2025_1(t=2):
     assert len(piezo_x) == len(piezo_z), msg
 
     waxs_arc = [ 20 , 0]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -2523,7 +3430,7 @@ def overnight_mapping_Das_2025_1(t=2):
                 yield from bp.rel_grid_scan(dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 11, 0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
@@ -2533,6 +3440,25 @@ def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
     """
     # Sample name and coordinates
     
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ SAXS/WAXS raster map for the Das samples.
+    #
+    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
+    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
+    #   it has grid maps; for 'a few points per sample for averaging' it has the
+    #   transmission/map runs. Either way it records each position/beam into the
+    #   saved data and templates the file name from them (no hand-built name + no
+    #   manual sample_id call needed):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
+    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     name = 'BKG-Air'
     x =    -6300
     y =     2200
@@ -2546,7 +3472,7 @@ def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
     else:
         waxs_arc = [ 15 ]
     
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -2574,7 +3500,7 @@ def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
         # # Do a single WAXS + SAXS scan at the end
         waxs_arc_single = [20, 0]
         for wa in waxs_arc_single:
-            det_exposure_time(extra_exposure, extra_exposure)
+            det_exposure_time(extra_exposure, extra_exposure)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(extra_exposure, extra_exposure)  — or at the prompt:  RE(det_exposure_time(extra_exposure, extra_exposure)). (The smi_plans technique runs set exposure for you via t=.)
 
             yield from bps.mv(waxs, wa)
             yield from bps.mv(piezo.x, x + x_offset)
@@ -2597,12 +3523,31 @@ def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
 
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 def andrew_mapping_2025_2(t=3.5):
     """
     Grid mapping on samples
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS raster map over a grid of points.
+    #
+    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
+    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
+    #   it has grid maps; for 'a few points per sample for averaging' it has the
+    #   transmission/map runs. Either way it records each position/beam into the
+    #   saved data and templates the file name from them (no hand-built name + no
+    #   manual sample_id call needed):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
+    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names =   [    'Pre-sol-t',   'bkg-Pre-sol-t',     'Pre-sol-s', 'bkg-Pre-sol-s',          'Sol-s',     'bkg-Sol-s',          'Sol-t',     'bkg-Sol-t',         'Worker',    'bkg-Worker',         'Hornet',    'bkg-Hornet',         'Beetle', ]
     piezo_x = [          38320,             38820,           29970,           30470,            21190,           20390,            11060,           11560,             3080,            3530,            -7370,           -7970,           -18830, ]
     piezo_y = [           1680,              1680,            1410,            1710,              770,             870,              910,             910,             1290,            1290,             1430,            1160,              385, ]
@@ -2620,7 +3565,7 @@ def andrew_mapping_2025_2(t=3.5):
     assert len(piezo_x) == len(x_range), msg
 
     waxs_arc = [ 0 ]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -2642,7 +3587,7 @@ def andrew_mapping_2025_2(t=3.5):
             yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
             
             sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 
@@ -2650,6 +3595,24 @@ def run_Paren_hard_2025_2(t=5):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a hard-X-ray transmission run — WAXS/SAXS at a few spots per sample for averaging.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names_1   = ['MNa0-ii',  'SNa12-1k-ii',   'SNa10-1k-ii',   'SNa5-1k-ii', 'MNa12-1k-ii', 'MNa10-1k-ii', 'MNa5-1k-ii']#] 'SNa0-0.5uL',  'SNa0-1uL',   'SNa0-2uL',     'MNa0',   'SNa12-1k',   'SNa10-1k',   'SNa5-1k']
     piezo_x_1 = [    26800,          21400,           16800,          11600,          6400,          1200,       -4000,]#        41400,       36400,        31200,      26200,        21200,        16200,       10900]
     #piezo_y_1 = [    -6450,          -6450,           -6450,          -6450,         -6450,         -6450,       -6450,]#   -1600,       -1600,        -1600,      -2000,        -1400,        -1800,       -1600]
@@ -2677,7 +3640,7 @@ def run_Paren_hard_2025_2(t=5):
     waxs_arc = [ 0, 20, 40 ][::-1]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -2703,7 +3666,7 @@ def run_Paren_hard_2025_2(t=5):
 
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 
@@ -2711,6 +3674,23 @@ def run_Paren_temperature_hard_2025_2(t=0.5):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a hard-X-ray transmission run taken at controlled temperature(s) — WAXS/SAXS at a
+    #   few spots per sample.
+    #
+    # 💡 NEWER, EASIER WAY: ramping/holding temperature (Linkam or Lakeshore) while
+    #   collecting is the beamline 'smi_plans' helper library's temperature run. It
+    #   drives the heater, waits for setpoints, and records the temperature into the
+    #   saved data + file name for you:
+    #
+    #     from smi_plans import temperature_ramp_run, isothermal_kinetics_run, goto_temperature
+    #     # e.g. hold at T and take frames over time: isothermal_kinetics_run(...)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names_1   = [ 'SNa0-0.5uL',  'SNa0-1uL',   'SNa0-2uL',     'SNa5-1k']
     piezo_x_1 = [        41400,       36400,        31200,         10900]
     piezo_y_1 = [        -1550,       -1550,        -1550,         -1550]
@@ -2743,7 +3723,7 @@ def run_Paren_temperature_hard_2025_2(t=0.5):
     temperatures = [30, 50, 70, 90, 70, 50, 30]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -2794,7 +3774,7 @@ def run_Paren_temperature_hard_2025_2(t=0.5):
 
             # Shorter exposure for bulk samples
             t = 0.5 if 'C8' in name else 5
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
             # Read T and convert to deg C
             temp_degC = ls.input_A.get() - 273.15
@@ -2814,13 +3794,34 @@ def run_Paren_temperature_hard_2025_2(t=0.5):
     yield from ls.output1.mv_temp(t_kelvin)
     yield from ls.output1.turn_off()
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_Paren_tender_2025_2(t=2):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tender-energy sweep across the edge for each sample (walks the energy down at the end).
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names_1   = ['SNa0-0.5uL-a', 'SNa0-0.5uL-b', 'SNa0-1uL',   'SNa0-2uL',       'SNa5-1k', ]
     piezo_x_1 = [         41820,          42120,      36800,        32400,           11300, ]
     piezo_y_1 = [         -1950,          -1950,      -2400,        -1900,           -2100, ]
@@ -2859,7 +3860,7 @@ def run_Paren_tender_2025_2(t=2):
 
     step_y = 15
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     waxs_arc = [ 0, 20, 40, 60, ]
 
@@ -2893,7 +3894,7 @@ def run_Paren_tender_2025_2(t=2):
             else:
                 t = 2
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
             yield from bps.mv(
                 piezo.y, y,
@@ -2904,13 +3905,13 @@ def run_Paren_tender_2025_2(t=2):
             e_down = np.arange(2460, 2500, 10)[::-1]
             for e_step in e_down:
                 yield from bps.mv(energy, e_step)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
                 yield from bps.mv(piezo.y, y + i * step_y)
                 yield from bps.sleep(2)
-                if xbpm3.sumX.get() < 10:
+                if xbpm3.sumX.get() < 10:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -2923,14 +3924,26 @@ def run_Paren_tender_2025_2(t=2):
     e_down = np.arange(2500, max(energies), 10)[::-1]
     for e_step in e_down:
         yield from bps.mv(energy, e_step)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def go_to_temp(temperature=90):
     """
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: drives the heater to a target temperature and waits for it to get there.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline 'smi_plans' helper library has goto_temperature
+    #   for exactly this (drive the heater and wait), and the temperature runs
+    #   (temperature_ramp_run / isothermal_kinetics_run) call it for you.
+    #
+    #     from smi_plans import goto_temperature
+    #     yield from goto_temperature(temperature)
+    #
+    #   (Nothing here is broken — just a tidier building block.)
+    # === end smi_plans note ================================================
     t_kelvin = temperature + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
 
@@ -2968,6 +3981,27 @@ def run_Paren_tender_hightemp_2025_2(t=2):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tender-energy sweep across the edge at high temperature for each sample.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
+    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
+    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
+    #   name from the recorded energy/beam:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
+    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
+    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
+    # === end smi_plans note ================================================
     names_1   = ['SNa0-0.5uL-a', 'SNa0-0.5uL-b', 'SNa0-1uL',   'SNa0-2uL',       'SNa5-1k', ]
     piezo_x_1 = [       41820,            42120,      36800,        32400,           11300, ]
     piezo_y_1 = [       -1950,            -1950,      -2400,        -1900,           -2100, ]
@@ -3006,7 +4040,7 @@ def run_Paren_tender_hightemp_2025_2(t=2):
 
     step_y = 15
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     waxs_arc = [ 0, 20, 40, 60, ]
 
@@ -3034,7 +4068,7 @@ def run_Paren_tender_hightemp_2025_2(t=2):
             else:
                 t = 2
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
             yield from bps.mv(
                 piezo.y, y,
@@ -3045,13 +4079,13 @@ def run_Paren_tender_hightemp_2025_2(t=2):
             e_down = np.arange(2460, 2500, 10)[::-1]
             for e_step in e_down:
                 yield from bps.mv(energy, e_step)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
                 yield from bps.mv(piezo.y, y + i * step_y)
                 yield from bps.sleep(2)
-                if xbpm3.sumX.get() < 10:
+                if xbpm3.sumX.get() < 10:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -3064,10 +4098,10 @@ def run_Paren_tender_hightemp_2025_2(t=2):
     e_down = np.arange(2500, max(energies), 10)[::-1]
     for e_step in e_down:
         yield from bps.mv(energy, e_step)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -3077,6 +4111,15 @@ def run_Paren_overnight_2025_2():
     """
     RT and HT
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: runs the room-temperature tender sweep, heats to 90 degC, then runs the high-temp
+    #   tender sweep — a full RT-then-HT overnight sequence.
+    #
+    # 💡 NEWER, EASIER WAY: this just runs several of the measurement functions above
+    #   back-to-back. In the beamline 'smi_plans' helper library you'd chain the
+    #   matching 'bar'/run plans the same way (one `yield from` each), and each keeps
+    #   recording its own metadata into the data. Nothing here is broken.
+    # === end smi_plans note ================================================
     yield from run_Paren_tender_2025_2(t=2)
     yield from go_to_temp(temperature=90)
     yield from run_Paren_tender_hightemp_2025_2(t=2)
@@ -3091,6 +4134,24 @@ def run_Paren_hard_2nd_2025_2(t=2):
     """
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a second hard-X-ray transmission run — WAXS/SAXS at a few spots per sample.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     names_1   = [ 'SNa0',         'MNa0', 'SNa12-1k', 'SNa10-1k', 'SNa5-1k',  ]
     piezo_x_1 = [  42050,          39250,      35450,      31800,     27400,  ]
     piezo_y_1 = [   5400,           5400,       5600,       5850,      5000,  ]
@@ -3117,7 +4178,7 @@ def run_Paren_hard_2nd_2025_2(t=2):
     waxs_arc = [ 0, ]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -3151,12 +4212,21 @@ def run_Paren_hard_2nd_2025_2(t=2):
             yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def create_timestamp():
     """
     store in RE.md and print
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: stores the current time in RE.md (so later file names/metadata can reference it)
+    #   and prints it.
+    #   (Heads-up: there are TWO functions named 'create_timestamp' in this file — the
+    #   lower definition is the one Python keeps, so the upper one is shadowed/ignored.)
+    #
+    # 💡 smi_plans: nothing to migrate here — it's just a metadata timestamp, not
+    #   acquisition. (smi_plans timestamps every run for you anyway.) Nothing is broken.
+    # === end smi_plans note ================================================
     RE.md['tstamp'] = time.time()
     print('\nTime stamp created in RE.md')
     tstamp = RE.md['tstamp']
@@ -3169,6 +4239,25 @@ def insitu_loop_mapping_Das_2025_3(t=1, waxs_only=False):
 
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ raster map that loops repeatedly over the Das sample grid.
+    #
+    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
+    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
+    #   it has grid maps; for 'a few points per sample for averaging' it has the
+    #   transmission/map runs. Either way it records each position/beam into the
+    #   saved data and templates the file name from them (no hand-built name + no
+    #   manual sample_id call needed):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
+    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
+    #     # each point's coordinates into the data.
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     project_set('Mn3O4-IE-RT')
 
     # Sample name and coordinates
@@ -3183,7 +4272,7 @@ def insitu_loop_mapping_Das_2025_3(t=1, waxs_only=False):
     else:
         waxs_arc = [ 14.5 ]
     
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     run = 0
 
@@ -3222,7 +4311,7 @@ def insitu_loop_mapping_Das_2025_3(t=1, waxs_only=False):
             run += 1
     
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_Paren_hard_multiplesaxs_2025_3(t=1):
@@ -3236,6 +4325,25 @@ def run_Paren_hard_multiplesaxs_2025_3(t=1):
             pil2M.beamstop.x_rod, pil2M.beamstop.y_rod - rod positions
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a hard transmission run repeated at several SAXS detector distances (SDD), for a
+    #   large sample bar.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     saxs_dct = {
         0 : {'sdd': 2000, 'beam_centre': [860.5, 1196], 'bs': 'pd', 'energy': 16100,
              'bs_x': -227.3, 'bs_y': 6.4},
@@ -3299,7 +4407,7 @@ def run_Paren_hard_multiplesaxs_2025_3(t=1):
     
     waxs_arc = [ 40, 20, 0 ]
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = 'Wrong number of coordinates'
     for arr in [piezo_x, piezo_y, piezo_z, ]:
@@ -3353,7 +4461,7 @@ def run_Paren_hard_multiplesaxs_2025_3(t=1):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_Paren_hard_cap_multiplesaxs_2025_3(t=2):
@@ -3367,6 +4475,24 @@ def run_Paren_hard_cap_multiplesaxs_2025_3(t=2):
             pil2M.beamstop.x_rod, pil2M.beamstop.y_rod - rod positions
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a hard transmission run on capillaries, repeated at several SAXS distances.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     saxs_dct = {
         0 : {'sdd': 2000, 'beam_centre': [860.5, 1196], 'bs': 'pd', 'energy': 16100,
              'bs_x': -227.3, 'bs_y': 6.4},
@@ -3395,7 +4521,7 @@ def run_Paren_hard_cap_multiplesaxs_2025_3(t=2):
     
     waxs_arc = [ 40, 20, 0 ]
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = 'Wrong number of coordinates'
     for arr in [piezo_x, piezo_y, piezo_z, ]:
@@ -3449,13 +4575,31 @@ def run_Paren_hard_cap_multiplesaxs_2025_3(t=2):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def rerun_Paren_hard_cap_multiplesaxs_2025_3(t=15):
     """
     Run standard hard transmission over multiple SAXS distances
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a re-run of the capillary hard transmission at several SAXS distances.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     saxs_dct = {
         #1 : {'sdd': 5000, 'beam_centre': [861, 1195.5], 'bs': 'pd', 'energy': 16100,
         #     'bs_x': -227.5, 'bs_y': 6.6},
@@ -3483,7 +4627,7 @@ def rerun_Paren_hard_cap_multiplesaxs_2025_3(t=15):
     
     waxs_arc = [ 20, ]
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = 'Wrong number of coordinates'
     for arr in [piezo_x, piezo_y, piezo_z, ]:
@@ -3538,7 +4682,7 @@ def rerun_Paren_hard_cap_multiplesaxs_2025_3(t=15):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def run_Paren_hard_multiplesaxs_2026_1(t=1):
     """
@@ -3551,6 +4695,24 @@ def run_Paren_hard_multiplesaxs_2026_1(t=1):
             pil2M.beamstop.x_rod, pil2M.beamstop.y_rod - rod positions
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a hard transmission run repeated at several SAXS distances, with mapping per spot.
+    #
+    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
+    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
+    #   loops the sample table and the per-sample offsets for you and records each
+    #   position/beam into the saved data + file name (so you can drop the manual
+    #   name strings and sample_id calls):
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
+    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     saxs_dct = {
         #0 : {'sdd': 2000, 'beam_centre': [744, 1110], 'bs': 'pd', 'energy': 16100,
         #     'bs_x': -227.3, 'bs_y': 6.4},
@@ -3569,7 +4731,7 @@ def run_Paren_hard_multiplesaxs_2026_1(t=1):
     
     waxs_arc = [ 40, 20, 0 ]
     user = "PW"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     msg = 'Wrong number of coordinates'
     for arr in [piezo_x, piezo_y, piezo_z, ]:
@@ -3631,4 +4793,4 @@ def run_Paren_hard_multiplesaxs_2026_1(t=1):
                 )
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)

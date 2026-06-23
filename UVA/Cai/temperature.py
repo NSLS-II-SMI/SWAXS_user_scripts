@@ -2,6 +2,32 @@ from bluesky.utils import FailedStatus
 
 def run_cai_temp_scan(name_base='M11-cap3', t=1.2):
     # get starting y position
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: steps a Linkam hot-stage through a list of temperatures (ramping, then soaking at
+    #   each), and at every temperature takes a short WAXS/SAXS line scan across the sample.
+    #
+    # 💡 NEWER, EASIER WAY: ramping the Linkam heater to each temperature, soaking, then
+    #   measuring is the beamline 'smi_plans' helper library's temperature ramp run. It drives
+    #   the heater, waits for each setpoint + soak, and records the temperature into the saved
+    #   data and file name for you:
+    #
+    #     from smi_plans import temperature_ramp_run, temperature_axis, linkam_heater
+    #     yield from temperature_ramp_run(
+    #         name_base,
+    #         temperature_axis(LThermal, temperatures_c, rates=ramp_rates_cpm, settle=wait_times_sec),
+    #         t=t,
+    #     )
+    #     # (goto_temperature handles the 'set + wait to reach + soak' that ramp_to_temp does here.)
+    #
+    # 💡 NICE WORK: this script already templates the file name from recorded fields like
+    #   {stage_y} and {pin_diode_current2_mean_value} and records the Linkam temperature into
+    #   the data — that's exactly the smi_plans style, so migrating is mostly a simplification.
+    #
+    #   (The 'sleep' waits here are temperature soak/settle time — NOT broken.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t,t)' call below no longer sets the
+    #   exposure unless run as a plan (see the ⚠️ FIXME note on that line).
+    # === end smi_plans note ================================================
     y0 = stage.y.position
     x0 = stage.x.position
     waxs_arc = [0, 20]
@@ -21,7 +47,7 @@ def run_cai_temp_scan(name_base='M11-cap3', t=1.2):
 
 
   
-    det_exposure_time(t,t)
+    det_exposure_time(t,t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # define scan run
     project_set('insitu')

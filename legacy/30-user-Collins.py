@@ -1,5 +1,27 @@
 def giwaxs_collins_2020_3(t=1):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence WAXS (GIWAXS) run over a bar of samples — for each sample
+    #   it moves there, runs the alignment routine, then for each WAXS arc angle steps a few incident
+    #   angles (piezo.th) and takes a WAXS+SAXS image at each.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a GIWAXS bar helper that loops your samples, aligns each
+    #   one and SAVES the alignment with the data, and sweeps the incident angle / WAXS arc while
+    #   recording them (so you don't rebuild the "_ai{angle}deg_wa{wax}" name by hand):
+    #
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList
+    #     samples = SampleList.from_columns(name=samples, x=x_list)
+    #     yield from giwaxs_bar(
+    #         samples, dets=[pil2M, pil900KW], t=t,     # current WAXS detector — see ⚠️
+    #         incident_angles=[0.15],                   # your angle, unchanged
+    #         arc_angles=[3, 9.5, 16, 22.5],            # your WAXS arc, unchanged
+    #         align=align_sample,                       # replaces the alignement_special call
+    #     )
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
+
     # samples = ['PCPDn', 'PCPDt', 'ITICn', 'PBDCBn', 'PBCN3n', 'PCDDn', 'P3t', 'P3n', 'P3N2n', 'HTAZn', 'HTAZt', 'FTAZn']
     # samples = ['P3N2CNn', 'N2n', 'Si', 'PB3n', 'PB0n', 'PBp25n', 'PBp5n', 'PBp75n', 'PB1n']
     # samples = ['HTAZn', 'HTAZt', 'FTAZn']
@@ -18,7 +40,7 @@ def giwaxs_collins_2020_3(t=1):
     y_0 = []
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     assert len(x_list) == len(
         samples
@@ -34,7 +56,7 @@ def giwaxs_collins_2020_3(t=1):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_ai{angle}deg_wa{wax}"
 
             for an in angle:
@@ -47,10 +69,29 @@ def giwaxs_collins_2020_3(t=1):
                 yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def giwaxs_collins_2021_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GIWAXS run over a bar of samples (on the hexapod + piezo) — moves to each
+    #   sample, aligns it, then sweeps the WAXS arc and a few incident angles taking a WAXS image.
+    #
+    # 💡 NEWER, EASIER WAY: same as the other giwaxs_collins runs — 'smi_plans' giwaxs_bar loops
+    #   your samples, aligns each (saving the result), and records the incident angle / WAXS arc:
+    #
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList
+    #     samples = SampleList.from_columns(name=samples, x=x_piezo, x_hexa=x_hexa)
+    #     yield from giwaxs_bar(
+    #         samples, dets=[pil900KW], t=t,            # current WAXS detector — see ⚠️
+    #         incident_angles=[0.09, 0.15, 0.20],       # your angles, unchanged
+    #         arc_angles=list(np.linspace(0, 19.5, 4)), # your WAXS arc, unchanged
+    #         align=align_sample,
+    #     )
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
     # samples = [ 'F4', 'F44',  'F3', 'F33', 'F9', 'F41',   'F1',  'F11',   'F2',  'F22',  'P3W', 'C61W']
     # x_piezo = [58500, 51000, 38000, 22000, 9000, -4000, -14000, -25000, -37000, -48000, -58000, -59000]
     # x_hexa =  [    6,     0,     0,     0,    0,     0,      0,      0,      0,     0,      -3,    -11]
@@ -67,7 +108,7 @@ def giwaxs_collins_2021_1(t=1):
     angle = [0.09, 0.15, 0.20]
 
     # Detectors, motors:
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     assert len(x_piezo) == len(
         samples
@@ -86,7 +127,7 @@ def giwaxs_collins_2021_1(t=1):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_16.1keV__ai{angle}deg_wa{wax}"
 
             for an in angle:
@@ -99,10 +140,23 @@ def giwaxs_collins_2021_1(t=1):
                 yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def giwaxs_collins_2021_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GIWAXS run over a bar of samples — moves to each, aligns it, then sweeps the
+    #   WAXS arc and a few incident angles taking SAXS+WAXS images.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' giwaxs_bar loops your samples, aligns each (saving the
+    #   result), and records incident angle / WAXS arc into the data:
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList
+    #     samples = SampleList.from_columns(name=samples, x=x_piezo, x_hexa=x_hexa)
+    #     yield from giwaxs_bar(samples, dets=[pil900KW, pil2M], t=t,   # current WAXS detector — see ⚠️
+    #                           incident_angles=[0.08, 0.15, 0.20], arc_angles=[0, 2, 19.5, 21.5, 39, 41],
+    #                           align=align_sample)
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
     # samples = [ 'PM7', 'ITIC',  'PBDB-T2']
     # x_piezo = [-42000, -53000,     -55000]
     # x_hexa =  [     0,      0,        -13]
@@ -119,7 +173,7 @@ def giwaxs_collins_2021_2(t=1):
     angle = [0.08, 0.15, 0.20]
 
     # Detectors, motors:
-    dets = [pil300KW, pil900KW, pil2M]
+    dets = [pil300KW, pil900KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     assert len(x_piezo) == len(
         samples
@@ -138,7 +192,7 @@ def giwaxs_collins_2021_2(t=1):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_16.1keV__ai{angle}deg_wa{wax}"
 
             for an in angle:
@@ -153,10 +207,23 @@ def giwaxs_collins_2021_2(t=1):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def giwaxs_collins(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GIWAXS run over a bar of samples — moves to each, aligns it, then sweeps the
+    #   WAXS arc and a few incident angles taking SAXS+WAXS images.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' giwaxs_bar loops your samples, aligns each (saving the
+    #   result), and records incident angle / WAXS arc into the data:
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList
+    #     samples = SampleList.from_columns(name=samples, x=x_list)
+    #     yield from giwaxs_bar(samples, dets=[pil2M, pil900KW], t=t,   # current WAXS detector — see ⚠️
+    #                           incident_angles=[0.09, 0.15, 0.20], arc_angles=[3, 9.5, 16, 22.5],
+    #                           align=align_sample)
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
     # samples = ['FCuPcCuI', 'FCuPc', 'Si', 'ITO_pos1', 'ITO_pos2', 'Z5S', 'Z5CS', 'Z5CI_pos1', 'Z5CI_pos2', 'Z5I', 'Z10S']
     # samples = ['Z10CS', 'Z10CI', 'Z10I', 'Z2OS', 'Z20CS', 'Z20CI', 'Z20I', 'Z4Os']
     # samples = ['Z5CI_pos1_2', 'Z5CI_pos2_2', 'Z4Os_2', 'Z40CS', 'Z40CI', 'Z40I', 'CS', 'CI_pos1', 'CI_pos2']
@@ -172,7 +239,7 @@ def giwaxs_collins(t=1):
     y_0 = []
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     assert len(x_list) == len(
         samples
@@ -188,7 +255,7 @@ def giwaxs_collins(t=1):
 
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_ai{angle}deg_wa{wax}"
 
             for an in angle:
@@ -201,11 +268,24 @@ def giwaxs_collins(t=1):
                 yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def nexafs_S_edge_terry(t=1):
-    dets = [pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan at the sulfur edge — for each sample it parks the WAXS arc, then
+    #   steps the X-ray energy and takes a WAXS image at each energy.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam into
+    #   the data and the file name for you:
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run("pedotpss_1_gisaxs", energies, t=t, dets=[pil900KW],   # current WAXS detector — see ⚠️
+    #                           geometry="transmission")
+    #   (settles each energy and records energy/beam — so the per-energy sleeps and the walk-back at
+    #    the end become unnecessary.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = ["pedotpss_1_gisaxs"]
     x = [0]
@@ -232,11 +312,11 @@ def nexafs_S_edge_terry(t=1):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_{energy}eV_bpm{xbpm}"
             for e in energies:
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 bpm = xbpm2.sumX.value
 
@@ -247,12 +327,25 @@ def nexafs_S_edge_terry(t=1):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-            yield from bps.mv(energy, 2470)
+            yield from bps.mv(energy, 2470)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2450)
 
 
 def waxs_S_edge_terry(t=1):
-    dets = [pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant WAXS scan at the sulfur edge — for each WAXS arc, steps the X-ray
+    #   energy (moving x a little at each energy to spread out beam damage) and takes a WAXS image.
+    # 💡 NEWER, EASIER WAY: sweeping the energy while recording it (and stepping x in step) is the
+    #   'smi_plans' energy_axis combined with a position axis:
+    #     from smi_plans import acquire, energy_axis, motor_axis
+    #     yield from acquire("c1_03", dets=[pil900KW], t=t,   # current WAXS detector — see ⚠️
+    #                        axes=[motor_axis("waxs_arc", waxs, list(waxs_arc)),
+    #                              energy_axis(energies), motor_axis("piezo_x", piezo.x, xss)])
+    #   (energy_axis settles + records, so the per-energy sleeps and the end walk-back drop away.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = ["c1_03"]
     x = [-23000]
@@ -272,11 +365,11 @@ def waxs_S_edge_terry(t=1):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e, xsss in zip(energies, xss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 yield from bps.mv(piezo.x, xsss)
                 bpm = xbpm2.sumX.value
@@ -288,12 +381,23 @@ def waxs_S_edge_terry(t=1):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-            yield from bps.mv(energy, 2470)
+            yield from bps.mv(energy, 2470)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2450)
 
 
 def waxs_S_edge_terry1(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant WAXS scan over a bar of samples — for each WAXS arc, visits every
+    #   sample and steps the X-ray energy taking a WAXS+SAXS image at each energy.
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your samples
+    #   and records the energy/beam into the data and the file name:
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])   # current WAXS detector — see ⚠️
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = [
         "p3HT_1_saxs",
@@ -356,11 +460,11 @@ def waxs_S_edge_terry1(t=1):
             yield from bps.mv(piezo.x, xs)
             yield from bps.mv(piezo.y, ys)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e in energies:
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 bpm = xbpm2.sumX.value
 
@@ -372,13 +476,26 @@ def waxs_S_edge_terry1(t=1):
                 yield from bp.count(dets, num=1)
 
             yield from bps.mv(energy, 2500)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2470)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
 
 def giwaxs_S_edge_terry(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant GISAXS scan at the sulfur edge — aligns the sample, then for each
+    #   WAXS arc steps the X-ray energy at a fixed incident angle taking GISAXS+WAXS images.
+    # 💡 NEWER, EASIER WAY: aligning + sweeping energy/incidence/arc while recording is the
+    #   'smi_plans' GIWAXS + energy combination (align_sample saves the alignment; energy_axis /
+    #   incidence_axis record the values):
+    #     from smi_plans import giwaxs_run, align_sample, energy_axis, incidence_axis
+    #     # one giwaxs_run per energy with align=align_sample, or compose energy_axis + incidence_axis
+    #     yield from giwaxs_run("pedotpss_1_gisaxs", dets=[pil900KW, pil2M], t=t,   # current WAXS detector — see ⚠️
+    #                           incident_angles=[0.7], arc_angles=list(waxs_arc), align=align_sample)
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = ["pedotpss_1_gisaxs"]
     x = [0]
@@ -408,11 +525,11 @@ def giwaxs_S_edge_terry(t=1):
 
             yield from bps.mv(piezo.th, ai0 + 0.7)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_{energy}eV_ai0.7_wa{wax}_bpm{xbpm}"
             for e in energies:
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 bpm = xbpm2.sumX.value
 
@@ -424,19 +541,32 @@ def giwaxs_S_edge_terry(t=1):
                 yield from bp.count(dets, num=1)
 
             yield from bps.mv(energy, 2500)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2470)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
 
 def WAXS_S_edge_Gomez_night(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight resonant WAXS scan — for one sample it first runs a NEXAFS scan,
+    #   then sweeps the WAXS arc and steps the energy (moving y in step) taking images, plus some
+    #   post-measurement snapshots.
+    # 💡 NEWER, EASIER WAY: the energy sweep that records the energy/beam is 'smi_plans' energy_axis;
+    #   the NEXAFS part is nexafs_run. You can compose them with acquire / a WAXS-arc motor_axis:
+    #     from smi_plans import acquire, nexafs_run, energy_axis, motor_axis
+    #     yield from nexafs_run("PA1-3", np.linspace(2430, 2500, 71), t=0.5, dets=[pil900KW])  # see ⚠️
+    #     yield from acquire("PA1-3", dets=[pil900KW, pil2M], t=t,
+    #                        axes=[motor_axis("waxs_arc", waxs, list(wa)), energy_axis(energies)])
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     names = ["PA1-3"]
     x_s = [41200]
     y_s = [1300]
 
     energies = [2456, 2464, 2475, 2477, 2490, 2492]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     wa = np.linspace(0, 45.5, 8)
 
@@ -474,9 +604,9 @@ def WAXS_S_edge_Gomez_night(t=1):
                 yield from bp.count(dets, num=1)
 
             yield from bps.mv(energy, 2470)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2456)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
     wa = [0, 6.5, 13.0]
     for wax in wa[::-1]:
@@ -502,12 +632,24 @@ def WAXS_S_edge_Gomez_night(t=1):
 
 def NEXAFS_S_edge_Gomez_night(t=0.5, name="test"):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan at the sulfur edge — parks the WAXS arc at 60 deg, steps the
+    #   X-ray energy and takes a WAXS image at each energy.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' nexafs_run does this in one line and records the energy/beam
+    #   into the data and the file name:
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, np.linspace(2430, 2500, 71), t=t, dets=[pil900KW],   # see ⚠️
+    #                           geometry="transmission")
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
+
     yield from bps.mv(waxs, 60)
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     energies = np.linspace(2430, 2500, 71)
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     name_fmt = "nexafs_{sample}_{energy}eV_xbpm{xbpm}"
     for e in energies:
         yield from bps.mv(energy, e)
@@ -519,18 +661,29 @@ def NEXAFS_S_edge_Gomez_night(t=0.5, name="test"):
         yield from bp.count(dets, num=1)
 
     yield from bps.mv(energy, 2470)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2450)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
     sample_id(user_name="test", sample_name="test")
 
 
 def WAXS_S_edge_rad_dmg_test(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a radiation-damage test — repeatedly (5x) sweeps a few WAXS arc angles at a
+    #   fixed energy (2456 eV) on one spot, taking a WAXS+SAXS image each time.
+    # 💡 NEWER, EASIER WAY: a repeated-measurement series is 'smi_plans' time_series_run / kinetics
+    #   (it records the repeat index/time), composed with a WAXS-arc axis:
+    #     from smi_plans import time_series_run, motor_axis
+    #     yield from time_series_run("PA1-3_rad_dmg_test", dets=[pil900KW, pil2M], t=t, num=5,   # see ⚠️
+    #                               axes=[motor_axis("waxs_arc", waxs, list(wa))])
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ note below).
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     names = ["PA1-3_rad_dmg_test"]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     wa = np.linspace(0, 13.0, 3)
 
@@ -555,6 +708,11 @@ def WAXS_S_edge_rad_dmg_test(t=1):
 
 
 def night_collns():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight run-book — just calls one of the measurement plans below.
+    # 💡 NEWER, EASIER WAY: once the plan it calls is migrated to 'smi_plans' (see its own note),
+    #   this stays a simple wrapper: 'yield from <the smi_plans run>(...)'. Nothing here is broken.
+    # === end smi_plans note ================================================
     # yield from waxs_S_edge_all_energies(t=1)
 
     # yield from NEXAFS_S_edge_2020_3(t=0.5)
@@ -563,7 +721,18 @@ def night_collns():
 
 
 def waxs_S_edge_few_energies(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant WAXS scan over a bar of samples at a handful of energies — for each
+    #   sample and WAXS arc, steps the energy (moving x/y a little each step) and takes an image.
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your samples
+    #   and records the energy/beam into the data and the file name:
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])   # current WAXS detector — see ⚠️
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # names = ['P3t', 'P3N2t', 'P3d', 'ITICd', 'P3N2CNt', 'HTAZd', 'PB1t', 'PB0t', 'PBp25t', 'PBp5t', 'PBp75n', 'PB3t', 'FTAZd', 'PBCBd', 'PBCN3d', 'N2d', 'PCDDd',
     # 'P3n', 'P3N2n', 'PB0n', 'PBp25n', 'PBp5n', 'PB1n', 'PB3n', 'P3N2CNn', 'PCPDd', 'PBp75t', 'PBDCBd', 'Si3N4']
@@ -647,11 +816,11 @@ def waxs_S_edge_few_energies(t=1):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e, xsss, ysss in zip(energies, xss, yss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(1)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 yield from bps.mv(piezo.y, ysss)
                 yield from bps.mv(piezo.x, xsss)
@@ -665,13 +834,28 @@ def waxs_S_edge_few_energies(t=1):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-            yield from bps.mv(energy, 2500)
+            yield from bps.mv(energy, 2500)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2475)
             yield from bps.mv(energy, 2450)
 
 
 def giwaxs_S_edge_collins(t=1):
-    dets = [pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant GISAXS scan at the sulfur edge over a bar of samples — for each
+    #   sample it opens the gate valve, aligns, then sweeps the WAXS arc and steps the energy (with
+    #   a try/except retry if the energy move fails), taking a WAXS image at each.
+    # 💡 NEWER, EASIER WAY: aligning + sweeping energy/arc while recording is the 'smi_plans' GIWAXS
+    #   + energy combination, and (importantly) the energy move was fixed so the retry isn't needed:
+    #     from smi_plans import giwaxs_bar, align_sample, energy_axis, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x)
+    #     yield from giwaxs_bar(samples, dets=[pil900KW], t=t, align=align_sample,   # current WAXS detector — see ⚠️
+    #                           arc_angles=list(waxs_arc))   # compose energy_axis per the edge sweep
+    #   (move_energy_fb/energy_axis step the energy safely and re-seek the beam, so the try/except
+    #    'energy failed to move' fallback is no longer needed.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # names = ['PCPDn', 'PCPDt', 'ITICn', 'PBDCBn', 'PBCN3n', 'PCDDn', 'P3t', 'P3n', 'P3N2n', 'HTAZn', 'HTAZt', 'FTAZn', 'P3N2CNn']
     # x = [53500, 46500, 38500, 31500, 20500, 11800, 3500, -6500, -15500, -24500, -33500, -42200, -50500]
@@ -717,7 +901,7 @@ def giwaxs_S_edge_collins(t=1):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e, xsss in zip(energies, xss):
                 try:
@@ -740,12 +924,24 @@ def giwaxs_S_edge_collins(t=1):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-            yield from bps.mv(energy, 2470)
+            yield from bps.mv(energy, 2470)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2450)
 
 
 def waxs_S_edge_all_energies(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant WAXS scan over a bar of samples across the FULL sulfur-edge energy
+    #   range — for each sample and WAXS arc, steps the energy (moving x/y a little each step) and
+    #   takes a WAXS+SAXS image.
+    # 💡 NEWER, EASIER WAY: a multi-sample dense energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam into the data and the file name:
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])   # current WAXS detector — see ⚠️
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = ["P3N2t", "P3N2CNt"]
     x = [37500, 22800]
@@ -773,11 +969,11 @@ def waxs_S_edge_all_energies(t=1):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e, xsss, ysss in zip(energies, xss, yss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(1)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 yield from bps.mv(piezo.y, ysss)
                 yield from bps.mv(piezo.x, xsss)
@@ -791,18 +987,31 @@ def waxs_S_edge_all_energies(t=1):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-            yield from bps.mv(energy, 2480)
+            yield from bps.mv(energy, 2480)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2465)
             yield from bps.mv(energy, 2450)
 
 
 def NEXAFS_S_edge_2020_3(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan at the sulfur edge — closes the gate valve, parks the WAXS arc,
+    #   then for a couple of samples steps the energy taking a WAXS image at each; reopens the valve
+    #   at the end.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' nexafs_run / nexafs_bar does the energy sweep in one line and
+    #   records the energy/beam into the data and the file name:
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW])   # current WAXS detector — see ⚠️
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW' (in the dets list
+    #   below); (2) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️
+    #   notes below).
+    # === end smi_plans note ================================================
     yield from bps.mv(GV7.close_cmd, 1)
     yield from bps.sleep(1)
     yield from bps.mv(GV7.close_cmd, 1)
 
     yield from bps.mv(waxs, 52)
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     energies = (
         np.arange(2450, 2470, 5).tolist()
@@ -824,11 +1033,11 @@ def NEXAFS_S_edge_2020_3(t=0.5):
         yield from bps.mv(piezo.x, xs + 500)
         yield from bps.mv(piezo.y, ys + 200)
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "nexafs_{sample}_{energy}eV_xbpm{xbpm}"
         for e in energies:
             yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             sample_name = name_fmt.format(
                 sample=name, energy=e, xbpm="%3.1f" % xbpm3.sumY.value
             )
@@ -838,11 +1047,11 @@ def NEXAFS_S_edge_2020_3(t=0.5):
             yield from bp.count(dets, num=1)
 
         yield from bps.mv(energy, 2510)
-        yield from bps.sleep(1)
+        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2490)
-        yield from bps.sleep(1)
+        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2470)
-        yield from bps.sleep(1)
+        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2450)
 
         sample_id(user_name="test", sample_name="test")
@@ -853,8 +1062,18 @@ def NEXAFS_S_edge_2020_3(t=0.5):
 
 
 def NEXAFS_S_edge_2021_2(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan at the sulfur edge over a bar of samples — parks the WAXS arc,
+    #   then for each sample steps the energy (moving y a little in step) taking a WAXS image.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' nexafs_bar loops your samples and records the energy/beam:
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW])   # current WAXS detector — see ⚠️
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
     yield from bps.mv(waxs, 59)
-    dets = [pil300KW, pil900KW]
+    dets = [pil300KW, pil900KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' (already in this list) — drop 'pil300KW'. (Note pil900KW is a different camera, so check beam-center/calibration.)
 
     energies = (
         np.arange(2450, 2470, 5).tolist()
@@ -890,11 +1109,11 @@ def NEXAFS_S_edge_2021_2(t=0.5):
         yss = yss.ravel()
         xss = xss.ravel()
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "nexafs_90deg_wa59deg_{sample}_{energy}eV_xbpm{xbpm}"
         for e, xsss, ysss in zip(energies, xss, yss):
             yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
             yield from bps.mv(piezo.y, ysss)
             yield from bps.mv(piezo.x, xsss)
@@ -908,19 +1127,34 @@ def NEXAFS_S_edge_2021_2(t=0.5):
             yield from bp.count(dets, num=1)
 
         yield from bps.mv(energy, 2510)
-        yield from bps.sleep(1)
+        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2490)
-        yield from bps.sleep(1)
+        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2470)
-        yield from bps.sleep(1)
+        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2450)
 
         sample_id(user_name="test", sample_name="test")
 
 
 def NEXAFS_S_edge_2021_2_set1(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan at the sulfur edge over a bar of samples, repeated at a couple
+    #   of sample-rotation angles (set via the prs stage) — at each rotation it loops the samples,
+    #   steps the energy and takes a WAXS image.
+    # 💡 NEWER, EASIER WAY: looping samples and sweeping energy is 'smi_plans' nexafs_bar; the sample
+    #   rotation that used to be 'prs' is now 'stage.phi' (and you'd set it with a motor_axis or per
+    #   rotation), and the energy/beam get recorded for you:
+    #     from smi_plans import nexafs_bar, SampleList
+    #     yield from bps.mv(stage.phi, -20)         # 'prs' is now 'stage.phi' — see ⚠️
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW])   # current WAXS detector — see ⚠️
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'prs' no longer exists — it's now 'stage.phi'; (2) 'pil300KW'
+    #   was retired — it's now 'pil900KW'; (3) 'det_exposure_time(...)' no longer sets the exposure
+    #   unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
     yield from bps.mv(waxs, 59)
-    dets = [pil300KW, pil900KW]
+    dets = [pil300KW, pil900KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' (already in this list) — drop 'pil300KW'. (Note pil900KW is a different camera, so check beam-center/calibration.)
 
     energies = (
         np.arange(2450, 2470, 5).tolist()
@@ -980,7 +1214,7 @@ def NEXAFS_S_edge_2021_2_set1(t=0.5):
     x = [-37700, 31200, 31800]
     y = [-6900, -1300, 4800]
 
-    yield from bps.mv(prs, -20)
+    yield from bps.mv(prs, -20)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     for name, xs, ys in zip(names, x, y):
         yield from bps.mv(piezo.x, xs)
         yield from bps.mv(piezo.y, ys)
@@ -992,11 +1226,11 @@ def NEXAFS_S_edge_2021_2_set1(t=0.5):
         yss = yss.ravel()
         xss = xss.ravel()
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "nexafs_70deg_wa59deg_{sample}_{energy}eV_xbpm{xbpm}"
         for e, xsss, ysss in zip(energies, xss, yss):
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
             yield from bps.mv(piezo.y, ysss)
             yield from bps.mv(piezo.x, xsss)
@@ -1010,11 +1244,11 @@ def NEXAFS_S_edge_2021_2_set1(t=0.5):
             yield from bp.count(dets, num=1)
 
         yield from bps.mv(energy, 2510)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2490)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2470)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2450)
 
         sample_id(user_name="test", sample_name="test")
@@ -1112,8 +1346,23 @@ def NEXAFS_S_edge_2021_2_set1(t=0.5):
 
 
 def NEXAFS_S_edge_2021_2_set2(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: same NEXAFS bar scan as set1 but stepped through several sample-rotation angles
+    #   (via the prs stage) — at each rotation it loops the samples, steps the energy, takes a WAXS
+    #   image.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' nexafs_bar loops the samples and records energy/beam; the
+    #   rotation that used to be 'prs' is now 'stage.phi' (set per rotation or via a motor_axis):
+    #     from smi_plans import nexafs_bar, SampleList
+    #     for ang in (-60, -20, -35, -50):
+    #         yield from bps.mv(stage.phi, ang)     # 'prs' is now 'stage.phi' — see ⚠️
+    #         samples = SampleList.from_columns(name=names, x=x, y=y)
+    #         yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW])   # current WAXS detector — see ⚠️
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'prs' no longer exists — it's now 'stage.phi'; (2) 'pil300KW'
+    #   was retired — it's now 'pil900KW'; (3) 'det_exposure_time(...)' no longer sets the exposure
+    #   unless run as a plan (⚠️ notes below).
+    # === end smi_plans note ================================================
     yield from bps.mv(waxs, 59)
-    dets = [pil300KW, pil900KW]
+    dets = [pil300KW, pil900KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' (already in this list) — drop 'pil300KW'. (Note pil900KW is a different camera, so check beam-center/calibration.)
 
     energies = (
         np.arange(2450, 2470, 5).tolist()
@@ -1186,7 +1435,7 @@ def NEXAFS_S_edge_2021_2_set2(t=0.5):
         y
     ), f"Number of X coordinates ({len(y)}) is different from number of samples ({len(names)})"
 
-    yield from bps.mv(prs, -60)
+    yield from bps.mv(prs, -60)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
 
     for name, xs, ys in zip(names, x, y):
         yield from bps.mv(piezo.x, xs)
@@ -1199,11 +1448,11 @@ def NEXAFS_S_edge_2021_2_set2(t=0.5):
         yss = yss.ravel()
         xss = xss.ravel()
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "nexafs_30deg_wa59deg_{sample}_{energy}eV_xbpm{xbpm}"
         for e, xsss, ysss in zip(energies, xss, yss):
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
             yield from bps.mv(piezo.y, ysss)
             yield from bps.mv(piezo.x, xsss)
@@ -1217,16 +1466,16 @@ def NEXAFS_S_edge_2021_2_set2(t=0.5):
             yield from bp.count(dets, num=1)
 
         yield from bps.mv(energy, 2510)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2490)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2470)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2450)
 
         sample_id(user_name="test", sample_name="test")
 
-    yield from bps.mv(prs, -20)
+    yield from bps.mv(prs, -20)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     for name, xs, ys in zip(names, x, y):
         yield from bps.mv(piezo.x, xs)
         yield from bps.mv(piezo.y, ys)
@@ -1238,11 +1487,11 @@ def NEXAFS_S_edge_2021_2_set2(t=0.5):
         yss = yss.ravel()
         xss = xss.ravel()
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "nexafs_70deg_wa59deg_{sample}_{energy}eV_xbpm{xbpm}"
         for e, xsss, ysss in zip(energies, xss, yss):
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
             yield from bps.mv(piezo.y, ysss)
             yield from bps.mv(piezo.x, xsss)
@@ -1256,16 +1505,16 @@ def NEXAFS_S_edge_2021_2_set2(t=0.5):
             yield from bp.count(dets, num=1)
 
         yield from bps.mv(energy, 2510)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2490)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2470)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2450)
 
         sample_id(user_name="test", sample_name="test")
 
-    yield from bps.mv(prs, -35)
+    yield from bps.mv(prs, -35)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     for name, xs, ys in zip(names, x, y):
         yield from bps.mv(piezo.x, xs)
         yield from bps.mv(piezo.y, ys)
@@ -1277,11 +1526,11 @@ def NEXAFS_S_edge_2021_2_set2(t=0.5):
         yss = yss.ravel()
         xss = xss.ravel()
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "nexafs_55deg_wa59deg_{sample}_{energy}eV_xbpm{xbpm}"
         for e, xsss, ysss in zip(energies, xss, yss):
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
             yield from bps.mv(piezo.y, ysss)
             yield from bps.mv(piezo.x, xsss)
@@ -1295,16 +1544,16 @@ def NEXAFS_S_edge_2021_2_set2(t=0.5):
             yield from bp.count(dets, num=1)
 
         yield from bps.mv(energy, 2510)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2490)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2470)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2450)
 
         sample_id(user_name="test", sample_name="test")
 
-    yield from bps.mv(prs, -50)
+    yield from bps.mv(prs, -50)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     for name, xs, ys in zip(names, x, y):
         yield from bps.mv(piezo.x, xs)
         yield from bps.mv(piezo.y, ys)
@@ -1316,11 +1565,11 @@ def NEXAFS_S_edge_2021_2_set2(t=0.5):
         yss = yss.ravel()
         xss = xss.ravel()
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "nexafs_40deg_wa59deg_{sample}_{energy}eV_xbpm{xbpm}"
         for e, xsss, ysss in zip(energies, xss, yss):
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
             yield from bps.mv(piezo.y, ysss)
             yield from bps.mv(piezo.x, xsss)
@@ -1334,17 +1583,24 @@ def NEXAFS_S_edge_2021_2_set2(t=0.5):
             yield from bp.count(dets, num=1)
 
         yield from bps.mv(energy, 2510)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2490)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2470)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2450)
 
         sample_id(user_name="test", sample_name="test")
 
 
 def NEXAFS_collins_night(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight run-book — sets the proposal/folder and runs two NEXAFS bar plans
+    #   back-to-back.
+    # 💡 NEWER, EASIER WAY: once those plans are migrated to 'smi_plans' (see their own notes), this
+    #   stays a simple wrapper. (sample_id/proposal_id still run; smi_plans builds the file name from
+    #   the recorded data instead.) Nothing here is broken.
+    # === end smi_plans note ================================================
     proposal_id("2021_2", "307835_Collins4")
     yield from NEXAFS_S_edge_2021_2_set1(t=t)
 

@@ -8,10 +8,36 @@ def run_continous_Zhang(name='test', t=1, td=10):
         td (flaot): time interval between measurements.
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a continuous (time-series) SWAXS measurement — it parks the WAXS
+    #   arc, then keeps taking SAXS + WAXS images in a loop, roughly every 'td' seconds,
+    #   tagging each file with the step number and elapsed time. ("Time series" just means
+    #   repeating the same shot over and over to watch something change in time.)
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   ready-made time-series routine. You give it the interval and how long to run, and
+    #   it records the elapsed time, beam intensity, etc. into the saved data for you (so
+    #   you don't have to hand-build the "{name}_step{}_time{}s" file name):
+    #
+    #     from smi_plans import time_series_run        # do this once at the top of your session
+    #     yield from time_series_run(
+    #         name,                                    # the rest of the file name is filled in for you
+    #         period=td,                               # your time interval between shots, unchanged
+    #         dets=[pil2M, pil900KW],                  # SAXS + WAXS, unchanged
+    #         t=t,                                     # your exposure time, unchanged
+    #     )
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the lines marked ⚠️ which genuinely need a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes on those lines below).
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
     user = "FZ"
     wa = 17
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     t_initial = time.time()
 
@@ -37,7 +63,7 @@ def run_continous_Zhang(name='test', t=1, td=10):
             yield from bps.sleep(0.1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so this plain "reset to 0.5s" call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 
@@ -54,7 +80,31 @@ def run_continous_pindiode_Zhang(name='test', t=1, td=10):
     user = "FZ"
     wa = 15
 
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: same continuous (time-series) SWAXS loop as above, but it also
+    #   briefly opens the shutter and reads the pin-diode (a small beam-intensity sensor)
+    #   before each shot, so the measured intensity goes into the file name.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a ready-made time-series routine that repeats
+    #   the shot for you and records elapsed time + pin-diode reading straight into the
+    #   saved data (no need to hand-build "{name}_step{}_time{}s_pd{}"):
+    #
+    #     from smi_plans import time_series_run        # do this once at the top of your session
+    #     yield from time_series_run(
+    #         name,                                    # the rest of the file name is filled in for you
+    #         period=td,                               # your time interval between shots, unchanged
+    #         dets=[pil2M, pil900KW, pin_diode],       # SAXS + WAXS + the beam-intensity sensor
+    #         t=t,                                     # your exposure time, unchanged
+    #     )
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the lines marked ⚠️ which genuinely need a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes on those lines below).
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     t_initial = time.time()
 
@@ -88,7 +138,7 @@ def run_continous_pindiode_Zhang(name='test', t=1, td=10):
             yield from bps.sleep(0.1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so this plain "reset to 0.5s" call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 def run_standard_swaxs_Zhang_2023_3(t=2):
@@ -108,7 +158,32 @@ def run_standard_swaxs_Zhang_2023_3(t=2):
     user = 'FZ'
     waxs_arc = [ 20, 0 ]
     x_off = [-500, 0, 500 ]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a standard SWAXS scan — for each WAXS arc angle and each sample, it
+    #   drives to the sample and takes SAXS + WAXS images at three x-offset spots
+    #   (-500, 0, +500), reading the pin-diode (a beam-intensity sensor) when SAXS is live.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that builds
+    #   the little line of x-positions for you and records position + beam intensity into
+    #   the saved data automatically (no need to hand-build "{name}_loc{}_pd{}"):
+    #
+    #     from smi_plans import map_line_run           # do this once at the top of your session
+    #     yield from map_line_run(
+    #         "KaptonBlank",                           # the rest of the file name is filled in for you
+    #         axis="x", center=24000, size=1000, num=3,  # your 3 x-offsets: -500, 0, +500
+    #         dets=[pil2M, pil900KW, pin_diode],       # SAXS + WAXS + the beam-intensity sensor
+    #         t=t,                                     # your exposure time, unchanged
+    #     )
+    #     # (call it per sample / WAXS arc, the way you loop below.)
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the lines marked ⚠️ which genuinely need a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes on those lines below).
+    #   (internal: Tier 2.)
+    # === end smi_plans note ================================================
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -142,4 +217,4 @@ def run_standard_swaxs_Zhang_2023_3(t=2):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so this plain "reset to 0.5s" call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).

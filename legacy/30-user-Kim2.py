@@ -4,6 +4,30 @@ import numpy as np
 
 def run_giwaxs_Kim(t=1):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GISAXS/GIWAXS bar — for each sample it moves x and aligns, then for each
+    #   WAXS arc, a few x positions, and a few incident angles takes a SAXS+WAXS image, packing
+    #   the angle/arc/position into the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library called 'smi_plans' that runs a
+    #   grazing-incidence bar like this for you. align_sample aligns each sample and saves the
+    #   result WITH the data; giwaxs_bar visits each sample and sweeps the incident angle (and you
+    #   can add the WAXS arc / x as extra axes), writing the angle/arc/position/beam straight INTO
+    #   each image — so you don't have to build that long "{sample}_..deg_waxs..._x.._..s" name:
+    #
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList   # once per session
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list)
+    #     yield from giwaxs_bar("Kim", samples, incident_angles=[0.08, 0.10, 0.15], t=t,
+    #                           dets=[pil900KW, pil2M], align=align_sample)
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the lines marked ⚠️ which genuinely need a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the
+    #   'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see
+    #   ⚠️ notes below). (Note: 'rayonix'/MAXS in the commented-out detector list was also
+    #   removed with no replacement.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # define names of samples on sample bar
     # sample_list = ['A15_HZO_4nm_450C','A16_HZO_6nm_450C','A17_HZO_4nm_500C','A18_HZO_6nm_500C','A19_HZO_4nm_600C','A20_HZO_6nm_600C','A21_HZO_4nm_300C','A22_HZO_6nm_300C','B23_HfZr11_10nm_400C','B24_HfZr37_10nm_400C','B25_HfZr13_10nm_400C','B26_HfZr14_10nm_400C']
     # sample_list =  ['B27_HfZr11_7nm_400C','B28_HfZr37_7nm_400C','B29_HfZr13_7nm_400C','B30_HfZr14_7nm_400C', 'B31_HfZr11_7nm_400C','B32_HfZr12_7nm_400C','B33_HfZr13_7nm_400C','B34_HfZr14_7nm_400C']
@@ -56,7 +80,7 @@ def run_giwaxs_Kim(t=1):
     # if 24, 5: up to q=3.87
     # if 30, 6: up to q=4.70
     # 52/6.5 +1 =8
-    dets = [pil300KW, pil2M]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
+    dets = [pil300KW, pil2M]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('rayonix'/MAXS in the comment was also removed with no replacement.)
 
     x_shift_array = np.linspace(-500, 500, 3)  # measure at a few x positions
 
@@ -70,7 +94,7 @@ def run_giwaxs_Kim(t=1):
         )  # np.array([0.10 + piezo.th.position, 0.20 + piezo.th.position])
         th_real = angle_arc
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         x_pos_array = x + x_shift_array
 
         for waxs_angle in waxs_angle_array:  # loop through waxs angles
@@ -99,7 +123,7 @@ def run_giwaxs_Kim(t=1):
                     yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 ####

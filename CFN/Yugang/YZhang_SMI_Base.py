@@ -82,6 +82,32 @@ sample_name
 
 """
 
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS FILE IS: the CFN group's portable "base" toolkit for SMI — it sets up a sample table
+#   ('sample_dict' / 'pxy_dict' giving each sample a name and an x,y position), a 'get_motor()'
+#   helper that lets the same code drive either the piezo or the hexapod stage, and a family of
+#   measure_*/run_*/align_* plans built on top. It's a hand-rolled version of "list my samples
+#   once, then loop over them and measure."
+#
+# 💡 NEWER, EASIER WAY: 'smi_plans' now provides this whole pattern as supported, recorded building
+#   blocks, so you don't have to maintain this base file yourself:
+#   - your 'sample_dict' + 'pxy_dict' (names + x,y) becomes a 'SampleList':
+#         from smi_plans import SampleList
+#         samples = SampleList.from_columns(name=sample_list, x=x_list, y=y_list)
+#   - 'get_motor()' (piezo-vs-hexapod switch) is built into the axis builders / acquire — you pass
+#     the device you want (e.g. piezo.th or stage.th) to motor_axis/incidence_axis.
+#   - 'measure_one_gix' / 'run_gix_loop_*' become 'giwaxs_run' / 'giwaxs_bar' (which align, sweep
+#     angle/arc, and record th/x/y/SDD/beam into every image and the file name for you, so you can
+#     drop the long "{sample}_{th}deg_x..._waxs..." name building and the sample_id calls).
+#   - 'do_line_*'/'getSamMap'/'Measure_Map_Trans' become the mapping helpers map_line_run /
+#     map_grid_run / spatial_grid_axes; 'measure_transmission_*' become transmission_run/_bar.
+#   - 'align_gix_loop_samples' becomes 'align_sample' (run once, recorded with the data).
+#
+#   The per-function notes below point each primitive at its smi_plans replacement. Nothing here is
+#   broken EXCEPT the 'det_exposure_time(...)' calls (now "plans" — each is marked ⚠️ inline).
+#   (internal: Tier 1 — base library / sample_dict idiom.)
+# === end smi_plans note ================================================
+
 # def shopen():
 #     yield from bps.mv(ph_shutter.open_cmd, 1)
 #     yield from bps.sleep(1)
@@ -293,6 +319,15 @@ help_dict = { 'align':
 #Grzaing Incidence
 ############################################
 def get_motor(  ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the piezo-vs-hexapod switch at the heart of this toolkit — depending on the
+    #   module-level 'motor' setting it returns either the piezo or the hexapod ('stage') device,
+    #   plus that stage's current theta and y, so the rest of the code is written once for both.
+    #
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' you don't need this switch — you just pass the device you
+    #   want to the axis builders (e.g. incidence_axis(piezo.th, ...) or incidence_axis(stage.th,
+    #   ...)) / acquire. The recorded data names the device for you. (Nothing broken here.)
+    # === end smi_plans note ================================================
     M = piezo
     if motor != 'pizeo':    
         M = stage    
@@ -306,6 +341,21 @@ def get_motor(  ):
 def measure_one_gix( t=1,  mode = ['saxs'], waxs_angle=15, incident_angle=[0.1],  
                     user_name = None, sample=None, align=False, inc_ang = 0.15   ): 
     '''     RE( measure_one_gisaxs() )      '''    
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the core "measure one grazing-incidence sample" plan — optionally aligns,
+    #   picks SAXS and/or WAXS detectors, then loops over incident angles taking an image at each,
+    #   building a long descriptive file name from the live positions.
+    #
+    # 💡 NEWER, EASIER WAY: this is exactly 'smi_plans.giwaxs_run' — it aligns (with align=), sweeps
+    #   the incident angle, and records th/x/y/z/SDD/beam straight into each image and the file name
+    #   (so you don't build "{sample}_{th}deg_x..." by hand or call sample_id):
+    #
+    #     from smi_plans import giwaxs_run, align_sample
+    #     yield from giwaxs_run(sample, incident_angles=[0.1], arc=[waxs_angle], t=t,
+    #                           align=align_sample if align else None)
+    #
+    #   (Optional — works as-is EXCEPT the ⚠️ exposure line below.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
     if user_name is None:        
         user_name = RE.md["user_name"]         
     if sample is None:        
@@ -328,7 +378,7 @@ def measure_one_gix( t=1,  mode = ['saxs'], waxs_angle=15, incident_angle=[0.1],
     angle_arc = np.array( incident_angle  )
     th_meas = angle_arc + TH
     th_real = angle_arc	 
-    det_exposure_time(t,t) 
+    det_exposure_time(t,t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
     for i, th in enumerate(th_meas): #loop over incident angles
         yield from bps.mv(M.th, th)  
         name_fmt = "{sample}_{th:5.4f}deg_x{x:05.2f}_y{y:05.2f}_z{z_pos:05.2f}_det{saxs_z:05.2f}m_waxs{waxs_angle:05.2f}_expt{t}s"
@@ -375,6 +425,21 @@ def run_gix_loop_waxs(t=1, mode = ['saxs', 'waxs' ],
     '''      
       RE(  align_gix_loop_samples(inc_ang = 0.15 ) )
      '''    
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the main GIWAXS bar loop (WAXS-outermost) — using the pre-computed
+    #   'Aligned_Dict' (per-sample th/y from align_gix_loop_samples) it walks the bar of samples
+    #   (x_list/sample_list), and for each WAXS arc, x sub-position and incident angle records an
+    #   image.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.giwaxs_bar'. Put your samples in a SampleList and it
+    #   walks the bar, applies the saved alignment, sweeps arc/angle/position, and records
+    #   th/x/y/SDD/beam into every image and the file name for you:
+    #     from smi_plans import SampleList, giwaxs_bar, align_sample
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list, y=y_list)
+    #     yield from giwaxs_bar(samples, incident_angles=angle_arc, arc=waxs_angle_array, t=t,
+    #                           align=align_sample)
+    #   (Optional — works as-is EXCEPT the ⚠️ exposure lines.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     assert len(x_list) == len(sample_list), f'Sample name/position list is borked' 
     if Aligned_Dict is None:    
@@ -384,7 +449,7 @@ def run_gix_loop_waxs(t=1, mode = ['saxs', 'waxs' ],
     for waxs_angle in waxs_angle_array: # loop through waxs angles        
         yield from bps.mv(waxs, waxs_angle)     
         dets = get_dets( waxs_angle = waxs_angle, mode = mode )                       
-        det_exposure_time(t,t)                  
+        det_exposure_time(t,t)                    # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
         for ii, (x, sample) in enumerate(zip(x_list,sample_list)):    #loop over samples on bar
             yield from bps.mv(piezo.x, x) #move to next sample              
             TH = Aligned_Dict[ii]['th']  
@@ -405,13 +470,13 @@ def run_gix_loop_waxs(t=1, mode = ['saxs', 'waxs' ],
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
                     print(f'\n\t=== Sample: {sample_name} ===\n') 
                     yield from bp.count( dets, num=1)
-                    det_exposure_time(t,t)    
+                    det_exposure_time(t,t)      # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
                     RE.md['sample_name'] = sample
                     RE.md['sample'] = sample 
                         
             #print( 'HERE#############')
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
 
 
  
@@ -428,6 +493,15 @@ def run_gix_loop_samples(t=1,  angle_arc = np.array([0.05, 0.08, 0.10, 0.15, 0.2
 
 
      '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the same GIWAXS bar loop as run_gix_loop_waxs, but sample-outermost (it
+    #   finishes all arcs/angles on one sample before moving to the next). Uses the saved
+    #   'Aligned_Dict' for each sample's th/y.
+    #
+    # 💡 NEWER, EASIER WAY: same as run_gix_loop_waxs — 'smi_plans.giwaxs_bar' over a SampleList.
+    #   It records th/x/y/SDD/beam for you; the inner/outer loop order is just an option to the
+    #   helper. (Optional — works as-is EXCEPT the ⚠️ exposure lines.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
     assert len(x_list) == len(sample_list), f'Sample name/position list is borked' 
     if Aligned_Dict is None:    
         Aligned_Dict = align_gix_loop_samples( inc_ang = 0.15 )  
@@ -444,7 +518,7 @@ def run_gix_loop_samples(t=1,  angle_arc = np.array([0.05, 0.08, 0.10, 0.15, 0.2
         for waxs_angle in waxs_angle_array: # loop through waxs angles        
             yield from bps.mv(waxs, waxs_angle)     
             dets = get_dets( waxs_angle = waxs_angle, mode = mode )                       
-            det_exposure_time(t,t)
+            det_exposure_time(t,t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
 
             th_meas = angle_arc + TH #piezo.th.position 
             th_real = angle_arc	         
@@ -460,14 +534,14 @@ def run_gix_loop_samples(t=1,  angle_arc = np.array([0.05, 0.08, 0.10, 0.15, 0.2
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
                     print(f'\n\t=== Sample: {sample_name} ===\n') 
                     yield from bp.count( dets, num=1)
-                    det_exposure_time(t,t)  
+                    det_exposure_time(t,t)    # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
                     RE.md['sample_name'] = sample
                     RE.md['sample'] = sample 
             #yield from  bps.mv(piezo.y, YH  )  
             #yield from  bps.mv(piezo.th, TH  )   
             #print( 'HERE#############')
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
 
                        
                        
@@ -482,6 +556,15 @@ def do_line_trans_scan( sample = 'FF_AuCB', username = 'FLu'  ,   t=1,  scan_ran
     
     
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a transmission (through-sample) line scan — steps the sample along y (or x)
+    #   and records a SAXS/WAXS image at each step, optionally saving a camera snapshot too.
+    #
+    # 💡 NEWER, EASIER WAY: a recorded line scan is 'smi_plans.map_line_run' (or transmission_run
+    #   with a motor axis). It records the position/beam into each image and the file name for you:
+    #     from smi_plans import map_line_run, transmission_run
+    #   (Optional — works as-is EXCEPT the ⚠️ exposure line below.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     YH = piezo.y.position 
     XH = piezo.x.position 
@@ -495,7 +578,7 @@ def do_line_trans_scan( sample = 'FF_AuCB', username = 'FLu'  ,   t=1,  scan_ran
         vals =  np.arange( scan_range[0], scan_range[-1]+scan_step, scan_step  ) + YH     
     elif method == 'H':
         vals =  np.arange( scan_range[0], scan_range[-1]+scan_step, scan_step  ) + XH   
-    det_exposure_time(t,t) 
+    det_exposure_time(t,t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
     for v in vals:
         if method == 'V':
             yield from bps.mv(piezo.y, v)                  
@@ -541,6 +624,15 @@ def do_gix_line_scan( sample ='test',  t=1,  scan_range = [ -100, 100], scan_ste
     
     
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence line scan — for each WAXS arc it steps the sample along
+    #   y (or x) and records an image, mapping out the film along a line.
+    #
+    # 💡 NEWER, EASIER WAY: a recorded GI line scan is 'smi_plans.map_line_run' (or giwaxs_run with
+    #   a position axis). It records position/arc/beam into each image for you. (The 'pil300KW'/
+    #   'rayonix' in the comment below were retired — current WAXS is 'pil900KW', already used
+    #   here.) (Optional — works as-is EXCEPT the ⚠️ exposure line.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     YH = piezo.y.position 
     XH = piezo.x.position 
@@ -559,7 +651,7 @@ def do_gix_line_scan( sample ='test',  t=1,  scan_range = [ -100, 100], scan_ste
         #     print( 'Meausre both saxs and waxs here for w-angle=%s'%waxs_angle )
         else:
                 dets = [pil900KW ] 
-        det_exposure_time(t,t) 
+        det_exposure_time(t,t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
         for v in vals:
             if method == 'V':
                 yield from bps.mv(piezo.y, v)                  
@@ -589,6 +681,18 @@ def do_gix_line_scan( sample ='test',  t=1,  scan_range = [ -100, 100], scan_ste
 
 def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=20, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False):
     """RE( measure_transmission_xs( sample = 'test' ) )"""
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the core "measure one transmission (through-sample) shot" plan — optionally
+    #   nudges x/y, picks SAXS and/or WAXS, takes one image, and (optionally) saves a camera frame.
+    #   The thin wrappers measure_saxs/measure_waxs/measure_wsaxs just call this with a fixed mode.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.transmission_run' — it records position/beam into the
+    #   image and file name for you (so you don't build "{sample}_x..._waxs..." by hand or call
+    #   sample_id):
+    #     from smi_plans import transmission_run
+    #     yield from transmission_run(sample, t=t)        # add arc=[waxs_angle] for WAXS too
+    #   (Optional — works as-is EXCEPT the ⚠️ exposure line below.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
     
     if user_name is None:        
         user_name = RE.md["user_name"]         
@@ -620,7 +724,7 @@ def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=20, att="None", dx=
         t=t,
         #scan_id=RE.md["scan_id"],
     )
-    det_exposure_time(t, t) 
+    det_exposure_time(t, t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")
@@ -658,14 +762,14 @@ def measure_wsaxs( t=1, waxs_angle=20, att="None", dx=0, dy=0, user_name=None, s
 def snap_waxs(t=0.1):
     dets = [pil900KW]
     sample_id(user_name="test", sample_name="")
-    det_exposure_time(t,t )
+    det_exposure_time(t,t )  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t )  — or at the prompt:  RE(det_exposure_time(t,t )). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
     yield from bp.count(dets, num=1)
     
 def snap_saxs(t=0.1):
     'test '
     dets = [pil2M]
     sample_id(user_name="test", sample_name="")
-    det_exposure_time(t,t )
+    det_exposure_time(t,t )  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t )  — or at the prompt:  RE(det_exposure_time(t,t )). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
     yield from bp.count(dets, num=1)
 
     #/ramdisk/900KW
@@ -674,6 +778,15 @@ def snap_saxs(t=0.1):
 # for Map
 
 def getSamMap(  xlim=[4500, 8500], ylim=[-4390, 610 ],  step_size = [100, 100], rot_angle = 0 ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: builds a 2D grid of (x,y) sample positions (optionally rotated) — the list of
+    #   points to raster over for a map. Pairs with Measure_Map_Trans below.
+    #
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' you describe the grid with 'spatial_grid_axes' and hand
+    #   it to 'map_grid_run', which builds the points AND records position/beam into every image:
+    #     from smi_plans import map_grid_run, spatial_grid_axes
+    #   (Nothing broken here — it's pure geometry.)
+    # === end smi_plans note ================================================
     #change x Y position here
     Ps_grid = []
     px = np.arange( xlim[0],xlim[1]+step_size[0]*0, step_size[0])
@@ -697,6 +810,18 @@ def Measure_Map_Trans(  t = 1, mode=['saxs', 'waxs'], user_name=None, sample=Non
     Ps = getSamMap()
     Measure_Map( sample = 'test',  ps= Ps[:2]   )     
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: rasters a transmission map — for every (x,y) point from getSamMap it moves
+    #   there and takes a SAXS/WAXS shot. (Note: this one drives the motors with RE(...) calls
+    #   directly rather than 'yield from', so it's run as a plain function, not a plan.)
+    #
+    # 💡 NEWER, EASIER WAY: a recorded 2D map is 'smi_plans.map_grid_run' with 'spatial_grid_axes'
+    #   — it builds the grid, moves, and records position/beam into each image, all inside one
+    #   proper run (no nested RE(...) needed):
+    #     from smi_plans import map_grid_run, spatial_grid_axes
+    #   (Optional — works as-is; the exposure fix lives in the measure_* helper it calls.)
+    #   (internal: Tier 1/0 — nested RE.)
+    # === end smi_plans note ================================================
     RE(bps.mov( piezo.z, pz  ))
     if ps is None:
         ps = getSamMap( )
@@ -817,6 +942,14 @@ def stopT():
     # RE( ls.output1.turn_off()    )
     print("Stop heating up using output1.")
 def gotoT(T, tolerance = 0.2 ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: sets the Lakeshore temperature, starts heating, and waits until the readback
+    #   is within tolerance of the target. (setT/getT/startT/stopT are the pieces it uses.)
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans.goto_temperature(lakeshore_heater, T)' does the go-and-wait
+    #   in one call; 'temperature_ramp_run' / 'isothermal_kinetics_run' do a whole
+    #   measurement-per-temperature. (Nothing broken here.)
+    # === end smi_plans note ================================================
     yield from setT(T)
     yield from startT()
     temp = getT()
@@ -862,6 +995,17 @@ def mov_xy( xy   ):
 #     RE.md['sample_name']  = sample 
        
 def mov_sam(pos, dx=0, dy=0  ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves to a sample by its position key — looks up (x,y) in 'pxy_dict', moves
+    #   there (driving the motors with RE(...) directly), and records the sample name. (mov_sam_re
+    #   just below is the 'yield from' version for use inside a plan; name_sam only sets the name.)
+    #
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' you don't hand-maintain pxy_dict/sample_dict — you build
+    #   a 'SampleList' of names + x,y once, and 'goto_sample(samples, key)' moves there and records
+    #   it for you (and the technique runs visit each sample automatically):
+    #     from smi_plans import SampleList, goto_sample
+    #   (Nothing broken here.)
+    # === end smi_plans note ================================================
     M, _, _ = get_motor( )   
     px, py = pxy_dict[pos]
     RE(bps.mv(M.x, px + dx))
@@ -952,6 +1096,16 @@ def align_gix_loop_samples( x_list, sample_list, inc_ang = 0.15,   ):
 
 
      '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns every sample on the bar once and returns an 'Aligned_Dict' of each
+    #   sample's th/y, which the run_gix_loop_* plans then reuse so they don't re-align every time.
+    #
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' alignment is 'align_sample' — you pass it as align= to
+    #   giwaxs_bar and the alignment result is recorded with each sample's data automatically, so
+    #   you don't need to pre-build and pass around an Aligned_Dict:
+    #     from smi_plans import align_sample, giwaxs_bar
+    #   (Nothing broken here.) (internal: Tier 1 — alignment.)
+    # === end smi_plans note ================================================
     # define names of samples on sample bar     
     M, _, _ = get_motor(  ) 
     assert len(x_list) == len(sample_list), f'Sample name/position list is borked'  
@@ -977,7 +1131,7 @@ import datetime
 smi = SMI_Beamline()#
 def yz_alignement_height(  ):        
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.3, 0.3)        
+    det_exposure_time(0.3, 0.3)          # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
     smi = SMI_Beamline()
     yield from smi.modeAlignment(technique='gisaxs')        
     # Set direct beam ROI
@@ -992,7 +1146,7 @@ import datetime
 smi = SMI_Beamline()#
 def yz_alignement_gisaxs(angle=0.15):        
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.3, 0.3)        
+    det_exposure_time(0.3, 0.3)          # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
     smi = SMI_Beamline()
     yield from smi.modeAlignment(technique='gisaxs')        
     # Set direct beam ROI
@@ -1033,7 +1187,7 @@ def yz_alignement_gisaxs_hex(angle=0.1, rough_y=0.5):
     # Activate the automated derivative calculation
     bec._calc_derivative_and_stats = True
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
     smi = SMI_Beamline()
     yield from smi.modeAlignment()
     # Set direct beam ROI

@@ -23,6 +23,28 @@ def run_swaxs_Cai_2025_2(t=1):
     Hard X-ray WAXS and SAXS
     Measure transmission only during the first run
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a transmission SAXS/WAXS run on a row of capillaries — for each WAXS arc, it
+    #   measures the direct beam (beamstop moved aside + attenuators in), then for each sample steps
+    #   along the capillary, computes the transmission ratio, and takes the scattering images.
+    #
+    # 💡 NEWER, EASIER WAY: this whole transmission dance (move beamstop, insert attenuators, take a
+    #   direct-beam reading, divide) is what 'smi_plans' transmission_bar does for you, and it
+    #   records the transmission/pin-diode/beam INTO the data and the file name (so you don't build
+    #   f'{name}..._trs{trans}' or shuttle 'stats1_direct' through db[-1] by hand):
+    #
+    #     from smi_plans import transmission_bar, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #     yield from transmission_bar(
+    #         samples, dets=[pil2M, pil900KW, pin_diode], t=t,
+    #         axes=[motor_axis("waxs_arc", waxs, [20, 0])],
+    #     )
+    #   ('pil2M.beamstop.x_pin' and the 'att1_*' attenuators all still work as-is — transmission_bar
+    #    just wraps the park-beamstop / insert-attenuator / direct-beam steps.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes on them below).
+    # === end smi_plans note ================================================
     
     #Test 5, run 1
     names =   [ 'BzMA-9.06-G1', 'BzMA-8.07-G1', 'BzMA-7.26-G1',  'BzMA-6.25-G1',  'BzMA-4.72-G1', 'BzMA-2.7-G1',  'BzMA-1.0-G1', 'Empty-G1'] 
@@ -49,7 +71,7 @@ def run_swaxs_Cai_2025_2(t=1):
 
     bs_pos = -227.0
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -116,7 +138,7 @@ def run_swaxs_Cai_2025_2(t=1):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 """
@@ -133,6 +155,22 @@ def run_hexa_swaxs_Cai_2025_2(t=1):
     Measure transmission only during the first run
     use hexapod only
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: same transmission SAXS/WAXS run as run_swaxs_Cai_2025_2, but moves the hexapod
+    #   stage (stage.x/y/z) instead of the SmarAct piezo to position each sample.
+    #
+    # 💡 NEWER, EASIER WAY: the same 'smi_plans' transmission_bar handles the transmission steps and
+    #   records everything for you; just build the sample list on the hexapod axes:
+    #
+    #     from smi_plans import transmission_bar, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=stage_x, y=stage_y, z=stage_z, mover="stage")
+    #     yield from transmission_bar(samples, dets=[pil2M, pil900KW, pin_diode], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [20, 0])])
+    #   ('stage.*', 'pil2M.beamstop.x_pin', 'att1_*' all still work as-is.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes on them below).
+    # === end smi_plans note ================================================
     
     #Test 5, run 1
     names =   [ 'NIPAM-2.1-thin',  'NIPAM-3.6-thin',  'NIPAM-4.1-thin','tri-NIPAM'] 
@@ -157,7 +195,7 @@ def run_hexa_swaxs_Cai_2025_2(t=1):
 
     bs_pos = -227.0
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -223,7 +261,7 @@ def run_hexa_swaxs_Cai_2025_2(t=1):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 
@@ -233,6 +271,21 @@ def run_swaxs_Cai_2025_3(t=2):
     Hard X-ray WAXS and SAXS
     Measure transmission only during the first run
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: another transmission SAXS/WAXS run on a row of capillaries (same direct-beam
+    #   + ratio measurement as run_swaxs_Cai_2025_2), here with 4 y points per capillary.
+    #
+    # 💡 NEWER, EASIER WAY: this is a 'smi_plans' transmission_bar; it does the beamstop-park /
+    #   attenuator-insert / direct-beam / divide for you and records transmission into the data:
+    #
+    #     from smi_plans import transmission_bar, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #     yield from transmission_bar(samples, dets=[pil2M, pil900KW, pin_diode], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [20, 0])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes on them below).
+    # === end smi_plans note ================================================
     
     #Test 1, run 1
     names =   ['MSU-30', 'MSU-31','MSU-32','MSU-33','MSU-34','MSU-35','MSU-36','MSU-37','MSU-38','MSU-39','MSU-40'] 
@@ -260,7 +313,7 @@ def run_swaxs_Cai_2025_3(t=2):
 
     bs_pos = -227.4
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -327,13 +380,35 @@ def run_swaxs_Cai_2025_3(t=2):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 
 def run_temperature_hard_2026_1(t=0.5):
     """
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a temperature series — ramps the Lakeshore stage ('ls') through a list of
+    #   temperatures (up then back down), waits for each to equalise, and at each temperature
+    #   measures every sample on the bar (SAXS/WAXS), labelling the file with the temperature and
+    #   ramp direction.
+    #
+    # 💡 NEWER, EASIER WAY: ramping a heater through setpoints and measuring at each is 'smi_plans'
+    #   temperature_ramp_run; it drives the heater, records the temperature INTO the data, and loops
+    #   your samples (so you don't hand-roll the 'while abs(temp - t_kelvin) > 3: sleep' equalise
+    #   loop or build the '_temp{temp}degC' name):
+    #
+    #     from smi_plans import temperature_ramp_run, lakeshore_heater, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #     yield from temperature_ramp_run(
+    #         lakeshore_heater(ls), [30, 50, 70, 90, 70, 50, 30],   # your temperatures, unchanged
+    #         samples, dets=[pil900KW, pil2M], t=t,
+    #     )
+    #   ('ls', the Lakeshore, still works as-is.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes on them below).
+    # === end smi_plans note ================================================
 
     names_1   = [ 'SNa0-0.5uL',  'SNa0-1uL',   'SNa0-2uL',     'SNa5-1k']
     piezo_x_1 = [        41400,       36400,        31200,         10900]
@@ -367,7 +442,7 @@ def run_temperature_hard_2026_1(t=0.5):
     temperatures = [30, 50, 70, 90, 70, 50, 30]
 
     user = "BP"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' temperature_ramp_run sets it for you via t=.)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -418,7 +493,7 @@ def run_temperature_hard_2026_1(t=0.5):
 
             # Shorter exposure for bulk samples
             t = 0.5 if 'C8' in name else 5
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
             # Read T and convert to deg C
             temp_degC = ls.input_A.get() - 273.15
@@ -438,7 +513,7 @@ def run_temperature_hard_2026_1(t=0.5):
     yield from ls.output1.mv_temp(t_kelvin)
     yield from ls.output1.turn_off()
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)).
 
 
 
@@ -469,6 +544,26 @@ def run_swaxs_Cai_2026_1(t=2):
     Hard X-ray WAXS and SAXS
     Measure transmission only during the first run
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: combines the two ideas above — it ramps the Lakeshore stage ('ls') to each
+    #   temperature, and at each temperature does the full transmission run (direct-beam reading +
+    #   ratio) on every capillary, labelling the file with the temperature.
+    #
+    # 💡 NEWER, EASIER WAY: temperature-stepped transmission is a 'smi_plans' temperature +
+    #   transmission combination — goto_temperature ramps/soaks (recording the temperature), and
+    #   transmission_bar does the beamstop/attenuator/direct-beam dance and records transmission:
+    #
+    #     from smi_plans import goto_temperature, transmission_bar, SampleList, lakeshore_heater
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #     for temperature in temperatures:
+    #         yield from goto_temperature(lakeshore_heater(ls), temperature)
+    #         yield from transmission_bar(samples, dets=[pil2M, pil900KW, pin_diode], t=t,
+    #                                     axes=[motor_axis("waxs_arc", waxs, [20, 0])])
+    #   ('ls' and the readback channel 'ls.input_A_celsius' you add as a det still work as-is.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes on them below).
+    # === end smi_plans note ================================================
     ls.input_A_celsius.kind='hinted'
     ls.kind='hinted'
 
@@ -503,7 +598,7 @@ def run_swaxs_Cai_2026_1(t=2):
 
     bs_pos = -228.400000
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     for i, temperature in enumerate(temperatures):
         t_kelvin = temperature + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -602,5 +697,5 @@ def run_swaxs_Cai_2026_1(t=2):
     yield from ls.output1.mv_temp(t_kelvin)
     yield from ls.output1.turn_off()
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 

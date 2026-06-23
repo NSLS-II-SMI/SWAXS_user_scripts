@@ -1,4 +1,27 @@
 def giwaxs_andrew(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GIWAXS bar — first it puts the beamline into alignment mode and aligns
+    #   each sample (recording the found incident angle / y), then for each WAXS arc it visits
+    #   every sample, steps a few incident angles, and takes a WAXS image at each.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library called 'smi_plans' that does
+    #   grazing-incidence bars like this for you. align_sample aligns ONCE up front and saves the
+    #   alignment WITH the data; giwaxs_bar then visits each sample and sweeps the incident angle,
+    #   writing the angle/position/beam straight INTO each image (so you don't have to build the
+    #   "{sample}_ai{angle}deg_wa{waxs}" name by hand):
+    #
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList   # once per session
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, z=z_piezo)
+    #     yield from giwaxs_bar("PT", samples, incident_angles=[0.1, 0.12, 0.15], t=t,
+    #                           dets=[pil900KW], align=align_sample)
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the lines marked ⚠️ which genuinely need a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the
+    #   'det_exposure_time(...)' line no longer sets the exposure unless run as a plan (see the
+    #   ⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # sample alignement
     global names, x_piezo, z_piezo, incident_angles, y_piezo_aligned, xs_hexa
     names = [
@@ -165,7 +188,7 @@ def giwaxs_andrew(t=1):
     yield from bps.mv(GV7.close_cmd, 1)
     yield from bps.sleep(1)
 
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     waxs_arc = np.linspace(0, 26, 5)
     angle = [0.1, 0.12, 0.15]
 
@@ -181,7 +204,7 @@ def giwaxs_andrew(t=1):
             yield from bps.mv(piezo.z, zs)
             yield from bps.mv(piezo.th, aiss)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_ai{angle}deg_wa{waxs}"
 
             for num, an in enumerate(angle):
@@ -198,6 +221,21 @@ def giwaxs_andrew(t=1):
 
 
 def giwaxs_andrew_2022_1(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GIWAXS bar — for each sample it opens the gate valve, aligns, then for
+    #   each WAXS arc steps a few incident angles and takes a WAXS image, putting the energy /
+    #   angle / arc into the file name.
+    # 💡 NEWER, EASIER WAY:  from smi_plans import giwaxs_bar, align_sample, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, z=z_piezo)
+    #     yield from giwaxs_bar("PT", samples, incident_angles=[0.11, 0.15, 0.2], t=t,
+    #                           dets=[pil900KW], align=align_sample)
+    #   (aligns each sample and records the energy/angle/arc/beam straight into each image, so
+    #    you don't have to hand-build the "{sample}_{en}keV_ai{angl}deg_wa{waxs}" name.)
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     names = [
         "sample01",
@@ -251,7 +289,7 @@ def giwaxs_andrew_2022_1(t=0.5):
     angle = [0.11, 0.15, 0.2]
 
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for name, xs, zs, ys, xs_hexa in zip(names, x_piezo, z_piezo, y_piezo, x_hexa):
         yield from bps.mv(stage.x, xs_hexa)
@@ -265,7 +303,7 @@ def giwaxs_andrew_2022_1(t=0.5):
         yield from bps.sleep(2)
         yield from bps.mv(GV7.close_cmd, 1)
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
@@ -286,14 +324,25 @@ def giwaxs_andrew_2022_1(t=0.5):
 
 
 def waxs_andrew_2022_1(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a WAXS-arc sweep on a silver-behenate (agbh) standard — steps the WAXS arc
+    #   through several positions and takes an image at each (used to calibrate the detector).
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a ready calibration run for exactly this:
+    #     from smi_plans import agbh_calibration_run
+    #     yield from agbh_calibration_run(dets=[pil900KW], t=t)   # sweeps the arc + records it
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     names = ["agbh"]
     waxs_arc = [0, 2, 20, 22, 40, 42]
 
     dets = [pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for name in names:
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
             name_fmt = "{sample}_16.1keV_wa{waxs}"
@@ -305,6 +354,22 @@ def waxs_andrew_2022_1(t=0.5):
 
 
 def Andrew_temp_2021_1(tim=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a temperature + GIWAXS series — for each temperature it ramps the
+    #   Lakeshore heater and waits to settle, re-aligns, then for each WAXS arc visits every
+    #   sample, steps a few incident angles, and takes a WAXS image.
+    # 💡 NEWER, EASIER WAY: this is the 'smi_plans' temperature + GIWAXS combination. There's a
+    #   ready combined recipe, or you can compose the pieces:
+    #     from smi_plans.recipes_combined import giwaxs_tempramp_energy_5loc
+    #     # or compose: temperature_bar / goto_temperature  +  giwaxs_bar(incident_angles=...)
+    #   (goto_temperature ramps and waits for you, and the temperature/angle/arc get recorded
+    #    into each image automatically. Use pil900KW for the current WAXS detector — see ⚠️.)
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the
+    #   'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see
+    #   ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     temperatures = [105, 145, 190]
     name = "GF"
 
@@ -315,14 +380,14 @@ def Andrew_temp_2021_1(tim=0.5):
     # assert len(x_piezo) == len(names), f'Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})'
 
     # Detectors, motors:
-    dets = [pil300KW]  # ALL detectors
+    dets = [pil300KW]  # ALL detectors  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     waxs_arc = np.linspace(0, 26, 5)
     angle = [0.1, 0.12, 0.15]
 
     name_fmt = "{sample}_ai{angle}_{temperature}C_wa{waxs}"
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for i_t, t in enumerate(temperatures):
 
         t_kelvin = t + 273.15
@@ -365,11 +430,21 @@ def Andrew_temp_2021_1(tim=0.5):
                     yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     yield from ls.output1.mv_temp(28 + 273.13)
 
 
 def full_alignement_tscan(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an alignment-only pass over a row of samples — puts the beamline in GISAXS
+    #   alignment mode, aligns each sample, and remembers the found incident angle / y for later.
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' you don't align everything up front and stash the
+    #   numbers in module-level lists. Instead align_sample aligns a sample right when you measure
+    #   it and saves the alignment result WITH the data, so the angle/y travel with each image:
+    #     from smi_plans import align_sample
+    #     # pass align=align_sample to giwaxs_run / giwaxs_bar (see the measurement functions above)
+    #   (Nothing here is broken — this is just the tidier, "align-and-record-together" approach.)
+    # === end smi_plans note ================================================
     # sample alignement
     global names, x_piezo, incident_angles, y_piezo_aligned
     names = [
@@ -412,6 +487,15 @@ def full_alignement_tscan(t=1):
 
 
 def quick_alignement_tscan():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a faster re-alignment pass — re-aligns each sample (using the previously
+    #   found angles as a starting point) and updates the stored incident angle / y values.
+    # 💡 NEWER, EASIER WAY: same idea as full_alignement_tscan — in 'smi_plans' you let
+    #   align_sample re-align each sample at measurement time and save the result with the data,
+    #   instead of keeping the alignment in module-level lists:
+    #     from smi_plans import align_sample      # pass align=align_sample to your giwaxs_* run
+    #   (Nothing here is broken — just a tidier approach.)
+    # === end smi_plans note ================================================
     # incident_angles = [0.0499, 0.10198, 0.126005, 0.65, 0.173994, 0.205969, 0.205972, 0.173947]
     # y_piezo_aligned = [6784.191, 6946.063, 6947.799, 6860.963, 6952.249, 6951.685, 6951.321, 6946.413]
 

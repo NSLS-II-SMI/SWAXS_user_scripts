@@ -48,6 +48,25 @@ WAXS: 16 deg
 
 '''
 
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS DOES (whole file): this is the SAXS/WAXS tomography run-book. The main
+#   plan, run_tomo (further down), rotates the sample through many angles and takes a
+#   SAXS/WAXS image at each — that's a tomographic scan. The rest of the file is sample
+#   tables, transmission helpers, and a small in-situ class (NanoSyn).
+#
+# 💡 NEWER, EASIER WAY: a rotation tomography scan is built into the beamline 'smi_plans'
+#   helper library as a tomography run. It drives the rotation, records the angle/beam
+#   into the saved data, and templates the file name from them:
+#
+#     from smi_plans import tomography_run
+#     yield from tomography_run(sample, np.linspace(th_ini, th_fin, th_st), t=exp_t)
+#     # smi_plans rotates 'stage.phi' (the current name for the old 'prs').
+#
+#   (Just a tidier option to try later — the run-book below still works as-is, EXCEPT
+#    for anything marked ⚠️ which needs a fix to run now. The big ⚠️ here is 'prs',
+#    the OLD rotation-stage name used in run_tomo — see the ⚠️ note there.)
+# === end smi_plans note ================================================
+
 '''
 NOTE: 
 
@@ -186,6 +205,18 @@ RE(run_tomo( -90, 91, 181, sample='FL_S4TH_2025Q3_LargeBeam' ))
 '''
 
 def yline_scan( step_size = 0.003 ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: steps the sample in y and takes a WSAXS frame at each step (a small y line series).
+    #
+    # 💡 NEWER, EASIER WAY: stepping y and taking a frame at each (a y line series) is the
+    #   beamline 'smi_plans' helper library's line map / time-series. Heads-up: this version
+    #   calls RE(...) inside the loop, which is the OLD way of running a step; smi_plans
+    #   plans are written with 'yield from' and you run the whole thing once with RE(...).
+    #     from smi_plans import map_line_run, motor_axis
+    #     yield from map_line_run(sample, motor_axis('y', stage.y, y_values), t=t)
+    #   (Nothing here is flagged broken by the D1-D6 rules, but the RE-inside-a-loop pattern
+    #    is worth retiring when you migrate.)
+    # === end smi_plans note ================================================
     N = 10    
     for j in range( -N//2, N//2  ):  
         RE(measure_wsaxs( t=5, sample = 'FL_S3Cube_2025Q3_E', waxs_angle=15,  user_name = 'FL'))
@@ -275,10 +306,28 @@ motorZ = MDrive.m3
 
 def run_tomo(th_ini=-90, th_fin=90, th_st=30, exp_t=1, sample='test',
               nume=1, det=[pil2M,pil900KW] ) :
-    det_exposure_time(exp_t, exp_t*nume)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the tomography scan — rotates the sample from th_ini to th_fin (th_st steps) and
+    #   takes a SAXS+WAXS image at each angle.
+    #
+    # 💡 NEWER, EASIER WAY: a rotation tomography scan is the beamline 'smi_plans' helper
+    #   library's tomography run. It drives the rotation, records the angle/beam into the
+    #   saved data, and templates the file name from them:
+    #
+    #     from smi_plans import tomography_run
+    #     yield from tomography_run(sample, np.linspace(th_ini, th_fin, th_st), t=exp_t)
+    #     # smi_plans rotates 'stage.phi' (the current name for the old 'prs').
+    #
+    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'prs' is the OLD rotation-stage name and no longer
+    #   exists — it's now 'stage.phi' (⚠️ note on the 'bps.mv(prs, ...)' line). (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ note).
+    # === end smi_plans note ================================================
+    det_exposure_time(exp_t, exp_t*nume)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t*nume)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t*nume)). (The smi_plans technique runs set exposure for you via t=.)
 
     for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
-        yield from bps.mv(prs, theta)
+        yield from bps.mv(prs, theta)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         name_fmt = "{sample}_5.0m_16.1keV_num{num}_{th}deg_bpm{bpm}"
         sample_name = name_fmt.format(sample=sample, num="%2.2d"%num, th="%2.2f"%theta, bpm="%1.3f"%xbpm3.sumX.get())
         sample_id(sample_name=sample_name)
@@ -288,6 +337,14 @@ def run_tomo(th_ini=-90, th_fin=90, th_st=30, exp_t=1, sample='test',
 
 
 def mov_sam(pos, dx = 0, dy=0):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves the stages to a numbered sample's stored position and records its name.
+    #
+    # 💡 NEWER, EASIER WAY: moving to a numbered sample's position is handled by the beamline
+    #   'smi_plans' helper library's SampleList (goto_sample), which also records which sample
+    #   you're on into the data. (Heads-up: the mov_sam version calls RE(...) directly, which
+    #   only works from the prompt, not inside another plan. Nothing here is broken.)
+    # === end smi_plans note ================================================
     px, py = pxy_dict[pos]
     RE(bps.mv(piezo.x, px + dx ))
     RE(bps.mv(piezo.y, py + dy))
@@ -299,6 +356,15 @@ def mov_sam(pos, dx = 0, dy=0):
 
 def mov_sam_re(pos, dx =0, dy=0   ):
     #M, _, _ = get_motor( )  
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves the stages to a numbered sample's stored position (plan version, for use
+    #   inside other plans) and records its name.
+    #
+    # 💡 NEWER, EASIER WAY: moving to a numbered sample's position is handled by the beamline
+    #   'smi_plans' helper library's SampleList (goto_sample), which also records which sample
+    #   you're on into the data. (Heads-up: the mov_sam version calls RE(...) directly, which
+    #   only works from the prompt, not inside another plan. Nothing here is broken.)
+    # === end smi_plans note ================================================
     px, py = pxy_dict[pos]
     yield from bps.mv(piezo.x, px + dx)
     yield from bps.mv(piezo.y , py + dy)
@@ -332,6 +398,13 @@ def mov_sam_re(pos, dx =0, dy=0   ):
 
     
 def name_sam(pos):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: sets the current sample name in RE.md for a numbered sample (no motion, no data).
+    #
+    # 💡 NEWER, EASIER WAY: with the beamline 'smi_plans' helper library you don't set the
+    #   sample name in RE.md by hand — the sample name/position is recorded into the data and
+    #   templated into the file name for you. (Nothing here is broken.)
+    # === end smi_plans note ================================================
     sample = sample_dict[pos]
     print("Move to pos=%s for sample:%s" % (pos, sample))     
     RE.md["sample_name"] = sample    
@@ -346,6 +419,20 @@ def name_sam(pos):
 def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=15, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False):
     """RE( measure_transmission_xs( sample = 'test' ) )"""
     
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the core transmission measurement — sets up the chosen detector(s), names the file
+    #   from the current positions, and takes one SAXS/WAXS image.
+    #
+    # 💡 NEWER, EASIER WAY: a single labelled transmission frame (SAXS and/or WAXS) is one
+    #   call in the beamline 'smi_plans' helper library, which records the positions/beam/
+    #   detector-distance into the saved data and builds the file name from them:
+    #
+    #     from smi_plans import acquire, saxs_waxs_dets
+    #     yield from acquire(sample, saxs_waxs_dets(), [])     # SAXS + WAXS
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' call below no longer sets the
+    #   exposure unless run as a plan (see the ⚠️ FIXME note on that line).
+    # === end smi_plans note ================================================
     if user_name is None:   
         try:     
             user_name = RE.md["user_name"]   
@@ -391,7 +478,7 @@ def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=15, att="None", dx=
         t=t,
         #scan_id=RE.md["scan_id"],
     )
-    det_exposure_time(t, t) 
+    det_exposure_time(t, t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")
@@ -406,18 +493,42 @@ def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=15, att="None", dx=
 
 def measure_saxs(t=1, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False):
     """RE( measure_saxs( sample = 'AgBH_12keV' ) )"""    
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a shortcut that takes one SAXS transmission frame (wraps measure_transmission_xs).
+    #
+    # 💡 NEWER, EASIER WAY: this is a thin wrapper around measure_transmission_xs (above).
+    #   In the beamline 'smi_plans' helper library the same single frame is just
+    #   acquire(sample, saxs_waxs_dets(...), []) — positions/beam recorded into the data.
+    #   (Nothing here is broken; the det_exposure_time fix lives in measure_transmission_xs.)
+    # === end smi_plans note ================================================
     return measure_transmission_xs(t=t, mode = ['saxs'], att=att, dx=dx, dy=dy, user_name=user_name, sample=sample, take_camera = take_camera)   
 
 def measure_waxs( t=1, waxs_angle=15, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False ):
     """ 
     RE(  measure_waxs() )  # take default parameters
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a shortcut that takes one WAXS transmission frame (wraps measure_transmission_xs).
+    #
+    # 💡 NEWER, EASIER WAY: this is a thin wrapper around measure_transmission_xs (above).
+    #   In the beamline 'smi_plans' helper library the same single frame is just
+    #   acquire(sample, saxs_waxs_dets(...), []) — positions/beam recorded into the data.
+    #   (Nothing here is broken; the det_exposure_time fix lives in measure_transmission_xs.)
+    # === end smi_plans note ================================================
     return measure_transmission_xs(t=t, waxs_angle = waxs_angle, mode = ['waxs'], att=att, dx=dx, dy=dy, user_name=user_name, sample=sample,  take_camera = take_camera) 
 
 def measure_wsaxs( t=1, waxs_angle=20, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False ):
     """ 
     RE(  measure_wsaxs() )  # take default parameters
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a shortcut that takes one combined SAXS+WAXS frame (wraps measure_transmission_xs).
+    #
+    # 💡 NEWER, EASIER WAY: this is a thin wrapper around measure_transmission_xs (above).
+    #   In the beamline 'smi_plans' helper library the same single frame is just
+    #   acquire(sample, saxs_waxs_dets(...), []) — positions/beam recorded into the data.
+    #   (Nothing here is broken; the det_exposure_time fix lives in measure_transmission_xs.)
+    # === end smi_plans note ================================================
     return measure_transmission_xs(t=t, waxs_angle = waxs_angle, mode = ['saxs', 'waxs' ], att=att, dx=dx, dy=dy, user_name=user_name, sample=sample,  take_camera = take_camera)     
     
 
@@ -430,6 +541,21 @@ def measure_multi_waxs_loop_angles(  t= [1], waxs_angles=[0, 15, 20 , 40  ],
     t0=time.time();RE(measure_multi_waxs_loop_angles());run_time(t0)    
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: loops the active sample table and a set of WAXS arc angles, taking WAXS (and SAXS at
+    #   the largest angle) at each sample.
+    #
+    # 💡 NEWER, EASIER WAY: looping a sample table (and WAXS angles) and taking frames at
+    #   each is the beamline 'smi_plans' helper library's transmission run. It loops the
+    #   samples for you and records each name/position/beam into the data + file name:
+    #
+    #     from smi_plans import SampleList, transmission_bar
+    #     samples = SampleList.from_columns(name=list(sample_dict.values()), x=x_list, y=y_list)
+    #     yield from transmission_bar(samples, t=1)
+    #
+    #   (Optional tidy-up — your script works as-is. The det_exposure_time "plan" fix lives
+    #    in measure_transmission_xs, which these helpers call.)
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())   
     maxA = np.max(waxs_angles)
     take_camera = False
@@ -468,6 +594,20 @@ def measure_multi_saxs_loop_angles(  t= [1],  dxs=[0], dys=[0], user_name= user_
     t0=time.time();RE(measure_multi_waxs_loop_angles());run_time(t0)    
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: loops the active sample table and takes a SAXS frame at each sample.
+    #
+    # 💡 NEWER, EASIER WAY: looping a sample table (and WAXS angles) and taking frames at
+    #   each is the beamline 'smi_plans' helper library's transmission run. It loops the
+    #   samples for you and records each name/position/beam into the data + file name:
+    #
+    #     from smi_plans import SampleList, transmission_bar
+    #     samples = SampleList.from_columns(name=list(sample_dict.values()), x=x_list, y=y_list)
+    #     yield from transmission_bar(samples, t=1)
+    #
+    #   (Optional tidy-up — your script works as-is. The det_exposure_time "plan" fix lives
+    #    in measure_transmission_xs, which these helpers call.)
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())   
     take_camera = False
     for k in ks:
@@ -487,6 +627,30 @@ def measure_multi_saxs_loop_angles(  t= [1],  dxs=[0], dys=[0], user_name= user_
 
 
 class NanoSyn( ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a small helper object for an in-situ nanoparticle-synthesis run.
+    #   '.measure()' takes one SAXS+WAXS frame (naming the file from the current stage
+    #   positions); '.run()' repeats that measurement over time while nudging the stage
+    #   around, for run_time seconds — a time-series / kinetics measurement.
+    #
+    # 💡 NEWER, EASIER WAY: an in-situ "measure over and over while time passes" run is
+    #   the beamline 'smi_plans' helper library's time-series / kinetics run. It loops the
+    #   frames for you, stamps each with the elapsed time, and records positions/beam into
+    #   the saved data + file name:
+    #
+    #     from smi_plans import time_series_run
+    #     yield from time_series_run(sample_name, n=frames, t=t, period=sleep_time,
+    #                                dets=[pil2M, pil900KW])
+    #
+    #   Heads-up: this class calls RE(...) and time.sleep() INSIDE its methods. That's the
+    #   OLD pattern — a smi_plans plan is written with 'yield from' and you run the whole
+    #   thing once with RE(...) at the prompt (so it records proper runs/documents).
+    #
+    #   (Your code below still works as-is, EXCEPT for the ⚠️ line in .measure().)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' call in .measure() below no
+    #   longer sets the exposure unless run as a plan (see the ⚠️ FIXME note on that line).
+    # === end smi_plans note ================================================
     def __init__(  self, sample='NPs'):
         '''       
 
@@ -524,7 +688,7 @@ class NanoSyn( ):
         print("Collect data here....")
         #yield from bp.count(dets, num=1)
         #RE( bp.count(dets, num=1))
-        det_exposure_time(t, t) 
+        det_exposure_time(t, t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         RE(bp.count(  dets ))
         if take_camera:
             scan_id=RE.md["scan_id"]

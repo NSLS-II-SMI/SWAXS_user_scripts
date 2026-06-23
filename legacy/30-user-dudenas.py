@@ -1,11 +1,41 @@
 def run_night_Pete(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a convenience "run my whole night" wrapper — it just calls one of the
+    #   measurement plans below (here, the S-edge NEXAFS). Comment/uncomment to pick what runs.
+    #
+    # 💡 NEWER, EASIER WAY: in smi_plans you'd queue the technique runs (e.g. nexafs_run /
+    #   giwaxs_bar) directly; see the notes on the called functions below. (Nothing broken here.)
+    # === end smi_plans note ================================================
     # yield from giwaxs_S_edge_Pete(t=t)
     # yield from giwaxs_ai_S_edge_Pete(t=t)
     yield from nexafs_S_edge_Pete(t=1)
 
 
 def giwaxs_multiprsangles_2020_3(t=1):
-    dets = [pil2M, pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence WAXS run over a bar of samples that rotates the sample
+    #   about the beam ('prs', the old in-plane rotation stage) to several orientations, sweeping
+    #   incident angle and the rotation, at each WAXS arc. (Rotating the sample probes in-plane
+    #   texture / anisotropy.)
+    #
+    # 💡 NEWER, EASIER WAY: rocking/rotating the sample while recording is the 'smi_plans' GIWAXS
+    #   workflow with a rotation axis. The rotation stage that used to be called 'prs' is now
+    #   'stage.phi', so you build a motor axis on it and let acquire/giwaxs record the angle into
+    #   every image and file name:
+    #
+    #     from smi_plans import acquire, motor_axis, incidence_axis
+    #     # rotation: motor_axis("phi", stage.phi, np.linspace(-70, 20, 46))
+    #     # incidence: incidence_axis(stage.th, th0, ai_list)
+    #     # hand these axes + [pil2M, pil900KW] to acquire(...)
+    #
+    #   (Use 'pil900KW' for the current WAXS detector — see ⚠️ below.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'prs' was removed — the same rotation stage is now
+    #   'stage.phi'; (2) 'pil300KW' was retired — it's now 'pil900KW'; (3) the
+    #   'det_exposure_time(...)' calls need to be run as a plan. (See the ⚠️ notes on each line.)
+    #   (internal: Tier 1 — prs rock.)
+    # === end smi_plans note ================================================
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
 
     names = ["DDP_50", "DDP_25", "DDP_10", "DDP_100", "SEBS"]
     x = [-45000, -25000, -3000, 17000, 43000]
@@ -22,12 +52,12 @@ def giwaxs_multiprsangles_2020_3(t=1):
     ai_list = [round(1000 * x, 4) for x in ai_list]
     ai_list = np.asarray(ai_list) / 1000
 
-    dets = [pil2M, pil300KW]
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
 
     for name, xs, zs, chi_pi, chi_hexa, th_pi, th_hexa in zip(
         names, x, z, chi_piezo, chi_hexa, th_piezo, th_hexa
     ):
-        yield from bps.mv(prs, 0)
+        yield from bps.mv(prs, 0)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         yield from bps.mv(piezo.x, xs)
         yield from bps.mv(piezo.z, zs)
         yield from bps.mv(piezo.ch, chi_pi)
@@ -40,11 +70,11 @@ def giwaxs_multiprsangles_2020_3(t=1):
         yield from bps.sleep(1)
         yield from bps.mv(att1_9, "Insert")
 
-        yield from bps.mv(prs, 20)
+        yield from bps.mv(prs, 20)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil2M, pil300KW]
+            dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
 
             for k, ais in enumerate(ai_list):
                 yield from bps.mv(stage.th, th_hexa + ais)
@@ -52,7 +82,7 @@ def giwaxs_multiprsangles_2020_3(t=1):
                 x_list = [-700, -500, -300, -100, 100, 300, 500, 700]
                 for pos, xss in enumerate(x_list):
                     yield from bps.mv(piezo.x, xs + xss)
-                    det_exposure_time(t, t)
+                    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                     name_fmt = "{sample}_aiscan_14keV_ai{ai}_pos{pos}_prs{prs}_wa{wax}"
                     sample_name = name_fmt.format(
                         sample=name,
@@ -65,15 +95,15 @@ def giwaxs_multiprsangles_2020_3(t=1):
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     yield from bp.count(dets, num=1)
 
-        yield from bps.mv(prs, -70)
+        yield from bps.mv(prs, -70)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil2M, pil300KW]
+            dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
 
             for k, ais in enumerate(ai_list):
                 yield from bps.mv(stage.th, th_hexa + ais)
                 yield from bps.mv(piezo.x, xs)
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                 name_fmt = "{sample}_aiscan_14keV_ai{ai}_pos{pos}_prs{prs}_wa{wax}"
                 sample_name = name_fmt.format(
                     sample=name, ai="%4.3f" % ais, pos="00", prs="90", wax=wa
@@ -82,18 +112,18 @@ def giwaxs_multiprsangles_2020_3(t=1):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-        yield from bps.mv(prs, -70)
+        yield from bps.mv(prs, -70)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         yield from bps.mv(stage.th, th_hexa + 0.15)
         prs_list = np.linspace(-70, 20, 46)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil2M, pil300KW]
+            dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
 
             for k, prss in enumerate(prs_list):
-                yield from bps.mv(prs, prss)
+                yield from bps.mv(prs, prss)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'. (Build the rotation list on stage.phi, e.g. motor_axis("phi", stage.phi, prs_list).)
                 yield from bps.mv(piezo.x, xs)
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                 name_fmt = "{sample}_prsscan_14keV_ai{ai}_pos{pos}_prs{prs}_wa{wax}"
                 sample_name = name_fmt.format(
                     sample=name, ai="0.15", pos="00", prs="%2.2d" % prss, wax=wa
@@ -102,18 +132,18 @@ def giwaxs_multiprsangles_2020_3(t=1):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-        yield from bps.mv(prs, 20)
+        yield from bps.mv(prs, 20)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         yield from bps.mv(stage.th, th_hexa + 0.2)
         prs_list = np.linspace(20, -70, 46)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
-            dets = [pil2M, pil300KW]
+            dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
 
             for k, prss in enumerate(prs_list):
-                yield from bps.mv(prs, prss)
+                yield from bps.mv(prs, prss)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'. (Build the rotation list on stage.phi, e.g. motor_axis("phi", stage.phi, prs_list).)
                 yield from bps.mv(piezo.x, xs)
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                 name_fmt = "{sample}_prsscan_14keV_ai{ai}_pos{pos}_prs{prs}_wa{wax}"
                 sample_name = name_fmt.format(
                     sample=name, ai="0.20", pos="00", prs="%2.2d" % prss, wax=wa
@@ -122,12 +152,28 @@ def giwaxs_multiprsangles_2020_3(t=1):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-        det_exposure_time(0.3, 0.3)
+        det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)).
         sample_id(user_name="test", sample_name="test")
 
 
 def giwaxs_S_edge_Pete(t=1):
-    dets = [pil2M, pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing-incidence WAXS scan near the sulfur (S) edge over a bar
+    #   of samples — align each, then for each WAXS arc and incident angle sweep the energy and
+    #   record an image, with a stepped energy walk-back at the end.
+    #
+    # 💡 NEWER, EASIER WAY: this is the 'smi_plans' GIWAXS + energy combination. 'energy_axis'
+    #   sweeps the energy AND handles the move/settle/beam-feedback (so you can drop the per-energy
+    #   sleeps and the stepped walk-back — see 💡 below), and a SampleList + giwaxs_bar walks the
+    #   bar and records energy/angle/beam for you:
+    #     from smi_plans import SampleList, giwaxs_bar, energy_axis, align_sample
+    #   (Use 'pil900KW' for the current WAXS detector — see ⚠️ below. Optional otherwise; works
+    #    as-is EXCEPT the ⚠️ lines.) (internal: Tier 1.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the
+    #   'det_exposure_time(...)' calls need to be run as a plan. (See ⚠️ notes below.)
+    # === end smi_plans note ================================================
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
 
     # names = ['100_DDP_0deg','100_DDP_90deg','75_DDP_0deg''75_DDP_90deg','50_DDP_0deg','50_DDP_90deg','25_DDP_0deg','25_DDP_90deg']
     # x = [-48098, -29098, -21098, -2098, 9901, 52901, 28901, 39900 ]
@@ -174,7 +220,7 @@ def giwaxs_S_edge_Pete(t=1):
         yield from alignement_special(angle=0.15)
         ai0 = piezo.th.position
 
-        dets = [pil2M, pil300KW]
+        dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
         yield from bps.mv(att2_9, "Insert")
         yield from bps.sleep(1)
         yield from bps.mv(att2_9, "Insert")
@@ -187,11 +233,11 @@ def giwaxs_S_edge_Pete(t=1):
                 yield from bps.mv(piezo.th, ai0 + ais)
                 yield from bps.mv(piezo.x, xs + k * 400)
 
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(1)
+                    yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     bpm = xbpm2.sumX.value
                     sample_name = name_fmt.format(
                         sample=name,
@@ -204,13 +250,27 @@ def giwaxs_S_edge_Pete(t=1):
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     yield from bp.count(dets, num=1)
 
-                yield from bps.mv(energy, 2490)
+                yield from bps.mv(energy, 2490)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 2470)
                 yield from bps.mv(energy, 2450)
 
 
 def giwaxs_S_edge_Pete_2121_2(t=1):
-    dets = [pil2M, pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant S-edge GIWAXS run over a bar of samples — align each, then do an
+    #   energy sweep at fixed angles AND an angle sweep at fixed energies, recording WAXS images.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' GIWAXS + energy_axis/incidence_axis over a SampleList via
+    #   giwaxs_bar — energy_axis handles the energy move/settle/feedback so the sleeps and stepped
+    #   walk-backs below become unnecessary (see 💡):
+    #     from smi_plans import SampleList, giwaxs_bar, energy_axis, incidence_axis, align_sample
+    #   (Use 'pil900KW' — see ⚠️ below. Optional otherwise; works as-is EXCEPT the ⚠️ lines.)
+    #   (internal: Tier 1.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'pil300KW' was retired (now 'pil900KW'); 'det_exposure_time(...)'
+    #   must be run as a plan. (See ⚠️ notes below.)
+    # === end smi_plans note ================================================
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
 
     # names =   ['sample1a', 'sample1b', 'sample2a', 'sample2b', 'sample3a', 'sample3b', 'sample4a', 'sample4b', 'sample5a', 'sample5b', 'sample6a',
     # 'sample6b','sample7a', 'sample7b']
@@ -247,7 +307,7 @@ def giwaxs_S_edge_Pete_2121_2(t=1):
         z_piezo
     ), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(z_piezo)})"
 
-    dets = [pil2M, pil300KW]
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
     waxs_arc = [15, 0]
 
     for name, xs_piezo, xs_hexa, zs_piezo in zip(names, x_piezo, x_hexa, z_piezo):
@@ -296,11 +356,11 @@ def giwaxs_S_edge_Pete_2121_2(t=1):
                 yield from bps.mv(piezo.th, ai0 + ais)
                 yield from bps.mv(piezo.x, xs_piezo + k * 400)
 
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                 name_fmt = "{sample}_enscan_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     bpm = xbpm2.sumX.value
                     sample_name = name_fmt.format(
                         sample=name,
@@ -313,7 +373,7 @@ def giwaxs_S_edge_Pete_2121_2(t=1):
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     yield from bp.count(dets, num=1)
 
-                yield from bps.mv(energy, 2490)
+                yield from bps.mv(energy, 2490)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, 2470)
                 yield from bps.sleep(2)
@@ -334,14 +394,14 @@ def giwaxs_S_edge_Pete_2121_2(t=1):
 
             for k, e in enumerate(energies):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 yield from bps.mv(piezo.x, xs_piezo + 2000 + k * 600 + i * 200)
 
                 for l, ais in enumerate(ai_list):
                     yield from bps.mv(piezo.th, ai0 + ais)
 
-                    det_exposure_time(t, t)
+                    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                     name_fmt = "{sample}_aiscan_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
 
                     bpm = xbpm2.sumX.value
@@ -356,7 +416,7 @@ def giwaxs_S_edge_Pete_2121_2(t=1):
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     yield from bp.count(dets, num=1)
 
-            yield from bps.mv(energy, 2490)
+            yield from bps.mv(energy, 2490)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, 2470)
             yield from bps.sleep(2)
@@ -365,7 +425,21 @@ def giwaxs_S_edge_Pete_2121_2(t=1):
 
 
 def giwaxs_ai_S_edge_Pete(t=1):
-    dets = [pil2M, pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant S-edge GIWAXS angle scan over a bar of samples — align each, then
+    #   sweep incident angle and a few energies at each WAXS arc (SAXS only at the low arc).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' GIWAXS + incidence_axis/energy_axis over a SampleList via
+    #   giwaxs_bar (records angle/energy/beam; handles the energy move so sleeps/walk-backs below
+    #   are unnecessary — see 💡):
+    #     from smi_plans import SampleList, giwaxs_bar, incidence_axis, energy_axis, align_sample
+    #   (Use 'pil900KW' — see ⚠️ below. Optional otherwise; works as-is EXCEPT the ⚠️ lines.)
+    #   (internal: Tier 1.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'pil300KW' was retired (now 'pil900KW'); 'det_exposure_time(...)'
+    #   must be run as a plan. (See ⚠️ notes below.)
+    # === end smi_plans note ================================================
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
 
     names = [
         "75_DDP_0deg",
@@ -390,7 +464,7 @@ def giwaxs_ai_S_edge_Pete(t=1):
     ai_list = [round(1000 * x, 4) for x in ai_list]
     ai_list = np.asarray(ai_list) / 1000
 
-    dets = [pil2M, pil300KW]
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
 
     for name, xs, zs in zip(names, x, z):
         print(zs)
@@ -406,13 +480,13 @@ def giwaxs_ai_S_edge_Pete(t=1):
             yield from bps.mv(waxs, wa)
 
             if i == 0:
-                dets = [pil2M, pil300KW]
+                dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
                 yield from bps.mv(att2_9, "Insert")
                 yield from bps.sleep(1)
                 yield from bps.mv(att2_9, "Insert")
 
             else:
-                dets = [pil300KW]
+                dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
                 yield from bps.mv(att2_9, "Insert")
                 yield from bps.sleep(1)
                 yield from bps.mv(att2_9, "Insert")
@@ -422,11 +496,11 @@ def giwaxs_ai_S_edge_Pete(t=1):
                 yield from bps.mv(piezo.th, ai0 + ais)
                 yield from bps.mv(piezo.x, xs + k * 200)
 
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                 name_fmt = "{sample}_aiscan_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(0.5)
+                    yield from bps.sleep(0.5)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     bpm = xbpm2.sumX.value
                     sample_name = name_fmt.format(
                         sample=name,
@@ -439,15 +513,35 @@ def giwaxs_ai_S_edge_Pete(t=1):
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     yield from bp.count(dets, num=1)
 
-                yield from bps.mv(energy, 2490)
+                yield from bps.mv(energy, 2490)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 2470)
                 yield from bps.mv(energy, 2450)
 
 
 def nexafs_S_edge_Pete(t=1):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan at the sulfur (S) edge — parks the WAXS detector at 52.5 deg,
+    #   then steps the X-ray energy across the edge taking a WAXS image + beam reading at each,
+    #   with a stepped energy walk-back at the end.
+    #
+    # 💡 NEWER, EASIER WAY: a full edge energy scan like this is ONE line with 'smi_plans.nexafs_run'.
+    #   It records energy/beam into the data and file name, and handles the energy move/settle/beam
+    #   feedback (so you can drop the per-energy sleeps and the stepped walk-back — see 💡):
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run("100_DDP_0deg_vertically_ai0.5deg", energies, t=t,
+    #                           dets=[pil900KW], geometry="reflection")
+    #
+    #   (Use 'pil900KW' — see ⚠️ below. Optional otherwise; works as-is EXCEPT the ⚠️ lines.)
+    #   (internal: Tier 1.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'pil300KW' was retired (now 'pil900KW'); 'det_exposure_time(...)'
+    #   must be run as a plan. (See ⚠️ notes below.)
+    # === end smi_plans note ================================================
+
     yield from bps.mv(waxs, 52.5)
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = ["100_DDP_0deg_vertically_ai0.5deg"]
     x = [-52000]
@@ -489,11 +583,11 @@ def nexafs_S_edge_Pete(t=1):
 
         # yield from bps.mv(piezo.th, 1.5)
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "{sample}_{energy}eV_wa52.5_bpm{xbpm}"
         for e in energies:
             yield from bps.mv(energy, e)
-            yield from bps.sleep(0.5)
+            yield from bps.sleep(0.5)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             bpm = xbpm2.sumX.value
             sample_name = name_fmt.format(
                 sample=name, energy="%6.2f" % e, xbpm="%4.3f" % bpm
@@ -502,12 +596,26 @@ def nexafs_S_edge_Pete(t=1):
             print(f"\n\t=== Sample: {sample_name} ===\n")
             yield from bp.count(dets, num=1)
 
-        yield from bps.mv(energy, 2490)
+        yield from bps.mv(energy, 2490)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next two mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(energy, 2470)
         yield from bps.mv(energy, 2450)
 
 
 def giwaxs_Dudenas(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GIWAXS run over a bar of samples — align each, then at each WAXS arc sweep
+    #   incident angle and a row of x sub-spots, recording a WAXS+SAXS image at each.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' multi-sample GIWAXS — a SampleList + giwaxs_bar walks the
+    #   bar, aligns, sweeps angle, and records angle/position/beam for you (so you don't build the
+    #   "{sample}_aiscan..._pos..." name by hand):
+    #     from smi_plans import SampleList, giwaxs_bar, incidence_axis, spatial_grid_axes, align_sample
+    #   (Use 'pil900KW' — see ⚠️ below. Optional otherwise; works as-is EXCEPT the ⚠️ lines.)
+    #   (internal: Tier 1.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'pil300KW' was retired (now 'pil900KW'); 'det_exposure_time(...)'
+    #   must be run as a plan. (See ⚠️ notes below.)
+    # === end smi_plans note ================================================
     # sample alignement
     global names, x_piezo, z_piezo, incident_angles, y_piezo_aligned, xs_hexa
 
@@ -546,7 +654,7 @@ def giwaxs_Dudenas(t=1):
         x_hexa
     ), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
 
-    dets = [pil300KW, pil2M]
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
     waxs_arc = [1, 7.5]
 
     ai0 = 0
@@ -571,7 +679,7 @@ def giwaxs_Dudenas(t=1):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_sdd8.3m_14keV_ai{angle}deg_wa{waxs}"
 
             for k, ais in enumerate(ai_list):
@@ -580,7 +688,7 @@ def giwaxs_Dudenas(t=1):
                 x_list = [-700, -500, -300, -100, 100, 300, 500, 700]
                 for pos, xss in enumerate(x_list):
                     yield from bps.mv(piezo.x, xs + xss)
-                    det_exposure_time(t, t)
+                    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                     name_fmt = "{sample}_aiscan_14keV_ai{ai}_pos{pos}_wa{wax}"
                     sample_name = name_fmt.format(
                         sample=name, ai="%4.3f" % ais, pos="%2.2d" % pos, wax=wa
@@ -591,6 +699,19 @@ def giwaxs_Dudenas(t=1):
 
 
 def giwaxs_S_edge_Pete_2121_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant S-edge GIWAXS run over a bar of samples (energy sweep at fixed
+    #   angles, then angle sweep at fixed energies), recording WAXS/SAXS images. (Uses the current
+    #   'pil900KW' WAXS detector — no detector fix needed here.)
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' GIWAXS + energy_axis/incidence_axis over a SampleList via
+    #   giwaxs_bar — energy_axis handles the energy move/settle/feedback so the sleeps and stepped
+    #   walk-backs below become unnecessary (see 💡):
+    #     from smi_plans import SampleList, giwaxs_bar, energy_axis, incidence_axis, align_sample
+    #   (Optional — works as-is EXCEPT the ⚠️ exposure lines.) (internal: Tier 1.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below must be run as a plan.
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
 
     names = ["N22as", "N22an", "SG", "PTB_OTS", "PTB_Ox", "PTB_UVO"]
@@ -657,11 +778,11 @@ def giwaxs_S_edge_Pete_2121_3(t=1):
                 yield from bps.mv(piezo.th, ai0 + ais)
                 yield from bps.mv(piezo.x, xs_piezo + k * 400)
 
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                 name_fmt = "{sample}_enscan_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(3)
+                    yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     bpm = xbpm2.sumX.value
                     sample_name = name_fmt.format(
                         sample=name,
@@ -674,7 +795,7 @@ def giwaxs_S_edge_Pete_2121_3(t=1):
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     yield from bp.count(dets, num=1)
 
-                yield from bps.mv(energy, 2490)
+                yield from bps.mv(energy, 2490)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, 2470)
                 yield from bps.sleep(2)
@@ -695,14 +816,14 @@ def giwaxs_S_edge_Pete_2121_3(t=1):
 
             for k, e in enumerate(energies):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(3)
+                yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 yield from bps.mv(piezo.x, xs_piezo + 2000 + k * 600 + i * 200)
 
                 for l, ais in enumerate(ai_list):
                     yield from bps.mv(piezo.th, ai0 + ais)
 
-                    det_exposure_time(t, t)
+                    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                     name_fmt = "{sample}_aiscan_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
 
                     bpm = xbpm2.sumX.value
@@ -717,7 +838,7 @@ def giwaxs_S_edge_Pete_2121_3(t=1):
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     yield from bp.count(dets, num=1)
 
-            yield from bps.mv(energy, 2490)
+            yield from bps.mv(energy, 2490)  # 💡 smi_plans: you can drop this stepped energy walk-back (the next mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
             yield from bps.sleep(3)
             yield from bps.mv(energy, 2470)
             yield from bps.sleep(3)
@@ -726,8 +847,23 @@ def giwaxs_S_edge_Pete_2121_3(t=1):
 
 
 def S_edge_measurments_2021_3_Lee(t=1):
-    dets = [pil2M, pil900KW, pil300KW]
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant S-edge GIWAXS run over a bar of samples — align each, then at each
+    #   WAXS arc and incident angle sweep the energy up and down across four x sub-positions,
+    #   recording images (with a fresh x spot each shot to limit beam damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' GIWAXS + energy_axis over a SampleList via giwaxs_bar —
+    #   energy_axis does the up/down sweep AND handles the energy move/settle/feedback (so the
+    #   per-energy sleeps below are unnecessary — see 💡):
+    #     from smi_plans import SampleList, giwaxs_bar, energy_axis, align_sample
+    #   (Use 'pil900KW' for WAXS — see ⚠️ below. Optional otherwise; works as-is EXCEPT the ⚠️
+    #    lines.) (internal: Tier 1.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'pil300KW' was retired (now 'pil900KW'); 'det_exposure_time(...)'
+    #   must be run as a plan. (See ⚠️ notes below.)
+    # === end smi_plans note ================================================
+    dets = [pil2M, pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' and 'pil900KW' here are fine.)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # names = ['P3C5T_1','P3C5T_2','P3C5T_3', 'PDOT']
     # x_piezo = [ -22000,   -37000,   -53000, -55000]
@@ -796,7 +932,7 @@ def S_edge_measurments_2021_3_Lee(t=1):
         yield from bps.mv(att2_9.open_cmd, 1)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -809,7 +945,7 @@ def S_edge_measurments_2021_3_Lee(t=1):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos1_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(3)
+                    yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     yield from bps.mv(piezo.x, xs + counter * 30)
                     counter += 1
 
@@ -828,7 +964,7 @@ def S_edge_measurments_2021_3_Lee(t=1):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos2_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(3)
+                    yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     yield from bps.mv(piezo.x, xs + counter * 30)
                     counter += 1
 
@@ -847,7 +983,7 @@ def S_edge_measurments_2021_3_Lee(t=1):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos3_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(3)
+                    yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     yield from bps.mv(piezo.x, xs + counter * 30)
                     counter += 1
 
@@ -866,7 +1002,7 @@ def S_edge_measurments_2021_3_Lee(t=1):
                 name_fmt = "{sample}_{energy}eV_ai{ai}_pos4_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(3)
+                    yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     yield from bps.mv(piezo.x, xs + counter * 30)
                     counter += 1
 
@@ -884,12 +1020,34 @@ def S_edge_measurments_2021_3_Lee(t=1):
 
 
 def night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight run-book — runs two measurement plans back to back (changing
+    #   the proposal in between). 'proposal_id(...)' still runs fine (its behaviour changed a bit,
+    #   but it won't crash).
+    #
+    # 💡 NEWER, EASIER WAY: in smi_plans you'd queue the technique runs (giwaxs_bar, etc.) directly;
+    #   see the notes on the called functions above. (Nothing broken here.)
+    # === end smi_plans note ================================================
     yield from giwaxs_S_edge_Pete_2121_3(t=t)
     proposal_id("2021_3", "304296_Richter")
     yield from S_edge_measurments_2021_3_Lee(t=t)
 
 
 def giwaxs_vert_S_edge_Pete_2121_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant S-edge energy sweep on one sample in vertical geometry — steps
+    #   the energy across the edge, recording a WAXS image + beam reading at each, then steps the
+    #   energy back down.
+    #
+    # 💡 NEWER, EASIER WAY: a single-sample edge energy sweep is one 'smi_plans.nexafs_run' (or
+    #   energy_axis inside giwaxs_run). It records energy/beam and handles the energy
+    #   move/settle/feedback (so the per-energy sleeps and the stepped walk-back below are
+    #   unnecessary — see 💡):
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run("PTB_OTS", energies, t=t, dets=[pil900KW], geometry="reflection")
+    #   (Optional — works as-is; nothing here is broken, the 💡 sleeps are just no longer needed.)
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
     name = "PTB_OTS"  #'N22an'
     dets = [pil900KW]
 
@@ -920,7 +1078,7 @@ def giwaxs_vert_S_edge_Pete_2121_3(t=1):
     name_fmt = "{sample}_vertical_{energy}eV_ai0.7deg_wa{wax}_bpm{xbpm}"
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(3)
+        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
         bpm = xbpm2.sumX.value
         sample_name = name_fmt.format(
             sample=name, energy="%6.2f" % e, wax="11.5", xbpm="%4.3f" % bpm
@@ -929,7 +1087,7 @@ def giwaxs_vert_S_edge_Pete_2121_3(t=1):
         print(f"\n\t=== Sample: {sample_name} ===\n")
         yield from bp.count(dets, num=1)
 
-    yield from bps.mv(energy, 2490)
+    yield from bps.mv(energy, 2490)  # 💡 smi_plans: you can drop this stepped energy walk-back (the following mv/sleep lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
     yield from bps.sleep(1)
     yield from bps.mv(energy, 2470)
     yield from bps.sleep(1)

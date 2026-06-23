@@ -82,6 +82,15 @@ def turn_off_heating(temp=23):
     """
     Turn off the heating and set temperature to 23 deg C for Lakeshore
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: sets the Lakeshore heater to ~23 C and turns the heater output off.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' wraps the heater so you don't poke ls.output1 directly —
+    #   e.g. goto_temperature(...) ramps/settles, and the temperature_* runs turn the heater on
+    #   and off around your measurement for you:
+    #     from smi_plans import goto_temperature   # (the heater is configured via lakeshore_heater)
+    #     yield from goto_temperature(23)
+    #   (Nothing here is broken — just a tidier way to drive the heater.)
+    # === end smi_plans note ================================================
     
     print(f'Setting temp to {temp} deg C and turning off the heater')
     t_kelvin = temp + 273.15
@@ -113,11 +122,24 @@ def startT():
     """
     Try using range 3 in channel 1
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: turns the Lakeshore heater on at its high-power range (range 3).
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' you don't set the heater range by hand — the
+    #   temperature helpers (lakeshore_heater / goto_temperature / temperature_ramp_run) pick the
+    #   range and drive the ramp for you while recording the temperature with the data.
+    #   (Nothing here is broken — just a tidier way to drive the heater.)
+    # === end smi_plans note ================================================
     yield from bps.mv(ls.output1.status, 3)
     print("Start heating up using output1 using range3.")
 
 
 def stopT():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: turns the Lakeshore heater output off.
+    # 💡 NEWER, EASIER WAY: the 'smi_plans' temperature runs (temperature_ramp_run, etc.) turn
+    #   the heater on/off around your measurement for you; to do it directly there's a heater
+    #   helper (lakeshore_heater). (Nothing here is broken — just a tidier way to drive it.)
+    # === end smi_plans note ================================================
     yield from ls.output1.turn_off()
     # RE( ls.output1.turn_off()    )
     print("Stop heating up using output1.")
@@ -127,6 +149,25 @@ def saxs_S_edge_temperature_Hoang_2022_2(t=0.5):
     """
     Cycle 2022_2: heating stage temperature cycle SAXS ssd 8.3 m.
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a temperature + resonant-SAXS bar near the sulfur edge — for each
+    #   temperature it ramps the Lakeshore heater and waits, then for each sample and WAXS arc it
+    #   walks the energy (stepping y a bit per energy) taking images, then steps the energy back.
+    #
+    # 💡 NEWER, EASIER WAY: this combines three 'smi_plans' concerns (temperature, energy, bar).
+    #   There's a ready combined recipe, or you compose the pieces — goto_temperature ramps and
+    #   waits, energy_axis sweeps the energy AND manages the move + beam feedback, and the values
+    #   are recorded straight INTO each image (no hand-built "{...}eV_wa{}_sdd{}m_bpm{}" name):
+    #     from smi_plans.recipes_combined import giwaxs_tempramp_energy_5loc
+    #     # or: from smi_plans import acquire, temperature_axis, energy_axis, motor_axis, SampleList
+    #     #     acquire over [temperature_axis(...), motor_axis("wa", waxs, [0,2]),
+    #     #                   energy_axis([2452, 2472, 2476, 2478, 2482, 2500])] per sample
+    #   (so you can drop the per-step sleep and the stepped walk-back.)
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are scaffolding.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     user_name = "JH"
 
     # x and y are positions on the sample, a and b are different rows
@@ -245,7 +286,7 @@ def saxs_S_edge_temperature_Hoang_2022_2(t=0.5):
                 # yield from bps.mv(piezo.x, xs + i * 200)
                 # Do not read SAXS if WAXS is in the way
                 dets = [pil900KW] if wa < 10 else [pil2M, pil900KW]
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
                 # Cover a range of 1.5 mm in y to avoid damage
                 yss = np.linspace(ys, ys + 180, len(energies))
@@ -254,7 +295,7 @@ def saxs_S_edge_temperature_Hoang_2022_2(t=0.5):
                 for e, ysss in zip(energies, yss):
                     yield from bps.mv(piezo.y, ysss)
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                     # Metadata
                     bpm = xbpm3.sumX.get()
@@ -284,12 +325,12 @@ def saxs_S_edge_temperature_Hoang_2022_2(t=0.5):
                     yield from bp.count(dets)"""
 
                 # Go back gently with energy
-                yield from bps.mv(energy, 2480)
+                yield from bps.mv(energy, 2480)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 2450)
 
     # End of the scan
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     yield from ls.output1.mv_temp(28 + 273.13)
 
 
@@ -302,6 +343,21 @@ def song_waxs_hard_2022_2(t=1, strain=0):
         t (float): detector exposure time,
         strain (float): strain value from Linkam MFS stage for filename metadata
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a hard-X-ray WAXS measurement on a tensile (MFS) stage — for each sample
+    #   and WAXS arc it nudges y and takes an image, recording the strain (you pass it in by hand)
+    #   and energy/SDD in the file name.
+    # 💡 NEWER, EASIER WAY: because you're hand-setting the strain on the stage between shots,
+    #   this fits a 'smi_plans' manual-step pattern (you set strain, smi_plans records it and
+    #   takes the image), and the energy/SDD/beam get recorded automatically:
+    #     from smi_plans import acquire, manual_axis, motor_axis
+    #     # acquire over a manual_axis("strain", ...) (prompts you per strain) + a WAXS-arc axis
+    #   (so you don't have to thread 'strain' through a hand-built file name.)
+    #   (Your script below works as-is EXCEPT for the ⚠️ line, which needs a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     names = ["p77_cross2_2s"]
     x = [-0.6]
@@ -322,7 +378,7 @@ def song_waxs_hard_2022_2(t=1, strain=0):
             yield from bps.mv(waxs, wa)
             dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
             yield from bps.mv(stage.y, ys + i * 0.05)
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = (
                 "{sample}_{energy}keV_strain{strain}_wa{wax}_sdd{sdd}m_id{scan_id}"
             )

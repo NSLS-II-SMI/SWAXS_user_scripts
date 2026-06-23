@@ -2,6 +2,20 @@ def equalise_temperature(temperature=25):
     """
     Set and stabilise temperature using Lakeshore controller
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: sends the Lakeshore heater to a target temperature and then waits in a
+    #   loop until the sample has actually reached it (and holds a bit longer for hotter set
+    #   points). 'ls' is the Lakeshore temperature controller. (Nothing here is broken.)
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-call helper that goes to a temperature and
+    #   waits for it to settle, so you don't have to write the wait-loop yourself:
+    #
+    #     from smi_plans import goto_temperature, lakeshore_heater   # do this once per session
+    #     yield from goto_temperature(lakeshore_heater, 25)          # your target in deg C
+    #
+    #   (smi_plans also has temperature_ramp_run / isothermal_kinetics_run if you want a whole
+    #    measurement-per-temperature in one call. This is optional — your loop below works.)
+    # === end smi_plans note ================================================
     t_kelvin = float(temperature) + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
 
@@ -45,6 +59,32 @@ def morozova_giswaxs_temp_2023_2(t=1):
     Grazing incidence measurement using Lakeshore controlled heating bar
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a temperature series of grazing-incidence WAXS/SAXS on a bar of many
+    #   samples — for each temperature it visits every sample, aligns it, and takes WAXS (and
+    #   SAXS at low arc) images over several WAXS-arc and incident-angle settings.
+    #
+    # 💡 NEWER, EASIER WAY: this "bar of samples × temperatures × angles" pattern is exactly
+    #   what 'smi_plans' multi-sample helpers are for. You list the samples once (positions +
+    #   names) and the temperatures, and it walks the bar, aligns each sample, sweeps angle,
+    #   and records temperature/angle/beam straight into every image and file name — so you
+    #   don't have to build "{name}_{temp}degC_run..." by hand or call sample_id at all.
+    #
+    #     from smi_plans import SampleList, giwaxs_bar, temperature_axis, align_sample
+    #     samples = SampleList.from_columns(                # list your bar once
+    #         name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #     # then sweep temperature with temperature_axis([26, 40, 55, ...]) and hand the bar
+    #     # to giwaxs_bar(..., incident_angles=[0.075, 0.125, 0.175, 0.250], arc=[0, 20],
+    #     #               t=t, align=align_sample)
+    #
+    #   (For a ready-made "GIWAXS while ramping temperature at several spots" recipe, see
+    #    smi_plans.recipes_combined.giwaxs_tempramp_energy_5loc. All optional — code below works
+    #    as-is EXCEPT the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes on those lines). (internal: Tier 1.)
+    # === end smi_plans note ================================================
+
     names_1   = ['st1-PIL-NO3-10p', 'st2-PIL-NO3-5p', 'st3-PIL-NO3-2.5p', 'st4-PIL-Cl-10p', ]
     piezo_x_1 = [           -40000,           -25000,             -10000,             2600, ]
     piezo_y_1 = [              400,              400,                200,              100, ]         
@@ -72,7 +112,7 @@ def morozova_giswaxs_temp_2023_2(t=1):
 
     step_across_sample = 200
     user_name = 'SM'
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
     msg = "Wrong number of coordinates, check names, piezos, and hexas"
     assert len(piezo_x) == len(names), msg
@@ -123,7 +163,7 @@ def morozova_giswaxs_temp_2023_2(t=1):
             waxs_arc = waxs_arc[::-1]
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
     # Turn off the heating and set temperature to 23 deg C
     t_kelvin = 23 + 273.15

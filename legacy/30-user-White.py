@@ -2,6 +2,14 @@
 
 
 def sample_alignment():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GISAXS alignment routine — wiggles the incident angle, runs a quick align, sets the
+    #   WAXS arc, and remembers the aligned angle/height.
+    #
+    # 💡 NEWER, EASIER WAY: alignment like this is handled by the beamline 'smi_plans' helper
+    #   library's align_sample (used as the 'align=' step of a GIWAXS run), which aligns each
+    #   sample once and saves the result WITH the data. (Nothing here is broken.)
+    # === end smi_plans note ================================================
     yield from bps.mvr(piezo.th, -1)
     yield from quickalign_gisaxs(angle=0.15)
     yield from bps.mvr(piezo.th, 1)
@@ -13,6 +21,15 @@ def sample_alignment():
 
 # def temp_align(cycle,temp):
 def temp_align_waxs(temp):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: at a given temperature, nudges to that temperature's pre-measured alignment offset,
+    #   takes a WAXS image, then nudges back.
+    #
+    # 💡 NEWER, EASIER WAY: 'nudge to the alignment offset for this temperature, then take a
+    #   frame' is covered by the beamline 'smi_plans' helper library's temperature + GIWAXS
+    #   runs: align_sample handles the per-temperature alignment, and the temperature run
+    #   records the temperature into the saved data + file name. (Nothing here is broken.)
+    # === end smi_plans note ================================================
     yield from bps.mv(waxs, 10.3)
 
     ai_offset = [
@@ -94,6 +111,15 @@ def temp_align_waxs(temp):
 
 # def temp_align(cycle,temp):
 def temp_align_saxs(temp):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: at a given temperature, nudges to that temperature's pre-measured alignment offset,
+    #   takes a SAXS+WAXS image, then nudges back.
+    #
+    # 💡 NEWER, EASIER WAY: 'nudge to the alignment offset for this temperature, then take a
+    #   frame' is covered by the beamline 'smi_plans' helper library's temperature + GIWAXS
+    #   runs: align_sample handles the per-temperature alignment, and the temperature run
+    #   records the temperature into the saved data + file name. (Nothing here is broken.)
+    # === end smi_plans note ================================================
     yield from bps.mv(waxs, 20)
 
     ai_offset = [
@@ -182,6 +208,19 @@ def temp_align_saxs(temp):
 
 
 def temp_ramp():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: steps through a list of temperatures, soaking at each, and takes an aligned WAXS frame
+    #   at every temperature (an in-situ heating ramp).
+    #
+    # 💡 NEWER, EASIER WAY: stepping temperature and measuring at each set point is the
+    #   beamline 'smi_plans' helper library's temperature ramp run. It drives the heater,
+    #   waits for each setpoint, and records the temperature into the saved data + file name:
+    #
+    #     from smi_plans import temperature_ramp_run, temperature_axis
+    #     yield from temperature_ramp_run(sample, temperature_axis(ls, tempz), t=t)
+    #
+    #   (The 'sleep' soak waits here are just dwell time — NOT broken.)
+    # === end smi_plans note ================================================
     yield from bps.mv(att2_1.open_cmd, 1)
     yield from bps.sleep(1)
     yield from bps.mv(att2_1.open_cmd, 1)
@@ -216,6 +255,22 @@ def giwaxs_White_2022_2(t=0.5):
     GIWAXS scans duing 2022_2 cycle
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GIWAXS run over a bar of samples — for each sample it aligns, then takes WAXS/SAXS
+    #   at several incident angles and WAXS arc positions.
+    #
+    # 💡 NEWER, EASIER WAY: aligning each sample then sweeping incident angle / WAXS arc is
+    #   the beamline 'smi_plans' helper library's GIWAXS run. align_sample aligns and saves
+    #   the result; incidence_axis sweeps the angle while recording it into the data:
+    #
+    #     from smi_plans import giwaxs_bar, SampleList, incidence_axis, align_sample
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, z=z_piezo)
+    #     yield from giwaxs_bar(samples, incidence_axis(piezo.th, ai0, inc_angles),
+    #                           t=t, align=align_sample)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' call below no longer sets the
+    #   exposure unless run as a plan (see the ⚠️ FIXME note on that line).
+    # === end smi_plans note ================================================
     user_name = "RT"
 
     # names =   [ '1-5-SC', '2-5-DC', '3-10-SC', '4-10-DC', '5-15-SC', '6-15-DC' ]
@@ -259,7 +314,7 @@ def giwaxs_White_2022_2(t=0.5):
     # inc angle handled separatelly for different samples
     # inc_angles = [0.04, 0.15]
     alignment_offset_x = 0  # microns
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # Skip samples
     skip = 0

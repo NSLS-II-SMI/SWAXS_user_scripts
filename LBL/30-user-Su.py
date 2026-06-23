@@ -1,10 +1,27 @@
 def run_saxs_nexafs_greg(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a small run-book — just calls a prep/measurement plan.
+    # 💡 NEWER, EASIER WAY: once the plan it calls is migrated to 'smi_plans' (see its own note),
+    #   this stays a simple wrapper. Nothing here is broken.
+    # === end smi_plans note ================================================
     # yield from nexafs_prep_multisample_greg(t=0.5)
     # yield from bps.sleep(10)
     yield from saxs_prep_multisample(t=0.5)
 
 
 def Su_nafion_nexafs_S_edge(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across an absorption edge — steps the X-ray energy and takes
+    #   a WAXS image at each energy (sometimes moving the sample a little in step to avoid damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam
+    #   INTO the data and fills them into the file name for you, and settles each energy:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW], geometry="transmission")
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil900KW, pil2M]
 
     waxs_arc = [0, 20, 40]
@@ -107,6 +124,22 @@ def Su_nafion_nexafs_S_edge(t=1):
 
 
 def Su_nafion_swaxs_S_edge(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])   # current WAXS detector — see ⚠️
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' (already in this list) — drop 'pil300KW'. (Note pil900KW is a different camera, so check beam-center/calibration.)
 
     waxs_arc = [0, 20]
@@ -232,6 +265,22 @@ def Su_nafion_swaxs_S_edge(t=1):
 
 
 def Su_nafion_waxs_S_edge(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])   # current WAXS detector — see ⚠️
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     yield from bps.mv(GV7.open_cmd, 1)
@@ -332,6 +381,18 @@ def Su_nafion_waxs_S_edge(t=1):
 
 
 def nexafs_Su(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across an absorption edge — steps the X-ray energy and takes
+    #   a WAXS image at each energy (sometimes moving the sample a little in step to avoid damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam
+    #   INTO the data and fills them into the file name for you, and settles each energy:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW], geometry="transmission")   # see ⚠️
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     energies = np.asarray(
@@ -373,6 +434,22 @@ def nexafs_Su(t=1):
 
 
 def waxs_S_edge_greg_2021_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])   # current WAXS detector — see ⚠️
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'prs' no longer exists — it's now 'stage.phi'; (2) 'pil300KW' was retired — it's now 'pil900KW'; (3) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     yield from bps.mv(prs, 1)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
 
@@ -427,6 +504,18 @@ def waxs_S_edge_greg_2021_2(t=1):
 
 
 def humidity_experiment(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a humidity (RH) GISAXS run — sets the dry/wet gas flow to a target humidity,
+    #   reads the humidity, then for each WAXS arc and incident angle takes a WAXS image.
+    # 💡 NEWER, EASIER WAY: humidity/SVA measurements are 'smi_plans' rh_step_series_run; set_rh
+    #   sets the humidity and records it INTO the data, and you compose it with the GISAXS/arc axes:
+    #     from smi_plans import rh_step_series_run, set_rh, align_sample
+    #     yield from rh_step_series_run(names, [target_rh], dets=[pil900KW], align=align_sample,
+    #                                   arc_angles=list(waxs_arc))   # current WAXS detector — see ⚠️
+    #   (set_rh replaces setDryFlow/setWetFlow + readHumidity and records the humidity for you.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ note below).
+    # === end smi_plans note ================================================
     dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # ai_aligned = [1.931, 1.788, 1.666, 1.817]
@@ -494,6 +583,22 @@ def humidity_experiment(t=1):
 
 
 def waxs_Se_edge_greg(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])   # current WAXS detector — see ⚠️
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans technique runs set it for you via t=.)
 
@@ -551,6 +656,22 @@ def waxs_Se_edge_greg(t=1):
 
 
 def Su_nafion_swaxs_K_edge(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil900KW, pil2M]
 
     waxs_arc = [0, 20, 40]
@@ -612,6 +733,18 @@ def Su_nafion_swaxs_K_edge(t=1):
 
 
 def Su_nafion_nexafs_K_edge(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across an absorption edge — steps the X-ray energy and takes
+    #   a WAXS image at each energy (sometimes moving the sample a little in step to avoid damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam
+    #   INTO the data and fills them into the file name for you, and settles each energy:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW], geometry="transmission")
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil900KW]
 
     waxs_arc = [40]
@@ -668,6 +801,22 @@ def Su_nafion_nexafs_K_edge(t=1):
 
 
 def Su_nafion_swaxs_Co_edge(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil900KW, pil2M]
 
     waxs_arc = [0, 20, 40]
@@ -735,6 +884,21 @@ def Su_nafion_swaxs_Co_edge(t=1):
 
 
 def Su_nafion_swaxs_hard(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS run over a bar of samples at a single energy — for each sample
+    #   (and WAXS arc) it moves there and takes an image, building the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: a fixed-energy multi-sample run is a 'smi_plans' bar; it loops your
+    #   samples and records the positions/beam/scan-id INTO the data and the file name for you:
+    #
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from multi_sample_run(samples, dets=[pil900KW, pil2M], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
     dets = [pil900KW, pil2M]
 
     waxs_arc = [0, 20, 40]
@@ -793,6 +957,22 @@ def Su_nafion_swaxs_hard(t=1):
 
 
 def Su_nafion_swaxs_S_edge_SVA_2021_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil900KW, pil2M]
 
     waxs_arc = [0, 20]
@@ -994,6 +1174,22 @@ def waxs_S_edge_greg_2022_1(t=1):
     """
     307830_Su Feb 2, 2022
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW, pil2M]
 
@@ -1131,6 +1327,22 @@ def saxs_S_edge_greg_2022_1(t=1):
     """
     307830_Su Feb 2, 2022
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     proposal_id("2022_1", "307830_Su2")
 
     dets = [pil2M]
@@ -1271,6 +1483,21 @@ def waxs_hard_Xray_Su3_2022_1(t=1):
     """
     307830_Su3 Feb 16, 2022
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS run over a bar of samples at a single energy — for each sample
+    #   (and WAXS arc) it moves there and takes an image, building the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: a fixed-energy multi-sample run is a 'smi_plans' bar; it loops your
+    #   samples and records the positions/beam/scan-id INTO the data and the file name for you:
+    #
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from multi_sample_run(samples, dets=[pil900KW, pil2M], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
     dets = [pil900KW, pil2M]
 
@@ -1394,6 +1621,22 @@ def waxs_S_edge_greg_2024_1(t=1):
     """
     307830_Su Feb 2, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW, pil2M]
 
@@ -1455,6 +1698,22 @@ def swaxs_S_edge_greg_2024_2(t=1):
     """
     307830_Su Feb 2, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW, pil2M]
 
@@ -1515,6 +1774,18 @@ def nexafs_Ce_edge_greg_2024_1(t=1):
     """
     307830_Su Feb 2, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across an absorption edge — steps the X-ray energy and takes
+    #   a WAXS image at each energy (sometimes moving the sample a little in step to avoid damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam
+    #   INTO the data and fills them into the file name for you, and settles each energy:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW], geometry="transmission")
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW, pil2M]
 
@@ -1580,6 +1851,22 @@ def swaxs_Ce_edge_greg_2024_1(t=1):
     """
     307830_Su Feb 2, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW, pil2M]
 
@@ -1642,6 +1929,22 @@ def swaxs_S_edge_nafion_2024_2(t=1):
     """
     307830_Su June 23, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW, pil2M]
 
@@ -1712,6 +2015,18 @@ def swaxs_S_edge_nafion_2024_2(t=1):
 
 
 def bpmvspindiode_Sedge_2024_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a direct-beam diagnostic across the sulfur edge — steps the energy and, with
+    #   the shutter open, records the beam position (xbpm2/xbpm3) and pin-diode current vs energy.
+    # 💡 NEWER, EASIER WAY: a direct-beam-vs-energy diagnostic is 'smi_plans' direct_beam_scan_run
+    #   (or a list_scan over energy_axis); it records the beam/diode INTO the data and the file name:
+    #     from smi_plans import direct_beam_scan_run, energy_axis
+    #     yield from direct_beam_scan_run("Greg_Su_direct_beam_Sedge", energies,
+    #                                     reads=[xbpm2, xbpm3, pdcurrent2])
+    #   (energy_axis settles + records, so the per-energy sleeps and beam re-seek aren't needed.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as a
+    #   plan (⚠️ note below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil2M]
     det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans technique runs set it for you via t=.)
 
@@ -1756,6 +2071,21 @@ def swaxs_hardxray_nafion_2024_2(t=1):
     """
     307830_Su June 23, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS run over a bar of samples at a single energy — for each sample
+    #   (and WAXS arc) it moves there and takes an image, building the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: a fixed-energy multi-sample run is a 'smi_plans' bar; it loops your
+    #   samples and records the positions/beam/scan-id INTO the data and the file name for you:
+    #
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from multi_sample_run(samples, dets=[pil900KW, pil2M], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
     dets = [pil900KW, pil2M]
 
@@ -1810,6 +2140,21 @@ def swaxs_hardxray_mrl_2024_2(t=1):
     """
     307830_Su June 23, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS run over a bar of samples at a single energy — for each sample
+    #   (and WAXS arc) it moves there and takes an image, building the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: a fixed-energy multi-sample run is a 'smi_plans' bar; it loops your
+    #   samples and records the positions/beam/scan-id INTO the data and the file name for you:
+    #
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from multi_sample_run(samples, dets=[pil900KW, pil2M], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
     dets = [pil900KW, pil2M]
 
@@ -1852,6 +2197,21 @@ def saxs_hardxray_capillaries_2024_2(t=0.1):
     """
     307830_Su June 24, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a transmission SAXS/WAXS run on a row of capillaries at a single energy —
+    #   for each capillary (and WAXS arc) it moves there and takes an image.
+    #
+    # 💡 NEWER, EASIER WAY: capillary/transmission measurements are 'smi_plans' transmission_bar;
+    #   it loops your samples and records the beam/positions INTO the data and the file name:
+    #
+    #     from smi_plans import transmission_bar, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from transmission_bar(samples, dets=[pil2M, pil900KW, pin_diode], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
     dets = [pil2M]
 
@@ -1915,6 +2275,21 @@ def saxs_hardxray_mrl_capillaries_2024_2(t=1):
     """
     307830_Su June 24, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a transmission SAXS/WAXS run on a row of capillaries at a single energy —
+    #   for each capillary (and WAXS arc) it moves there and takes an image.
+    #
+    # 💡 NEWER, EASIER WAY: capillary/transmission measurements are 'smi_plans' transmission_bar;
+    #   it loops your samples and records the beam/positions INTO the data and the file name:
+    #
+    #     from smi_plans import transmission_bar, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from transmission_bar(samples, dets=[pil2M, pil900KW, pin_diode], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
     dets = [pil2M]
     #names = [  'capillary-AgB']
@@ -1985,6 +2360,13 @@ matt notes:
 
 
 def alignment_blade_coating_2024_2(coating_start_pos, measurement_pos,th):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an alignment step for an in-situ run — finds the surface / sets the
+    #   incident angle and coating start position.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' aligns once with align_sample and SAVES the result with
+    #   the data; for these in-situ runs you'd hand it to the run as its align=... step.
+    #   ('thorlabs_su', 'stage.*' all still work — nothing here is broken.)
+    # === end smi_plans note ================================================
 
     yield from bps.mv(thorlabs_su, measurement_pos)
     yield from alignement_gisaxs_hex(angle=th)
@@ -2001,6 +2383,20 @@ def alignment_blade_coating_2024_2(coating_start_pos, measurement_pos,th):
 
 
 def blade_coating_2024_2(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.16, dets = [pil2M, pil900KW]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a blade-coating in-situ run — aligns, then nudges the syringe pump to lay
+    #   down a film and takes SAXS/WAXS images (sometimes a long-exposure series) as it dries.
+    #
+    # 💡 NEWER, EASIER WAY: in-situ coating + a frame series is 'smi_plans' blade_coating_run;
+    #   it drives the coating, records the frame time INTO the data, and saves it as one run:
+    #
+    #     from smi_plans import blade_coating_run
+    #     yield from blade_coating_run(sample_name, dets=dets, t=...)
+    #   ('thorlabs_su' and 'syringe_pu' still work; the per-step motion can be an axis.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
     # dets = ['pil900KW','pil2M']
 
     yield from shopen()
@@ -2061,6 +2457,21 @@ def saxs_hardxray_inair_capillaries_2024_2(t=0.5):
 
     more capillaries and thin films on the morning (2am) of june 27, MRL
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a transmission SAXS/WAXS run on a row of capillaries at a single energy —
+    #   for each capillary (and WAXS arc) it moves there and takes an image.
+    #
+    # 💡 NEWER, EASIER WAY: capillary/transmission measurements are 'smi_plans' transmission_bar;
+    #   it loops your samples and records the beam/positions INTO the data and the file name:
+    #
+    #     from smi_plans import transmission_bar, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from transmission_bar(samples, dets=[pil2M, pil900KW, pin_diode], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
     dets = [pil2M]
 
@@ -2111,6 +2522,13 @@ def saxs_hardxray_inair_capillaries_2024_2(t=0.5):
 
 
 def alignment_static_swaxs_2024_2(th=0.16):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an alignment step for an in-situ run — finds the surface / sets the
+    #   incident angle and coating start position.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' aligns once with align_sample and SAVES the result with
+    #   the data; for these in-situ runs you'd hand it to the run as its align=... step.
+    #   ('thorlabs_su', 'stage.*' all still work — nothing here is broken.)
+    # === end smi_plans note ================================================
 
     yield from bps.mv(thorlabs_su, thorlabs_su.position)
     yield from alignement_gisaxs_hex(angle=th)
@@ -2133,6 +2551,21 @@ def alignment_static_swaxs_2024_2(th=0.16):
 
 
 def waxs_hardxray_inair_2024_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS run over a bar of samples at a single energy — for each sample
+    #   (and WAXS arc) it moves there and takes an image, building the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: a fixed-energy multi-sample run is a 'smi_plans' bar; it loops your
+    #   samples and records the positions/beam/scan-id INTO the data and the file name for you:
+    #
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from multi_sample_run(samples, dets=[pil900KW, pil2M], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
 
     dets = [pil900KW]
@@ -2184,6 +2617,21 @@ def waxs_hardxray_inair_2024_2(t=1):
 
 
 def saxs_hardxray_inair_june27_2024_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS run over a bar of samples at a single energy — for each sample
+    #   (and WAXS arc) it moves there and takes an image, building the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: a fixed-energy multi-sample run is a 'smi_plans' bar; it loops your
+    #   samples and records the positions/beam/scan-id INTO the data and the file name for you:
+    #
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from multi_sample_run(samples, dets=[pil900KW, pil2M], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
 
     dets = [pil2M]
@@ -2234,6 +2682,20 @@ def acq_delay(dets,exp_time,delay,num):
 
 
 def blade_coating_acqdelay_2024_2(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.16, dets = [pil2M, pil900KW]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a blade-coating in-situ run — aligns, then nudges the syringe pump to lay
+    #   down a film and takes SAXS/WAXS images (sometimes a long-exposure series) as it dries.
+    #
+    # 💡 NEWER, EASIER WAY: in-situ coating + a frame series is 'smi_plans' blade_coating_run;
+    #   it drives the coating, records the frame time INTO the data, and saves it as one run:
+    #
+    #     from smi_plans import blade_coating_run
+    #     yield from blade_coating_run(sample_name, dets=dets, t=...)
+    #   ('thorlabs_su' and 'syringe_pu' still work; the per-step motion can be an axis.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
     # dets = ['pil900KW','pil2M']
 
     # yield from shopen()
@@ -2278,6 +2740,22 @@ def swaxs_Br_edge_capillaries_2024_2(t=1):
     315602 June 28, 2024
     MRL
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW]
 
@@ -2353,6 +2831,21 @@ def swaxs_hardxray_kelvin_2024_3(t=1):
     """
     314483_Freychet_03 Sept 16, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS run over a bar of samples at a single energy — for each sample
+    #   (and WAXS arc) it moves there and takes an image, building the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: a fixed-energy multi-sample run is a 'smi_plans' bar; it loops your
+    #   samples and records the positions/beam/scan-id INTO the data and the file name for you:
+    #
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from multi_sample_run(samples, dets=[pil900KW, pil2M], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
     dets = [pil2M, pil900KW]
 
@@ -2406,6 +2899,22 @@ def swaxs_sedge_kelvin_2024_3(t=1):
     """
     314483_Freychet_03 Sept 16, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil2M, pil900KW]
 
@@ -2479,6 +2988,18 @@ def nexafs_Zr_edge_greg_2024_1(t=1):
     """
     307830_Su Feb 2, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across an absorption edge — steps the X-ray energy and takes
+    #   a WAXS image at each energy (sometimes moving the sample a little in step to avoid damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam
+    #   INTO the data and fills them into the file name for you, and settles each energy:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW], geometry="transmission")
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW, pil2M]
 
@@ -2536,6 +3057,21 @@ def nexafs_Zr_edge_greg_2024_1(t=1):
 
 
 def Zr_edge_giswaxs_measurments_2024_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence (GISAXS/GIWAXS) run over a bar of samples — for each
+    #   sample it moves there, aligns, then (often) sweeps energy / incident angle / WAXS arc
+    #   taking an image at each combination.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' giwaxs_bar loops your samples, aligns each and SAVES
+    #   the alignment with the data, and records the incident angle / WAXS arc (and energy, if you
+    #   compose energy_axis) so you don't rebuild the "_ai{ai}_wa{wax}" name by hand:
+    #
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList, energy_axis
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, x_hexa=x_hexa)
+    #     yield from giwaxs_bar(samples, dets=[pil900KW, pil2M], t=t, align=align_sample)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil900KW, pil2M]
     det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans technique runs set it for you via t=.)
 
@@ -2615,6 +3151,21 @@ def Zr_edge_giswaxs_measurments_2024_3(t=1):
 
 
 def giwaxs_S_edge_Su_2024_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence (GISAXS/GIWAXS) run over a bar of samples — for each
+    #   sample it moves there, aligns, then (often) sweeps energy / incident angle / WAXS arc
+    #   taking an image at each combination.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' giwaxs_bar loops your samples, aligns each and SAVES
+    #   the alignment with the data, and records the incident angle / WAXS arc (and energy, if you
+    #   compose energy_axis) so you don't rebuild the "_ai{ai}_wa{wax}" name by hand:
+    #
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList, energy_axis
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, x_hexa=x_hexa)
+    #     yield from giwaxs_bar(samples, dets=[pil900KW, pil2M], t=t, align=align_sample)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
  
 
     names = [  'GI_P25_4', 'GI_P25_2', 'GI_P25_1', 'GI_P25_0p5', 'GI_P25_0p25', 'GI_AHPP25_4', 'GI_AHPP25_2', 'GI_AHPP25_1', 'GI_AHPP25_0p5', 'GI_AHPP25_0p25',
@@ -2697,6 +3248,21 @@ def giwaxs_S_edge_Su_2024_3(t=1):
 
 
 def giwaxs_hardxray_Kelvin_2024_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence (GISAXS/GIWAXS) run over a bar of samples — for each
+    #   sample it moves there, aligns, then (often) sweeps energy / incident angle / WAXS arc
+    #   taking an image at each combination.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' giwaxs_bar loops your samples, aligns each and SAVES
+    #   the alignment with the data, and records the incident angle / WAXS arc (and energy, if you
+    #   compose energy_axis) so you don't rebuild the "_ai{ai}_wa{wax}" name by hand:
+    #
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList, energy_axis
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, x_hexa=x_hexa)
+    #     yield from giwaxs_bar(samples, dets=[pil900KW, pil2M], t=t, align=align_sample)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     # In Freychet_11
     # names = [  'GI_P25_4', 'GI_P25_2', 'GI_P25_1', 'GI_P25_0p5', 'GI_P25_0p25', 'GI_AHPP25_4', 'GI_AHPP25_2', 'GI_AHPP25_1', 'GI_AHPP25_0p5', 'GI_AHPP25_0p25',
@@ -2770,6 +3336,18 @@ def nexafs_As_edge_matt_2024_1(t=1):
     """
     307830_Su Feb 2, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across an absorption edge — steps the X-ray energy and takes
+    #   a WAXS image at each energy (sometimes moving the sample a little in step to avoid damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam
+    #   INTO the data and fills them into the file name for you, and settles each energy:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW], geometry="transmission")
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW]
 
@@ -2941,6 +3519,13 @@ def nexafs_As_edge_matt_2024_1(t=1):
 
 
 def alignment_blade_coating_2024_3(coating_start_pos, measurement_pos,th):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an alignment step for an in-situ run — finds the surface / sets the
+    #   incident angle and coating start position.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' aligns once with align_sample and SAVES the result with
+    #   the data; for these in-situ runs you'd hand it to the run as its align=... step.
+    #   ('thorlabs_su', 'stage.*' all still work — nothing here is broken.)
+    # === end smi_plans note ================================================
 
     yield from bps.mv(thorlabs_su, measurement_pos)
     yield from alignement_gisaxs_hex(angle=th)
@@ -2954,6 +3539,20 @@ def alignment_blade_coating_2024_3(coating_start_pos, measurement_pos,th):
 
 
 def blade_coating_2024_3(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.12, dets = [pil2M, pil900KW]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a blade-coating in-situ run — aligns, then nudges the syringe pump to lay
+    #   down a film and takes SAXS/WAXS images (sometimes a long-exposure series) as it dries.
+    #
+    # 💡 NEWER, EASIER WAY: in-situ coating + a frame series is 'smi_plans' blade_coating_run;
+    #   it drives the coating, records the frame time INTO the data, and saves it as one run:
+    #
+    #     from smi_plans import blade_coating_run
+    #     yield from blade_coating_run(sample_name, dets=dets, t=...)
+    #   ('thorlabs_su' and 'syringe_pu' still work; the per-step motion can be an axis.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
     # dets = ['pil900KW','pil2M']
 
     #yield from shopen()
@@ -2992,6 +3591,21 @@ def saxs_hardxray_capillaries_2024_3(t=0.1):
     """
     315602, Sept 29, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a transmission SAXS/WAXS run on a row of capillaries at a single energy —
+    #   for each capillary (and WAXS arc) it moves there and takes an image.
+    #
+    # 💡 NEWER, EASIER WAY: capillary/transmission measurements are 'smi_plans' transmission_bar;
+    #   it loops your samples and records the beam/positions INTO the data and the file name:
+    #
+    #     from smi_plans import transmission_bar, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from transmission_bar(samples, dets=[pil2M, pil900KW, pin_diode], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
     dets = [pil2M]
 
@@ -3077,6 +3691,21 @@ def swaxs_hardxray_mrl_2024_3(t=1):
     """
     315602_Su_8    Sept 30, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS run over a bar of samples at a single energy — for each sample
+    #   (and WAXS arc) it moves there and takes an image, building the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: a fixed-energy multi-sample run is a 'smi_plans' bar; it loops your
+    #   samples and records the positions/beam/scan-id INTO the data and the file name for you:
+    #
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from multi_sample_run(samples, dets=[pil900KW, pil2M], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
     dets = [pil2M, pil900KW]
 
@@ -3127,6 +3756,21 @@ def swaxs_hardxray_mrl_v2_2024_3(t=1):
     315602_Su_8    Sept 30, 2024
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS run over a bar of samples at a single energy — for each sample
+    #   (and WAXS arc) it moves there and takes an image, building the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: a fixed-energy multi-sample run is a 'smi_plans' bar; it loops your
+    #   samples and records the positions/beam/scan-id INTO the data and the file name for you:
+    #
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from multi_sample_run(samples, dets=[pil900KW, pil2M], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
 
     dets = [pil2M, pil900KW]
 
@@ -3241,6 +3885,18 @@ def nexafs_Ag_edge_Su_2024_3(t=0.2):
     """
     NEXAFS and SAXS at 40 deg across Ag L3 edge
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across an absorption edge — steps the X-ray energy and takes
+    #   a WAXS image at each energy (sometimes moving the sample a little in step to avoid damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam
+    #   INTO the data and fills them into the file name for you, and settles each energy:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW], geometry="transmission")
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     user_name = "ML"
 
@@ -3331,6 +3987,18 @@ def nexafs_Fe_edge_mrl_2024_3(t=1):
     """
     315602_Su_10         Sept 30, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across an absorption edge — steps the X-ray energy and takes
+    #   a WAXS image at each energy (sometimes moving the sample a little in step to avoid damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam
+    #   INTO the data and fills them into the file name for you, and settles each energy:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW], geometry="transmission")
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW]
 
@@ -3424,6 +4092,18 @@ def nexafs_Mn_edge_mrl_2024_3(t=2):
     """
     315602_Su_11         Sept 30, 2024
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across an absorption edge — steps the X-ray energy and takes
+    #   a WAXS image at each energy (sometimes moving the sample a little in step to avoid damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam
+    #   INTO the data and fills them into the file name for you, and settles each energy:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW], geometry="transmission")
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
 
     dets = [pil900KW]
 
@@ -3530,6 +4210,21 @@ def swaxs_hardxray_jose_2025_1(t=1):
     """
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS/WAXS run over a bar of samples at a single energy — for each sample
+    #   (and WAXS arc) it moves there and takes an image, building the file name by hand.
+    #
+    # 💡 NEWER, EASIER WAY: a fixed-energy multi-sample run is a 'smi_plans' bar; it loops your
+    #   samples and records the positions/beam/scan-id INTO the data and the file name for you:
+    #
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x, y=y, z=z)
+    #     yield from multi_sample_run(samples, dets=[pil900KW, pil2M], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, [0, 20, 40])])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note(s) on it below).
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
 
 
@@ -3577,6 +4272,22 @@ def swaxs_Sedge_jose_2025_1(t=1):
     """
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
 
 
@@ -3648,6 +4359,22 @@ def swaxs_Sedge_pierre_2025_1(t=1):
     """
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
 
 
@@ -3721,6 +4448,22 @@ def swaxs_Sedge_yunfei_2025_1(t=1):
     """
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
 
 
@@ -3790,6 +4533,22 @@ def swaxs_Cledge_jose_2025_1(t=1):
     """
     switched for loops for sample position and waxs arc to make scans faster (go to one waxs position, run all samples, then move waxs arc)
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SAXS/WAXS scan across an absorption edge over a bar of
+    #   samples — for each sample (and WAXS arc) it steps the X-ray energy and takes an image,
+    #   nudging the sample a little each step to spread out beam damage.
+    #
+    # 💡 NEWER, EASIER WAY: a multi-sample energy scan is a 'smi_plans' bar; it loops your
+    #   samples and records the energy/beam INTO the data and the file name for you (so you don't
+    #   rebuild the "_{energy}eV_wa{wax}_bpm{xbpm}" name), and the energy move was fixed so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' beam re-seek become unnecessary:
+    #
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=x, y=y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
 
     energies = np.asarray(np.arange(2800, 2820, 5).tolist() + np.arange(2820, 2823, 1.0).tolist() 
@@ -3860,6 +4619,12 @@ def swaxs_Cledge_jose_2025_1(t=1):
 
 
 def night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight run-book — sets the proposal/folder and runs measurement plans
+    #   back-to-back.
+    # 💡 NEWER, EASIER WAY: once the plans it calls are migrated to 'smi_plans' (see their notes),
+    #   this stays a simple wrapper. Nothing here is broken.
+    # === end smi_plans note ================================================
     
     # proposal_id("2025_1", "314483_Freychet_11")
     # yield from swaxs_Sedge_pierre_2025_1(t=1)
@@ -3882,6 +4647,18 @@ def night(t=1):
 
 
 def nexafs_cl():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across an absorption edge — steps the X-ray energy and takes
+    #   a WAXS image at each energy (sometimes moving the sample a little in step to avoid damage).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-line NEXAFS scan that records the energy/beam
+    #   INTO the data and fills them into the file name for you, and settles each energy:
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW], geometry="transmission")
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan (⚠️ notes below). The 💡 lines are scaffolding you can delete once you migrate.
+    # === end smi_plans note ================================================
     dets = [pil900KW]
     # energies1 =   np.asarray([2810.0, 2820.0, 2830.0, 2832.0, 2834.0, 2834.5, 2835.0, 2835.5, 2836.0, 2836.5, 2837.0, 2837.5, 2838.0, 2838.5, 2839.0,
     # 2839.5, 2840.0, 2840.5, 2841.0, 2841.5, 2845.0, 2850.0, 2855.0, 2860.0, 2865.0, 2870.0, 2875.0, 2880.0, 2890.0])
@@ -3919,6 +4696,13 @@ def nexafs_cl():
 
 
 def alignment_blade_coating_2025_1(coating_start_pos, measurement_pos,th):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an alignment step for an in-situ run — finds the surface / sets the
+    #   incident angle and coating start position.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' aligns once with align_sample and SAVES the result with
+    #   the data; for these in-situ runs you'd hand it to the run as its align=... step.
+    #   ('thorlabs_su', 'stage.*' all still work — nothing here is broken.)
+    # === end smi_plans note ================================================
 
     yield from bps.mv(thorlabs_su, measurement_pos)
     yield from alignement_gisaxs_hex(angle=th)
@@ -3932,6 +4716,20 @@ def alignment_blade_coating_2025_1(coating_start_pos, measurement_pos,th):
 
 
 def blade_coating_2025_1(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.12, dets = [pil2M, pil900KW]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a blade-coating in-situ run — aligns, then nudges the syringe pump to lay
+    #   down a film and takes SAXS/WAXS images (sometimes a long-exposure series) as it dries.
+    #
+    # 💡 NEWER, EASIER WAY: in-situ coating + a frame series is 'smi_plans' blade_coating_run;
+    #   it drives the coating, records the frame time INTO the data, and saves it as one run:
+    #
+    #     from smi_plans import blade_coating_run
+    #     yield from blade_coating_run(sample_name, dets=dets, t=...)
+    #   ('thorlabs_su' and 'syringe_pu' still work; the per-step motion can be an axis.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
     #yield from shopen()
     #yield from bps.sleep(1)
     #yield from shopen()
@@ -3960,6 +4758,20 @@ def blade_coating_2025_1(sample_name='bladecoating', coating_start_pos=10, measu
 
 
 def blade_coating_2025_1_slowexp_withoutmotion(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.12, dets = [pil2M, pil900KW]):   
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a blade-coating in-situ run — aligns, then nudges the syringe pump to lay
+    #   down a film and takes SAXS/WAXS images (sometimes a long-exposure series) as it dries.
+    #
+    # 💡 NEWER, EASIER WAY: in-situ coating + a frame series is 'smi_plans' blade_coating_run;
+    #   it drives the coating, records the frame time INTO the data, and saves it as one run:
+    #
+    #     from smi_plans import blade_coating_run
+    #     yield from blade_coating_run(sample_name, dets=dets, t=...)
+    #   ('thorlabs_su' and 'syringe_pu' still work; the per-step motion can be an axis.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
     
     yield from alignment_blade_coating_2025_1(coating_start_pos, measurement_pos,th)
 
@@ -3978,6 +4790,20 @@ def blade_coating_2025_1_slowexp_withoutmotion(sample_name='bladecoating', coati
 
 
 def blade_coating_2025_1_slowexp_withmotion(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.12, dets = [pil2M, pil900KW]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a blade-coating in-situ run — aligns, then nudges the syringe pump to lay
+    #   down a film and takes SAXS/WAXS images (sometimes a long-exposure series) as it dries.
+    #
+    # 💡 NEWER, EASIER WAY: in-situ coating + a frame series is 'smi_plans' blade_coating_run;
+    #   it drives the coating, records the frame time INTO the data, and saves it as one run:
+    #
+    #     from smi_plans import blade_coating_run
+    #     yield from blade_coating_run(sample_name, dets=dets, t=...)
+    #   ('thorlabs_su' and 'syringe_pu' still work; the per-step motion can be an axis.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run
+    #   as a plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
     
     yield from alignment_blade_coating_2025_1(coating_start_pos, measurement_pos,th)
 
@@ -3996,6 +4822,17 @@ def blade_coating_2025_1_slowexp_withmotion(sample_name='bladecoating', coating_
 
 
 def exsitu_2025_01(sample_name='bladecoating', th=0.12, dets = [pil2M, pil900KW]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a quick ex-situ shot — tilts the sample by a small theta, takes one SAXS+WAXS
+    #   image, then tilts back.
+    # 💡 NEWER, EASIER WAY: a single shot at a set tilt is one acquire in 'smi_plans' (the tilt is a
+    #   one-off move, or an incidence_axis if you want to record it):
+    #     from smi_plans import one_sample_run
+    #     yield from bps.mvr(stage.th, th)
+    #     yield from one_sample_run(sample_name, dets=[pil2M, pil900KW], t=0.5)
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as a
+    #   plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
     
     #yield from alignement_gisaxs_hex(0.1)
 
@@ -4058,6 +4895,19 @@ def single_scan_giwaxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
 
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence run that takes one image per WAXS-arc / incident-angle on
+    #   a sample. Nice touch: it already wraps acquisition in a single run (@stage_decorator +
+    #   @run_decorator + trigger_and_read) and uses a 'target_file_name' Signal for the name.
+    # 💡 NEWER, EASIER WAY: this is exactly the shape 'smi_plans' giwaxs_run / giwaxs_bar formalizes
+    #   — it builds the one-run, records energy/angle/positions, and fills '{...}' tokens in the name
+    #   from the recorded data, so you don't manage the throwaway Signal or the decorators yourself:
+    #     from smi_plans import giwaxs_run, align_sample, incidence_axis, motor_axis
+    #     yield from giwaxs_run(name, dets=[pil2M, pil900KW], t=t, align=align_sample,
+    #                           incident_angles=ai_list, arc_angles=list(waxs_arc))
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as a
+    #   plan (see the ⚠️ note on it below). (internal: Tier 3 — already close to the modern pattern.)
+    # === end smi_plans note ================================================
     
 #     names = ['54I_1', '80_AgTF2N_pebax','70_AgTF2N_pebax','60_AgFSI_pegda','60_AgFSI_pegda_2',       'pegda','10_AgTF2n_pegda','20_AgTF2n_pegda','33_AgTF2n_pegda','50_AgTF2n_pegda','55_AgTF2n_pegda','60_AgTF2n_pegda',
 #    '65_AgTF2n_pegda', '70_AgTF2n_pegda',    '3_T4_AgTF2N',   '6_T4_AgTF2N',     '9_T4_AgTF2N','12_T4_AgTF2N',         'C8_new',           'C8_W',          'C10_W',          'C12_W',          'C14_W',           'C8_S',
@@ -4180,6 +5030,20 @@ def single_scan_waxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=10,
 
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes one WAXS (and SAXS) image per WAXS-arc on a bar of samples. Like
+    #   single_scan_giwaxs it already wraps acquisition in a single run with a 'target_file_name'
+    #   Signal for the name.
+    # 💡 NEWER, EASIER WAY: this one-run-per-sample shape is what 'smi_plans' multi_sample_run /
+    #   giwaxs_bar formalizes; it records positions/arc/energy and fills the name tokens from the
+    #   recorded data, so you don't manage the Signal or decorators yourself:
+    #     from smi_plans import multi_sample_run, SampleList, motor_axis
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, x_hexa=x_hexa, y_hexa=y_hexa)
+    #     yield from multi_sample_run(samples, dets=[pil2M, pil900KW], t=t,
+    #                                 axes=[motor_axis("waxs_arc", waxs, list(waxs_arc))])
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as a
+    #   plan (see the ⚠️ note on it below). (internal: Tier 3 — already close to the modern pattern.)
+    # === end smi_plans note ================================================
     
     # names = ['80_AgTF2N_pebax','70_AgTF2N_pebax','60_AgFSI_pegda','60_AgFSI_pegda_2',       'pegda','10_AgTF2n_pegda','20_AgTF2n_pegda','33_AgTF2n_pegda','50_AgTF2n_pegda','55_AgTF2n_pegda','60_AgTF2n_pegda',
     #          '65_AgTF2n_pegda', '70_AgTF2n_pegda']
@@ -4259,6 +5123,18 @@ def single_scan_waxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=10,
 
 
 def scan_nexafs_Ti():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan across the titanium edge — steps the energy and takes a WAXS
+    #   image at each, moving the sample down a little each step. It already wraps the sweep in a
+    #   single run (@stage_decorator + @run_decorator + trigger_and_read) with a name Signal.
+    # 💡 NEWER, EASIER WAY: this is the one-run energy sweep that 'smi_plans' nexafs_run formalizes;
+    #   it records the energy/beam, fills the name tokens, and settles each energy for you (so the
+    #   per-energy sleeps and the 'if xbpm2.sumX < 50' re-seek aren't needed):
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run("testnexafsTi", np.linspace(4990, 5040, 51), t=1, dets=[pil900KW])
+    # ⚠️ NEEDS A FIX TO RUN NOW: nothing is broken here, but the 💡 lines (per-energy sleep + beam
+    #   re-seek) are scaffolding you can delete once you migrate. (internal: Tier 3.)
+    # === end smi_plans note ================================================
     dets = [pil900KW]
     # energies1 =   np.asarray([2810.0, 2820.0, 2830.0, 2832.0, 2834.0, 2834.5, 2835.0, 2835.5, 2836.0, 2836.5, 2837.0, 2837.5, 2838.0, 2838.5, 2839.0,
     # 2839.5, 2840.0, 2840.5, 2841.0, 2841.5, 2845.0, 2850.0, 2855.0, 2860.0, 2865.0, 2870.0, 2875.0, 2880.0, 2890.0])
@@ -4311,6 +5187,19 @@ def energy_Tiedge_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
     '''
     SWAXS at the Ti edge
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant SWAXS scan across the titanium edge over a bar of samples — for
+    #   each sample and WAXS arc, steps the energy (moving y in step) and takes a SAXS+WAXS image.
+    #   It already wraps each sample's sweep in a single run with a 'target_file_name' Signal.
+    # 💡 NEWER, EASIER WAY: this one-run-per-sample energy sweep is what 'smi_plans' nexafs_bar
+    #   formalizes; it records the energy/beam, fills the name tokens, and settles each energy (so
+    #   the per-energy sleeps and the 'if xbpm2.sumX < 50' re-seek aren't needed):
+    #     from smi_plans import nexafs_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from nexafs_bar(samples, energies, t=t, dets=[pil900KW, pil2M])
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as a
+    #   plan (⚠️ note below). The 💡 lines are scaffolding you can delete once you migrate. (Tier 3.)
+    # === end smi_plans note ================================================
 
     names =   ['kl_nf_ahp_0p5', 'kl_nf_ahp_1',  'kl_nf_ahp_2',  'kl_nf_nil_nil']       
     piezo_x = [         -39300,        -33500,         -27700,           -22000]   
@@ -4381,6 +5270,18 @@ def energy_Tiedge_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
 
 
 def temp_series(name='temp',temps = np.linspace(25,40,16),exp_time=1, hold_delay=120, dets=[pil2M]):   # function loop to bring linkam to temp, hold and measure
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a temperature series — ramps the Linkam stage ('LThermal') down through a list
+    #   of temperatures, waits for each to settle and hold, and takes a SAXS image at each.
+    # 💡 NEWER, EASIER WAY: ramping a heater through setpoints and measuring at each is 'smi_plans'
+    #   temperature_ramp_run; it drives the heater, records the temperature INTO the data and the
+    #   file name, and waits for the hold for you (so you can drop the hand-rolled
+    #   'while abs(LThermal.temperature()-temp) > 1: sleep' wait loop and the throwaway Signal):
+    #     from smi_plans import temperature_ramp_run, linkam_heater
+    #     yield from temperature_ramp_run(linkam_heater(LThermal), temps, name, dets=[pil2M], t=exp_time)
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as a
+    #   plan (see the ⚠️ note on it below). ('LThermal' still works.)
+    # === end smi_plans note ================================================
 # Function will begin at start_temp and take a SAXS measurement at every temperature given 
     
     temps = [240, 230, 220, 210, 200, 175, 150, 125, 100, 75, 50, 30]
@@ -4425,6 +5326,17 @@ def temp_series(name='temp',temps = np.linspace(25,40,16),exp_time=1, hold_delay
 
 
 def xpcs_2025_1(sample_name='bladecoating', coating_start_pos=10, measurement_pos=87, th=0.12, dets = [pil2M, pil900KW]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an XPCS burst — sets a long acquisition (here 0.5 s frames over 500 s, i.e. a
+    #   ~1000-frame burst) and takes it on the SAXS/WAXS detectors.
+    # 💡 NEWER, EASIER WAY: the beamline now has 'smi_plans' xpcs_burst_run, which sets the number of
+    #   frames (cam.num_images) and uses a staged trigger-and-read, so the frames AND the context
+    #   (positions, beam) are recorded together as one run instead of being inferred from the file:
+    #     from smi_plans import xpcs_burst_run
+    #     yield from xpcs_burst_run(sample_name, dets=[pil2M, pil900KW], t=0.5, n_frames=1000)
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as a
+    #   plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
 
     det_exposure_time(0.5, 500)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 500)  — or at the prompt:  RE(det_exposure_time(0.5, 500)). (smi_plans technique runs set exposure for you via t=.)
     sample_id(user_name='ML', sample_name=sample_name)
@@ -4457,6 +5369,15 @@ samples = [
 
 
 
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS DOES: a ready-to-run NEXAFS-bar runbook that was auto-generated and ALREADY uses the
+#   'smi_plans' composition layer (SampleList + energy_axis + acquire_bar) — this is the modern
+#   pattern the notes above point toward. It builds a one-run-per-sample energy sweep and records
+#   the energy/positions, filling the '{energy_set}' token in the file name from the recorded data.
+# 💡 Note: the only old-style line here is the 'det_exposure_time(1, 1)' just before the run — set
+#   the exposure via the technique/axis (t=) or run it as a plan (⚠️ note on that line). Otherwise
+#   nothing here needs migrating.
+# === end smi_plans note ================================================
 """Generated by smi-acquire — review before running.
 scan: saxs_NEXAFS  (energy[118], one run/sample)
 9 samples × 118 events/sample = 1062 events
@@ -4521,6 +5442,19 @@ def step_energy(target_energy, step=30, settle=3, fb_settle=5):
     >>> RE(step_energy(9000))                          # 30 eV steps, 3 s settle, 5 s fb equilibrate
     >>> RE(step_energy(2480, step=20, settle=5, fb_settle=8))
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: walks the X-ray energy to a target in small steps, turning the beam-position
+    #   feedback OFF for each move, settling, then turning feedback back ON and waiting — i.e. it is
+    #   a careful, hand-rolled "move the energy without losing the beam" helper.
+    # 💡 NEWER, EASIER WAY: this is exactly what 'smi_plans' move_energy_fb / energy_axis now do for
+    #   you out of the box (step in ≤50 eV hops, pause feedback, settle, re-enable, re-seek if the
+    #   beam dips). So once you migrate you can just call:
+    #     from smi_plans import move_energy_fb
+    #     yield from move_energy_fb(target_energy)        # handles the feedback + settle + re-seek
+    #   (Nothing here is broken — this function is essentially a local version of move_energy_fb.
+    #    The double 'mv(energy, ...)' calls are the intentional feedback handling, not a flaky-energy
+    #    work-around, which is why they're not flagged.)
+    # === end smi_plans note ================================================
     pitch = energy.pitch_feedback_disabled
     roll = energy.roll_feedback_disabled
 

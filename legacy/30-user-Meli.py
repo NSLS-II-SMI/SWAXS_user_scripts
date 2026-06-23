@@ -2,8 +2,29 @@
 
 
 def K_edge_xscan_2024_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: at the potassium (K) edge, holds one energy and scans across the sample in
+    #   x, recording a WAXS image + X-ray fluorescence (the 'amptek' detector) at each x. Used for
+    #   operando (in-cell) electrochemistry samples.
+    #
+    # 💡 NEWER, EASIER WAY: scanning a motor while recording WAXS + fluorescence is a 'smi_plans'
+    #   acquire with a motor axis (it records x / beam / fluorescence into each image and file
+    #   name for you). For the in-cell electrochemistry side, smi_plans has dedicated operando
+    #   helpers — 'potential_step_run' / 'operando_kinetics_run' — that step/hold the cell
+    #   potential while measuring:
+    #
+    #     from smi_plans import acquire, motor_axis
+    #     yield from acquire("Edepo_pedot_KClO4_exp", [pil900KW, amptek],
+    #                        [motor_axis("x", stage.x, np.linspace(-13.0, -19.0, ...))], t=t)
+    #
+    #   ('amptek' is fine — it's the current fluorescence detector. Optional otherwise; your code
+    #    works as-is EXCEPT the ⚠️ line, and the 💡 sleeps below are just no longer needed.)
+    #   (internal: Tier 1 — operando/fluorescence.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below needs to be run as a plan.
+    # === end smi_plans note ================================================
     dets = [pil900KW, amptek]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' acquire/operando presets set exposure for you via t=.)
 
     #names = ['PTTEG-3_S2_KClO4_exp']
     #x_min = [20.0]
@@ -33,7 +54,7 @@ def K_edge_xscan_2024_2(t=1):
 
             name_fmt = "{sample}_xscan_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
             yield from bps.mv(energy, energies)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and the next sleep) — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.sleep(2)
 
             # for ais in np.linspace(0.1, 0.8, 15):
@@ -52,8 +73,23 @@ def K_edge_xscan_2024_2(t=1):
 
 
 def K_edge_timescan_2023_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: at a fixed K-edge energy, takes 100 WAXS + fluorescence images in a row,
+    #   stamping the elapsed time into the file name — a time series on an operando cell (e.g.
+    #   watching it respond while a voltage is applied).
+    #
+    # 💡 NEWER, EASIER WAY: a time series like this is 'smi_plans.operando_kinetics_run' (for the
+    #   in-cell electrochemistry case) or the general 'time_series_run'. They timestamp each frame
+    #   with the REAL elapsed time and record beam/fluorescence for you (so you don't compute
+    #   "time{times}" by hand):
+    #     from smi_plans import operando_kinetics_run    # or time_series_run
+    #   ('amptek' is fine. Optional otherwise; your loop works as-is EXCEPT the ⚠️ line.)
+    #   (internal: Tier 1 — operando/fluorescence.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below needs to be run as a plan.
+    # === end smi_plans note ================================================
     dets = [pil900KW, amptek]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' operando_kinetics_run/time_series_run sets exposure for you via t=.)
     energies=energy.energy.position
     ais=0.8
     wa=0
@@ -76,8 +112,29 @@ def K_edge_timescan_2023_3(t=1):
 
 
 def S_edge_measurments_2024_2_Jul3_night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing-incidence scan near the sulfur (S) edge over a bar of
+    #   electrodeposited samples — for each sample it aligns, then for each WAXS arc and incident
+    #   angle it sweeps energy UP then DOWN, nudging x each shot to limit beam damage, recording
+    #   SAXS/WAXS images.
+    #
+    # 💡 NEWER, EASIER WAY: this "bar × angle × up/down energy sweep" is the 'smi_plans' GIWAXS +
+    #   energy combination. 'energy_axis' does the up/down sweep AND handles the energy move,
+    #   settle, beam feedback, and beam re-seek for you — so you can delete the per-energy sleeps
+    #   and the "if xbpm2 < 50: re-move" blocks (see the 💡 notes below). A SampleList + giwaxs_bar
+    #   walks the bar and records angle/energy/beam automatically:
+    #
+    #     from smi_plans import SampleList, giwaxs_bar, energy_axis, align_sample
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, z=z_piezo)
+    #     # sweep with energy_axis(energies, reverse_alternate=True) over ai_list / waxs_arc.
+    #
+    #   (Optional — your code works as-is EXCEPT the ⚠️ exposure lines. The 💡 sleeps/re-seeks are
+    #    not broken, just no longer needed.) (internal: Tier 1.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below need to be run as a plan.
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
     # bottom left first
     names = [  'Edepo_pedot_100mM_5C',  'Edepo_pedot_100mM_10C', 'Edepo_pedot_100mM_30C','Edepo_pedot_100mM_50C', 
@@ -127,7 +184,7 @@ def S_edge_measurments_2024_2_Jul3_night(t=1):
             #yield from bps.sleep(1)
 
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
@@ -143,8 +200,8 @@ def S_edge_measurments_2024_2_Jul3_night(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -161,8 +218,8 @@ def S_edge_measurments_2024_2_Jul3_night(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -182,8 +239,20 @@ def S_edge_measurments_2024_2_Jul3_night(t=1):
 
 
 def Cl_edge_measurments_2024_2_Jul3_night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: same as the S-edge run above, but near the chlorine (Cl) edge over a bar of
+    #   doped/dedoped polymer samples — align, then up/down energy sweep over arc/angle, nudging x.
+    #
+    # 💡 NEWER, EASIER WAY: same recipe — 'smi_plans' GIWAXS + energy_axis over a SampleList via
+    #   giwaxs_bar. energy_axis handles the energy move, settle, beam feedback, and re-seek, so the
+    #   per-energy sleeps and "if xbpm2 < 50" re-move blocks become unnecessary (see 💡 below):
+    #     from smi_plans import SampleList, giwaxs_bar, energy_axis, align_sample
+    #   (Optional — works as-is EXCEPT the ⚠️ exposure lines.) (internal: Tier 1.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below need to be run as a plan.
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
     # bottom left first
     names = [  'pg2T_as',  'pg2T_middoped', 'pg2T_doped','pg2T_dedoped', 
@@ -247,7 +316,7 @@ def Cl_edge_measurments_2024_2_Jul3_night(t=1):
             yield from bps.sleep(1)
 
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
@@ -263,8 +332,8 @@ def Cl_edge_measurments_2024_2_Jul3_night(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -281,8 +350,8 @@ def Cl_edge_measurments_2024_2_Jul3_night(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -302,8 +371,22 @@ def Cl_edge_measurments_2024_2_Jul3_night(t=1):
 
 
 def KClO4_edge_measurments_2023_2_sva(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing-incidence energy sweep (up then down) near the Cl/KClO4
+    #   edge on a redoped operando cell, stepping x slightly each shot. No re-alignment (assumes
+    #   already aligned).
+    #
+    # 💡 NEWER, EASIER WAY: same recipe — 'smi_plans' GIWAXS + 'energy_axis' (with the in-cell
+    #   electrochemistry handled by 'potential_step_run'/'operando_kinetics_run' if you want the
+    #   voltage stepped too). energy_axis manages the energy move/settle/feedback/re-seek, so the
+    #   sleeps and re-seek blocks below are no longer needed (see 💡):
+    #     from smi_plans import giwaxs_run, energy_axis, motor_axis
+    #   (Optional — works as-is EXCEPT the ⚠️ exposure lines.) (internal: Tier 1 — operando.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below need to be run as a plan.
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_run sets exposure for you via t=.)
 
     # names = ['MM460_KClO4_partialdoped0V']
     # x_hexa = [-18.6]
@@ -335,7 +418,7 @@ def KClO4_edge_measurments_2023_2_sva(t=1):
         #yield from bps.sleep(1)
 
         ai0 = stage.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_run sets exposure for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -351,8 +434,8 @@ def KClO4_edge_measurments_2023_2_sva(t=1):
                 x="%1.2f"%stage.x.position
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -369,8 +452,8 @@ def KClO4_edge_measurments_2023_2_sva(t=1):
                 name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies[::-1]:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -385,8 +468,23 @@ def KClO4_edge_measurments_2023_2_sva(t=1):
             yield from bps.mv(stage.th, ai0)
 
 def Fluo_standards_2024_2_Jul5_night(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: measures a bar of fluorescence standards (e.g. NaPSS with KCl/NaCl ratios) —
+    #   for each sample it aligns, sets the WAXS arc and incident angles, and records WAXS +
+    #   fluorescence ('amptek') at two x sub-spots. Used to calibrate fluorescence yields.
+    #
+    # 💡 NEWER, EASIER WAY: a bar of samples each measured at a couple of spots is the 'smi_plans'
+    #   multi-sample helper — list the bar once and giwaxs_bar (with align) walks it, sweeps the
+    #   angle, and records angle / position / beam / fluorescence into every image and file name:
+    #     from smi_plans import SampleList, giwaxs_bar, align_sample
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, z=z_piezo)
+    #   ('amptek' is fine. Optional otherwise; works as-is EXCEPT the ⚠️ exposure lines.)
+    #   (internal: Tier 1 — fluorescence.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below need to be run as a plan.
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
     # bottom left first
     #4 samples on bottom row, rest is on top row
@@ -452,7 +550,7 @@ def Fluo_standards_2024_2_Jul5_night(t=1):
             yield from bps.sleep(1)
             
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
@@ -497,8 +595,22 @@ def Fluo_standards_2024_2_Jul5_night(t=1):
 
 
 def Cl_edge_measurments_2024_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant Cl-edge grazing-incidence run over a bar of pgBTTT samples, done
+    #   twice (once at incident angle 1.6, once at 3.2) — align each sample, then up/down energy
+    #   sweep over the WAXS arcs, nudging x each shot.
+    #
+    # 💡 NEWER, EASIER WAY: same recipe — 'smi_plans' GIWAXS + 'energy_axis' over a SampleList via
+    #   giwaxs_bar, called once per incident-angle set (or pass both angles). energy_axis manages
+    #   the energy move/settle/feedback/re-seek, so the sleeps and re-seek blocks below are no
+    #   longer needed (see 💡):
+    #     from smi_plans import SampleList, giwaxs_bar, energy_axis, align_sample
+    #   (Optional — works as-is EXCEPT the ⚠️ exposure lines.) (internal: Tier 1.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below need to be run as a plan.
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
     # bottom left first
     names = [   'Si', 'pgBTTT_as', 'pgBTTT_exp', 'pgBTTT_middoped', 'pgBTTT_dedoped', 'pgBTpgBTTT_overdoped']
@@ -531,7 +643,7 @@ def Cl_edge_measurments_2024_3(t=1):
             yield from alignement_gisaxs_doblestack(0.3)
 
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
@@ -547,8 +659,8 @@ def Cl_edge_measurments_2024_3(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -565,8 +677,8 @@ def Cl_edge_measurments_2024_3(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -595,7 +707,7 @@ def Cl_edge_measurments_2024_3(t=1):
             yield from alignement_gisaxs_doblestack(0.8)
 
             ai0 = piezo.th.position
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
             for i, wa in enumerate(waxs_arc):
                 yield from bps.mv(waxs, wa)
@@ -611,8 +723,8 @@ def Cl_edge_measurments_2024_3(t=1):
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -629,8 +741,8 @@ def Cl_edge_measurments_2024_3(t=1):
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
-                        if xbpm2.sumX.get() < 50:
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
                             yield from bps.sleep(2)
@@ -648,8 +760,27 @@ def Cl_edge_measurments_2024_3(t=1):
 
 
 def bpmvspindiode_Cledge_2024_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a calibration scan at the Cl edge — sweeps energy on the direct beam (with
+    #   and without an aluminium attenuator), opening/closing the fast shutter to read the beam
+    #   monitors and pin-diode current at each energy, and records a SAXS image. Builds a file name
+    #   from the recorded bpm2/bpm3/pin-diode values.
+    #
+    # 💡 NEWER, EASIER WAY: an energy sweep that records beam monitors / pin-diode into each shot
+    #   is 'smi_plans' energy_axis + acquire — and importantly, anything you want in the file name
+    #   (bpm2, bpm3, pin-diode) just needs to be in the recorded readings, then smi_plans fills the
+    #   "{xbpm2_sumX}", "{pin_diode_...}" tokens for you:
+    #     from smi_plans import acquire, energy_axis
+    #     yield from acquire("direct_beam_Cledge", [pil2M], [energy_axis(energies)],
+    #                        reads=[xbpm2, xbpm3, pin_diode], t=t)
+    #   energy_axis also handles the energy move/settle/feedback/re-seek, so the sleeps and the
+    #   re-seek/walk-back below become unnecessary (see 💡). ('att2_*' attenuators are fine.)
+    #   (Optional — works as-is EXCEPT the ⚠️ exposure line.) (internal: Tier 1 — commissioning.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below needs to be run as a plan.
+    # === end smi_plans note ================================================
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' acquire sets exposure for you via t=.)
 
     names = ['direct_beam_Cledge', 'direct_beam_Cledge_withatt1x9umAl']
 
@@ -666,8 +797,8 @@ def bpmvspindiode_Cledge_2024_3(t=1):
 
         for e in energies:
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
-            if xbpm2.sumX.get() < 50:
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+            if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole "beam dipped, re-move the energy" block — energy_axis/move_energy_fb already re-seek when the beam drops. (Not broken, just no longer needed once you migrate.)
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, e)
                 yield from bps.sleep(2)
@@ -688,7 +819,7 @@ def bpmvspindiode_Cledge_2024_3(t=1):
             yield from bp.count([pil2M], num=1)
 
     yield from bps.mv(energy, 2850)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this whole stepped energy walk-back (move + sleep, repeated) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2830)
     yield from bps.sleep(2)
     yield from bps.mv(energy, 2810)

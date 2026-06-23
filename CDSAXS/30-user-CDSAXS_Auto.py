@@ -1,5 +1,12 @@
 
 def test():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tiny sanity check — grabs one frame from the on-axis writing camera while
+    #   reading the piezo positions.
+    #
+    # 💡 NEWER, EASIER WAY: a single recorded shot is one 'smi_plans.acquire' call. (Optional —
+    #   this one-liner is fine for a quick test.)
+    # === end smi_plans note ================================================
     yield from bp.count([OAV_writing,piezo]) 
 
 def scan_pushpin(xmin, xmax, xinc, zmin, zmax, zinc, prsmin, prsmax, prsnumpoints):
@@ -14,6 +21,21 @@ def scan_pushpin(xmin, xmax, xinc, zmin, zmax, zinc, prsmin, prsmax, prsnumpoint
    - piezo.z
    - prs
    """
+   # === smi_plans note (REVIEW 2026-06-22) ================================
+   # WHAT THIS DOES: finds the rotation center for CD-SAXS — it scans a 3D grid of sample x, z,
+   #   and the in-plane rotation stage (the old 'prs'), saving the on-axis camera image at each
+   #   point so you can pick the alignment where the feature stays still as it rotates.
+   #
+   # 💡 NEWER, EASIER WAY: in 'smi_plans' the rotation stage that used to be called 'prs' is now
+   #   'stage.phi'. CD-SAXS rocking/alignment has dedicated presets — 'cdsaxs_rock_run' and
+   #   'cdsaxs_pitch_survey' — and for a custom x/z/phi grid you can build a list_scan over
+   #   'stage.phi' instead of 'prs'. smi_plans records phi/x/z/SDD into every image for you:
+   #
+   #     from smi_plans import cdsaxs_pitch_survey   # or compose acquire + motor_axis(stage.phi, ...)
+   #
+   # ⚠️ NEEDS A FIX TO RUN NOW: 'prs' was removed — the same rotation stage is now 'stage.phi'.
+   #   (See the ⚠️ note on the list_scan line below.) (internal: Tier 2 — CD-SAXS rock.)
+   # === end smi_plans note ================================================
    sample_id(user_name="pw",sample_name=f"test000_{get_scan_md()}")
    #    import numpy as np 
    xpos = np.arange(xmin,xmax+xinc,xinc)
@@ -23,7 +45,7 @@ def scan_pushpin(xmin, xmax, xinc, zmin, zmax, zinc, prsmin, prsmax, prsnumpoint
 
    P,X,Z=np.meshgrid(prspos,xpos,zpos)
    X,Z,P=X.flatten(),Z.flatten(),P.flatten()
-   yield from bp.list_scan([OAV_writing,OAV2_writing, piezo, prs],piezo.x,X,piezo.z,Z, prs,P)
+   yield from bp.list_scan([OAV_writing,OAV2_writing, piezo, prs],piezo.x,X,piezo.z,Z, prs,P)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error — it's used twice here, in the device list and as the scanned axis). The same rotation stage is now called 'stage.phi' — replace both 'prs' with 'stage.phi'.
 
 #def scan_pushpin(xmin, xmax, xinc, zmin, zmax, zinc, prsmin, prsmax, prsnumpoints)
 
@@ -39,6 +61,7 @@ def scan_pushpin(xmin, xmax, xinc, zmin, zmax, zinc, prsmin, prsmax, prsnumpoint
 ### Preprocessing images for VLM Analysis
 
 def preprocess_image_tiled(tmp_path, coord_idx_lookup, images, prs_list, scan_id, x, z):
+    # smi_plans: no acquisition logic here — this and the analyze_*/best_coordinate_tiled helpers below are image-processing + VLM (vision language model) ranking used by the autonomous loop, not beamline scans. (Note: 'prs' here is just a loop variable, not the old rotation stage.) The autonomous loop itself maps to smi_plans' autonomous_loop/align_loop (see the 'auto' function).
     
     print("running preprocess_image_tiled")
     grays = []
@@ -340,6 +363,25 @@ def best_coordinate_tiled(
 
 
 def auto():
+
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the autonomous CD-SAXS alignment loop — it reads back the last grid scan
+    #   (camera images vs x/z/rotation), pre-processes them, asks a vision model to rank which
+    #   spot looks best aligned, steps toward it, repeats a few times, then moves the sample there.
+    #
+    # 💡 NEWER, EASIER WAY: closed-loop "measure -> decide -> move" experiments are exactly what
+    #   'smi_plans' autonomous helpers are for — 'autonomous_loop' / 'align_loop' / 'ask_tell_loop'.
+    #   You give them a measurement plan and a controller (your VLM ranking can be the controller),
+    #   and they run the loop, recording each step as proper data. The recorded rotation column is
+    #   'stage_phi' now (the scans that fed this used the old 'prs' name) — so when you re-take the
+    #   grid with smi_plans, read it back as 'stage_phi' instead of 'prs'.
+    #
+    #     from smi_plans import align_loop   # or autonomous_loop / ask_tell_loop
+    #     # wrap best_coordinate_tiled(...) as the "tell" step that picks the next x/z.
+    #
+    #   (Optional — this loop works as-is. Note: the commented-out grid scan above uses 'prs',
+    #    which is now 'stage.phi'.) (internal: Tier 4 — autonomous; controller above the plan.)
+    # === end smi_plans note ================================================
 
     if 1:
         # print("The best coordinate is: ", best_coord)

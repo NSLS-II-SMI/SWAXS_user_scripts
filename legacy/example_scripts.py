@@ -8,6 +8,25 @@ def single_scan_test(t=1, name="Test", ai_list: list[int]|None = None, xstep=10,
     Study the beam damage on 1 film to define the opti;am experimental conitions.
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an energy-scan beam-damage test on one film — sweeps the X-ray energy (and optionally
+    #   incident angle / WAXS arc), taking a frame at each energy to find safe conditions.
+    #
+    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge and recording the energy
+    #   + beam into the data is the beamline 'smi_plans' helper library's energy/NEXAFS run.
+    #   (Nice touch in this script: it already saves the file name as a 'target_file_name'
+    #   Signal into the data instead of cramming it into a string — that's the smi_plans way.)
+    #
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, xbpm2, xbpm3])
+    #
+    #   Bonus: smi_plans' energy move already waits for the energy to settle, manages the beam
+    #   feedback, and re-seeks if the beam dips — so the sleep + beam re-seek here become
+    #   unnecessary (see the 💡 notes).
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below no longer set the
+    #   exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
+    # === end smi_plans note ================================================
     if ai_list is None:
         ai_list = []
 
@@ -33,9 +52,9 @@ def single_scan_test(t=1, name="Test", ai_list: list[int]|None = None, xstep=10,
             counter = 0
             for k, ais in enumerate(ai_list):
                 if ais==0.6:
-                    det_exposure_time(0.5, 0.5)
+                    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
                 else:
-                    det_exposure_time(1, 1)
+                    det_exposure_time(1, 1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(1, 1)  — or at the prompt:  RE(det_exposure_time(1, 1)). (The smi_plans technique runs set exposure for you via t=.)
 
                 # yield from bps.mv(piezo.th, ai0 + ais)
 
@@ -43,8 +62,8 @@ def single_scan_test(t=1, name="Test", ai_list: list[int]|None = None, xstep=10,
                 
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
-                    if xbpm2.sumX.get() < 50:
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
@@ -79,6 +98,22 @@ def single_scan_giwaxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
     Study the beam damage on 1 film to define the opti;am experimental conitions.
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GIWAXS run over a bar of samples — for each sample it aligns, then takes frames at
+    #   several incident angles and WAXS arc positions.
+    #
+    # 💡 NEWER, EASIER WAY: aligning each sample then sweeping incident angle / WAXS arc is
+    #   the beamline 'smi_plans' helper library's GIWAXS run. align_sample aligns and saves
+    #   the result; incidence_axis sweeps the angle while recording it into the data:
+    #
+    #     from smi_plans import giwaxs_bar, SampleList, incidence_axis, align_sample
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo)
+    #     yield from giwaxs_bar(samples, incidence_axis(piezo.th, ai0, ai_list),
+    #                           t=t, align=align_sample)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' call below no longer sets the
+    #   exposure unless run as a plan (see the ⚠️ FIXME note on that line).
+    # === end smi_plans note ================================================
     names = ['sj-ppionzrox-m-post', 'sj-ppionzrox-m-ox', 'sj-ppionzrox-m-pre', 'sj-ppion-m-ox', 
                  'sj-bkg-m-coated',     'sj-bkg-m-bare']
     x_piezo = [              53800,               53900,                48700,           37900,
@@ -107,7 +142,7 @@ def single_scan_giwaxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
         yield from alignement_gisaxs_doblestack(0.15)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 

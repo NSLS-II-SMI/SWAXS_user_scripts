@@ -44,6 +44,21 @@
 #  beamstop_save()
 #  setthreshold energy 16100 autog 11000
 
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS FILE DOES: a microfluidic-droplet / in-situ time-series run-book — the 'run' and
+#   'collect_*' functions take repeated SAXS/WAXS images over time (optionally rastering an x/y
+#   map and saving OAV camera frames), and the many short 'flow_*' functions are one-off
+#   "drivers" that just sleep and then call run(...) for a particular sample.
+# 💡 NEWER, EASIER WAY: repeated/timed acquisition is the 'smi_plans' kinetics / time-series
+#   combination, which timestamps each frame and records the position/beam INTO the data for you
+#   (so you don't build the "{...}_x{}_y{}_expt{}s" name or drive the camera by hand):
+#     from smi_plans import time_series_run, map_grid_run
+#     yield from time_series_run(sample, dets=[pil2M, pil900KW], t=exposure_time,
+#                                interval=interval, total=maxTime)
+#   (Most of this still works as-is; see the per-function notes for the ⚠️ 'det_exposure_time'
+#    items. The 'flow_*' drivers are glue — nothing in them is broken on its own.)
+# === end smi_plans note ================================================
+
 
 
 
@@ -376,6 +391,27 @@ motorZ = MDrive.m3
 
 
 class DropletReactor( ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS CLASS DOES: drives a microfluidic "droplet reactor" — it maps reactor hole
+    #   positions to motor coordinates, moves the reactor stage (MDrive motors) and syringe pumps
+    #   to run/synthesize batches, and at chosen positions takes SAXS+WAXS images (its 'measure'
+    #   and 'Run_*' methods call RE(bp.count([pil2M, pil900KW])) and save OAV frames).
+    #
+    # 💡 NEWER, EASIER WAY: the acquisition parts here are the 'smi_plans' kinetics / autonomous
+    #   combination — an outer controller decides what to make and where to move, and the actual
+    #   measurement is one smi_plans run that records the position/beam/time INTO the data:
+    #     from smi_plans import acquire, time_series_run, autonomous_loop
+    #     # in a measure step:  yield from acquire(sample_name, [pil2M, pil900KW], [])
+    #     # for the timed/auto batches:  time_series_run(...) / autonomous_loop(...) around it
+    #   The reactor-motor / pump moves can stay as your own code; the key change is to let the
+    #   RunEngine drive each measurement (one 'yield from') instead of calling RE(bp.count(...))
+    #   in a Python loop, so each shot is saved as a proper dataset with its metadata.
+    #
+    # NOTE: nothing in this class hits the D1–D6 "broken now" list (it uses pil2M/pil900KW and
+    #   has no det_exposure_time/pil300KW), so there are no ⚠️ inline fixes here — just this
+    #   friendly pointer. The methods below are covered by this one class-level note.
+    #   (internal: Tier 0/M.)
+    # === end smi_plans note ================================================
     def __init__(  self, sample='Au_NPs'):
         '''
 
@@ -1536,6 +1572,13 @@ def setup_run( waxs_angle=15  ):
 
 
 def flow_227():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a one-off "driver" — waits, then starts a timed run(...) for a specific
+    #   sample/temperature. (The many flow_* functions below all follow this same sleep-then-run
+    #   pattern; this note covers them as a group.)
+    # 💡 NEWER, EASIER WAY: these stay thin once 'run' uses the smi_plans time-series helper (see
+    #   run's note). Nothing in these drivers is broken on its own — they're just glue.
+    # === end smi_plans note ================================================
     time.sleep( 0*60 )
     run(  'SMI_AuSyn_TwoRec_0227_RUN0_100C_80ulM' , exposure_time=1, maxTime= 6*3600 + 1, interval=5 )
 
@@ -1733,11 +1776,30 @@ def run(    sample,  exposure_time=1, maxTime=12 * 3600 + 1, interval= 20,  came
 
 
     ''' 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a timed in-situ acquisition — every 'interval' seconds (up to maxTime) it
+    #   takes a SAXS+WAXS image while rastering through a small x/y position map, and (optionally)
+    #   saves an OAV camera frame. It builds the file name from the current time/position by hand
+    #   and drives each shot with RE(...).
+    #
+    # 💡 NEWER, EASIER WAY: timed/kinetic acquisition (optionally over a position map) is the
+    #   'smi_plans' kinetics / time-series + map combination. It timestamps each frame, records
+    #   the position/beam INTO the data, and runs INSIDE the RunEngine (so everything is saved as
+    #   one coherent dataset rather than many separate RE(...) shots with a hand-built name):
+    #     from smi_plans import time_series_run, map_grid_run
+    #     yield from time_series_run("Test", dets=[pil2M, pil900KW], t=exposure_time,
+    #                                interval=interval, total=maxTime)   # add a map axis to raster
+    #   (Your script below works as-is EXCEPT for the ⚠️ line, which needs a fix now. Note this
+    #    loops RE(...) itself, so it's prompt-only; a smi_plans run is one 'yield from'.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note below). (internal: Tier 0/1.)
+    # === end smi_plans note ================================================
 
     dets = [ pil2M, pil900KW  ]
     #dets = [ pil2M   ]
     #waxs_angle = 15    #   move_waxs(15)
-    det_exposure_time(exposure_time, exposure_time) 
+    det_exposure_time(exposure_time, exposure_time)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exposure_time, exposure_time)  — or at the prompt:  RE(det_exposure_time(exposure_time, exposure_time)). (The smi_plans technique runs set exposure for you via t=.)
     t0 = time.time()
     start_time = 0
     trigger_time = np.arange(start_time, maxTime, interval)
@@ -1779,11 +1841,21 @@ def run_nobeam(    sample,  exposure_time=1, maxTime=12 * 3600 + 1, interval= 20
     run( 'Test_2min', exposure_time=1, maxTime= 120 + 1, interval=5,   ) 
     run(  'SMI_CuSyn_161Rec_105C_40ulM'  )  #Cu, interval=20,  #20221029 nite, 1:30 am     
     ''' 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: like 'run', but the data-acquisition line is commented out — it just walks
+    #   the timer and saves OAV camera frames (no X-ray images), e.g. for a no-beam dry run.
+    # 💡 NEWER, EASIER WAY: when you do want the X-ray frames, smi_plans' time_series_run records
+    #   them (and the camera/position) together for you; see the note on 'run'.
+    #   (Your script below works as-is EXCEPT for the ⚠️ line, which needs a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note below). (internal: Tier 0.)
+    # === end smi_plans note ================================================
 
     #dets = [ pil2M, pil900KW  ]
     #dets = [ pil2M   ]
     #waxs_angle = 15    #   move_waxs(15)
-    det_exposure_time(exposure_time, exposure_time) 
+    det_exposure_time(exposure_time, exposure_time)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exposure_time, exposure_time)  — or at the prompt:  RE(det_exposure_time(exposure_time, exposure_time)). (The smi_plans technique runs set exposure for you via t=.)
     t0 = time.time()
     start_time = 0
     trigger_time = np.arange(start_time, maxTime, interval)
@@ -1814,9 +1886,22 @@ def collect_one_data(    sample,  exposure_time=1,   camera=False, fid=0    ):
  
 
     ''' 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a single SAXS+WAXS image now (and optionally an OAV camera frame),
+    #   building the file name from the current time by hand and driving the shot with RE(...).
+    # 💡 NEWER, EASIER WAY: a single shot is a one-liner with 'smi_plans', which records the
+    #   position/SDD/beam into the image and fills the file name from the recorded data:
+    #     from smi_plans import acquire
+    #     yield from acquire(sample, [pil2M, pil900KW], [])
+    #   (Your script below works as-is EXCEPT for the ⚠️ line, which needs a fix now. Note this
+    #    calls RE(...) itself, so it's prompt-only.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     dets = [ pil2M, pil900KW  ]
-    det_exposure_time(exposure_time, exposure_time) 
+    det_exposure_time(exposure_time, exposure_time)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exposure_time, exposure_time)  — or at the prompt:  RE(det_exposure_time(exposure_time, exposure_time)). (The smi_plans technique runs set exposure for you via t=.)
     tf = get_current_time()
     extra =  '%s_'%tf + '%06d_'%fid   
     _sample =  extra + sample 
@@ -1833,6 +1918,17 @@ def collect_one_data(    sample,  exposure_time=1,   camera=False, fid=0    ):
 
 
 def collect_wsaxs(  t=1, sample=None, waxs_angle = 20  ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves the WAXS arc, then takes one combined WAXS+SAXS image of the current
+    #   sample, building the file name from the live position by hand.
+    # 💡 NEWER, EASIER WAY:  from smi_plans import acquire, motor_axis
+    #     yield from acquire(sample, [pil900KW, pil2M], [motor_axis("wa", waxs, [waxs_angle])])
+    #   (records the arc/position/SDD/beam into the image and fills the file name for you.)
+    #   (Your script below works as-is EXCEPT for the ⚠️ line, which needs a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     yield from bps.mv(waxs, waxs_angle)
     if waxs_angle !=0:
@@ -1849,7 +1945,7 @@ def collect_wsaxs(  t=1, sample=None, waxs_angle = 20  ):
         t=t,
         #scan_id=RE.md["scan_id"],
     )
-    det_exposure_time(t, t) 
+    det_exposure_time(t, t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")

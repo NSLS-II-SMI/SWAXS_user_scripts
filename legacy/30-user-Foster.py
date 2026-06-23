@@ -5,6 +5,23 @@ def run_swaxs_Foster_2023_2(t=15):
 
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes WAXS and SAXS as line scans across capillaries, and measures the transmission
+    #   through each sample using attenuators (sample vs direct beam).
+    #
+    # 💡 NEWER, EASIER WAY: SAXS/WAXS line/grid scans across capillaries, with an
+    #   attenuator-based transmission measurement, are the beamline 'smi_plans' helper
+    #   library's transmission run. It loops the positions, records each one + the beam into
+    #   the saved data + file name, and the transmission/beamstop steps have helpers too:
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure
+    #   unless run as a plan (⚠️ notes below). (2) 'pil2M_bs_rod' (the SAXS beamstop rod)
+    #   was renamed to 'pil2M.beamstop.x_rod' (⚠️ notes on those lines).
+    # === end smi_plans note ================================================
     names =   [ 'Empty_cap_longer2', ]
     piezo_x = [  -19575, ]
     piezo_y = [   1350, ]
@@ -47,13 +64,13 @@ def run_swaxs_Foster_2023_2(t=15):
                 if ( 19 < waxs.arc.position ) and ( waxs.arc.position < 21 ):
 
                     # Take transmission
-                    det_exposure_time(transmission_exposure, transmission_exposure)
+                    det_exposure_time(transmission_exposure, transmission_exposure)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(transmission_exposure, transmission_exposure)  — or at the prompt:  RE(det_exposure_time(transmission_exposure, transmission_exposure)). (The smi_plans technique runs set exposure for you via t=.)
                     while att1_7.status.get() != 'Open':
                         yield from bps.mv(att1_7.open_cmd, 1)
                         yield from bps.sleep(1)
 
                     # Sample
-                    yield from bps.mv(pil2M_bs_rod.x, bs_pos_x + 5)
+                    yield from bps.mv(pil2M_bs_rod.x, bs_pos_x + 5)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
                     sample_name = f'{name}-attn-sample'
                     sample_id(user_name='test', sample_name=sample_name)
                     yield from bp.count([pil2M])
@@ -70,8 +87,8 @@ def run_swaxs_Foster_2023_2(t=15):
                     trans = np.round( stats1_sample / stats1_direct, 5)
 
                     # Revert configuraton
-                    det_exposure_time(t, t)
-                    yield from bps.mv(pil2M_bs_rod.x, bs_pos_x)
+                    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
+                    yield from bps.mv(pil2M_bs_rod.x, bs_pos_x)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
                     while att1_7.status.get() != 'Not Open':
                         yield from bps.mv(att1_7.close_cmd, 1)
                         yield from bps.sleep(1)
@@ -86,12 +103,21 @@ def run_swaxs_Foster_2023_2(t=15):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def atten_move_in(x4=True, x2=True):
     """
     Move 4x + 2x Sn 60 um attenuators in
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an attenuator helper — moves the 4x and/or 2x Sn attenuators IN (to cut the beam down
+    #   for a transmission measurement).
+    #
+    # 💡 NEWER, EASIER WAY: inserting/removing attenuators is folded into the beamline
+    #   'smi_plans' helper library's transmission run (and its align step), so you usually
+    #   don't call these by hand once you migrate. The attenuators (att1_*) still work fine —
+    #   nothing here is broken.
+    # === end smi_plans note ================================================
     print('Moving attenuators in')
 
     if x4:
@@ -108,6 +134,14 @@ def atten_move_out():
     """
     Move 4x + 2x Sn 60 um attenuators out
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an attenuator helper — moves the 4x and 2x Sn attenuators OUT again.
+    #
+    # 💡 NEWER, EASIER WAY: inserting/removing attenuators is folded into the beamline
+    #   'smi_plans' helper library's transmission run (and its align step), so you usually
+    #   don't call these by hand once you migrate. The attenuators (att1_*) still work fine —
+    #   nothing here is broken.
+    # === end smi_plans note ================================================
     print('Moving attenuators out')
     while att1_7.status.get() != 'Not Open':
         yield from bps.mv(att1_7.close_cmd, 1)
@@ -124,6 +158,23 @@ def run_swaxs_Foster_2023_3(t=12.5):
 
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes WAXS and SAXS as a grid scan across capillaries, and measures the transmission
+    #   through each grid point using attenuators (sample vs direct beam).
+    #
+    # 💡 NEWER, EASIER WAY: SAXS/WAXS line/grid scans across capillaries, with an
+    #   attenuator-based transmission measurement, are the beamline 'smi_plans' helper
+    #   library's transmission run. It loops the positions, records each one + the beam into
+    #   the saved data + file name, and the transmission/beamstop steps have helpers too:
+    #
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from transmission_bar(samples, t=t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'det_exposure_time(...)' no longer sets the exposure
+    #   unless run as a plan (⚠️ notes below). (2) 'pil2M_bs_rod' (the SAXS beamstop rod)
+    #   was renamed to 'pil2M.beamstop.x_rod' (⚠️ notes on those lines).
+    # === end smi_plans note ================================================
     names =   [ 'c11-Tol-12p5s', 'c10-Tol-12p5s', 'c9-Tol-12p5s', 'c6-Tol-12p5s', 'c5-Tol-12p5s']
     piezo_x = [     -32600,         -15925,            575,          17075,          33625 ]
     piezo_y = [      -2300,          -2300,           -2300,         -2300,          -2300 ]
@@ -176,11 +227,11 @@ def run_swaxs_Foster_2023_3(t=12.5):
 
                     if condition:
                         # Take transmission
-                        det_exposure_time(transmission_exposure, transmission_exposure)
+                        det_exposure_time(transmission_exposure, transmission_exposure)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(transmission_exposure, transmission_exposure)  — or at the prompt:  RE(det_exposure_time(transmission_exposure, transmission_exposure)). (The smi_plans technique runs set exposure for you via t=.)
                         yield from atten_move_in(x4=True, x2=False)
 
                         # Sample
-                        yield from bps.mv(pil2M_bs_rod.x, bs_pos_x + 5)
+                        yield from bps.mv(pil2M_bs_rod.x, bs_pos_x + 5)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
                         sample_name = f'{name}-attn-sample_loc{loc}'
                         sample_id(user_name='test', sample_name=sample_name)
                         yield from bp.count([pil2M])
@@ -197,19 +248,19 @@ def run_swaxs_Foster_2023_3(t=12.5):
                         trans = np.round( stats1_sample / stats1_direct, 5)
 
                         # Revert configuraton
-                        det_exposure_time(t, t)
-                        yield from bps.mv(pil2M_bs_rod.x, bs_pos_x)
+                        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
+                        yield from bps.mv(pil2M_bs_rod.x, bs_pos_x)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
                         yield from atten_move_out()
                         yield from bps.mv(piezo.x, x + x_of,
                                             piezo.y, y + y_of)
                     else:
                         trans = 0
                     # Take normal scans
-                    det_exposure_time(t, t)
+                    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
                     sample_name = f'{name}{get_scan_md()}_loc{loc}_trs{trans}'
                     sample_id(user_name=user, sample_name=sample_name)
                     print(f"\n\n\n\t=== Sample: {sample_name} ===")
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)

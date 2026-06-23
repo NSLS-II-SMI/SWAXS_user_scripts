@@ -19,6 +19,28 @@ def alice_grid_scans_2022_3(t=0.5):
 
         proposal_id("2023_1", "311050_Fergerson2)
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: for each sample, rasters the SAXS detector over a grid of x/y positions
+    #   (a 2D map) using one coordinated grid scan, recording shear/draw/anneal as metadata.
+    #
+    # 💡 NEWER, EASIER WAY: a microfocus raster like this is exactly 'smi_plans' map_grid_run; you
+    #   give it the grid and it records the energy, detector distance, and your custom metadata
+    #   into the data and the file name automatically (so you don't hand-build "_dy{dy}um_dx{dx}um"):
+    #
+    #     from smi_plans import map_grid_run, spatial_grid_axes
+    #     for name, x, y, h_y, sh, dr, ann in zip(names, piezo_x, piezo_y, hexa_y, shear, draw, anneal):
+    #         yield from bps.mv(piezo.x, x, piezo.y, y, stage.y, h_y)
+    #         yield from map_grid_run(
+    #             name, dets=[pil2M], t=t,
+    #             axes=spatial_grid_axes(piezo.y, y_range, piezo.x, x_range),  # your same ranges
+    #             md={"shear": sh, "draw": dr, "annealed": ann},              # your custom metadata
+    #         )
+    #   (This keeps your one-coordinated-scan-per-sample approach; map_grid_run records energy/SDD
+    #    and your metadata for you. 'stage.y', 'pil2M_pos.z' all still work as-is.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note on it below).
+    # === end smi_plans note ================================================
     macro_user_name = 'alice_grid_scans_2022_3'
 
 
@@ -137,7 +159,7 @@ def alice_grid_scans_2022_3(t=0.5):
     if waxs.arc.position < 19.5:
         yield from bps.mv(waxs, 20)
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for name, x, y, h_y, sh, dr, ann in zip(names, piezo_x, piezo_y, hexa_y, shear, draw, anneal):
 
@@ -172,7 +194,7 @@ def alice_grid_scans_2022_3(t=0.5):
                                     md=user_dict)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 
 """

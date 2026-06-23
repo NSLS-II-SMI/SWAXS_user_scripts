@@ -1,6 +1,38 @@
 def Ru_edge_zhengxing_2024_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tender-energy NEXAFS scan across the ruthenium edge
+    #   (~2800-2880 eV). For each sample position and each WAXS detector arc angle, it
+    #   sweeps the X-ray energy and takes a WAXS (and, when the arc is out of the way,
+    #   SAXS) image at each energy. ("Tender" just means these are fairly low X-ray
+    #   energies; "NEXAFS" means watching how absorption changes as you cross an
+    #   element's edge.)
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that does
+    #   a full energy scan like this in one line. It steps the energy safely, waits for it
+    #   to settle, manages the beam feedback, and records the energy + beam intensity
+    #   straight into the saved data and the file name — so you don't have to hand-build
+    #   that long "{sample}_{energy}eV_wa{}_bpm{}" name. Same kind of scan as below:
+    #
+    #     from smi_plans import nexafs_run             # do this once at the top of your session
+    #     yield from nexafs_run(
+    #         "P1_120C_1_pos1",                        # the rest of the file name is filled in for you
+    #         energies,                                # your same energy list, unchanged
+    #         t=t,                                     # your exposure time, unchanged
+    #         dets=[pil2M, pil900KW],                  # SAXS + the current WAXS detector
+    #         geometry="transmission",
+    #     )
+    #     # (call it per sample position / WAXS arc, the way you loop below.)
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the lines marked ⚠️ which genuinely need a fix to run now. The lines
+    #    marked 💡 still work but become unnecessary once you migrate.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the two 'det_exposure_time(t, t)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes on those lines below).
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     '''
     names = [   'P2_80C',    'P4_80C']
     x_piezo = [    39200,       26500]
@@ -24,7 +56,7 @@ def Ru_edge_zhengxing_2024_2(t=1):
         yield from bps.mv(stage.x, xs)
         yield from bps.mv(stage.y, ys)
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         yss = np.linspace(ys, ys + 0.5, 55)
         xss = np.array([xs])
@@ -42,8 +74,8 @@ def Ru_edge_zhengxing_2024_2(t=1):
 
             for e, xsss, ysss in zip(energies, xss, yss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this wait once you migrate — move_energy_fb/energy_axis already pause after each energy move, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam-loss re-seek block — move_energy_fb/energy_axis already re-seek the energy if the beam dips. (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, e)
                     yield from bps.sleep(2)
@@ -57,7 +89,7 @@ def Ru_edge_zhengxing_2024_2(t=1):
                 yield from bp.count(dets, num=1)
 
             yield from bps.mv(energy, 2860)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this stepped energy walk-back (and its sleeps) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2840)
             yield from bps.sleep(2)
             yield from bps.mv(energy, 2820)

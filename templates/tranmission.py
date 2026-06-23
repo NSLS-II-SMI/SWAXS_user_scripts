@@ -1,4 +1,18 @@
 def Cl_edge_measurments_2025_3_thursdaynight_preset():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a "preset" — it just fills in a specific sample bar, positions, and Cl-edge
+    #   energies, then calls the grazing-incidence energy-sweep plan below. Handy as a saved recipe.
+    #
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' a preset like this is a SampleList plus a technique
+    #   call. You list the bar once and hand it to a GIWAXS-at-energies run, which records energy /
+    #   angle / beam into every image and file name for you:
+    #
+    #     from smi_plans import SampleList, giwaxs_bar, energy_axis
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, z=z_piezo)
+    #     # then sweep energy with energy_axis(energies) inside a giwaxs run per incident angle.
+    #
+    #   (Optional — this preset works as-is; the actual fixes are inside the plan it calls below.)
+    # === end smi_plans note ================================================
     #Sample list for Cl edge measurements on Thursday night 2025-03
     names = ['P3HT_undoped',  'P3HT_magicblue_topdope',  'P3HT_magicblue_overdope',   'P3MEEET_undoped', 'P3MEEET_magicblue_topdope',   'P3MEEET_magicblue_overdope', 'PVC_36nm', ' NaPSS_30nm', 'P3HT_37nm']
     x_piezo = [      -56000,                    -45000,                     -40000,              -25000,                    -10000,                             8000,         23000,      44000,       46000]
@@ -22,6 +36,29 @@ def Cl_edge_measurments_2025_3_thursdaynight_preset():
 def Cl_edge_gi_scan_smaract_updownsweep(t=1, names=['name1'], x_piezo=[0], y_piezo=[0], z_piezo=[0], x_hexa=[0], y_hexa=[0], \
                                         dets=[pil900KW], energies=[2800], waxs_arc=[0], ai0_all=0, ai_list=[1.6], x_step=30,
                                         atts=[att2_9],):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing-incidence WAXS scan across the chlorine edge over a bar
+    #   of samples — for each sample it aligns, then for each WAXS arc and incident angle it
+    #   sweeps the energy UP and then DOWN, nudging x a little each shot to limit beam damage, and
+    #   records an image. Nice touch: it already saves 'incident_angle' and 'energy_direction' as
+    #   real data channels (Signals) instead of only stuffing them in the file name.
+    #
+    # 💡 NEWER, EASIER WAY: this "bar × angle × up/down energy sweep" is the 'smi_plans' GIWAXS +
+    #   energy combination. 'energy_axis' does the up/down sweep AND handles the energy move +
+    #   beam feedback for you (so you can delete the per-energy sleeps — see the 💡 notes below),
+    #   and a SampleList + giwaxs_bar walks the bar and records angle/energy/beam automatically:
+    #
+    #     from smi_plans import SampleList, giwaxs_bar, energy_axis, align_sample
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo, z=z_piezo)
+    #     # sweep energy with energy_axis(energies, reverse_alternate=True) (up then down),
+    #     # over incident angles ai_list and arcs waxs_arc, with align=align_sample, t=t.
+    #
+    #   (Optional — your script below works as-is EXCEPT the ⚠️ exposure lines. The 💡 sleeps are
+    #    not broken, just no longer needed once you migrate.) (internal: Tier 3/4.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below need to be run as a plan
+    #   (see ⚠️ notes on those lines).
+    # === end smi_plans note ================================================
     # General function for Cl edge grazing incidence scans with up and down energy sweeps using the smaract
     # and hexapod stages
     # names: list of sample names
@@ -35,7 +72,7 @@ def Cl_edge_gi_scan_smaract_updownsweep(t=1, names=['name1'], x_piezo=[0], y_pie
     # x_step: step size in x in microns for each energy point to limit beam damage
     # atts: list of attenuators to use
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
     assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
     assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
@@ -84,7 +121,7 @@ def Cl_edge_gi_scan_smaract_updownsweep(t=1, names=['name1'], x_piezo=[0], y_pie
 
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets exposure for you via t=.)
 
         s = Signal(name='target_file_name', value='')
         incident_angle = Signal(name='incident_angle', value=ai0)
@@ -105,7 +142,7 @@ def Cl_edge_gi_scan_smaract_updownsweep(t=1, names=['name1'], x_piezo=[0], y_pie
                     name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                         yield from bps.mv(piezo.x, xs + counter * x_step)
                         counter += 1
                         
@@ -120,7 +157,7 @@ def Cl_edge_gi_scan_smaract_updownsweep(t=1, names=['name1'], x_piezo=[0], y_pie
                     name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(3)
+                        yield from bps.sleep(3)  # 💡 smi_plans: same as above — this settle wait after the energy move is handled for you by move_energy_fb/energy_axis once you switch over.
                         yield from bps.mv(piezo.x, xs + counter * x_step)
                         counter += 1
 
@@ -136,6 +173,13 @@ def Cl_edge_gi_scan_smaract_updownsweep(t=1, names=['name1'], x_piezo=[0], y_pie
         (yield from inner())
 
 def test_multi_transmission():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tiny example that fills in two test samples and calls multi_transmission
+    #   below. Use it as a copy-paste starting point.
+    #
+    # 💡 NEWER, EASIER WAY: see the multi_transmission note below — in smi_plans this becomes a
+    #   SampleList handed to transmission_bar. (Optional — this test wrapper works as-is.)
+    # === end smi_plans note ================================================
     names = ['test1', 'test2']
     x_piezo = [0, 1000]
     y_piezo = [0, 0]
@@ -176,6 +220,29 @@ def multi_transmission(t=1,names=[''],
     Measure transmission only during the first run
     use hexapod only
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a multi-sample transmission (through-the-sample) SWAXS template — for each
+    #   WAXS arc it visits every sample and rasters a little grid of spots (in piezo and/or stage
+    #   x/y), recording a WAXS (and SAXS at low arc) image at each spot. This is a nicely
+    #   structured template: it opens one proper run per sample and records position/beam into the
+    #   data. (The auto-transmission-measurement block is commented out / a TODO.)
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has transmission helpers built exactly for this. List your
+    #   samples once and let 'transmission_bar' walk the bar (and a grid axis raster each one),
+    #   recording position / beam / scan id into every image and file name — so you don't build
+    #   "{name}..._loc{expnum}_trs{trans}" by hand:
+    #
+    #     from smi_plans import SampleList, transmission_bar, transmission_run, spatial_grid_axes
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
+    #     yield from transmission_bar(samples, t=t)          # one sample? use transmission_run(...)
+    #     # to raster spots per sample, add spatial_grid_axes(...) as the scan axes.
+    #
+    #   (Optional — this template works as-is EXCEPT the ⚠️ exposure lines below.) (internal:
+    #    Tier 3.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below need to be run as a plan
+    #   (see ⚠️ notes on those lines).
+    # === end smi_plans note ================================================
     s = Signal(name='target_file_name', value='')
     get_trans=False
 
@@ -197,7 +264,7 @@ def multi_transmission(t=1,names=[''],
     for arr in [stage_x, stage_y, stage_z, piezo_x, piezo_y, piezo_z]:
         assert len(arr) == len(names), msg
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' transmission_bar sets exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -258,6 +325,6 @@ def multi_transmission(t=1,names=[''],
                                 print(f"\n\t=== Sample: {sample_name} ===\n")
                                 yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, stage, piezo] + [s])
             (yield from inner())
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
 
 

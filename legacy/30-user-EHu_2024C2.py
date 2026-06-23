@@ -18,6 +18,29 @@ proposal_id('2024_2', '314415_EHu')  #for Hu's samples
 
 '''
 
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS DOES (whole file): this is a run-book for transmission SAXS/WAXS "micro
+#   maps" of many capillary/battery samples. Most of the file is sample tables
+#   (sample_dict + pxy_dict, the x/y position of each numbered sample); only the
+#   LAST uncommented table near the top is the one that's actually active. The two
+#   functions below then drive the stages to each sample and take WAXS/SAXS images.
+#
+# 💡 NEWER, EASIER WAY: a list of named samples with x/y positions is a first-class
+#   object in the beamline 'smi_plans' helper library (SampleList), and a transmission
+#   "bar" plan loops over it for you — recording each sample's name/position/beam INTO
+#   the saved data and templating the file name from them (so you don't keep giant
+#   sample_dict/pxy_dict tables or build names by hand):
+#
+#     from smi_plans import SampleList, transmission_bar
+#     samples = SampleList.from_columns(name=list(sample_dict.values()),
+#                                       x=x_list, y=y_list)   # your same numbers
+#     yield from transmission_bar(samples, t=1)
+#     # You can also load the table straight from a spreadsheet: SampleList.from_csv(...).
+#
+#   (This is just a tidier option to try later — the run-book below still works as-is,
+#    EXCEPT for anything marked ⚠️ which needs a fix to run now.)
+# === end smi_plans note ================================================
+
 print('Load  micro -- 2024July27...')
 from datetime import datetime
 
@@ -660,6 +683,21 @@ def measure_series_multi_angle_wsaxs( t= [ 1 ], waxs_angles=[0,  20 ], dys = [ 0
 
     """
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: loops over the active sample bar and a set of WAXS arc angles, taking WAXS or
+    #   WSAXS at each sample (it calls measure_waxs/measure_wsaxs to do the actual frames).
+    #
+    # 💡 NEWER, EASIER WAY: looping a sample bar (and WAXS angles) and taking WAXS/SAXS
+    #   at each is the beamline 'smi_plans' helper library's transmission run. It loops
+    #   the samples for you and records each name/position/beam into the data + file name:
+    #
+    #     from smi_plans import SampleList, transmission_bar
+    #     samples = SampleList.from_columns(name=list(sample_dict.values()), x=x_list, y=y_list)
+    #     yield from transmission_bar(samples, t=1)
+    #
+    #   (Optional tidy-up — your script below works as-is. The det_exposure_time "plan"
+    #    fix lives in the measure_waxs/measure_wsaxs helpers it calls.)
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())  # [:8 ]
     maxA = np.max(waxs_angles)
     for waxs_angle in waxs_angles:
@@ -697,6 +735,21 @@ def do_line_trans_scan( sample ='4AMP_C_',  t=1,  scan_range = [ 0,  100 ],
     
     
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: does a straight line scan across the sample (stepping y for 'V' or x for 'H') and
+    #   takes a WAXS+SAXS image at each step — a transmission line map.
+    #
+    # 💡 NEWER, EASIER WAY: a straight line scan (step y or x, take an image at each) is
+    #   the beamline 'smi_plans' helper library's line map / motor-axis acquire. It records
+    #   each position/beam into the saved data and templates the file name from them:
+    #
+    #     from smi_plans import map_line_run, saxs_waxs_dets, motor_axis
+    #     yield from map_line_run(sample, motor_axis('y', piezo.y, vals), t=t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t,t)' call below no longer sets the
+    #   exposure unless run as a plan (see the ⚠️ FIXME note on that line). (The 'sleep(2)'
+    #   after each frame is just spacing — NOT broken.)
+    # === end smi_plans note ================================================
     YH = piezo.y.position 
     XH = piezo.x.position 
     TH = piezo.th.position 
@@ -711,7 +764,7 @@ def do_line_trans_scan( sample ='4AMP_C_',  t=1,  scan_range = [ 0,  100 ],
         vals =  np.arange( scan_range[0], scan_range[-1]+scan_step, scan_step  ) + YH     
     elif method == 'H':
         vals =  np.arange( scan_range[0], scan_range[-1]+scan_step, scan_step  ) + XH   
-    det_exposure_time(t,t) 
+    det_exposure_time(t,t)   # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (The smi_plans technique runs set exposure for you via t=.)
     for v in vals:
         if method == 'V':
             yield from bps.mv(piezo.y, v)                  

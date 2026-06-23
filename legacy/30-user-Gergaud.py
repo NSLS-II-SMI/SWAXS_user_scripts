@@ -1,7 +1,46 @@
 # pil300KW for waxs, pil2M for saxs
 
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS FILE IS: the CD-SAXS / CD-GISAXS toolkit (critical-dimension SAXS) — most plans here
+#   "rock" the sample about the beam, i.e. step a rotation stage through many angles and take a
+#   SAXS image at each, to reconstruct the shape/pitch of nanostructures.
+#
+# 💡 GOOD NEWS — YOU'VE ALREADY STARTED THE MIGRATION: your newest functions
+#   ('cd_saxs_newstage', 'scanning_chiandth', 'cdsaxsstd_2026_2_nischal') already use the new
+#   rotation-stage name 'stage.phi' instead of the old 'prs'. Those are correct and need no fix.
+#   The OLDER functions below still call 'prs', which no longer exists and will error — each such
+#   line is marked ⚠️ inline (replace 'prs' with 'stage.phi', exactly as your new code does).
+#
+#   The tidier, fully-supported way to do a CD-SAXS rock is 'smi_plans':
+#     from smi_plans import cdsaxs_rock_run, cd_gisaxs_rock_run, cdsaxs_pitch_survey, cdsaxs_bar
+#     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)   # rocks stage.phi
+#   These rock 'stage.phi', record phi / x / y / SDD / beam into every image and the file name for
+#   you, and (for a bar of pitches/samples) cdsaxs_bar / cdsaxs_pitch_survey loop for you.
+#
+# ⚠️ THINGS TO FIX TO RUN NOW (flagged inline below): (1) 'prs' -> 'stage.phi'; (2) 'pil300KW'
+#   (retired) -> 'pil900KW'; (3) 'pil2M_bs_rod' -> 'pil2M.beamstop.x_rod'; (4) 'det_exposure_time(...)'
+#   is now a "plan" and must be run as one. Also note the 'fly_scan_ai' function below has a
+#   special problem explained in its own note (it triggers the detector outside Bluesky, so the
+#   data is NOT saved as a normal run). (internal: Tier 0-4 — CD-SAXS.)
+# === end smi_plans note ================================================
+
 
 def cd_saxs(th_ini, th_fin, th_st, exp_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     sample = ["cdsaxs_ech03_defectivity_pitch128","cdsaxs_ech03_defectivity_pitch127","cdsaxs_ech03_defectivity_pitch124",
               "cdsaxs_ech03_defectivity_pitch121","cdsaxs_ech03_defectivity_pitch118","cdsaxs_ech03_defectivity_pitch115",
               "cdsaxs_ech03_defectivity_pitch112","cdsaxs_ech04_defectivity_pitch128","cdsaxs_ech04_defectivity_pitch127",
@@ -13,13 +52,13 @@ def cd_saxs(th_ini, th_fin, th_st, exp_t=1):
     y = [  2000,  2000,  2000,  2000,  2000,  2000,  2000,2000,2000,2000,2000,2000,2000,2000,3900,3900,3900,3900,3900,3900,3900,    ]    
     det = [pil2M]
 
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     for xs, ys, sample in zip(x, y, sample):
         yield from bps.mv(piezo.x, xs)
         yield from bps.mv(piezo.y, ys)
 
         for theta in np.linspace(th_ini, th_fin, th_st):
-            yield from bps.mv(prs, theta)
+            yield from bps.mv(prs, theta)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
             name_fmt = "{sample}_{th}deg"
 
             sample_name = name_fmt.format(sample=sample, th="%2.2d" % theta)
@@ -30,14 +69,29 @@ def cd_saxs(th_ini, th_fin, th_st, exp_t=1):
 
 
 def cd_saxs_old(sample, x, y, num=1, exp_t=1, step=121):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
 
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     yield from bps.mv(piezo.x, x)
     yield from bps.mv(piezo.y, y)
 
     for i, theta in enumerate(np.linspace(-60, 60, step)):
-        yield from bps.mv(prs, theta)
+        yield from bps.mv(prs, theta)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
         name_fmt = "{sample}_{num}_{th}deg"
 
         sample_name = name_fmt.format(sample=sample, num="%2.2d"%i, th="%2.2d"%theta)
@@ -49,10 +103,24 @@ def cd_saxs_old(sample, x, y, num=1, exp_t=1, step=121):
 
 
 def cdsaxs_all_pitch(sample, x, y, num=1, exp_t=1, step=121):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     pitches = ["p112nm","p113nm","p114nm","p115nm","p116nm","p117nm","p118nm","p119nm","p120nm","p121nm","p122nm","p123nm","p124nm","p125nm",
                "p126nm","p127nm","p128nm"]
     x_off = [0,1500,3000,4500,6000,7500,9000,10500,12000,13500,15000,16500,18000,19500,21000,22500,24000]
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     for x_of, pitch in zip(x_off, pitches):
         yield from bps.mv(piezo.x, x + x_of)
 
@@ -62,6 +130,13 @@ def cdsaxs_all_pitch(sample, x, y, num=1, exp_t=1, step=121):
 
 
 def night_patrice(exp_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book / dispatcher — it chains several measurement plans together for
+    #   an overnight or a session (and may set the proposal). 'proposal_id(...)' still runs fine.
+    #
+    # 💡 NEWER, EASIER WAY: in smi_plans you'd queue the technique runs (cdsaxs_bar, nexafs_run,
+    #   etc.) directly; see the notes on the called functions. (Nothing broken here.)
+    # === end smi_plans note ================================================
     numero = 6
     det = [pil2M]
 
@@ -138,6 +213,15 @@ def night_patrice(exp_t=1):
 
 
 def scan_boite_pitch(exp_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a pitch survey — steps across a set of nanostructure pitches/fields and
+    #   measures each (often calling a CD-SAXS rock per pitch).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans.cdsaxs_pitch_survey' / 'cdsaxs_bar' walk a list of pitches/
+    #   samples and rock 'stage.phi' at each, recording pitch/phi/position/beam for you:
+    #     from smi_plans import cdsaxs_pitch_survey, cdsaxs_bar
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.) (internal: Tier 2-4 — CD-SAXS.)
+    # === end smi_plans note ================================================
     sample = ["Echantillon03_defectivity","Echantillon04_defectivity","Echantillon11b_defectivity"]
     x = [-40050, -11150, 17000]
     y = [2000, 2000, 3900]
@@ -145,7 +229,7 @@ def scan_boite_pitch(exp_t=1):
 
     pitches = np.linspace(128, 112, 17)
 
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     for xs, ys, sample in zip(x, y, sample):
         yield from bps.mv(piezo.x, xs)
         yield from bps.mv(piezo.y, ys)
@@ -168,14 +252,29 @@ def macro_dinner():
 
 
 def NEXAFS_Ti_edge(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan — steps the X-ray energy across an absorption edge and takes
+    #   an image + beam reading at each energy (then steps the energy back down at the end).
+    #
+    # 💡 NEWER, EASIER WAY: a full edge energy scan is ONE line with 'smi_plans.nexafs_run'. It
+    #   records energy/beam into the data and file name, and handles the energy move/settle/beam
+    #   feedback (so you can drop the per-energy sleeps and the stepped walk-back — see 💡):
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW])
+    #   (Use 'pil900KW' if 'pil300KW' appears below — see ⚠️. Optional otherwise; works as-is
+    #   EXCEPT the ⚠️ lines.) (internal: Tier 1 — NEXAFS.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: any 'pil300KW' below was retired (now 'pil900KW'); the
+    #   'det_exposure_time(...)' calls must be run as a plan. (See ⚠️ notes below.)
+    # === end smi_plans note ================================================
 
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     name = "NEXAFS_echantillon2_Tiedge_ai1p4"
     # x = [8800]
 
     energies = np.linspace(4950, 5050, 101)
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     name_fmt = "{sample}_{energy}eV_xbpm{xbpm}"
 
     for e in energies:
@@ -187,7 +286,7 @@ def NEXAFS_Ti_edge(t=0.5):
         print(f"\n\t=== Sample: {sample_name} ===\n")
         yield from bp.count(dets, num=1)
 
-    yield from bps.mv(energy, 5030)
+    yield from bps.mv(energy, 5030)  # 💡 smi_plans: you can drop this stepped energy walk-back (the following mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 5010)
     yield from bps.mv(energy, 4990)
     yield from bps.mv(energy, 4970)
@@ -195,14 +294,29 @@ def NEXAFS_Ti_edge(t=0.5):
 
 
 def NEXAFS_SAXS_Ti_edge(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan — steps the X-ray energy across an absorption edge and takes
+    #   an image + beam reading at each energy (then steps the energy back down at the end).
+    #
+    # 💡 NEWER, EASIER WAY: a full edge energy scan is ONE line with 'smi_plans.nexafs_run'. It
+    #   records energy/beam into the data and file name, and handles the energy move/settle/beam
+    #   feedback (so you can drop the per-energy sleeps and the stepped walk-back — see 💡):
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW])
+    #   (Use 'pil900KW' if 'pil300KW' appears below — see ⚠️. Optional otherwise; works as-is
+    #   EXCEPT the ⚠️ lines.) (internal: Tier 1 — NEXAFS.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: any 'pil300KW' below was retired (now 'pil900KW'); the
+    #   'det_exposure_time(...)' calls must be run as a plan. (See ⚠️ notes below.)
+    # === end smi_plans note ================================================
 
-    dets = [pil300KW, pil2M]
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration). ('pil2M' here is fine.)
     name = "NEXAFS_SAXS_echantillon13realign_ai1p75_Tiedge"
     # x = [8800]
 
     energies = np.linspace(4950, 5050, 101)
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     name_fmt = "{sample}_{energy}eV_xbpm{xbpm}"
 
     for e in energies:
@@ -214,7 +328,7 @@ def NEXAFS_SAXS_Ti_edge(t=0.5):
         print(f"\n\t=== Sample: {sample_name} ===\n")
         yield from bp.count(dets, num=1)
 
-    yield from bps.mv(energy, 5030)
+    yield from bps.mv(energy, 5030)  # 💡 smi_plans: you can drop this stepped energy walk-back (the following mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 5010)
     yield from bps.mv(energy, 4990)
     yield from bps.mv(energy, 4970)
@@ -222,13 +336,21 @@ def NEXAFS_SAXS_Ti_edge(t=0.5):
 
 
 def GISAXS_scan_boite(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a GISAXS measurement at grazing incidence (records SAXS images over a
+    #   sample/region).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans.giwaxs_run' / 'giwaxs_bar' (align, sweep angle/arc, record
+    #   angle/position/beam for you); for CD-GISAXS rocking see 'cd_gisaxs_rock_run'.
+    #   (Optional — works as-is EXCEPT any ⚠️ exposure lines.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     sample = "Echantillon13realign_gisaxs_scanpolyperiod_e4950eV_ai1p75"
     x = np.linspace(55900, 31900, 81)
 
     det = [pil2M]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     for k, xs in enumerate(x):
         yield from bps.mv(piezo.x, xs)
 
@@ -241,6 +363,27 @@ def GISAXS_scan_boite(t=1):
 
 
 def fly_scan_ai(det, motor, cycle=1, cycle_t=10, phi=-0.6):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a "fly scan" — it opens the detector for one long exposure while the motor
+    #   sweeps continuously, instead of stopping at each angle. To do that it pokes the camera by
+    #   hand: it stages the detector, sets the exposure, calls .trigger(), drives the motor, and
+    #   then busy-waits ('while not st.done: pass') until the exposure finishes.
+    #
+    # ⚠️ IMPORTANT — WHY THIS IS A PROBLEM NOW: because it triggers the camera directly (not
+    #   through Bluesky's normal flow), this measurement is NOT saved as a proper "run". Bluesky
+    #   never sees start/stop/event "documents", so nothing is recorded into the databroker/Tiled
+    #   catalog: no metadata, no positions, no link to the image. The .tif may land on disk, but
+    #   you won't be able to find it by scan id or load it the usual way. The plain busy-wait can
+    #   also wedge the RunEngine.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has proper continuous-rock support that records everything
+    #   as a real run. Use the CD-SAXS rock preset (it rocks 'stage.phi' and saves documents):
+    #     from smi_plans import cdsaxs_rock_run, cd_gisaxs_rock_run
+    #     yield from cd_gisaxs_rock_run(sample, phi-30, phi+30, ..., t=cycle*cycle_t)
+    #   (If you truly need a hardware fly scan, ask beamline staff for the supported flyer — it
+    #    emits documents so your data is catalogued.) (internal: Tier 0 — triggers outside the
+    #    RunEngine; no documents recorded.)
+    # === end smi_plans note ================================================
     start = phi - 30
     stop = phi + 30
     acq_time = cycle * cycle_t
@@ -260,6 +403,13 @@ def fly_scan_ai(det, motor, cycle=1, cycle_t=10, phi=-0.6):
 
 
 def sample_patrice_2020_3(exp_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book / dispatcher — it chains several measurement plans together for
+    #   an overnight or a session (and may set the proposal). 'proposal_id(...)' still runs fine.
+    #
+    # 💡 NEWER, EASIER WAY: in smi_plans you'd queue the technique runs (cdsaxs_bar, nexafs_run,
+    #   etc.) directly; see the notes on the called functions. (Nothing broken here.)
+    # === end smi_plans note ================================================
     numero = 1
     det = [pil2M]
     # wafer = 'wafer16'
@@ -319,6 +469,20 @@ def sample_patrice_2020_3(exp_t=1):
 
 
 def cdsaxs_important_pitch(sample, x, y, num=1, exp_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     pitches = ["p113nm", "p100nm"]
 
     if "bkg" in sample:
@@ -328,7 +492,7 @@ def cdsaxs_important_pitch(sample, x, y, num=1, exp_t=1):
         x_off = [0, 0]
         y_off = [0, -10500]
 
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     for x_of, y_of, pitch in zip(x_off, y_off, pitches):
         yield from bps.mv(piezo.x, x + x_of)
         yield from bps.mv(piezo.y, y + y_of)
@@ -339,6 +503,16 @@ def cdsaxs_important_pitch(sample, x, y, num=1, exp_t=1):
 
 
 def mesure_rugo(sample, x, y, num=200, exp_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a roughness / reflectivity-style measurement — takes repeated SAXS images
+    #   (often many frames) at set positions, sometimes moving the beamstop or detector.
+    #
+    # 💡 NEWER, EASIER WAY: for repeated frames use 'smi_plans.time_series_run'; for reflectivity
+    #   see the XRR presets ('xrr_run'/'xrr_liquid_run'). They record position/beam for you. Note:
+    #   the SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (see any ⚠️ below), with helpers
+    #   pil2M.insert_beamstop('rod') / pil2M.restore_beamstop().
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
     print(sample)
     pitches = ["p100nm"]
 
@@ -349,9 +523,9 @@ def mesure_rugo(sample, x, y, num=200, exp_t=1):
         x_off = [0]
         y_off = [-10500]
 
-    yield from bps.mv(prs, -1)
+    yield from bps.mv(prs, -1)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     for x_of, y_of, pitch in zip(x_off, y_off, pitches):
         yield from bps.mv(piezo.x, x + x_of)
         yield from bps.mv(piezo.y, y + y_of)
@@ -376,6 +550,13 @@ def mesure_rugo(sample, x, y, num=200, exp_t=1):
 
 
 def mesure_db(sample, x, y, num=1, exp_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a direct-beam / setup measurement (e.g. for calibration or beam checks).
+    #
+    # 💡 NEWER, EASIER WAY: direct-beam checks are part of smi_plans commissioning helpers
+    #   ('direct_beam_scan_run', 'agbh_calibration_run'). (Optional — works as-is EXCEPT any ⚠️
+    #   exposure lines below.)
+    # === end smi_plans note ================================================
     pitches = ["p100nm"]
     if "bkg" in sample:
         x_off = [0]
@@ -383,9 +564,9 @@ def mesure_db(sample, x, y, num=1, exp_t=1):
     else:
         x_off = [0]
         y_off = [-10500]
-    yield from bps.mv(prs, -1)
+    yield from bps.mv(prs, -1)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     for x_of, y_of, pitch in zip(x_off, y_off, pitches):
         yield from bps.mv(piezo.x, x + x_of)
         yield from bps.mv(piezo.y, y + y_of)
@@ -398,17 +579,32 @@ def mesure_db(sample, x, y, num=1, exp_t=1):
 
 
 def NEXAFS_P_edge(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a NEXAFS scan — steps the X-ray energy across an absorption edge and takes
+    #   an image + beam reading at each energy (then steps the energy back down at the end).
+    #
+    # 💡 NEWER, EASIER WAY: a full edge energy scan is ONE line with 'smi_plans.nexafs_run'. It
+    #   records energy/beam into the data and file name, and handles the energy move/settle/beam
+    #   feedback (so you can drop the per-energy sleeps and the stepped walk-back — see 💡):
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW])
+    #   (Use 'pil900KW' if 'pil300KW' appears below — see ⚠️. Optional otherwise; works as-is
+    #   EXCEPT the ⚠️ lines.) (internal: Tier 1 — NEXAFS.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: any 'pil300KW' below was retired (now 'pil900KW'); the
+    #   'det_exposure_time(...)' calls must be run as a plan. (See ⚠️ notes below.)
+    # === end smi_plans note ================================================
     yield from bps.mv(waxs, 0)
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     name = "nexafs_s4_wa0_0.5deg"
 
     energies = np.linspace(2140, 2200, 61)
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     name_fmt = "{sample}_{energy}eV_xbpm{xbpm}"
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
         sample_name = name_fmt.format(
             sample=name, energy=e, xbpm="%3.2f" % xbpm3.sumY.value
@@ -417,31 +613,46 @@ def NEXAFS_P_edge(t=0.5):
         print(f"\n\t=== Sample: {sample_name} ===\n")
         yield from bp.count(dets, num=1)
 
-    yield from bps.mv(energy, 2190)
-    yield from bps.sleep(2)
+    yield from bps.mv(energy, 2190)  # 💡 smi_plans: you can drop this stepped energy walk-back (the following mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2180)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2170)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2160)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2150)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2140)
-    yield from bps.sleep(2)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
 
 def cd_saxs_new2(th_ini, th_fin, th_st, exp_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     sample = "sample-33"
     det = [pil2M]
     yield from bps.mv(piezo.y, 1000)
 
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     theta_zer=-4
 
     for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
-        yield from bps.mv(prs, theta+theta_zer)
+        yield from bps.mv(prs, theta+theta_zer)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
         name_fmt = "{sample}_8.3m_16.1keV_num{num}_{th}deg"
 
         sample_name = name_fmt.format(
@@ -458,7 +669,7 @@ def cd_saxs_new2(th_ini, th_fin, th_st, exp_t=1):
     theta_zer=-4
 
     for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
-        yield from bps.mv(prs, theta+theta_zer)
+        yield from bps.mv(prs, theta+theta_zer)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
         name_fmt = "{sample}_8.3m_16.1keV_num{num}_{th}deg"
 
         sample_name = name_fmt.format(
@@ -472,21 +683,46 @@ def cd_saxs_new2(th_ini, th_fin, th_st, exp_t=1):
 
 
 def rugo_contact(exp_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a roughness / reflectivity-style measurement — takes repeated SAXS images
+    #   (often many frames) at set positions, sometimes moving the beamstop or detector.
+    #
+    # 💡 NEWER, EASIER WAY: for repeated frames use 'smi_plans.time_series_run'; for reflectivity
+    #   see the XRR presets ('xrr_run'/'xrr_liquid_run'). They record position/beam for you. Note:
+    #   the SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (see any ⚠️ below), with helpers
+    #   pil2M.insert_beamstop('rod') / pil2M.restore_beamstop().
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
     sample = "sample-10_rugo_8.3m_16.1keV_5s"
     det = [pil2M]
 
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     sample_id(user_name="PG", sample_name=sample)
 
     yield from bp.count(det, num=50)
 
 
 def cd_saxs_new(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2M]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
 
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
-        yield from bps.mv(prs, theta)
+        yield from bps.mv(prs, theta)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
         name_fmt = "{sample}_9.2m_16.1keV_num{num}_{th}deg_bpm{bpm}"
         sample_name = name_fmt.format(sample=sample, num="%2.2d"%num, th="%2.2d"%theta, bpm="%1.3f"%xbpm3.sumX.get())
         #sample_id(user_name="PG", sample_name=sample_name)
@@ -497,8 +733,15 @@ def cd_saxs_new(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2
 
 
 def night_1_cdsaxs(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book / dispatcher — it chains several measurement plans together for
+    #   an overnight or a session (and may set the proposal). 'proposal_id(...)' still runs fine.
+    #
+    # 💡 NEWER, EASIER WAY: in smi_plans you'd queue the technique runs (cdsaxs_bar, nexafs_run,
+    #   etc.) directly; see the notes on the called functions. (Nothing broken here.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     names = ['w08_-3-1', 'w08_-3-1_bkg', 'w08_1-1', 'w08_1-1_bkg', 'w08_2-1', 'w08_2-1_bkg', 
              'w08_-1-1', 'w08_-1-1_bkg', 'w08_0-1', 'w08_0-1_bkg', 'w08_3-1', 'w08_3-1_bkg', 'ech_tim_ref', 'ech_tim_ref_bkg']
@@ -541,8 +784,22 @@ def night_1_cdsaxs(t=1):
 
 
 def cdsaxs_echolivier(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     # names = ['w03_c0_p113', 'w03_c0_p113_bkg', 'w03_c0_p118', 'w03_c0_p118_bkg', 'w03_c0_p100', 'w03_c0_p100_bkg',
     #          'w03_c1_p113', 'w03_c1_p113_bkg', 'w03_c1_p118', 'w03_c1_p118_bkg', 'w03_c1_p100', 'w03_c1_p100_bkg',
@@ -651,8 +908,18 @@ def cdsaxs_echolivier(t=1):
 #bs_pos=[1.7, 1.7, 1.5, 1.5, 1.9, 2.1, 2.1, 2.1, 2.1]
 
 def rugo(t=1, sdd='8.30', num=10, name='test', ys=[0, 0], th=0):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a roughness / reflectivity-style measurement — takes repeated SAXS images
+    #   (often many frames) at set positions, sometimes moving the beamstop or detector.
+    #
+    # 💡 NEWER, EASIER WAY: for repeated frames use 'smi_plans.time_series_run'; for reflectivity
+    #   see the XRR presets ('xrr_run'/'xrr_liquid_run'). They record position/beam for you. Note:
+    #   the SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (see any ⚠️ below), with helpers
+    #   pil2M.insert_beamstop('rod') / pil2M.restore_beamstop().
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     yield from bps.mv(piezo.y, ys[0])
     name_fmt = "{name}_rugo_{sdd}m_16.1keV_th{th}deg_dn"
@@ -691,11 +958,20 @@ def rugo(t=1, sdd='8.30', num=10, name='test', ys=[0, 0], th=0):
 
 
 def measure_pitch(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a pitch survey — steps across a set of nanostructure pitches/fields and
+    #   measures each (often calling a CD-SAXS rock per pitch).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans.cdsaxs_pitch_survey' / 'cdsaxs_bar' walk a list of pitches/
+    #   samples and rock 'stage.phi' at each, recording pitch/phi/position/beam for you:
+    #     from smi_plans import cdsaxs_pitch_survey, cdsaxs_bar
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.) (internal: Tier 2-4 — CD-SAXS.)
+    # === end smi_plans note ================================================
     name_fmt = "w03_c-2_p{pitch}_8.3m_16.1keV_0deg"
     pitches = np.linspace(112, 128, 17)
     xs = -10750+1500*np.linspace(0, 16, 17)
 
-    yield from bps.mv(prs, -5.25)
+    yield from bps.mv(prs, -5.25)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
     yield from bps.mv(piezo.y, -4500)
 
     for pitch, x in zip(pitches, xs):
@@ -729,15 +1005,22 @@ def measure_pitch(t=1):
 
 
 def run_day2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book / dispatcher — it chains several measurement plans together for
+    #   an overnight or a session (and may set the proposal). 'proposal_id(...)' still runs fine.
+    #
+    # 💡 NEWER, EASIER WAY: in smi_plans you'd queue the technique runs (cdsaxs_bar, nexafs_run,
+    #   etc.) directly; see the notes on the called functions. (Nothing broken here.)
+    # === end smi_plans note ================================================
 
     proposal_id("2022_3", "311003_Reche1")
 
-    yield from bps.mv(prs, -5.25)
+    yield from bps.mv(prs, -5.25)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
     yield from bps.mv(piezo.x, -35250)
     yield from bps.mv(piezo.z, 10900)
     yield from rugo(t=1, sdd='8.30', num=100, name='w03_c-3_p113', ys=[-4400, -5300], th=0)
 
-    yield from bps.mv(prs, -17.25)
+    yield from bps.mv(prs, -17.25)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
     yield from bps.mv(piezo.x, -35250)
     yield from bps.mv(piezo.z, 10900)
     yield from rugo(t=1, sdd='8.30', num=100, name='w03_c-3_p113', ys=[-4400, -5300], th=-12)
@@ -747,15 +1030,15 @@ def run_day2(t=1):
     bs_pos=[1.7, 1.7, 1.5, 1.5, 1.9, 2.1, 2.1, 2.1, 2.1]
     for sdd, bs in zip(sdds, bs_pos):
         yield from bps.mv(pil2M_pos.z, 1000*sdd)
-        yield from bps.mv(pil2M_bs_rod.x, bs)
+        yield from bps.mv(pil2M_bs_rod.x, bs)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
 
 
-        yield from bps.mv(prs, -5.25)
+        yield from bps.mv(prs, -5.25)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
         yield from bps.mv(piezo.x, -35250)
         yield from bps.mv(piezo.z, 10900)
         yield from rugo(t=1, sdd='%1.2f'%sdd, num=10, name='w03_c-3_p113', ys=[-4400, -5300], th=0)
 
-        yield from bps.mv(prs, -17.25)
+        yield from bps.mv(prs, -17.25)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
         yield from bps.mv(piezo.x, -35250)
         yield from bps.mv(piezo.z, 10900)
         yield from rugo(t=1, sdd='%1.2f'%sdd, num=10, name='w03_c-3_p113', ys=[-4400, -5300], th=-12)
@@ -764,8 +1047,15 @@ def run_day2(t=1):
 
 
 def measure_nicolas2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book / dispatcher — it chains several measurement plans together for
+    #   an overnight or a session (and may set the proposal). 'proposal_id(...)' still runs fine.
+    #
+    # 💡 NEWER, EASIER WAY: in smi_plans you'd queue the technique runs (cdsaxs_bar, nexafs_run,
+    #   etc.) directly; see the notes on the called functions. (Nothing broken here.)
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     
     # name_fmt = "ech1_14.5keV_ai_7.0deg_l{ligne}_c{colone}_wa{wax}deg"
     # xs = 22925+ 200 * np.linspace(0, 39, 40)
@@ -811,8 +1101,15 @@ def measure_nicolas2(t=1):
 
 
 def measure_nicolas_bkg(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book / dispatcher — it chains several measurement plans together for
+    #   an overnight or a session (and may set the proposal). 'proposal_id(...)' still runs fine.
+    #
+    # 💡 NEWER, EASIER WAY: in smi_plans you'd queue the technique runs (cdsaxs_bar, nexafs_run,
+    #   etc.) directly; see the notes on the called functions. (Nothing broken here.)
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     
     name_fmt = "ech1_14.5keV_ai_7.0deg_bkg_wa{wax}deg"
     waxs_arc = [0, 20]
@@ -839,14 +1136,26 @@ def measure_nicolas_bkg(t=1):
 
 
 def cd_gisaxs_phi(phi0, phi_ini, phi_fin, phi_st, ai0, ai, exp_t=1, sample='test', nume=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-GISAXS measurement — rocks the sample in-plane (and/or sweeps the
+    #   incident angle) at grazing incidence, taking a SAXS image at each step.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans.cd_gisaxs_rock_run' rocks 'stage.phi' at grazing incidence
+    #   and records phi / angle / position / beam for you:
+    #     from smi_plans import cd_gisaxs_rock_run
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: still uses 'prs' (removed) — replace with 'stage.phi' (see ⚠️
+    #   inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-GISAXS rock.)
+    # === end smi_plans note ================================================
     sample = sample+'phiscan'
     det = [pil2M]
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     yield from bps.mv(stage.th, ai0+ai)
 
     for num, phi in enumerate(np.linspace(phi_ini, phi_fin, phi_st)):        
-        yield from bps.mv(prs, phi0+phi)
+        yield from bps.mv(prs, phi0+phi)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
         
         name_fmt = "{sample}_5m_16.1keV_num{num}_phi{phii}deg_ai{aii}deg"
         sample_name = name_fmt.format(sample=sample, num="%2.2d"%num, phii="%1.3f"%phi, aii="%1.2f"%ai)
@@ -855,11 +1164,23 @@ def cd_gisaxs_phi(phi0, phi_ini, phi_fin, phi_st, ai0, ai, exp_t=1, sample='test
         yield from bp.count(det, num=nume)
 
 def cd_gisaxs_alphai(ai0, ai_ini, ai_fin, ai_st, phi0, phi, exp_t=1, sample='test', nume=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-GISAXS measurement — rocks the sample in-plane (and/or sweeps the
+    #   incident angle) at grazing incidence, taking a SAXS image at each step.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans.cd_gisaxs_rock_run' rocks 'stage.phi' at grazing incidence
+    #   and records phi / angle / position / beam for you:
+    #     from smi_plans import cd_gisaxs_rock_run
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: still uses 'prs' (removed) — replace with 'stage.phi' (see ⚠️
+    #   inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-GISAXS rock.)
+    # === end smi_plans note ================================================
     sample = sample+'aiscan'
     det = [pil2M]
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
-    yield from bps.mv(prs, phi0+phi)
+    yield from bps.mv(prs, phi0+phi)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
     for num, ai in enumerate(np.linspace(ai_ini, ai_fin, ai_st)):        
         yield from bps.mv(stage.th, ai0+ai)
@@ -872,6 +1193,17 @@ def cd_gisaxs_alphai(ai0, ai_ini, ai_fin, ai_st, phi0, phi, exp_t=1, sample='tes
 
 
 def nigh_cdgisaxs(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-GISAXS measurement — rocks the sample in-plane (and/or sweeps the
+    #   incident angle) at grazing incidence, taking a SAXS image at each step.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans.cd_gisaxs_rock_run' rocks 'stage.phi' at grazing incidence
+    #   and records phi / angle / position / beam for you:
+    #     from smi_plans import cd_gisaxs_rock_run
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-GISAXS rock.)
+    # === end smi_plans note ================================================
     #ech c-3 prs -3.33, th -0.504, chi 0.0765, hexa_th 0.29925 stage_y 0.032
     yield from bps.mv(stage.y, -0.022)
     yield from bps.mv(piezo.x, 23000)
@@ -922,8 +1254,22 @@ def nigh_cdgisaxs(t=0.5):
 
 
 def cdsaxs_echPaul_2023_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     names = ['E1_001', 'E1_001_bkg', 'E1_010', 'E1_010-bkg','E1_100', 'E1_100_bkg', 'E2_001', 'E2_001_bkg', 'E2_010', 'E2_010_bkg', 'E2_100', 'E2_100_bkg']
     x =     [  -21300,       -23000,    -8400,        -9950,     700,         -900,    11600,        10100,    23300,        21800,    34700,        33100]
@@ -966,8 +1312,22 @@ def cdsaxs_echPaul_2023_2(t=1):
 
 
 def cdsaxs_ocd_2023_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     # names = ['w25_cm4', 'w25_cm4_bkg', 'w25_cm3', 'w25_cm3_bkg', 'w25_cm2', 'w25_cm2_bkg', 'w25_cm1', 'w25_cm1_bkg']
     # x =     [  -27600,         -27600,    -12000,        -12000,     18700,        18700,     38500,         38500]
@@ -1025,8 +1385,22 @@ def cdsaxs_ocd_2023_2(t=1):
     
 
 def cdsaxs_ovl_2023_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
 
     names = ['w09ovl_c00-p112', 'w09ovl_c00_bkg-p112', 'w09ovl_c00-p128', 'w09ovl_c00_bkg-p128', 'w09ovl_-10-p112', 'w09ovl_c-10_bkg-p112', 'w09ovl_-10-p112', 'w09ovl_c-10_bkg-p112']
@@ -1089,9 +1463,20 @@ def cdsaxs_ovl_2023_2(t=1):
 
 
 def cdwaxs_echPaulSophie_2023_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-GISAXS measurement — rocks the sample in-plane (and/or sweeps the
+    #   incident angle) at grazing incidence, taking a SAXS image at each step.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans.cd_gisaxs_rock_run' rocks 'stage.phi' at grazing incidence
+    #   and records phi / angle / position / beam for you:
+    #     from smi_plans import cd_gisaxs_rock_run
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-GISAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil900KW]
     waxs_arc =[0, 20]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     yield from bps.mv(stage.y, -9)
 
@@ -1166,8 +1551,22 @@ def cdwaxs_echPaulSophie_2023_2(t=1):
 
 
 def cdsaxs_ovl_2023_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     names = ['ech1_p128', 'ech1_bkg_p128', 'ech2_p128', 'ech2_bkg_p128', 'ech3_p128', 'ech3_bkg_p128', 'ech4_p128', 'ech4_bkg_p128', 'ech5_p128','ech5_bkg_p128']
     x =     [     -44200,          -46100,      -25500,          -26500,       -1300,            1700,       16400,           15400,       36700,          35600]
@@ -1211,10 +1610,10 @@ def cdsaxs_ovl_2023_3(t=1):
             yield from bps.mv(piezo.x, xs)
             yield from bps.mv(piezo.y, ys)
             
-            det_exposure_time(0.1, 0.1)
+            det_exposure_time(0.1, 0.1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.1, 0.1)  — or at the prompt:  RE(det_exposure_time(0.1, 0.1)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
             num=20
             yield from cd_saxs_new(-60, 60, 241, exp_t=t, sample=name+'testfinestep', nume=num)
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
 
     proposal_id("2023_3", "311000_Freychet_06")
@@ -1239,8 +1638,22 @@ def cdsaxs_ovl_2023_3(t=1):
 
 
 def cdsaxs_ovl_2024_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -1.52
 
@@ -1285,8 +1698,22 @@ def cdsaxs_ovl_2024_1(t=1):
 
 
 def cdsaxs_IBM_2024_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -1.52
 
@@ -1377,8 +1804,22 @@ def cdsaxs_IBM_2024_1(t=1):
 
 
 def cdsaxsG_2024_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
 
 
@@ -1485,6 +1926,16 @@ def cdsaxsG_2024_2(t=1):
 
 
 def mesure_rugo(exp_t=1, nume=100):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a roughness / reflectivity-style measurement — takes repeated SAXS images
+    #   (often many frames) at set positions, sometimes moving the beamstop or detector.
+    #
+    # 💡 NEWER, EASIER WAY: for repeated frames use 'smi_plans.time_series_run'; for reflectivity
+    #   see the XRR presets ('xrr_run'/'xrr_liquid_run'). They record position/beam for you. Note:
+    #   the SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (see any ⚠️ below), with helpers
+    #   pil2M.insert_beamstop('rod') / pil2M.restore_beamstop().
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
     phi_offest = -2
 
     '''
@@ -1532,8 +1983,8 @@ def mesure_rugo(exp_t=1, nume=100):
     assert len(names) == len(chi), f"len of y ({len(chi)}) is different from number of samples ({len(names)})"
     assert len(names) == len(th), f"len of z ({len(th)}) is different from number of samples ({len(names)})"
 
-    yield from bps.mv(prs, phi_offest)
-    det_exposure_time(exp_t, exp_t)
+    yield from bps.mv(prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     for name, xs, xs_hexa, ys, zs, chis, ths in zip(names, x, x_hexa, y, z, chi, th):
         yield from bps.mv(stage.x, xs_hexa)
@@ -1560,8 +2011,22 @@ def mesure_rugo(exp_t=1, nume=100):
 
 
 def cdsaxsstd_2024_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -2
     '''
@@ -1621,6 +2086,16 @@ def cdsaxsstd_2024_2(t=1):
 
 
 def mesure_rugo_2024_16(exp_t=1, nume=100):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a roughness / reflectivity-style measurement — takes repeated SAXS images
+    #   (often many frames) at set positions, sometimes moving the beamstop or detector.
+    #
+    # 💡 NEWER, EASIER WAY: for repeated frames use 'smi_plans.time_series_run'; for reflectivity
+    #   see the XRR presets ('xrr_run'/'xrr_liquid_run'). They record position/beam for you. Note:
+    #   the SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (see any ⚠️ below), with helpers
+    #   pil2M.insert_beamstop('rod') / pil2M.restore_beamstop().
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     names = [ 'w25_c0', 'w25_c0_bkg']
     x =     [      200,          200]
@@ -1656,8 +2131,22 @@ def mesure_rugo_2024_16(exp_t=1, nume=100):
 
 
 def cdsaxsstd_2025_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -2
 
@@ -1703,8 +2192,22 @@ def cdsaxsstd_2025_1(t=1):
 
 
 def cdsaxsstd_2025_1_nischal(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = 1
 
@@ -1742,7 +2245,17 @@ def cdsaxsstd_2025_1_nischal(t=1):
 
 
 def mesure_rugo_2025_1(exp_t=1, nume=100):
-    det_exposure_time(exp_t, exp_t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a roughness / reflectivity-style measurement — takes repeated SAXS images
+    #   (often many frames) at set positions, sometimes moving the beamstop or detector.
+    #
+    # 💡 NEWER, EASIER WAY: for repeated frames use 'smi_plans.time_series_run'; for reflectivity
+    #   see the XRR presets ('xrr_run'/'xrr_liquid_run'). They record position/beam for you. Note:
+    #   the SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (see any ⚠️ below), with helpers
+    #   pil2M.insert_beamstop('rod') / pil2M.restore_beamstop().
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.) (internal: Tier 1.)
+    # === end smi_plans note ================================================
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = 1
 
@@ -1768,7 +2281,7 @@ def mesure_rugo_2025_1(exp_t=1, nume=100):
             yield from bps.mv(piezo.x, xs)
             yield from bps.mv(piezo.y, ys)
 
-            yield from bps.mv(prs, phi_offest)
+            yield from bps.mv(prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
             name_fmt = "{sample}_rugo_up_sdd9p20_16.1keV"
             sample_name = name_fmt.format(sample=name)
@@ -1789,8 +2302,23 @@ def mesure_rugo_2025_1(exp_t=1, nume=100):
 
 
 def cdsaxsstd_2025_1_nischal_all(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = 1
 
@@ -1831,7 +2359,7 @@ def cdsaxsstd_2025_1_nischal_all(t=1):
     chi=    [             -0.2,            -0.2,               -0.2,              -0.2,             -0.2,              -0.2,             0.3,               0.3,              0.3]
     th =    [              1.0,             1.0,                1.0,               1.0,              1.0,               1.0,             1.0,               1.0,              1.0]
 
-    det_exposure_time(2, 2)
+    det_exposure_time(2, 2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(2, 2)  — or at the prompt:  RE(det_exposure_time(2, 2)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     nume = 200
 
     for i in range(1):
@@ -1842,7 +2370,7 @@ def cdsaxsstd_2025_1_nischal_all(t=1):
             yield from bps.mv(piezo.x, xs)
             yield from bps.mv(piezo.y, ys)
 
-            yield from bps.mv(prs, phi_offest)
+            yield from bps.mv(prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
             name_fmt = "{sample}_rugo_up_sdd9p20_16.1keV"
             sample_name = name_fmt.format(sample=name)
@@ -1863,8 +2391,23 @@ def cdsaxsstd_2025_1_nischal_all(t=1):
 
 
 def cdsaxsstd_2025_1_db(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = 1
 
@@ -1875,7 +2418,7 @@ def cdsaxsstd_2025_1_db(t=1):
     chi=    [             -0.2,            -0.2,               -0.2,              -0.2,             -0.2,              -0.2,             0.3,               0.3,              0.3, 0.3]
     th =    [              1.0,             1.0,                1.0,               1.0,              1.0,               1.0,             1.0,               1.0,              1.0, 1.0]
 
-    det_exposure_time(2, 2)
+    det_exposure_time(2, 2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(2, 2)  — or at the prompt:  RE(det_exposure_time(2, 2)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     nume = 2
 
     for i in range(1):
@@ -1886,7 +2429,7 @@ def cdsaxsstd_2025_1_db(t=1):
             yield from bps.mv(piezo.x, xs)
             yield from bps.mv(piezo.y, ys)
 
-            yield from bps.mv(prs, phi_offest)
+            yield from bps.mv(prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
             name_fmt = "{sample}_db_att7xSn60um_sdd9p20_16.1keV_exp2s"
             sample_name = name_fmt.format(sample=name)
@@ -1900,8 +2443,23 @@ def cdsaxsstd_2025_1_db(t=1):
 
 
 def cdsaxsstd_2025_3_nischal_all(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -1
 
@@ -1955,7 +2513,7 @@ def cdsaxsstd_2025_3_nischal_all(t=1):
 
 
 
-    det_exposure_time(2, 2)
+    det_exposure_time(2, 2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(2, 2)  — or at the prompt:  RE(det_exposure_time(2, 2)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     nume = 200
 
     for i in range(1):
@@ -1965,7 +2523,7 @@ def cdsaxsstd_2025_3_nischal_all(t=1):
                               piezo.th, chis, 
                               piezo.x, xs, 
                               piezo.y, ys, 
-                              prs, phi_offest)
+                              prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
             name_fmt = "{sample}_rugo_up_sdd9p20_16.1keV"
             sample_name = name_fmt.format(sample=name)
@@ -1983,8 +2541,22 @@ def cdsaxsstd_2025_3_nischal_all(t=1):
 
 
 def cdsaxsstd_2025_3_ulysse_all(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -1
 
@@ -2084,8 +2656,23 @@ def cdsaxsstd_2025_3_ulysse_all(t=1):
 
 
 def cdsaxsstd_2026_1_ulysse_all(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -4.3
 
@@ -2135,7 +2722,7 @@ def cdsaxsstd_2026_1_ulysse_all(t=1):
     chi=    [            -2.5,            1.6]
 
 
-    det_exposure_time(1, 1)
+    det_exposure_time(1, 1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(1, 1)  — or at the prompt:  RE(det_exposure_time(1, 1)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     nume = 250
 
     for i in range(1):
@@ -2145,7 +2732,7 @@ def cdsaxsstd_2026_1_ulysse_all(t=1):
                               piezo.ch, chis, 
                               piezo.x, xs, 
                               piezo.y, ys, 
-                              prs, phi_offest)
+                              prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
             name_fmt = "{sample}_rugo_up_sdd9p30_16.1keV"
             sample_name = name_fmt.format(sample=name)
@@ -2166,8 +2753,23 @@ def cdsaxsstd_2026_1_ulysse_all(t=1):
 
 
 def cdsaxsstd_2026_1_ulysse_all(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -6.55
 
@@ -2226,7 +2828,7 @@ def cdsaxsstd_2026_1_ulysse_all(t=1):
     chi=    [       -1.6,       -3.4,           -3.4]
 
 
-    det_exposure_time(3, 3)
+    det_exposure_time(3, 3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(3, 3)  — or at the prompt:  RE(det_exposure_time(3, 3)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     nume = 100
 
     for i in range(1):
@@ -2236,7 +2838,7 @@ def cdsaxsstd_2026_1_ulysse_all(t=1):
                               piezo.x, xs,
                               piezo.y, ys,
                               stage.y, yhe,
-                              prs, phi_offest)
+                              prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
             name_fmt = "{sample}_rugo_up_sdd9p30_16.1keV"
             sample_name = name_fmt.format(sample=name)
@@ -2256,8 +2858,23 @@ def cdsaxsstd_2026_1_ulysse_all(t=1):
 
 
 def cdsaxsstd_2026_1_nischal(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -1.45
 
@@ -2336,7 +2953,7 @@ def cdsaxsstd_2026_1_nischal(t=1):
                 yield from cd_saxs_new(phi_offest, phi_offest, 1, exp_t=t, sample=name+'measure_ref-B%s'%(i+1), nume=1)
             else:
                 yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 61, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
-                yield from bps.mv(prs, phi_offest)
+                yield from bps.mv(prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
 
     # names = [ 'c0m4_3', 'c0m4_4','c0m4_2p1','c0m4_2p2', 'c0m4_2p3', 'c0m4_5p2', 'c0m4_6p2',
@@ -2403,7 +3020,7 @@ def cdsaxsstd_2026_1_nischal(t=1):
                     1.5,        1.5,        1.5,        1.5]
     # th = 1.0
     
-    det_exposure_time(3, 3)
+    det_exposure_time(3, 3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(3, 3)  — or at the prompt:  RE(det_exposure_time(3, 3)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     nume = 100
     for i in range(1):
         for name, xs, ys, yhe, zs, chis in zip(names, x, ysmar, yhex, z, chi):
@@ -2412,7 +3029,7 @@ def cdsaxsstd_2026_1_nischal(t=1):
                               piezo.x, xs,
                               piezo.y, ys,
                               stage.y, yhe,
-                              prs, phi_offest)
+                              prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
             name_fmt = "{sample}_rugo_up_sdd9p30_16.1keV"
             sample_name = name_fmt.format(sample=name)
@@ -2434,8 +3051,23 @@ def cdsaxsstd_2026_1_nischal(t=1):
 
 
 def cdsaxsstd_2026_1_sige(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -5.70
 
@@ -2482,9 +3114,9 @@ def cdsaxsstd_2026_1_sige(t=1):
     the=    [       0.235,      0.235,       0.235,      0.235,
                     1.235,      1.235,       1.235,      1.235]
 
-    yield from bps.mv(prs, phi_offest)
+    yield from bps.mv(prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
-    det_exposure_time(3, 3)
+    det_exposure_time(3, 3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(3, 3)  — or at the prompt:  RE(det_exposure_time(3, 3)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     nume = 200
     for name, xs, ys, zs, chis, ths in zip(names, x, y, z, chi, the):
         yield from bps.mv(piezo.z, zs,
@@ -2517,8 +3149,23 @@ def cdsaxsstd_2026_1_sige(t=1):
 
 
 def cdsaxsstd_2026_1_longexp(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -3.44
 
@@ -2540,7 +3187,7 @@ def cdsaxsstd_2026_1_longexp(t=1):
     xmins = [           0]
     xmaxs = [        4000]
 
-    det_exposure_time(2, 2)
+    det_exposure_time(2, 2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(2, 2)  — or at the prompt:  RE(det_exposure_time(2, 2)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     for i in range(1):
         for name, xs, ys, yhe, zs, chis, xmin, xmax in zip(names, x, ysmar, yhex, z, chi, xmins, xmaxs):
             yield from bps.mv(piezo.z, zs,
@@ -2548,7 +3195,7 @@ def cdsaxsstd_2026_1_longexp(t=1):
                               piezo.x, xs,
                               piezo.y, ys,
                               stage.y, yhe,
-                              prs, phi_offest)
+                              prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
             yss = np.linspace(ys-500, ys+500, 50)
             xss = np.linspace(xmin, xmax, 30)
@@ -2576,8 +3223,23 @@ def cdsaxsstd_2026_1_longexp(t=1):
 
 
 def scanning_chiandth(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: this function still uses 'prs' (removed) — replace with
+    #   'stage.phi' (see the ⚠️ notes inline). 'det_exposure_time(...)' must also be run as a plan.
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -3.44
 
@@ -2589,7 +3251,7 @@ def scanning_chiandth(t=1):
     for name, xs, ys in zip(names, x, ysmar):
         yield from bps.mv(piezo.x, xs,
                             piezo.y, ys,
-                            prs, phi_offest)
+                            prs, phi_offest)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
         # chi = np.linspace(-4, 4, 81)
         # th = np.linspace(-4, 4, 9)
@@ -2623,14 +3285,14 @@ def scanning_chiandth(t=1):
         name_fmt = "{sample}_phiscan_sdd9p30_16.1keV"
         sample_name = name_fmt.format(sample=name)
         sample_id(sample_name=sample_name)
-        yield from bp.list_scan([pil2M], prs, phi)
+        yield from bp.list_scan([pil2M], prs, phi)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
         phi = np.linspace(50+phi_offest, 70+phi_offest, 201)
 
         name_fmt = "{sample}_phiscan_sdd9p30_16.1keV"
         sample_name = name_fmt.format(sample=name)
         sample_id(sample_name=sample_name)
-        yield from bp.list_scan([pil2M], prs, phi)
+        yield from bp.list_scan([pil2M], prs, phi)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi' (exactly like your newer cd_saxs_newstage does).
 
 
 
@@ -2639,8 +3301,25 @@ def scanning_chiandth(t=1):
 
 
 def cdsaxsstd_2026_2_nischal(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # 💡 NICE: this function already uses the new 'stage.phi' name (the correct replacement for
+    #   the old 'prs') — good. The smi_plans presets above just package this pattern.
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -2.75
     """
@@ -2710,7 +3389,7 @@ def cdsaxsstd_2026_2_nischal(t=1):
                         0.45,           0.45, 
                            0,              0]
 
-    det_exposure_time(3, 3)
+    det_exposure_time(3, 3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(3, 3)  — or at the prompt:  RE(det_exposure_time(3, 3)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
     nume = 200
     
     yield from bps.mv(stage.phi, phi_offest)
@@ -2738,8 +3417,25 @@ def cdsaxsstd_2026_2_nischal(t=1):
 
 
 def cd_saxs_newstage(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=[pil2M]):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a CD-SAXS measurement — it "rocks" the sample (steps a rotation stage
+    #   through many angles) and takes a SAXS image at each, to reconstruct the nanostructure
+    #   shape/pitch. Often loops over a bar of samples/pitches.
+    #
+    # 💡 NEWER, EASIER WAY: this is 'smi_plans.cdsaxs_rock_run' (one sample) or 'cdsaxs_bar' /
+    #   'cdsaxs_pitch_survey' (a bar of pitches/samples). They rock 'stage.phi' and record
+    #   phi / x / y / SDD / beam into every image and the file name for you:
+    #     from smi_plans import cdsaxs_rock_run, cdsaxs_bar, cdsaxs_pitch_survey
+    #     yield from cdsaxs_rock_run(sample, th_ini, th_fin, th_st, t=exp_t)
+    #
+    # 💡 NICE: this function already uses the new 'stage.phi' name (the correct replacement for
+    #   the old 'prs') — good. The smi_plans presets above just package this pattern.
+    #
+    #   (Optional — works as-is EXCEPT any ⚠️ lines below.)
+    #   (internal: Tier 2-4 — CD-SAXS rock.)
+    # === end smi_plans note ================================================
 
-    det_exposure_time(exp_t, exp_t)
+    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
         yield from bps.mv(stage.phi, theta)
