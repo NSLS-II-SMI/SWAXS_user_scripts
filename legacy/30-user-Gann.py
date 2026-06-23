@@ -2,6 +2,13 @@ def get_scan_md_tender():
     """
     Create a string with scan metadata
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: builds a little metadata string (energy / WAXS arc / detector distance) to
+    #   paste into file names — by reading the current beamline positions.
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' you don't build the name by hand — it RECORDS energy,
+    #   WAXS arc and detector distance as data and fills {energy_energy} / {waxs_arc} style
+    #   tokens into the file name from the recorded values for you. (Nothing here is broken.)
+    # === end smi_plans note ================================================
     # Metadata
     e = energy.position.energy / 1000
     #temp = str(np.round(float(temp_degC), 1)).zfill(5)
@@ -242,6 +249,13 @@ def roiy(angle):
     return int(1252.855 -1620.548*np.tan(np.deg2rad(angle)*2)) 
 
 def goto_angle(angle,th0_si):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves to one reflectivity angle — it sets the attenuators (att2_5/6/12) and
+    #   the reflected-beam ROI appropriately for that angle, and moves piezo.th there.
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' the XRR plans (xrr_run/xrr_resonant_run) step through
+    #   angles and swap the attenuator ladder + track the ROI for you, so you don't drive each
+    #   angle by hand. (The att2_* attenuators are FINE. Nothing here is broken.)
+    # === end smi_plans note ================================================
     yield from bps.mv(
         att2_6.open_cmd, att6(angle),
         att2_6.close_cmd, 1-att6(angle),
@@ -257,6 +271,23 @@ def goto_angle(angle,th0_si):
 
 
 def reflectivity_multisample():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an X-ray reflectivity (XRR) run over a bar of samples — for each sample it sweeps the
+    #   incident angle (piezo.th) through ~800 points as one coordinated list_scan, stepping the
+    #   attenuators and reflected-beam ROI together with the angle.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with built-in
+    #   X-ray reflectivity (XRR) plans. They step the incident angle, swap attenuators by
+    #   angle for you, track the reflected-beam ROI, and record angle/intensity INTO the
+    #   data and file name (so you can drop the by-hand attenuator/ROI lists):
+    #
+    #     from smi_plans import xrr_run, incidence_axis, peizo_th_correction
+    #     yield from xrr_run("IBM6p0", angles, t=t, dets=[pil900KW])
+    #     # (loop over your samples; the attenuator ladder + ROI tracking are handled for you)
+    #
+    #   (The att2_* attenuators are FINE and still work; this is just a tidier way to drive
+    #    them. Your script below works as-is EXCEPT for any ⚠️ lines.)
+    # === end smi_plans note ================================================
     sample_names = ['IBMSi1',    'IBM6p0',  'IBM5p0',  'IBM4p0',  'IBM0p01',    'IBM0p02', 'IBM3p0',  'IBM2p5',     'IBM2p25', 'IBMSi2']
     x_piezos =     [55000,      -43000,    -31000,     -20000,     -6000,      -9000,      22000,      33000,      47000,     55000]
     y_piezos =     [6713.0,     6646.7,    6616.7,     6628.1,     6544.6,     6574.1,     6571.1,     6536.7,     6554.9,    6713.0]
@@ -308,6 +339,13 @@ def atten_move_in():
     """
     Move 4x + 2x Sn 60 um attenuators in
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves the Sn attenuators (att1_6/att1_7) IN, retrying until they report open.
+    # 💡 NEWER, EASIER WAY: att1_*/att2_* attenuators are FINE and still work this way. smi_plans'
+    #   XRR/technique plans manage the attenuator ladder for you, so a manual in/out helper
+    #   usually isn't needed. (Nothing here is broken; the sleeps are settle waits for the
+    #   attenuator, not energy moves.)
+    # === end smi_plans note ================================================
     print('Moving attenuators in')
 
     while att1_7.status.get() != 'Open':
@@ -321,6 +359,11 @@ def atten_move_out():
     """
     Move 4x + 2x Sn 60 um attenuators out
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves the Sn attenuators (att1_6/att1_7) OUT, retrying until they report closed.
+    # 💡 NEWER, EASIER WAY: att1_*/att2_* attenuators are FINE and still work this way; smi_plans'
+    #   plans manage them for you. (Nothing here is broken.)
+    # === end smi_plans note ================================================
     print('Moving attenuators out')
     while att1_7.status.get() != 'Not Open':
         yield from bps.mv(att1_7.close_cmd, 1)
@@ -331,6 +374,23 @@ def atten_move_out():
 
 ### In case useful ###
 def reflectivity_multisample_segment():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an X-ray reflectivity (XRR) run done in angle SEGMENTS (so the attenuators can be set per
+    #   segment) over a bar of samples — each segment is a coordinated angle + attenuator + ROI
+    #   list_scan.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with built-in
+    #   X-ray reflectivity (XRR) plans. They step the incident angle, swap attenuators by
+    #   angle for you, track the reflected-beam ROI, and record angle/intensity INTO the
+    #   data and file name (so you can drop the by-hand attenuator/ROI lists):
+    #
+    #     from smi_plans import xrr_run, incidence_axis, peizo_th_correction
+    #     yield from xrr_run("IBM6p0", angles, t=t, dets=[pil900KW])
+    #     # (loop over your samples; the attenuator ladder + ROI tracking are handled for you)
+    #
+    #   (The att2_* attenuators are FINE and still work; this is just a tidier way to drive
+    #    them. Your script below works as-is EXCEPT for any ⚠️ lines.)
+    # === end smi_plans note ================================================
     sample_names = ['IBMSi',    'IBM6p0',  'IBM5p0',  'IBM4p0',  'IBM0p01',    'IBM0p02', 'IBM3p0',  'IBM2p5',     'IBM2p25', 'IBMSi']
     x_piezos =     [55000,      -43000,    -31000,     -20000,     -6000,      -9000,      22000,      33000,      47000,     55000]
     y_piezos =     [6713.0,     6646.7,    6616.7,     6628.1,     6544.6,     6574.1,     6571.1,     6536.7,     6554.9,    6713.0]
@@ -384,6 +444,24 @@ def giwaxs_eliot_2024_3(t=0.5):
     """
     GISAXS macro for 16 keV
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence (GIWAXS) run over Eliot's samples — aligns each and takes images at a
+    #   list of incident angles across the WAXS arcs.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs a grazing-incidence (GIWAXS) measurement for you.
+    #   It aligns each sample, sweeps the incident angle (and WAXS arc), and records
+    #   angle/position/beam INTO the data and file name:
+    #     from smi_plans import giwaxs_run, giwaxs_bar, align_sample, SampleList
+    #     yield from giwaxs_bar(SampleList.from_columns(name=names, x=x_piezo, y=y_piezo,
+    #                                                   stage_x=x_hexa),
+    #                           incident_angles=ai_list, waxs_arcs=waxs_arc,
+    #                           dets=[pil900KW, pil2M], t=t, align=align_sample)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     user_name = "EG"
 
     names =   [ 'linear3',    'Linear2side1', 'Linear2side2',  'Linear1side1','Linear1side2',]
@@ -408,7 +486,7 @@ def giwaxs_eliot_2024_3(t=0.5):
         yield from alignement_gisaxs(angle=0.15)
         ai0 = piezo.th.position
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         for wa in waxs_angles:
             yield from bps.mv(waxs, wa)
 
@@ -435,6 +513,24 @@ def giwaxs_et_2024_3(ts=[0.5, 5, 15]):
     """
     GISAXS macro for 16 keV
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence (GIWAXS) run that repeats at several exposure times (ts list) — aligns
+    #   each sample and takes images at a list of incident angles per exposure.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs a grazing-incidence (GIWAXS) measurement for you.
+    #   It aligns each sample, sweeps the incident angle (and WAXS arc), and records
+    #   angle/position/beam INTO the data and file name:
+    #     from smi_plans import giwaxs_run, giwaxs_bar, align_sample, SampleList
+    #     yield from giwaxs_bar(SampleList.from_columns(name=names, x=x_piezo, y=y_piezo,
+    #                                                   stage_x=x_hexa),
+    #                           incident_angles=ai_list, waxs_arcs=waxs_arc,
+    #                           dets=[pil900KW, pil2M], t=t, align=align_sample)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     user_name = "DG"
 
     names =   [ 'T1',    'U1', ]
@@ -462,7 +558,7 @@ def giwaxs_et_2024_3(ts=[0.5, 5, 15]):
         ai0 = piezo.th.position
 
         for t in  ts:
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             for wa in waxs_angles:
                 yield from bps.mv(waxs, wa)
 
@@ -489,6 +585,24 @@ def giwaxs_et_2024_3(ts=[0.5, 5, 15]):
 def nikhil_S_edge_spectroscopy(t=1,ai=0.5):
 
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing sulfur-edge NEXAFS scan over a bar of samples — aligns each, tilts to the
+    #   incident angle, then sweeps the sulfur-edge energy list (~2445-2560 eV, finely spaced over the edge), nudging x each step, and walks the energy back.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' does a full energy (NEXAFS) scan in ONE line and
+    #   records the energy/beam/incident angle straight INTO the data and file name:
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("ZnS_pristinehr", energies,
+    #                           t=t, dets=[pil2M, pil900KW], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle/
+    #    walk-back waits you can delete once you migrate. The beam-loss try/except is handled
+    #    for you too — move_energy_fb re-seeks if the beam dips.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     names = ["ZnS_pristinehr", "ZnS_annealedhr",
              "CdS_pristinehr", "CdS_annealedhr",
              "BiS_pristinehr", "BiS_annealedhr"]
@@ -505,7 +619,7 @@ def nikhil_S_edge_spectroscopy(t=1,ai=0.5):
     
     yield from bps.mv(energy,energies[0])
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     name_fmt = "{sample}_{energy}eV_xbpm{xbpm}"
 
     for name, xs, ys in zip(names, x, y):
@@ -525,7 +639,7 @@ def nikhil_S_edge_spectroscopy(t=1,ai=0.5):
                 yield from bps.sleep(30)
                 print("Slept for 30 s, try move energy again")
                 yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.mvr(piezo.x,20)
             sample_name = name_fmt.format(
                 sample=name, energy="%6.2f" % e, xbpm="%3.1f" % xbpm3.sumY.get()
@@ -543,6 +657,24 @@ def nikhil_S_edge_spectroscopy(t=1,ai=0.5):
 def nikhil_Zn_edge_spectroscopy(t=1,ai=0.2):
 
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing zinc-edge NEXAFS scan over a bar of samples — aligns each, tilts to the
+    #   incident angle, then sweeps the Zn-edge energies, nudging x each step.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' does a full energy (NEXAFS) scan in ONE line and
+    #   records the energy/beam/incident angle straight INTO the data and file name:
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("ZnS_pristinehr", energies,
+    #                           t=t, dets=[pil2M, pil900KW], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle/
+    #    walk-back waits you can delete once you migrate. The beam-loss try/except is handled
+    #    for you too — move_energy_fb re-seeks if the beam dips.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     names = [
              "ZnS_pristinehr", "ZnS_annealedhr",
              #"CdS_pristinehr", "CdS_annealedhr",
@@ -573,7 +705,7 @@ def nikhil_Zn_edge_spectroscopy(t=1,ai=0.2):
 
     yield from bps.mv(energy,energies[0])
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     name_fmt = "{sample}_{energy}eV_xbpm{xbpm}"
 
     for name, xs, ys in zip(names, x, y):
@@ -593,7 +725,7 @@ def nikhil_Zn_edge_spectroscopy(t=1,ai=0.2):
                 yield from bps.sleep(30)
                 print("Slept for 30 s, try move energy again")
                 yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.mvr(piezo.x,20)
             sample_name = name_fmt.format(
                 sample=name, energy="%6.2f" % e, xbpm="%3.1f" % xbpm3.sumY.get()
@@ -607,6 +739,24 @@ def nikhil_Zn_edge_spectroscopy(t=1,ai=0.2):
 def nikhil_Bi_edge_spectroscopy(t=1,ai=0.2):
 
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing bismuth-edge NEXAFS scan over a bar of samples — aligns each, tilts to
+    #   the incident angle, then sweeps the Bi-edge energies, nudging x each step.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' does a full energy (NEXAFS) scan in ONE line and
+    #   records the energy/beam/incident angle straight INTO the data and file name:
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("BiS_pristinehr", energies,
+    #                           t=t, dets=[pil2M, pil900KW], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle/
+    #    walk-back waits you can delete once you migrate. The beam-loss try/except is handled
+    #    for you too — move_energy_fb re-seeks if the beam dips.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     names = [
              #"ZnS_pristinehr", "ZnS_annealedhr",
              #"CdS_pristinehr", "CdS_annealedhr",
@@ -635,7 +785,7 @@ def nikhil_Bi_edge_spectroscopy(t=1,ai=0.2):
                 np.arange(13400, 13500, 2).tolist()+
                 np.arange(13500, 13600, 10).tolist())
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     name_fmt = "{sample}_{energy.name}eV_xbpm{xbpm}"
 
     for name, xs, ys in zip(names, x, y):
@@ -655,7 +805,7 @@ def nikhil_Bi_edge_spectroscopy(t=1,ai=0.2):
                 yield from bps.sleep(30)
                 print("Slept for 30 s, try move energy again")
                 yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.mvr(piezo.x,20)
             sample_name = name_fmt.format(
                 sample=name, energy="%6.2f" % e, xbpm="%3.1f" % xbpm3.sumY.get()
@@ -666,6 +816,12 @@ def nikhil_Bi_edge_spectroscopy(t=1,ai=0.2):
 
 
 def Nikhil_hard_NEXAFS():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a run-book wrapper — it runs other plans in this file in sequence (the Zn-edge then the Bi-edge spectroscopy scans).
+    # 💡 NEWER, EASIER WAY: nothing to change here itself — once you migrate the plans it calls
+    #   (see their own notes), this just chains them. In smi_plans you'd usually build one
+    #   sample bar (SampleList) and hand it to a single *_bar plan.
+    # === end smi_plans note ================================================
     yield from nikhil_Zn_edge_spectroscopy()
     yield from nikhil_Bi_edge_spectroscopy()
 
@@ -674,6 +830,24 @@ def Nikhil_hard_NEXAFS():
 def nikhil_S_edge_spectroscopy_2(t=1,ai=0.5):
 
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing sulfur-edge NEXAFS scan (variant 2) over a bar of samples — same idea as
+    #   the first S-edge version.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' does a full energy (NEXAFS) scan in ONE line and
+    #   records the energy/beam/incident angle straight INTO the data and file name:
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("ZnS_pristinehr", energies,
+    #                           t=t, dets=[pil2M, pil900KW], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle/
+    #    walk-back waits you can delete once you migrate. The beam-loss try/except is handled
+    #    for you too — move_energy_fb re-seeks if the beam dips.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     names = ["BiS_exphr"]
     x = [-10000]
     y = [  6700]
@@ -688,7 +862,7 @@ def nikhil_S_edge_spectroscopy_2(t=1,ai=0.5):
     
     yield from bps.mv(energy,energies[0])
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     name_fmt = "{sample}_{energy}eV_xbpm{xbpm}"
 
     for name, xs, ys in zip(names, x, y):
@@ -708,7 +882,7 @@ def nikhil_S_edge_spectroscopy_2(t=1,ai=0.5):
                 yield from bps.sleep(30)
                 print("Slept for 30 s, try move energy again")
                 yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.mvr(piezo.x,20)
             sample_name = name_fmt.format(
                 sample=name, energy="%6.2f" % e, xbpm="%3.1f" % xbpm3.sumY.get()
@@ -724,6 +898,23 @@ def nikhil_S_edge_spectroscopy_2(t=1,ai=0.5):
 def nikhil_Zn_edge_spectroscopy2(t=1,ai=0.2):
 
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing zinc-edge NEXAFS scan (variant 2) over a bar of samples.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' does a full energy (NEXAFS) scan in ONE line and
+    #   records the energy/beam/incident angle straight INTO the data and file name:
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("ZnS_pristinehr", energies,
+    #                           t=t, dets=[pil2M, pil900KW], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle/
+    #    walk-back waits you can delete once you migrate. The beam-loss try/except is handled
+    #    for you too — move_energy_fb re-seeks if the beam dips.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     names = [   "ZnO_pristinehr",   "ZnO_annealedhr",   ]
     x =     [   21000,             3000,             ]
     y =     [   6900,               6900,               ]
@@ -742,7 +933,7 @@ def nikhil_Zn_edge_spectroscopy2(t=1,ai=0.2):
 
     yield from bps.mv(energy,energies[0])
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     name_fmt = "{sample}_{energy}eV_xbpm{xbpm}"
 
     for name, xs, ys in zip(names, x, y):
@@ -762,7 +953,7 @@ def nikhil_Zn_edge_spectroscopy2(t=1,ai=0.2):
                 yield from bps.sleep(30)
                 print("Slept for 30 s, try move energy again")
                 yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.mvr(piezo.x,20)
             sample_name = name_fmt.format(
                 sample=name, energy="%6.2f" % e, xbpm="%3.1f" % xbpm3.sumY.get()
@@ -778,6 +969,22 @@ def nikhil_Zn_edge_spectroscopy2(t=1,ai=0.2):
 
 # IBM reflectivity Oct 27 2024
 def reflectivity_multisample_2024():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a 2024 X-ray reflectivity (XRR) run over a bar of samples — sweeps the incident angle with
+    #   coordinated attenuator/ROI moves, one reflectivity curve per sample.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with built-in
+    #   X-ray reflectivity (XRR) plans. They step the incident angle, swap attenuators by
+    #   angle for you, track the reflected-beam ROI, and record angle/intensity INTO the
+    #   data and file name (so you can drop the by-hand attenuator/ROI lists):
+    #
+    #     from smi_plans import xrr_run, incidence_axis, peizo_th_correction
+    #     yield from xrr_run("IBM6p0", angles, t=t, dets=[pil900KW])
+    #     # (loop over your samples; the attenuator ladder + ROI tracking are handled for you)
+    #
+    #   (The att2_* attenuators are FINE and still work; this is just a tidier way to drive
+    #    them. Your script below works as-is EXCEPT for any ⚠️ lines.)
+    # === end smi_plans note ================================================
     sample_names = ['IBMSi1',    'IBM6p0',  'IBM5p0',  'IBM4p0',  'IBM0p01',    'IBM0p02', 'IBM3p0',  'IBM2p5',     'IBM2p25', 'IBMSi2']
     x_piezos =     [55000,      -43000,    -31000,     -20000,     -6000,      7000,      22000,      33000,      47000,     55000]
     y_piezos =     [4500,     4500.7,    4500.7,     4500.1,     4500.6,     4500.1,     4500.1,     4500.7,     4500.9,    4500.0]
@@ -911,6 +1118,26 @@ def att9(angle):
 
 
 def xrr_sedge_2025_1():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a RESONANT X-ray reflectivity run near the sulfur edge — for each sample it aligns, then at
+    #   each of several energies sweeps the incident angle (with coordinated attenuators) to get
+    #   an energy-dependent reflectivity curve.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with built-in
+    #   X-ray reflectivity (XRR) plans. They step the incident angle, swap attenuators by
+    #   angle for you, track the reflected-beam ROI, and record angle/intensity INTO the
+    #   data and file name (so you can drop the by-hand attenuator/ROI lists):
+    #
+    #     from smi_plans import xrr_resonant_run, incidence_axis, peizo_th_correction
+    #     yield from xrr_resonant_run("IBM0p0", angles, t=t, dets=[pil900KW], energies=energies)
+    #     # (loop over your samples; the attenuator ladder + ROI tracking are handled for you)
+    #
+    #   (The att2_* attenuators are FINE and still work; this is just a tidier way to drive
+    #    them. Your script below works as-is EXCEPT for any ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: nothing is flagged ⚠️-broken on a specific line; the 💡
+    #   energy-settle sleeps below just become unnecessary once you migrate. (internal: Tier 2.)
+    # === end smi_plans note ================================================
     #List of incident angles clustured in subsection for attenuators
     # sample_names = ['IBM2p25_2', 'IBM2p5', 'IBM3p0', 'IBM4p0', 'IBM5p0', 'IBM6p0', ]
     # x_piezos =     [      30000,     17000,    1000,    -15000,    -32000,    -50000,    ]
@@ -973,7 +1200,7 @@ def xrr_sedge_2025_1():
         
 
         yield from bps.mv(energy,energies[0])
-        yield from bps.sleep(5)
+        yield from bps.sleep(5)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
         yield from alignement_gisaxs(.5)
         
@@ -998,7 +1225,7 @@ def xrr_sedge_2025_1():
                                     att2_9,attenuator9o,
                                     )
         yield from bps.mv(energy,2475)
-        yield from bps.sleep(5)
+        yield from bps.sleep(5)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
     
 
@@ -1031,6 +1258,24 @@ def att9(angle):
 
 
 def nexafs_sedge_2025_1():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a 2025 resonant sulfur-edge NEXAFS scan — sweeps the S-edge energies taking images, the
+    #   tidied successor to the nikhil_* S-edge scans above.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' does a full energy (NEXAFS) scan in ONE line and
+    #   records the energy/beam/incident angle straight INTO the data and file name:
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("nexafs_sedge", energies,
+    #                           t=t, dets=[pil2M, pil900KW], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle/
+    #    walk-back waits you can delete once you migrate. The beam-loss try/except is handled
+    #    for you too — move_energy_fb re-seeks if the beam dips.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     dets = [pil900KW]
     # energies1 =   np.asarray([2810.0, 2820.0, 2830.0, 2832.0, 2834.0, 2834.5, 2835.0, 2835.5, 2836.0, 2836.5, 2837.0, 2837.5, 2838.0, 2838.5, 2839.0,
     # 2839.5, 2840.0, 2840.5, 2841.0, 2841.5, 2845.0, 2850.0, 2855.0, 2860.0, 2865.0, 2870.0, 2875.0, 2880.0, 2890.0])
@@ -1039,12 +1284,12 @@ def nexafs_sedge_2025_1():
                             + np.arange(2490, 2500, 5).tolist()+ np.arange(2500, 2521, 10).tolist())
     for i, e in enumerate(energies):
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
         if xbpm2.sumX.get() < 120:
             yield from bps.sleep(5)
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
         bpm = xbpm3.sumX.value
         
@@ -1057,9 +1302,9 @@ def nexafs_sedge_2025_1():
         yield from bp.count(dets, num=1)
 
     yield from bps.mv(energy, 2475)
-    yield from bps.sleep(3)
+    yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2450)
-    yield from bps.sleep(3)
+    yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
 import bluesky.preprocessors as bpp
 import bluesky.plans as bp
@@ -1071,6 +1316,23 @@ def single_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=10, waxs
     Study the beam damage on 1 film to define the opti;am experimental conitions.
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beam-damage study on one film — at each WAXS arc and incident angle it
+    #   sweeps the sulfur-edge energies and records a frame, stepping x a little each shot to
+    #   land on fresh material, then walks the energy back. (Nicely built: one run, recorded
+    #   fields, templated name via a 'target_file_name' Signal.)
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' does this energy sweep in one call and records the
+    #   energy/angle/beam INTO the data and file name (no throwaway target_file_name Signal):
+    #     from smi_plans import nexafs_run
+    #     yield from nexafs_run(name, energies, t=t, dets=[pil900KW, pil2M], geometry="transmission")
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle/walk-back
+    #    waits you can delete once you migrate.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes below). (internal: Tier 4.)
+    # === end smi_plans note ================================================
     # dets = [pil900KW]
     if ai_list is None:
         ai_list = []
@@ -1099,9 +1361,9 @@ def single_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=10, waxs
             counter = 0
             for k, ais in enumerate(ai_list):
                 if ais==0.6:
-                    det_exposure_time(0.5, 0.5)
+                    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
                 else:
-                    det_exposure_time(1, 1)
+                    det_exposure_time(1, 1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(1, 1)  — or at the prompt:  RE(det_exposure_time(1, 1)). (The smi_plans technique runs set exposure for you via t=.)
 
                 yield from bps.mv(piezo.th, ai0 + ais)
 
@@ -1109,11 +1371,11 @@ def single_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=10, waxs
                 
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     if xbpm2.sumX.get() < 50:
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     
                     yield from bps.mv(piezo.x, xs + counter * xstep)
                     counter += 1
@@ -1125,9 +1387,9 @@ def single_scan(t=1, name="Test", ai_list: list[int]|None = None, xstep=10, waxs
                     yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, piezo.th, piezo.x] + [s])
                 
                 yield from bps.mv(energy, 2500)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 2480)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 2445)
 
             yield from bps.mv(piezo.th, ai0)
@@ -1151,6 +1413,14 @@ from ophyd.sim import motor1, motor2, det1
 from event_model import RunRouter
 
 def multi_scan(start, stop, steps, mds):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a prototype showing how to emit SEVERAL Bluesky 'runs' from one plan (Tom's
+    #   multi-run example). It uses simulated motors/detector (motor1/motor2/det1), so it's a
+    #   demo, not a real measurement.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' already gives you one clean run per sample via
+    #   one_sample_run / multi_sample_run, so you don't need to hand-manage open_run/close_run
+    #   keys. (Demo code — nothing to migrate, but multi_sample_run is the supported pattern.)
+    # === end smi_plans note ================================================
     n = len(mds)
     for j, md in enumerate(mds):
         # open each run
@@ -1178,6 +1448,7 @@ def multi_scan(start, stop, steps, mds):
         yield from bpp.set_run_key_wrapper(bps.close_run(), f"run {j}")
 
 def factory(name, doc):
+    # smi_plans: this is a per-run callback factory (sets up a live-plot/table for each run) — plumbing for the multi-run demo above, not acquisition logic. Nothing to migrate.
     # BestEffortCallback assumes only one run open at a time so make a a new
     # one for each run
     bec = BestEffortCallback()
@@ -1212,6 +1483,12 @@ from ophyd.sim import motor1, motor2, det1
 from event_model import RunRouter
 
 def multi_scan_2025_1_su(start, stop, steps, mds):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the same multi-run prototype as multi_scan (Tom's example) with a WAXS-arc
+    #   loop bolted on — still using simulated motors/detector (motor1/motor2/det1).
+    # 💡 NEWER, EASIER WAY: use smi_plans' multi_sample_run / one_sample_run to get one tidy run
+    #   per sample without hand-managing run keys. (Demo code — nothing real to migrate.)
+    # === end smi_plans note ================================================
     n = len(mds)
     for j, md in enumerate(mds):
         # open each run
@@ -1242,6 +1519,24 @@ def multi_scan_2025_1_su(start, stop, steps, mds):
 
 def giwaxs_hardxray_Kelvin_2024_3(t=1):
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a hard-X-ray grazing-incidence (GIWAXS) run over Kelvin's samples — aligns each and takes
+    #   images at a list of incident angles across the WAXS arcs.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs a grazing-incidence (GIWAXS) measurement for you.
+    #   It aligns each sample, sweeps the incident angle (and WAXS arc), and records
+    #   angle/position/beam INTO the data and file name:
+    #     from smi_plans import giwaxs_run, giwaxs_bar, align_sample, SampleList
+    #     yield from giwaxs_bar(SampleList.from_columns(name=names, x=x_piezo, y=y_piezo,
+    #                                                   stage_x=x_hexa),
+    #                           incident_angles=ai_list, waxs_arcs=waxs_arc,
+    #                           dets=[pil900KW, pil2M], t=t, align=align_sample)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # In Freychet_11
     # names = [  'GI_P25_4', 'GI_P25_2', 'GI_P25_1', 'GI_P25_0p5', 'GI_P25_0p25', 'GI_AHPP25_4', 'GI_AHPP25_2', 'GI_AHPP25_1', 'GI_AHPP25_0p5', 'GI_AHPP25_0p25',
     #            'GI_P5A_4', 'GI_P5A_2', 'GI_P5A_1', 'GI_P5A_0p5', 'GI_P5A_0p25', 'GI_AHPP5A_4', 'GI_AHPP5A_2', 'GI_AHPP5A_1', 'GI_AHPP5A_0p5', 'GI_AHPP5A_0p25']             
@@ -1280,7 +1575,7 @@ def giwaxs_hardxray_Kelvin_2024_3(t=1):
         yield from alignement_gisaxs_doblestack(0.15)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -1321,6 +1616,24 @@ def single_scan_giwaxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
     Study the beam damage on 1 film to define the opti;am experimental conitions.
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a single-film GIWAXS beam-damage study — takes images at a list of incident angles and x
+    #   steps across the WAXS arcs (the GIWAXS sibling of single_scan above).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs a grazing-incidence (GIWAXS) measurement for you.
+    #   It aligns each sample, sweeps the incident angle (and WAXS arc), and records
+    #   angle/position/beam INTO the data and file name:
+    #     from smi_plans import giwaxs_run, giwaxs_bar, align_sample, SampleList
+    #     yield from giwaxs_bar(SampleList.from_columns(name=names, x=x_piezo, y=y_piezo,
+    #                                                   stage_x=x_hexa),
+    #                           incident_angles=ai_list, waxs_arcs=waxs_arc,
+    #                           dets=[pil900KW, pil2M], t=t, align=align_sample)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     names = ['sj-ppionzrox-m-post', 'sj-ppionzrox-m-ox', 'sj-ppionzrox-m-pre', 'sj-ppion-m-ox', 
                  'sj-bkg-m-coated',     'sj-bkg-m-bare']
     x_piezo = [              53800,               53900,                48700,           37900,
@@ -1349,7 +1662,7 @@ def single_scan_giwaxs(t=1, name="Test", ai_list: list[int]|None = None, xstep=1
         yield from alignement_gisaxs_doblestack(0.15)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         s = Signal(name='target_file_name', value='')
 

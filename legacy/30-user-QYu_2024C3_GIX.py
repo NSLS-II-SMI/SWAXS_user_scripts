@@ -147,6 +147,30 @@ def insitu_tgix_samples(  Aligned_Dict,  run_time= 3600 * 1 , sleep_time = 5    
     
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a long in-situ grazing-incidence (GIX) time series — it keeps looping for
+    #   'run_time' seconds, and each pass visits every pre-aligned sample, measures at a few x
+    #   positions and incident angles (SAXS + WAXS), then sleeps 'sleep_time' before repeating.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with time-series
+    #   and grazing plans that take images on a schedule and record the REAL elapsed time,
+    #   position, incident angle and beam intensity INTO each image (so the time is in the data,
+    #   not just the file name). A typical shape:
+    #     from smi_plans import time_series_run, giwaxs_run, align_sample
+    #     # align each sample once (align_sample saves the result with the data), then loop a
+    #     # giwaxs_run / time_series_run over your samples on a fixed period for run_time.
+    #
+    #   Heads-up: the companion 'align_gix_loop_samples' below calls RE(...) inside a Python
+    #   loop — smi_plans instead lets one plan align AND measure in a single coherent run, which
+    #   is more robust for long unattended series.
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). Also note the exposure is set AFTER bp.count
+    #   here, so it only affects the NEXT frame — worth double-checking when you migrate.
+    #   (internal: Tier 0/1.)
+    # === end smi_plans note ================================================
 
 
     t=1
@@ -195,7 +219,7 @@ def insitu_tgix_samples(  Aligned_Dict,  run_time= 3600 * 1 , sleep_time = 5    
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
                     print(f'\n\t=== Sample: {sample_name} ===\n') 
                     yield from bp.count( dets, num=1)
-                    det_exposure_time(t,t)    
+                    det_exposure_time(t,t)      # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (The smi_plans technique runs set exposure for you via t=.)
                     if camera: 
                         save_ova( sample_name )
                         save_hex( sample_name )     
@@ -217,6 +241,25 @@ def align_gix_loop_samples( inc_ang = 0.15,   ):
       
 
      '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: walks along the sample bar and aligns each sample, saving each one's
+    #   found tilt (th) and height (y) into a dictionary you pass to the measurement plans above.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', whose
+    #   align_sample does grazing alignment AND records the found position alongside your data
+    #   automatically — so you don't need to keep a separate "Aligned_Dict" by hand:
+    #     from smi_plans import align_sample, giwaxs_bar, SampleList
+    #     # giwaxs_bar(SampleList(...), align=align_sample, ...) aligns then measures each sample.
+    #
+    #   ⚠️ IMPORTANT (not a crash, but please read): this function calls RE(...) INSIDE a normal
+    #   Python 'for' loop (RE is the "Run Engine" that actually executes a plan). That pattern
+    #   runs each alignment as its OWN separate run and can't be composed into a larger plan,
+    #   pausing/resuming gets awkward, and it won't work if THIS function is itself run with
+    #   RE(...). The smi_plans way is to 'yield from align_sample()' so alignment and measurement
+    #   live in one coherent plan that you start with a single RE(...). This is the biggest
+    #   tidy-up opportunity in this file.
+    #   (Nothing here is flagged ⚠️-broken on a specific line; it still runs as written.)
+    # === end smi_plans note ================================================
     # define names of samples on sample bar     
     M, _, _ = get_motor(  ) 
     N = len( x_list )
@@ -260,6 +303,27 @@ def run_gix_loop_wsaxs(t=1, mode = ['saxs', 'waxs' ],
 
 
      '''    
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence bar run with both SAXS and WAXS — for each WAXS arc
+    #   angle it loops every (pre-aligned) sample, and at each sample measures over a few x
+    #   positions and a list of incident angles. If no alignment dict is given, it aligns first.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs a
+    #   GIWAXS bar from a sample list in one call, sweeping incident angle and WAXS arc and
+    #   recording angle/position/beam INTO each image and into the file name (so you can drop
+    #   the long hand-built name and the manual Aligned_Dict):
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list, y=y_list)
+    #     yield from giwaxs_bar(samples, incident_angles=angle_arc, waxs_arcs=waxs_angle_array,
+    #                           dets=[pil2M, pil900KW], t=t, align=align_sample)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now. Note it
+    #    calls align_gix_loop_samples, which uses the RE-inside-a-loop pattern flagged above.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). The exposure is also set AFTER bp.count here, so
+    #   it only affects the NEXT frame — worth a look when you migrate. (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     assert len(x_list) == len(sample_list), f'Sample name/position list is borked' 
     if Aligned_Dict is None:    
@@ -269,7 +333,7 @@ def run_gix_loop_wsaxs(t=1, mode = ['saxs', 'waxs' ],
     for waxs_angle in waxs_angle_array: # loop through waxs angles        
         yield from bps.mv(waxs, waxs_angle)     
         dets = get_dets( waxs_angle = waxs_angle, mode = mode )                       
-        det_exposure_time(t,t)                  
+        det_exposure_time(t,t)                    # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (The smi_plans technique runs set exposure for you via t=.)
         for ii, (x, sample) in enumerate(zip(x_list,sample_list)):    #loop over samples on bar                
             yield from bps.mv(M.x, x )             
             TH = Aligned_Dict[ii]['th']  
@@ -290,10 +354,10 @@ def run_gix_loop_wsaxs(t=1, mode = ['saxs', 'waxs' ],
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
                     print(f'\n\t=== Sample: {sample_name} ===\n') 
                     yield from bp.count( dets, num=1)
-                    det_exposure_time(t,t)    
+                    det_exposure_time(t,t)      # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (The smi_plans technique runs set exposure for you via t=.)
             #print( 'HERE#############')
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
  

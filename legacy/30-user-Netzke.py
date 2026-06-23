@@ -1,8 +1,31 @@
 # phi scan
 def gisaxsnetzke(meas_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence (GISAXS) phi-scan over ~10 ferroelectric samples. For
+    #   each sample it aligns, then loops over WAXS arc -> incidence angle -> in-plane rotation
+    #   (phi) -> energy, snapping a WAXS image at every combination. "phi" is the sample's in-plane
+    #   rotation; here it's driven by the motor the script calls 'prs'.
+    #
+    # 💡 NEWER, EASIER WAY: rotating phi while also sweeping incidence/energy is the CD-GISAXS +
+    #   energy combination in 'smi_plans'. cd_gisaxs_rock_run rocks phi and records the angle/beam
+    #   into the data; for the full multi-sample/energy matrix you'd compose axes, e.g.:
+    #
+    #     from smi_plans import acquire, motor_axis, incidence_axis, energy_axis, align_sample
+    #     yield from acquire(name, [pil900KW],
+    #         [motor_axis("phi", stage.phi, [0, -20, -40, -60]),   # was 'prs'
+    #          energy_axis([9540, 9580])],
+    #         align=align_sample)   # aligns the sample and records the result with the data
+    #
+    #   (Just a tidier option — your loops below still work as-is EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the rotation
+    #   stage 'prs' was removed — it's now 'stage.phi' (the bps.mv(prs, ...) lines would crash);
+    #   (3) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan. See the ⚠️
+    #   notes on those lines. (internal: Tier 1.)
+    # === end smi_plans note ================================================
     waxs_arc = np.linspace(0, 45.5, 8)  # for 9.54 keV
     # waxs_arc = np.linspace(0, 26, 5) #(2th_min 2th_max steps) for 16.1 keV
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     phi = [0, -20, -40, -60]
     phi_aioff = [0, -0.03, -0.025, 0.015]
     xlocs = [  # -41000,
@@ -43,14 +66,14 @@ def gisaxsnetzke(meas_t=1):
         # yield from alignement_gisaxs(0.08) #for 16.1 keV
         yield from bps.mv(GV7.close_cmd, 1)
         yield from bps.mv(att2_5.open_cmd, 1)
-        det_exposure_time(meas_t, meas_t)
+        det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(meas_t, meas_t)  — or at the prompt:  RE(det_exposure_time(meas_t, meas_t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "{sample}_E{ene}eV_ai{angle}deg_phi{phi}deg_wa{waxs}"
         for j, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
             for an in angle:
                 # yield from bps.mv(stage.th, an)
                 for ph, aioff in zip(phi, phi_aioff):
-                    yield from bps.mv(prs, ph)
+                    yield from bps.mv(prs, ph)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                     yield from bps.mv(stage.th, an + aioff)
                     for en in energ:
                         yield from bps.mv(energy, en)
@@ -67,17 +90,45 @@ def gisaxsnetzke(meas_t=1):
         yield from bps.mv(stage.th, 0)
         yield from bps.mv(piezo.th, 0)
 
-        yield from bps.mv(prs, 0)
+        yield from bps.mv(prs, 0)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
 
 
 def netzkeall(meas_t=0.6):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a convenience wrapper that runs two scans back-to-back (gisaxsnetzke then
+    #   gisaxsnetzke3). 'yield from' here just means "run that whole plan, then continue".
+    #
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' you can keep chaining plans the same way, or build one
+    #   bigger "bar" plan that covers all your samples in a single run. See the notes inside
+    #   gisaxsnetzke / gisaxsnetzke3 for the per-scan migration. (Nothing here is broken — but the
+    #   ⚠️ fixes flagged inside those two plans still apply when you run this.)
+    # === end smi_plans note ================================================
     yield from gisaxsnetzke(meas_t=0.6)
     yield from gisaxsnetzke3(meas_t=0.6)
 
 
 def gisaxsquick(meas_t=0.3):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a quick single-sample GISAXS check — sweeps WAXS arc, energy, and incidence
+    #   angle (as small relative nudges of piezo.th), taking a few WAXS images per spot.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' builds the angle/energy/arc sweeps as "axes" handed to one
+    #   acquire call, recording angle/energy/beam into each image:
+    #
+    #     from smi_plans import acquire, incidence_axis, energy_axis, motor_axis
+    #     yield from acquire("RY26n", [pil900KW],
+    #         [motor_axis("waxs_arc", waxs.arc, np.linspace(0, 45.5, 8)),
+    #          energy_axis([9580]),
+    #          incidence_axis(piezo.th, piezo.th.position, [0.2, 0.29, 0.4])], t=meas_t)
+    #
+    #   (Just a tidier option — your loops below still work as-is EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the rotation
+    #   stage 'prs' was removed — it's now 'stage.phi'; (3) 'det_exposure_time(...)' no longer sets
+    #   the exposure unless run as a plan. See the ⚠️ notes on those lines. (internal: Tier 1.)
+    # === end smi_plans note ================================================
     waxs_arc = np.linspace(0, 45.5, 8)  # (2th_min 2th_max steps)
-    dets = [pil300KW, pil2M]
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     phi = -20
     xlocs = [25500]
     names = ["RY26n"]
@@ -93,7 +144,7 @@ def gisaxsquick(meas_t=0.3):
         # yield from alignement_gisaxs(0.2)
         # yield from bps.mv(GV7.close_cmd, 1 )
 
-        det_exposure_time(meas_t, meas_t)
+        det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(meas_t, meas_t)  — or at the prompt:  RE(det_exposure_time(meas_t, meas_t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "{sample}_E{ene}eV_ai{angle}deg_phi{phi}deg_wa{waxs}"
         for j, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -114,7 +165,7 @@ def gisaxsquick(meas_t=0.3):
                     yield from bp.count(dets, num=4)
                     yield from bps.mvr(piezo.th, -an)
 
-    yield from bps.mv(prs, 0)
+    yield from bps.mv(prs, 0)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
 
 
 """
@@ -186,8 +237,23 @@ def gisaxsnetzke2(meas_t=1):
 """
 # DONT USE!!!! realignement of tyhe sampl at each phi
 def gisaxsnetzke3(meas_t=0.6):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a phi-scan that RE-ALIGNS the sample at each in-plane rotation (phi). For
+    #   each sample and each phi it re-runs the GISAXS alignment, then sweeps WAXS arc -> incidence
+    #   angle -> energy, taking WAXS images. (The author's own note above says "DONT USE" — keeping
+    #   that as-is; this annotation is just for reference.)
+    #
+    # 💡 NEWER, EASIER WAY: re-aligning at each phi is exactly what align_sample is for in
+    #   'smi_plans' — pass align=align_sample to your acquire/giwaxs run and it re-aligns and saves
+    #   the alignment result with the data, so you don't hand-call alignement_gisaxs_* and stash
+    #   ref_th_0 yourself. Compose phi/incidence/energy as axes (see gisaxsnetzke above).
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the rotation
+    #   stage 'prs' was removed — it's now 'stage.phi'; (3) 'det_exposure_time(...)' no longer sets
+    #   the exposure unless run as a plan. See the ⚠️ notes on those lines. (internal: Tier 1.)
+    # === end smi_plans note ================================================
     waxs_arc = np.linspace(0, 45.5, 8)  # (2th_min 2th_max steps)
-    dets = [pil300KW, pil2M]
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     xlocs = [-44500, -34800, -25700, -15500, -5000, 6900, 15200, 25500, 35500, 46800]
     names = [
         "RY13_phioffset",
@@ -213,11 +279,11 @@ def gisaxsnetzke3(meas_t=0.6):
         # yield from alignement_gisaxs(0.15)
         # ref_th_0 = piezo.th.position
 
-        det_exposure_time(meas_t, meas_t)
+        det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(meas_t, meas_t)  — or at the prompt:  RE(det_exposure_time(meas_t, meas_t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "{sample}_E{ene}eV_ai{angle}deg_phi{phi}deg_wa{waxs}"
         # phi is the slowest cycle:s
         for phi in phis:  # (phi_min phi_max steps)
-            yield from bps.mv(prs, phi)
+            yield from bps.mv(prs, phi)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
             yield from alignement_gisaxs_hex_short(0.2)
             ref_th_0 = stage.th.position
             yield from bps.mvr(stage.th, ref_th_0 + 0.2)
@@ -245,7 +311,7 @@ def gisaxsnetzke3(meas_t=0.6):
                         yield from bp.count(dets, num=4)
                 yield from bps.mv(stage.th, ref_th_0 + 0.2)
 
-        yield from bps.mv(prs, 0)
+        yield from bps.mv(prs, 0)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
         # num +=1
 
 
@@ -337,8 +403,29 @@ def gisaxsnetzkeSi(meas_t=1):
 
 
 def gisaxs_netzke_2020_3(meas_t=0.6):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a multi-sample phi-scan that walks each pre-aligned sample (using saved x/y/z
+    #   and incidence angle), then loops WAXS arc -> in-plane rotation (phi) -> incidence offset ->
+    #   energy, taking WAXS images. It even flips the WAXS-arc sweep direction depending on where
+    #   the arc currently sits, to save travel time.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' covers the phi + incidence + energy matrix with composed
+    #   axes, and the "sweep the arc the short way" trick is built into giwaxs_bar_arc_economy:
+    #
+    #     from smi_plans import acquire, motor_axis, energy_axis
+    #     yield from acquire(name, [pil900KW],
+    #         [motor_axis("phi", stage.phi, [-40, -20, 0]),    # was 'prs'
+    #          energy_axis([9540, 9580])], t=meas_t)
+    #
+    #   (Just a tidier option — your loops below still work as-is EXCEPT for the ⚠️ lines, and the
+    #    💡 sleep you can drop after migrating.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the rotation
+    #   stage 'prs' was removed — it's now 'stage.phi'; (3) 'det_exposure_time(...)' no longer sets
+    #   the exposure unless run as a plan. See the ⚠️ notes on those lines. (internal: Tier 1.)
+    # === end smi_plans note ================================================
     waxs_arc = np.linspace(0, 45.5, 8)
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # xlocs = [-44500, -34800, -25700, -15500, -5000, 6900, 15200, 25500, 35500, 46800]
     # names = ['RY13_phioffset','RY15_phioffset','RY16_phioffset','RY17_phioffset','RY18_phioffset','RY19_phioffset','RY21_phioffset','RY26_phioffset','TiN1_phioffset','TiN2_phioffset']
@@ -358,7 +445,7 @@ def gisaxs_netzke_2020_3(meas_t=0.6):
         yield from bps.mv(piezo.z, zs)
         yield from bps.mv(piezo.th, aiss)
 
-        det_exposure_time(meas_t, meas_t)
+        det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(meas_t, meas_t)  — or at the prompt:  RE(det_exposure_time(meas_t, meas_t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "{sample}_E{ene}eV_ai{angle}deg_phi{phi}deg_wa{waxs}"
 
         # phi is the slowest cycle:s
@@ -371,7 +458,7 @@ def gisaxs_netzke_2020_3(meas_t=0.6):
             yield from bps.mv(waxs, wa)
 
             for phi in phis:  # (phi_min phi_max steps)
-                yield from bps.mv(prs, phi)
+                yield from bps.mv(prs, phi)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
 
                 # check waxs value and adjust waxs range
                 for a, an in enumerate(angle_off_from02):
@@ -379,7 +466,7 @@ def gisaxs_netzke_2020_3(meas_t=0.6):
 
                     for en in energ:
                         yield from bps.mv(energy, en)
-                        yield from bps.sleep(1)
+                        yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                         sample_name = name_fmt.format(
                             sample=name,
@@ -394,10 +481,21 @@ def gisaxs_netzke_2020_3(meas_t=0.6):
                         yield from bp.count(dets, num=2)
 
             yield from bps.mv(stage.th, ref_th_0)
-        yield from bps.mv(prs, 0)
+        yield from bps.mv(prs, 0)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
 
 
 def alignement_netzke():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an up-front alignment pass — it visits each sample on the bar, runs the
+    #   grazing-incidence alignment, and remembers the found incidence angle + aligned y for each
+    #   (stored in the global lists incident_angles / y_piezo_aligned that the scans above reuse).
+    #
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' you don't pre-align into global lists and hope the later
+    #   scan reuses them — instead you pass align=align_sample to your acquire/giwaxs run, so each
+    #   sample is aligned right before it's measured and the alignment result is SAVED alongside the
+    #   data automatically. The old 'SMI_Beamline().modeAlignment()/modeMeasurement()' dance is
+    #   handled internally. (Nothing here is broken; this is just the modern, less error-prone flow.)
+    # === end smi_plans note ================================================
     global names, x_piezo, z_piezo, incident_angles, y_piezo_aligned
 
     # names = ['ALLS80', 'ALLS87', 'RK3', 'RK14', 'ALLS88', 'ALLS101', 'RK16', 'RK19_800C_1', 'RK19_800C_2', 'RK19_750C', 'S25', 'RK13', 'RK2']

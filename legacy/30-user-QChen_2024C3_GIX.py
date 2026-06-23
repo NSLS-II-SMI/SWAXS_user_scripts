@@ -110,6 +110,31 @@ def insitu_tgix_samples(  Aligned_Dict,  run_time= 3600 * 1 , sleep_time = 5    
 
     '''
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ time series on a bar of pre-aligned grazing-incidence
+    #   samples — for up to 'run_time' seconds it repeatedly visits each sample (using the
+    #   alignment angles you found earlier), nudges x, and takes a SAXS+WAXS image.
+    #
+    # 💡 NEWER, EASIER WAY: "keep revisiting these samples and measuring for a while" is the
+    #   'smi_plans' kinetics/time-series pattern. It records the real angle / x / y / beam
+    #   into each image and file name for you (so you can drop the long hand-built
+    #   "{sample}_{th}deg_x..." name). Roughly:
+    #
+    #     from smi_plans import giwaxs_bar, time_series_run
+    #     # one pass over the aligned bar = giwaxs_bar(...); wrap it in a time loop, e.g.
+    #     # time_series_run repeats a measurement on a cadence and timestamps each run.
+    #     # (Ask beamline staff for the exact combo for "bar revisit on a timer".)
+    #
+    #   (Just a tidier option to try later — your script below still works as-is, EXCEPT
+    #    for the ⚠️ line which needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the
+    #   exposure unless run as a plan (see the ⚠️ note below). Note it's also currently
+    #   placed AFTER the image is taken, so it wouldn't affect that frame anyway — smi_plans
+    #   sets exposure up front via t=. (Detectors here already use pil2M + pil900KW — good.)
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
+
 
     t=1
     dets = [pil2M, pil900KW]
@@ -156,7 +181,7 @@ def insitu_tgix_samples(  Aligned_Dict,  run_time= 3600 * 1 , sleep_time = 5    
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
                     print(f'\n\t=== Sample: {sample_name} ===\n') 
                     yield from bp.count( dets, num=1)
-                    det_exposure_time(t,t)    
+                    det_exposure_time(t,t)    # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing (and here it's after the image, so it wouldn't have affected that frame anyway). Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans sets exposure up front via t=.)
                     if camera: 
                         save_ova( sample_name )
                         save_hex( sample_name )     
@@ -178,6 +203,24 @@ def align_gix_loop_samples( inc_ang = 0.15,   ):
       
 
      '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: walks along the sample bar and runs the grazing-incidence alignment
+    #   on each one, remembering the found theta/y for every sample in a dictionary you
+    #   pass to the measurement plans above.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has align_sample, which aligns a sample and saves
+    #   the result alongside the data automatically — and the GIWAXS bar helpers can align
+    #   each sample for you as they go (align=align_sample), so you don't keep a separate
+    #   alignment dictionary by hand:
+    #     from smi_plans import giwaxs_bar, align_sample
+    #     # giwaxs_bar(bar, align=align_sample, ...) aligns each sample then measures it.
+    #
+    # 💡 ONE SMALL HEADS-UP (not broken): this routine calls RE(...) inside a Python 'for'
+    #   loop (RE is "run this plan now"). That works when you type it at the prompt, but it
+    #   means this function can't itself be run with RE(...) or 'yield from'. In smi_plans
+    #   the alignment is a normal plan you 'yield from', so it composes cleanly with the
+    #   rest of your scan. (Nothing here errors — it's just a tidier structure.)
+    # === end smi_plans note ================================================
     # define names of samples on sample bar     
     M, _, _ = get_motor(  ) 
     assert len(x_list) == len(sample_list), f'Sample name/position list is borked'  
@@ -216,6 +259,30 @@ def run_gix_loop_wsaxs(t=1, mode = ['saxs', 'waxs' ],
 
      '''    
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence SAXS/WAXS scan over the aligned bar — for each
+    #   WAXS-arc angle it picks the right detectors, then for each sample (at its aligned
+    #   angles) sweeps a few x-spots and incident angles, taking an image at each.
+    #
+    # 💡 NEWER, EASIER WAY: this is the 'smi_plans' GIWAXS-bar pattern. giwaxs_bar walks the
+    #   bar (aligning each sample if you pass align=align_sample) and sweeps incident angle
+    #   and WAXS arc, recording angle / x / y / WAXS-position / beam into each image and file
+    #   name (so you can drop the long hand-built name):
+    #
+    #     from smi_plans import giwaxs_bar, SampleList, incidence_axis, motor_axis, align_sample
+    #     bar = SampleList.from_columns(name=list(sample_list), x=list(x_list))
+    #     yield from giwaxs_bar(
+    #         bar, t=t, dets=[pil2M, pil900KW], align=align_sample,
+    #         incident_angles=[0.08, 0.12, 0.15, 0.3],          # your angle_arc
+    #         arc=motor_axis("waxs", waxs, [15]))               # your waxs_angle_array
+    #
+    #   (Just a tidier option to try later — your script below still works as-is, EXCEPT
+    #    for the ⚠️ lines which need a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the
+    #   exposure unless run as a plan (⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
+
     assert len(x_list) == len(sample_list), f'Sample name/position list is borked' 
     if Aligned_Dict is None:    
         Aligned_Dict = align_gix_loop_samples( inc_ang = 0.15 )  
@@ -224,7 +291,7 @@ def run_gix_loop_wsaxs(t=1, mode = ['saxs', 'waxs' ],
     for waxs_angle in waxs_angle_array: # loop through waxs angles        
         yield from bps.mv(waxs, waxs_angle)     
         dets = get_dets( waxs_angle = waxs_angle, mode = mode )                       
-        det_exposure_time(t,t)                  
+        det_exposure_time(t,t)                  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_bar sets it for you via t=.)
         for ii, (x, sample) in enumerate(zip(x_list,sample_list)):    #loop over samples on bar                
             yield from bps.mv(M.x, x )             
             TH = Aligned_Dict[ii]['th']  
@@ -245,10 +312,10 @@ def run_gix_loop_wsaxs(t=1, mode = ['saxs', 'waxs' ],
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
                     print(f'\n\t=== Sample: {sample_name} ===\n') 
                     yield from bp.count( dets, num=1)
-                    det_exposure_time(t,t)    
+                    det_exposure_time(t,t)    # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing (and here it's after the image, so it wouldn't have affected that frame). Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans sets exposure up front via t=.)
             #print( 'HERE#############')
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): same as above — this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)).
 
 
  

@@ -1,5 +1,21 @@
 def run_giwaxs_Fak(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence (GISAXS/GIWAXS) measurement — typically aligns each sample
+    #   then sweeps incident angle and/or the WAXS arc, taking an image at each.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has giwaxs_run / giwaxs_bar (and giwaxs_bar_arc_economy for
+    #   the snake-the-arc trick). align_sample aligns each sample and saves the result, and
+    #   incidence_axis / a WAXS-arc motor_axis sweep while recording angle/position into each image:
+    #     from smi_plans import giwaxs_bar, SampleList, incidence_axis, motor_axis, align_sample
+    #     bar = SampleList.from_columns(name=[...], x=[...])
+    #     yield from giwaxs_bar(bar, t=t, dets=[pil2M, pil900KW], align=align_sample,
+    #                           incident_angles=[...], arc=motor_axis("waxs", waxs, [...]))
+    #   (Just a tidier option — your script below works as-is EXCEPT ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: see the ⚠️ FIXME notes below (det_exposure_time; 'pil300KW' if used;
+    #   'prs' if used — it's now 'stage.phi').
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' (WAXS) was removed (this would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     xlocs1 = [-22000, 3000, 21500]
     names1 = ["TPD_52nm", "TPD_42nm", "TPD_32nm"]
 
@@ -17,7 +33,7 @@ def run_giwaxs_Fak(t=1):
         plt.close("all")
         angle_offset = [0.1]
         a_off = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "{sample}_{angle}deg"
         for j, ang in enumerate(a_off + np.array(angle_offset)):
             yield from bps.mv(piezo.x, (x + j * 500))
@@ -29,14 +45,21 @@ def run_giwaxs_Fak(t=1):
             yield from bp.scan(dets, waxs, *waxs_range)
 
         sample_id(user_name="test", sample_name="test")
-        det_exposure_time(0.5, 0.5)
+        det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def gFak1(meas_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     username = "AZ"
     names1 = "aaA_20190926_OG_hot"
 
-    dets = [pil2M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]  # ⚠️ FIXME(smi_plans): two of these were removed (this line would error). 'pil300KW' (WAXS) is now 'pil900KW' — use that instead (different camera, so check beam-center/calibration). 'rayonix' (the MAXS detector) was removed with no current replacement — drop it from the list or ask beamline staff.
     angle_offset = [0.1]
     length = 17000
     x_edge = 31000  # make sure to define the edge as a top border of the sample on the camera using SmarAct X
@@ -64,7 +87,7 @@ def gFak1(meas_t=1):
             a_off = piezo.th.position
         for ii, an in enumerate(angle_offset):
             yield from bps.mv(piezo.th, a_off + an)
-            det_exposure_time(meas_t, meas_t)
+            det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
             # temper = ls.ch1_read.value
             name_fmt = "{sample}_x{xlocation}_{angl}deg"
             sample_name = name_fmt.format(sample=names1, xlocation=x, angl=an)
@@ -73,14 +96,21 @@ def gFak1(meas_t=1):
             yield from bp.scan(dets, waxs, *waxs_range)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def gFak2(meas_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     username = "YJ"
     names1 = "aaA_20190926_OG_middle"
 
-    dets = [pil2M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]  # ⚠️ FIXME(smi_plans): two of these were removed (this line would error). 'pil300KW' (WAXS) is now 'pil900KW' — use that instead (different camera, so check beam-center/calibration). 'rayonix' (the MAXS detector) was removed with no current replacement — drop it from the list or ask beamline staff.
     angle_offset = [0.1]
     length = 21000
     x_edge = 11000  # make sure to define the edge as a top border of the sample on the camera using SmarAct X
@@ -108,7 +138,7 @@ def gFak2(meas_t=1):
             a_off = piezo.th.position
         for ii, an in enumerate(angle_offset):
             yield from bps.mv(piezo.th, a_off + an)
-            det_exposure_time(meas_t, meas_t)
+            det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
             # temper = ls.ch1_read.value
             name_fmt = "{sample}_x{xlocation}_{angl}deg"
             sample_name = name_fmt.format(sample=names1, xlocation=x, angl=an)
@@ -117,14 +147,21 @@ def gFak2(meas_t=1):
             yield from bp.scan(dets, waxs, *waxs_range)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def gFak3(meas_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     username = "AZ"
     names1 = "aaA_20190926_OG_cold"
 
-    dets = [pil2M, pil300KW, rayonix]
+    dets = [pil2M, pil300KW, rayonix]  # ⚠️ FIXME(smi_plans): two of these were removed (this line would error). 'pil300KW' (WAXS) is now 'pil900KW' — use that instead (different camera, so check beam-center/calibration). 'rayonix' (the MAXS detector) was removed with no current replacement — drop it from the list or ask beamline staff.
     angle_offset = [0.1]
     length = 17000
     x_edge = (
@@ -154,7 +191,7 @@ def gFak3(meas_t=1):
             a_off = piezo.th.position
         for ii, an in enumerate(angle_offset):
             yield from bps.mv(piezo.th, a_off + an)
-            det_exposure_time(meas_t, meas_t)
+            det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
             # temper = ls.ch1_read.value
             name_fmt = "{sample}_x{xlocation}_{angl}deg"
             sample_name = name_fmt.format(sample=names1, xlocation=x, angl=an)
@@ -163,10 +200,17 @@ def gFak3(meas_t=1):
             yield from bp.scan(dets, waxs, *waxs_range)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_all_gFak():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     yield from gFak1()
     yield from gFak2()
     yield from gFak3()
@@ -192,6 +236,13 @@ def grazing_Luo_2022_2(t=0.5, incident_angle=0.1):
         t (float): exposure time,
         incident_angle (float): self explained
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     user_name = "PL"
 
     # Samples
@@ -224,7 +275,7 @@ def grazing_Luo_2022_2(t=0.5, incident_angle=0.1):
         # Go to incident
         yield from bps.mvr(piezo.th, incident_angle)
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
 
         # Scan sample across angles
         for i, wa in enumerate(angles):
@@ -269,6 +320,13 @@ def grazing_gradient_Luo_2022_2(t=0.5, incident_angle=0.1):
         t (float): exposure time,
         incident_angle (float): self explained
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     user_name = "PL"
     angles = [0, 2, 18, 20]  # degrees
     step_across_gradient = 2  # mm
@@ -351,6 +409,13 @@ def atten_move_in(x4=True, x2=True):
     """
     Move 4x + 2x Sn 60 um attenuators in
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     print('Moving attenuators in')
 
     if x4:
@@ -366,6 +431,13 @@ def atten_move_out():
     """
     Move 4x + 2x Sn 60 um attenuators out
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     print('Moving attenuators out')
     while att1_7.status.get() != 'Not Open':
         yield from bps.mv(att1_7.close_cmd, 1)
@@ -378,6 +450,13 @@ def engage_detectors():
     """
     Making sure camserver responds and data is taken
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
 
     yield from atten_move_in()
     sample_id(user_name='test', sample_name='test')
@@ -390,6 +469,13 @@ def grazing_Kritika_2023_3(t=0.5):
     """
     standard GI-S/WAXS
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     #names   = [   's01',  's02',  's03',  's04',  's05',  's06',  's07',  's08',  's09',  's10',  's11',  's12',  's13',  's14',  's15', ]
     #piezo_x = [ -56000,  -46500, -39000, -40500, -30000, -19500,  -9500,  -1000,  14000,  22000,  32000,  42000,  51500,  51000,  55500, ]
     #piezo_y = [   4800,    4800,   4800,   4600,   4500,   4500,   4300,   4300,   4200,   4200,   4200,   4100,   3900,   3800,   3800  ]          
@@ -425,7 +511,7 @@ def grazing_Kritika_2023_3(t=0.5):
     incident_angles = [ 0.1 ]
     user_name = 'KJ'
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
 
     # Make sure cam server engages with the detector
     #yield from engage_detectors()
@@ -468,13 +554,20 @@ def grazing_Kritika_2023_3(t=0.5):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def grazing_Kritika_2024_1(t=0.5):
     """
     standard GI-S/WAXS
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     
     names   = [   's03a', 's03b', 's05a', 's05b',  's10a',  's10b',  's14a',   's14b', ]
     piezo_x = [  -27000,  -26000, -14000, -13000,   -1000,       0,   14000,    15000, ]
@@ -505,7 +598,7 @@ def grazing_Kritika_2024_1(t=0.5):
     incident_angles = [ 0.1 ]
     user_name = 'KJ'
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
 
     # Make sure cam server engages with the detector
     #yield from engage_detectors()
@@ -548,7 +641,7 @@ def grazing_Kritika_2024_1(t=0.5):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 ### 2024-2 ###
@@ -561,6 +654,13 @@ def grazing_Peng_2024_2(t=0.5):
     bsui - turn on bluesky if crashed
     fg - if by accident ctrl+z in bs window
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a beamline helper / run-book for this experiment.
+    # 💡 NEWER, EASIER WAY: the measurement parts map to 'smi_plans' technique runs (nexafs_run /
+    #   giwaxs_bar / transmission_bar / xrr_run / temperature_ramp_run as appropriate), which record
+    #   the energy/position/temperature/beam into the data and file name for you. (Just a tidier option
+    #   — your script below works as-is EXCEPT anything marked ⚠️, which needs a fix to run now.)
+    # === end smi_plans note ================================================
     """
     # Top sample bar A
     names_1   = [ 'Tcom15-minus9C-b791-85C', 'Tcom15-minus9C-b887-160C', 'Tcom15-minus9C-b935-40C', 'Tcom15-minus9C-B260-110C', 'Tcom14-27C-b886-160C', 'Tcom14-27C-b790-85C', 'Tcom14-27C-B259-110C', 'Tcom14-27C-b934-40C', 'Tcom14-27C-b1030-RT', 'Tcom14-27C-b838-110C', 'Tcom14-27C-b982-60C', 'Tcom14-27C-b1031-RT',] 
@@ -1106,7 +1206,7 @@ def grazing_Peng_2024_2(t=0.5):
     incident_angles = [ 0.10, 0.25 ]
     user_name = 'PL'
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)
 
 
     try:
@@ -1152,4 +1252,4 @@ def grazing_Peng_2024_2(t=0.5):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(...)  — or at the prompt:  RE(det_exposure_time(...)). (The smi_plans technique runs set exposure for you via t=.)

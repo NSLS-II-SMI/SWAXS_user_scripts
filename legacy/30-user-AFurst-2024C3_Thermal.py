@@ -2,6 +2,28 @@
 
 print('Load AF micro -- 2024C3...')
 from datetime import datetime
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS FILE DOES: a thermal / DNA-nanoparticle "melting curve" toolkit. The headline plans
+#   ramp temperature and watch SAXS change as DNA-linked nanoparticle crystals melt: run_melting_Tm
+#   (jump hot, hold, then drop to the melting temperature), run_Tm (sit at Tm and re-measure on a
+#   timer), run_melting (step temperature up in small increments, measuring each step), and the
+#   HT/RT time-temperature runs. The '''...''' blocks below are usage notes, not live code.
+#
+# 💡 NEWER, EASIER WAY: temperature work is a whole family of one-call recipes in 'smi_plans', and
+#   they drive the heater, WAIT for it to actually settle, and record the REAL temperature INTO each
+#   image (so you don't append '_T_%.2f'%getT() by hand or sleep() by guess):
+#     from smi_plans import temperature_ramp_run, isothermal_kinetics_run, lakeshore_heater
+#     heater = lakeshore_heater()
+#     # step-melt (run_melting):
+#     yield from temperature_ramp_run("DNA_melt", heater, np.arange(38, 48, 0.1), t=0.2,
+#                                     dets=[pil2M], soak=60)
+#     # hold-at-Tm-and-watch (run_Tm):
+#     yield from isothermal_kinetics_run("DNA_Tm", heater, 44, n_frames=60, period=300, t=0.2,
+#                                        dets=[pil2M])
+#   Two flavors live below: the plain ones call RE(...) inside Python loops (Tier 0); the 'RE_run_*'
+#   twins are real plans (use 'yield from'). See each function's note. Nothing is broken except the
+#   lines marked ⚠️.  (internal: Tier 0/1.)
+# === end smi_plans note ================================================
 
 
  
@@ -459,6 +481,8 @@ sample_list = np.array(list((sample_dict.values())))
 #########################################################
 
 def Measure_one():
+    # smi_plans: a one-off driver that maps two named samples via Measure_Map (see its note for the
+    #   map_grid_run equivalent). Nothing to fix here beyond Measure_Map's ⚠️ exposure note.  (Tier 0.)
     #ps1 = getSamMap( pos = [ -27760, -2930],  step_size = [100, 100], rot_angle = 0, Nx=20 , Ny=30)
     #Measure_Map(  t = 5 ,  sample = 'O139_100umstep',  pz=7980,  ps=ps1,  username = 'FTeng', )
     ps1 = getSamMap( pos = [ -27800, -1975],  step_size = [100, 100], rot_angle = 0, Nx=25 , Ny=4)
@@ -511,6 +535,17 @@ def run_HT_time_temperature( Ts =  [30, 40, 50, 60],
      run_HT_time_temperature( Ts =  [30],   Tstable = 1 * 1,  exposure_t = 1   )
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: steps the heater to each temperature in Ts, soaks (Tstable seconds), then
+    #   measures every sample with SAXS+WAXS. A simple "hold at each T, then scan the bar" ramp.
+    #   (It drives the beamline with RE(...) inside a Python loop.)
+    # 💡 NEWER, EASIER WAY: this is temperature_ramp_run in 'smi_plans' — it drives the heater, waits
+    #   for it to settle, soaks, and records the real temperature into each image:
+    #     from smi_plans import temperature_ramp_run, lakeshore_heater
+    #     yield from temperature_ramp_run(RE.md['sample'], lakeshore_heater(), Ts,
+    #                                     soak=Tstable, t=exposure_t, dets=[pil2M, pil900KW])
+    #   (Nothing broken here; the ⚠️ exposure fix lives inside measure_wsaxs.)  (internal: Tier 0.)
+    # === end smi_plans note ================================================
 
     for T in Ts:
         RE( gotoT( T ) ) 
@@ -534,6 +569,15 @@ def run_RT_temperature(   exposure_t = 0.1 , i_dict = None  ):
 
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a room-temperature baseline pass — for each sample it moves to the next fresh
+    #   spot (tracked in i_dict so it doesn't re-burn the same spot) and takes a SAXS image. Returns
+    #   i_dict so a later hot run can keep advancing through fresh spots.
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' you list the bar once and a transmission/temperature run
+    #   visits each sample, and "fresh spot per measurement" is handled by a dose/position step
+    #   instead of a hand-kept i_dict. See transmission_bar / temperature_ramp_run.
+    #   (Nothing broken; the ⚠️ exposure fix lives inside measure_saxs.)  (internal: Tier 0.)
+    # === end smi_plans note ================================================
     #step one 
     #set Temperature 
     if i_dict is None:
@@ -569,6 +613,19 @@ def run_melting_Tm(   TH=50, exposure_t = 0.2 , Tm = 44 , TH_sleep_time = 1800 )
 
 
     '''  
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the start of a DNA-melting protocol — measures every sample cold, jumps the
+    #   heater up to TH and holds for TH_sleep_time (to fully melt/anneal), measures everyone again
+    #   hot, then sets the controller toward the melting temperature Tm and starts the ramp. Returns
+    #   a start time + i_dict for run_Tm to continue.
+    # 💡 NEWER, EASIER WAY: the "go to a temperature, wait for it to truly settle, then measure"
+    #   building block is goto_temperature / temperature_ramp_run in 'smi_plans' (they poll the real
+    #   readback instead of a blind time.sleep), and the hold-and-watch part is isothermal_kinetics_run:
+    #     from smi_plans import goto_temperature, isothermal_kinetics_run, lakeshore_heater
+    #     heater = lakeshore_heater()
+    #     yield from goto_temperature(heater, TH, soak=TH_sleep_time)   # settle-aware hot hold
+    #   (Nothing broken; the ⚠️ exposure fix lives inside measure_saxs.)  (internal: Tier 0.)
+    # === end smi_plans note ================================================
     i_dict = {}
     for  k  in ks:
         i_dict[k] = 0
@@ -614,6 +671,18 @@ def run_Tm(   tt0, i_dict,  Tm, exposure_t = 0.2 ,t_total_T40 =  30 * 60, t_inte
     run_Tm( tt0, i_dict, Tm=29, exposure_t = 0.1, t_total_T40 = 30, t_interval = 3 ) 
     
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: holds the sample at the melting temperature Tm and re-measures every sample on
+    #   a timer for t_total_T40 seconds (one round every t_interval), so you can watch the crystals
+    #   melt over time. (Time is recorded by appending '_runt_%.0fs' to the name.)
+    # 💡 NEWER, EASIER WAY: "sit at one temperature and take a timed series" is isothermal_kinetics_run
+    #   in 'smi_plans', which holds the setpoint and records the elapsed time + real temperature into
+    #   each image (no hand-kept clock or name suffix):
+    #     from smi_plans import isothermal_kinetics_run, lakeshore_heater
+    #     yield from isothermal_kinetics_run(RE.md['sample'], lakeshore_heater(), Tm,
+    #         n_frames=t_total_T40 // t_interval, period=t_interval, t=exposure_t, dets=[pil2M])
+    #   (Nothing broken; the ⚠️ exposure fix lives inside measure_saxs.)  (internal: Tier 0.)
+    # === end smi_plans note ================================================
 
 
     RE(  gotoT( Tm ) ) 
@@ -650,6 +719,19 @@ def run_melting( Trange = [ 38, 48 ], dtemp = 0.1, exposure_t = 0.2, sleep_time_
     run_melting( Trange = [ 38, 48 ], dtemp = 0.2, exposure_t = 0.1, sleep_time_per_dtemp  = 60)
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a full melting curve — steps the temperature up from Trange[0] to Trange[1] in
+    #   small dtemp increments, soaking sleep_time_per_dtemp at each, and measuring every sample with
+    #   SAXS at each step. This is the classic "slow melt while watching the structure" experiment.
+    # 💡 NEWER, EASIER WAY: this is exactly temperature_ramp_run in 'smi_plans'. You give it the list
+    #   of setpoints and it drives + settles the heater, soaks, and records the real temperature into
+    #   each image:
+    #     from smi_plans import temperature_ramp_run, lakeshore_heater
+    #     yield from temperature_ramp_run(RE.md['sample'], lakeshore_heater(),
+    #         np.arange(Trange[0], Trange[1], dtemp), soak=sleep_time_per_dtemp,
+    #         t=exposure_t, dets=[pil2M])
+    #   (Nothing broken; the ⚠️ exposure fix lives inside measure_saxs.)  (internal: Tier 0.)
+    # === end smi_plans note ================================================
     #step one 
     #set Temperature
     T1, T2 = Trange
@@ -692,6 +774,16 @@ def RE_run_melting( Trange = [ 38, 48 ], dtemp = 0.1, exposure_t = 0.2  ):
 
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the proper *plan* version of run_melting (it uses 'yield from', so you launch
+    #   it with RE(RE_run_melting(...))). Steps temperature up in dtemp increments, measuring every
+    #   sample at each step.
+    # 💡 NEWER, EASIER WAY: same mapping as run_melting — this is temperature_ramp_run in 'smi_plans':
+    #     from smi_plans import temperature_ramp_run, lakeshore_heater
+    #     yield from temperature_ramp_run(RE.md['sample'], lakeshore_heater(),
+    #         np.arange(Trange[0], Trange[1], dtemp), t=exposure_t, dets=[pil2M])
+    #   (Nothing broken; the ⚠️ exposure fix lives inside measure_saxs.)  (internal: Tier 1.)
+    # === end smi_plans note ================================================
     #step one 
     #set Temperature
     T1, T2 = Trange
@@ -723,6 +815,16 @@ def RE_run_melting( Trange = [ 38, 48 ], dtemp = 0.1, exposure_t = 0.2  ):
 
 
 def RE_run_Tm(  tt0, i_dict, Tm,  exposure_t = 0.2 ,t_total_T40 =  3 * 60 * 60, t_interval = 5 * 60 ,   ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the *plan* version of run_Tm (launch with RE(RE_run_Tm(...))). Holds at the
+    #   melting temperature Tm and re-measures every sample on a timer for t_total_T40 seconds.
+    # 💡 NEWER, EASIER WAY: this is isothermal_kinetics_run in 'smi_plans' (holds the setpoint and
+    #   records elapsed time + real temperature into each image):
+    #     from smi_plans import isothermal_kinetics_run, lakeshore_heater
+    #     yield from isothermal_kinetics_run(RE.md['sample'], lakeshore_heater(), Tm,
+    #         n_frames=t_total_T40 // t_interval, period=t_interval, t=exposure_t, dets=[pil2M])
+    #   (Nothing broken; the ⚠️ exposure fix lives inside measure_saxs.)  (internal: Tier 1.)
+    # === end smi_plans note ================================================
     yield from gotoT( Tm )
     t0 = time.time()    
     while (time.time() < ( t0 + t_total_T40 ) ):
@@ -750,6 +852,14 @@ def RE_run_melting_Tm(   TH=50, exposure_t = 0.2 , Tm = 44 , TH_sleep_time = 180
 
 
     '''  
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the *plan* version of run_melting_Tm — measures cold, jumps hot (TH) and holds,
+    #   measures hot, then sets toward the melting temperature Tm and starts the ramp.
+    # 💡 NEWER, EASIER WAY: same mapping as run_melting_Tm — goto_temperature for the settle-aware
+    #   hot hold, then isothermal_kinetics_run / temperature_ramp_run for the Tm part (smi_plans
+    #   polls the real readback instead of time.sleep). (Nothing broken; ⚠️ exposure fix is inside
+    #   measure_saxs.)  (internal: Tier 1.)
+    # === end smi_plans note ================================================
     i_dict = {}
     for  k  in ks:
         i_dict[k] = 0
@@ -794,6 +904,16 @@ def RE_run_HT_time_temperature( T =  45, t_interval=10*60, t_total = 31*60, expo
     '''      
     RE(  ) 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the *plan* version — goes to one temperature T and re-measures every sample on
+    #   a timer for t_total seconds (one round every t_interval).
+    # 💡 NEWER, EASIER WAY: this is isothermal_kinetics_run in 'smi_plans' (hold a setpoint, take a
+    #   timed series, record elapsed time + real temperature):
+    #     from smi_plans import isothermal_kinetics_run, lakeshore_heater
+    #     yield from isothermal_kinetics_run(RE.md['sample'], lakeshore_heater(), T,
+    #         n_frames=t_total // t_interval, period=t_interval, t=exposure_t, dets=[pil2M])
+    #   (Nothing broken; the ⚠️ exposure fix lives inside measure_saxs.)  (internal: Tier 1.)
+    # === end smi_plans note ================================================
     #step one 
     #set Temperature 
     if i_dict is None:
@@ -920,6 +1040,18 @@ def Measure_Map(  t = 1 ,  sample = 'O139',  ps=None, pz= 8000,  username = 'FLu
     Measure_Map( sample = 'test',  ps= Ps[:2]   ) 
     
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: rasters a grid of (x,y) spots on one sample (built by getSamMap) and takes a
+    #   SAXS+WAXS image at each, optionally saving a camera frame. (Drives the beamline with RE(...)
+    #   inside a Python loop.)
+    # 💡 NEWER, EASIER WAY: a 2D raster is map_grid_run in 'smi_plans', which builds the grid and
+    #   records each position/beam INTO the image:
+    #     from smi_plans import map_grid_run
+    #     yield from map_grid_run(sample, piezo.x, x_values, piezo.y, y_values,
+    #                             dets=[pil2M, pil900KW], t=t)
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as
+    #   a plan (see the ⚠️ note on that line). (internal: Tier 0.)
+    # === end smi_plans note ================================================
 
     RE(bps.mov( piezo.z, pz  ))
     if ps is None:
@@ -939,7 +1071,7 @@ def Measure_Map(  t = 1 ,  sample = 'O139',  ps=None, pz= 8000,  username = 'FLu
             t=t,
             #scan_id=RE.md["scan_id"],
         )
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         # sample_name='test'
         sample_id(user_name=user_name, sample_name=sample_name)
         print(f"\n\t=== Sample: {sample_name} ===\n")
@@ -978,6 +1110,9 @@ def get_current_time():
 def measure_current_sample(t=1, waxs_angles=[0, 20], sample=None):
 
     """t0=time.time();RE(measure_one_multi_angle_wsaxs());run_time(t0)"""
+    # smi_plans: takes the current sample at several WAXS-arc angles (WAXS at each, SAXS at the
+    #   biggest). In smi_plans this is one acquire with a motor_axis("waxs_arc", waxs.arc, ...). The
+    #   ⚠️ exposure fix lives in measure_waxs/measure_wsaxs, which this calls.  (internal: Tier 1.)
     maxA = np.max(waxs_angles)
     for waxs_angle in waxs_angles:
         print("here we go ... ")
@@ -990,6 +1125,16 @@ def measure_current_sample(t=1, waxs_angles=[0, 20], sample=None):
 def measure_saxs(t=1, att="None", dx=0, dy=0, user_name=username, sample=None):
 
     """RE( measure_saxs( sample = 'AgBH_12keV' ) )"""
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the core "take one SAXS image of the current sample" helper that all the
+    #   melting/temperature plans above call. Optionally nudges x/y, then snaps one pil2M image.
+    # 💡 NEWER, EASIER WAY: a single SAXS frame is one acquire (or transmission_run) in 'smi_plans',
+    #   which records x/y/detector-distance/beam INTO the data and fills the name from those fields:
+    #     from smi_plans import acquire
+    #     yield from acquire(sample or RE.md["sample_name"], [pil2M], [], t=t)
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as
+    #   a plan (see the ⚠️ note on that line). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     if sample is None:
         # sample = RE.md['sample']
@@ -1011,7 +1156,7 @@ def measure_saxs(t=1, att="None", dx=0, dy=0, user_name=username, sample=None):
         t=t,
         #scan_id=RE.md["scan_id"],
     )
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     # sample_name='test'
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
@@ -1032,6 +1177,14 @@ def measure_waxs(
 
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves the WAXS arc to an angle and takes one WAXS image of the current sample.
+    # 💡 NEWER, EASIER WAY: a WAXS shot is one acquire in 'smi_plans'; to sweep arc angles hand it a
+    #   motor_axis instead of looping:  acquire(sample, [pil900KW], [motor_axis("waxs_arc",
+    #   waxs.arc, [waxs_angle])], t=t).
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as
+    #   a plan (see the ⚠️ note on that line). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     if sample is None:
         sample = RE.md["sample"]
@@ -1058,7 +1211,7 @@ def measure_waxs(
         expt=t,
         #scan_id=RE.md["scan_id"],
     )
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")
@@ -1074,6 +1227,16 @@ def measure_wsaxs(
     t=1, waxs_angle=20, att="None", dx=0, dy=0, user_name=username, sample=None
 ):
     """RE( measure_wsaxs( sample = 'AgBH_12keV' ) )"""
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves the WAXS arc and takes BOTH a SAXS and a WAXS image of the current sample.
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' just list both detectors in one acquire and it saves WAXS
+    #   + SAXS together with the recorded angle/position/beam:
+    #     from smi_plans import acquire, motor_axis
+    #     yield from acquire(sample or RE.md["sample"], [pil900KW, pil2M],
+    #                        [motor_axis("waxs_arc", waxs.arc, [waxs_angle])], t=t)
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as
+    #   a plan (see the ⚠️ note on that line). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     if sample is None:
         # sample = RE.md['sample']
@@ -1099,7 +1262,7 @@ def measure_wsaxs(
         #scan_id=RE.md["scan_id"],
     )
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")
@@ -1121,6 +1284,16 @@ def measure_series_multi_angle_wsaxs(
     
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits every sample on the bar and, at each WAXS-arc angle, takes a WAXS image
+    #   (plus SAXS at the largest angle). A full "bar x arc-angle" sweep.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a transmission "bar" helper that visits each sample and
+    #   sweeps the WAXS arc, recording sample/position/arc into each image:
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=list(sample_dict.values()), ...)
+    #     yield from transmission_bar(samples, t=t[0], waxs_arc=waxs_angles, dets=[pil2M, pil900KW])
+    #   (Nothing broken; the ⚠️ exposure fix lives inside measure_waxs/measure_wsaxs.)  (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     ks = list(sample_dict.keys())  # [:8 ]
     maxA = np.max(waxs_angles)
@@ -1150,6 +1323,15 @@ def measure_series_saxs(t=[1]):
     t0=time.time();RE(measure_series_saxs());run_time(t0)
     
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits every sample on the bar and takes a SAXS image of each.
+    # 💡 NEWER, EASIER WAY: this is transmission_bar in 'smi_plans' (SAXS only — pass dets=[pil2M]):
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=list(sample_dict.values()), ...)
+    #     yield from transmission_bar(samples, t=t[0], dets=[pil2M])
+    #   (The horizontal/vertical variants below just add an x/y offset per spot — same mapping.)
+    #   (Nothing broken; the ⚠️ exposure fix lives inside measure_saxs.)  (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
 
 
@@ -1243,6 +1425,14 @@ def RE_run_RT_temperature(   exposure_t = 0.1 , i_dict = None  ):
 
 
     '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the *plan* version of run_RT_temperature — a room-temperature baseline pass
+    #   that measures each sample at its next fresh spot (tracked in i_dict).
+    # 💡 NEWER, EASIER WAY: list the bar once and let transmission_bar / temperature_ramp_run in
+    #   'smi_plans' visit each sample, with "fresh spot per measurement" handled by a dose/position
+    #   step instead of a hand-kept i_dict. (Nothing broken; the ⚠️ fix is inside measure_saxs.)
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
     #step one 
     #set Temperature 
     if i_dict is None:
@@ -1273,17 +1463,21 @@ def run_time(t0):
 
 
 def snap_waxs(t=0.1):
+    # smi_plans: a quick one-shot WAXS snapshot. In smi_plans this is  yield from acquire("test",
+    #   [pil900KW], [], t=t). The ⚠️ below is the only run-blocking fix.
     dets = [pil900KW]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(t,t )
+    det_exposure_time(t,t )  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     yield from (bp.count(dets, num=1))
 
 
 def snap_saxs(t=0.1):
     'test '
+    # smi_plans: a quick one-shot SAXS snapshot. In smi_plans this is  yield from acquire("test",
+    #   [pil2M], [], t=t). The ⚠️ below is the only run-blocking fix.
     dets = [pil2M]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(t,t )
+    det_exposure_time(t,t )  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     yield from (bp.count(dets, num=1))
 
 

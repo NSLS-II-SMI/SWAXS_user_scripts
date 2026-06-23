@@ -76,6 +76,24 @@ Data Folder:
 
  
 '''
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS FILE DOES: a transmission SAXS/WAXS run-book for a sample bar (this is the sibling of
+#   2026C1_FLu.py). You set sample positions in pxy_dict, then call helpers like measure_saxs /
+#   measure_waxs / measure_multi_waxs_loop_angles to visit each sample and take images. The two
+#   '''...''' blocks above are setup notes, not live code.
+#
+# 💡 NEWER, EASIER WAY: 'smi_plans' has a "transmission bar" helper for exactly this — list the bar
+#   once and it visits each sample and records position/beam INTO the data (no hand-built names):
+#
+#     from smi_plans import transmission_bar, SampleList
+#     samples = SampleList.from_columns(name=list(sample_dict.values()),
+#                                       x=[p[0] for p in pxy_dict.values()],
+#                                       y=[p[1] for p in pxy_dict.values()])
+#     RE(transmission_bar(samples, t=1, dets=[pil2M]))     # add pil900KW for WAXS
+#
+#   See the per-function notes below (transmission_run, time_series_run, kinetics_run). Your script
+#   still works as-is EXCEPT for anything marked ⚠️.  (internal: Tier 1.)
+# === end smi_plans note ================================================
 
  
 
@@ -204,6 +222,21 @@ def name_sam(pos):
 
 def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=20, att="None", dx=0, dy=0, user_name=None, sample=None, take_camera = False):
     """RE( measure_transmission_xs( sample = 'test' ) )"""
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the core "take one transmission image of the current sample" plan. Depending
+    #   on 'mode' it uses the SAXS camera (pil2M), the WAXS camera (pil900KW, after moving the arc),
+    #   or both; optionally nudges x/y first and saves a descriptive file name.
+    #
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' a single transmission shot is transmission_run (or a bare
+    #   acquire), which records x/y/detector-distance/beam INTO the data and fills the file name from
+    #   those recorded fields (so you don't read .position into the name yourself):
+    #     from smi_plans import transmission_run
+    #     yield from transmission_run(sample or RE.md["sample_name"], t=t,
+    #                                 dets=[pil2M] + ([pil900KW] if 'waxs' in mode else []))
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note on that line). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     
     if user_name is None:        
         user_name = RE.md["user_name"]         
@@ -235,7 +268,7 @@ def measure_transmission_xs(t=1, mode = ['saxs'], waxs_angle=20, att="None", dx=
         t=t,
         #scan_id=RE.md["scan_id"],
     )
-    det_exposure_time(t, t) 
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")
@@ -273,6 +306,21 @@ def measure_multi_waxs_loop_angles(  t= [1], waxs_angles=[0, 15, 20, 40   ],
     t0=time.time();RE(measure_multi_waxs_loop_angles());run_time(t0)    
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: loops over WAXS arc angles, and for each angle visits every sample in the bar
+    #   (optionally nudging x/y) and takes a WAXS image — adding a SAXS image too at the largest arc
+    #   angle. A full "bar x arc-angle" sweep.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a transmission "bar" helper that visits every sample and
+    #   sweeps the WAXS arc, recording sample/position/arc into each image, in one call:
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=list(sample_dict.values()),
+    #                                       x=[p[0] for p in pxy_dict.values()],
+    #                                       y=[p[1] for p in pxy_dict.values()])
+    #     yield from transmission_bar(samples, t=t[0], waxs_arc=waxs_angles, dets=[pil2M, pil900KW])
+    #   (Nothing here is broken; the ⚠️ exposure fix is inside measure_transmission_xs, which this
+    #    calls.)  (internal: Tier 1.)
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())   
     maxA = np.max(waxs_angles)
     take_camera = False
@@ -310,6 +358,17 @@ def measure_multi_saxs_loop_angles(  t= [1],  dxs=[0], dys=[0], user_name= user_
     t0=time.time();RE(measure_multi_waxs_loop_angles());run_time(t0)    
 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: visits every sample in the bar (optionally nudging x/y) and takes a SAXS image
+    #   of each — a straightforward "measure the whole bar in SAXS" loop.
+    # 💡 NEWER, EASIER WAY: this is transmission_bar in 'smi_plans' (SAXS only — pass dets=[pil2M]):
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=list(sample_dict.values()),
+    #                                       x=[p[0] for p in pxy_dict.values()],
+    #                                       y=[p[1] for p in pxy_dict.values()])
+    #     yield from transmission_bar(samples, t=t[0], dets=[pil2M])
+    #   (Nothing broken here; the ⚠️ exposure fix lives in measure_transmission_xs.)  (internal: Tier 1.)
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())   
     take_camera = False
     for k in ks:
@@ -342,6 +401,14 @@ class NanoSyn( ):
 
 
     def measure( self,sample_name=None,  t=1, take_camera = False ):
+        # === smi_plans note (REVIEW 2026-06-22) ================================
+        # WHAT THIS DOES: takes one SAXS+WAXS image of the nanoparticle sample (used as the per-time
+        #   point measurement inside run() below). It drives the beamline with RE(...) directly.
+        # 💡 NEWER, EASIER WAY: a single shot is one acquire in 'smi_plans'; and the whole
+        #   measure-on-a-timer loop in run() is what time_series_run / kinetics_run are for — see
+        #   the note on run(). (Note: the exposure line here is currently commented out, so the
+        #   exposure is whatever was last set.)
+        # === end smi_plans note ================================================
         waxs_angle = 20 #15 #if need change waxs angle, do     move_waxs(  waxs_angle ),  
         dets = [  pil2M, pil900KW ]
         if sample_name is not None:
@@ -386,6 +453,20 @@ class NanoSyn( ):
         sam.run( sample_name = 'Au111125_ASP_Thiol_HT', sleep_time=30, run_time = 3600*6  )
 
         '''
+        # === smi_plans note (REVIEW 2026-06-22) ================================
+        # WHAT THIS DOES: an in-situ nanoparticle-synthesis kinetics run — for up to run_time
+        #   seconds it repeatedly measures the sample, then hops to a fresh spot (to dodge beam
+        #   damage) and sleeps, building a time series of how the particles grow/assemble.
+        #
+        # 💡 NEWER, EASIER WAY: a "measure over and over on a timer" experiment is exactly
+        #   time_series_run / kinetics_run in 'smi_plans'. It records the elapsed time + frame number
+        #   into each image and can step a dose/position motor between frames, so you don't manage
+        #   the while-loop and clock yourself:
+        #     from smi_plans import time_series_run
+        #     RE(time_series_run(sample_name, duration=run_time, period=sleep_time, t=1,
+        #                        dets=[pil2M, pil900KW], dose_motor=piezo.x, dose_step=200))
+        #   (Nothing here is broken; this is just the tidier, self-recording pattern.)  (internal: Tier 0.)
+        # === end smi_plans note ================================================
         
         t0 = time.time()        
         print('Starting measurements for %.2f min.'%( run_time/60))

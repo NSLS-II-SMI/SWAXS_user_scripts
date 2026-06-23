@@ -1,5 +1,23 @@
 def giwaxs_S_edge_wenkai(t=1):
-    dets = [pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant grazing sulfur-edge (GI-NEXAFS) scan over a bar of samples — for each it opens
+    #   the gate valve, aligns, then for each WAXS arc sweeps the sulfur-edge energy list (~2450-2500 eV, finely spaced over the edge), nudging
+    #   x each step, and walks the energy back.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that does a
+    #   full energy (NEXAFS) scan in ONE line and records the energy/beam/incident angle
+    #   straight INTO the data and file name (so you can drop the bpm-in-the-name building):
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("A2", energies,
+    #                           t=t, dets=[pil900KW, pil2M], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle waits you can delete once you migrate.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = ["A2", "A3", "A4", "A5", "A6"]
     x = [30000, 16000, 0, -15000, -36000]
@@ -38,11 +56,11 @@ def giwaxs_S_edge_wenkai(t=1):
         for wa in waxs_arc:
             yield from bps.mv(waxs, wa)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e, xsss in zip(energies, xss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 yield from bps.mv(piezo.x, xsss)
                 bpm = xbpm2.sumX.value
@@ -59,7 +77,24 @@ def giwaxs_S_edge_wenkai(t=1):
 
 
 def nexafs_S_edge_wenkai(t=1):
-    dets = [pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a resonant sulfur-edge NEXAFS scan over a bar of samples — aligns each, then sweeps the
+    #   S-edge energies taking WAXS images.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that does a
+    #   full energy (NEXAFS) scan in ONE line and records the energy/beam/incident angle
+    #   straight INTO the data and file name (so you can drop the bpm-in-the-name building):
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("wenkai_Sedge", energies,
+    #                           t=t, dets=[pil900KW, pil2M], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle waits you can delete once you migrate.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     names = ["PFSA_LSC"]
     x = [41200]
     y = [-8000]
@@ -82,11 +117,11 @@ def nexafs_S_edge_wenkai(t=1):
 
     for name, xs in zip(names, x):
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         name_fmt = "nexafs_{sample}_{energy}eV_wa52.00_bpm{xbpm}"
         for e in energies:
             yield from bps.mv(energy, e)
-            yield from bps.sleep(1)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
             bpm = xbpm2.sumX.value
 
@@ -102,7 +137,21 @@ def nexafs_S_edge_wenkai(t=1):
 
 
 def hardxray_wenkai2020_1(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a 2020 hard-X-ray SAXS+WAXS run over Wenkai's samples — moves to each sample and takes
+    #   images (a bar measurement).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs SAXS/WAXS measurements and bars for you, recording
+    #   position/beam INTO the data and file name. For a grazing run use giwaxs_bar; for a
+    #   capillary/transmission bar use transmission_bar:
+    #     from smi_plans import giwaxs_bar, transmission_bar, SampleList, align_sample
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = [
         "PFSA_LSC",
@@ -187,7 +236,7 @@ def hardxray_wenkai2020_1(t=1):
             yield from bps.mv(piezo.y, ys)
             yield from bps.mv(piezo.z, zs)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_16.1keVeV_8.3m_wa{wax}"
 
             yield from bps.sleep(1)
@@ -200,7 +249,24 @@ def hardxray_wenkai2020_1(t=1):
 
 def waxs_S_edge_wenkai_2021_1(t=1):
 
-    dets = [pil2M, pil300KW]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a 2021 resonant sulfur-edge WAXS scan over a bar of samples — aligns each, then sweeps the
+    #   S-edge energies across the WAXS arcs.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that does a
+    #   full energy (NEXAFS) scan in ONE line and records the energy/beam/incident angle
+    #   straight INTO the data and file name (so you can drop the bpm-in-the-name building):
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("wenkai_Sedge_2021", energies,
+    #                           t=t, dets=[pil900KW, pil2M], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle waits you can delete once you migrate.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
+    dets = [pil2M, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     # names = ['PFSA_LSC', 'PFSA_SSC', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'D1', 'D2', 'A3', 'B3', 'C3', 'D3']
     # x = [41000, 28000,  43300, 37600, 32700, 27500, 21700, 16600, 11300, 5900, -17600, -22600, -28100, -33100]
@@ -270,11 +336,11 @@ def waxs_S_edge_wenkai_2021_1(t=1):
             yss, xss = np.meshgrid(yss, xss)
             yss = yss.ravel()
             xss = xss.ravel()
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e, xsss, ysss in zip(energies, xss, yss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(1)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 yield from bps.mv(piezo.y, ysss)
                 yield from bps.mv(piezo.x, xsss)
@@ -293,15 +359,33 @@ def waxs_S_edge_wenkai_2021_1(t=1):
 
 
 def wenkai_waxs_tensile_tender_2021_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ TENSILE (strain) WAXS time series at the tender S-edge energy — it loops ~60
+    #   times, applies a little strain (nudges stage.y) each pass, and takes WAXS images across
+    #   a few arc angles, stamping the elapsed time into the name.
+    #
+    # 💡 NEWER, EASIER WAY: this is an in-situ kinetics / strain time series. 'smi_plans' has a
+    #   purpose-built time-series plan that takes frames on a schedule and records the REAL
+    #   elapsed time, position and beam INTO each frame (so the time/strain step is in the
+    #   data, not just the file name), and you don't manage the loop counter/clock by hand:
+    #     from smi_plans import time_series_run, kinetics_run
+    #     yield from time_series_run(name, dets=[pil900KW, pil2M], t=t, period=..., num=...)
+    #     # (drive the strain by moving stage.y between frames, as you do now)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 0/1 — Python loop around bp.count.)
+    # === end smi_plans note ================================================
     # 85s to do the loop
-    dets = [pil300KW, pil2M]
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = "SSC_loop4_waxs"
     t0 = time.time()
     # yield from bps.mvr(stage.y, -0.4)
 
     for i in range(60):
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         yield from bps.mvr(stage.y, 0.03)
 
         if waxs.arc.position > 5:
@@ -328,15 +412,32 @@ def wenkai_waxs_tensile_tender_2021_2(t=1):
 
 
 def wenkai_waxsonly_tensile_tender_2021_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ TENSILE WAXS-only time series at a tender energy — loops ~1000 times applying
+    #   strain (nudging stage.y) and taking a WAXS image each pass.
+    #
+    # 💡 NEWER, EASIER WAY: this is an in-situ kinetics / strain time series. 'smi_plans' has a
+    #   purpose-built time-series plan that takes frames on a schedule and records the REAL
+    #   elapsed time, position and beam INTO each frame (so the time/strain step is in the
+    #   data, not just the file name), and you don't manage the loop counter/clock by hand:
+    #     from smi_plans import time_series_run, kinetics_run
+    #     yield from time_series_run(name, dets=[pil900KW, pil2M], t=t, period=..., num=...)
+    #     # (drive the strain by moving stage.y between frames, as you do now)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 0/1 — Python loop around bp.count.)
+    # === end smi_plans note ================================================
     # 85s to do the loop
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = "LSC_loop5_waxs_kaclamp"
     t0 = time.time()
     # yield from bps.mvr(stage.y, -0.4)
 
     for i in range(1000):
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         yield from bps.mvr(stage.y, 0.01)
 
         t1 = time.time()
@@ -354,15 +455,32 @@ def wenkai_waxsonly_tensile_tender_2021_2(t=1):
 
 
 def wenkai_saxsonly_tensile_tender_2021_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ TENSILE SAXS-only time series at a tender energy — loops applying strain and
+    #   taking a SAXS image each pass.
+    #
+    # 💡 NEWER, EASIER WAY: this is an in-situ kinetics / strain time series. 'smi_plans' has a
+    #   purpose-built time-series plan that takes frames on a schedule and records the REAL
+    #   elapsed time, position and beam INTO each frame (so the time/strain step is in the
+    #   data, not just the file name), and you don't manage the loop counter/clock by hand:
+    #     from smi_plans import time_series_run, kinetics_run
+    #     yield from time_series_run(name, dets=[pil900KW, pil2M], t=t, period=..., num=...)
+    #     # (drive the strain by moving stage.y between frames, as you do now)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 0/1 — Python loop around bp.count.)
+    # === end smi_plans note ================================================
     # 85s to do the loop
-    dets = [pil300KW, pil2M]
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = "SSC_loop3_saxs"
     t0 = time.time()
     # yield from bps.mvr(stage.y, -0.4)
 
     for i in range(1000):
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         yield from bps.mvr(stage.y, 0.005)
 
         t1 = time.time()
@@ -382,12 +500,29 @@ def wenkai_saxsonly_tensile_tender_2021_2(t=1):
 
 
 def wenkai_saxs_waxs_tensile_hard(t=1):
-    dets = [pil300KW, pil2M]
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an in-situ TENSILE SAXS+WAXS time series at hard X-ray energy — loops applying strain and
+    #   taking SAXS+WAXS images each pass.
+    #
+    # 💡 NEWER, EASIER WAY: this is an in-situ kinetics / strain time series. 'smi_plans' has a
+    #   purpose-built time-series plan that takes frames on a schedule and records the REAL
+    #   elapsed time, position and beam INTO each frame (so the time/strain step is in the
+    #   data, not just the file name), and you don't manage the loop counter/clock by hand:
+    #     from smi_plans import time_series_run, kinetics_run
+    #     yield from time_series_run(name, dets=[pil900KW, pil2M], t=t, period=..., num=...)
+    #     # (drive the strain by moving stage.y between frames, as you do now)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 0/1 — Python loop around bp.count.)
+    # === end smi_plans note ================================================
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     names = "PF-T2PO1_loop1"
     t0 = time.time()
     for i in range(2000):
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         if waxs.arc.position > 5:
             wa = [13, 6.5, 0]
@@ -407,14 +542,30 @@ def wenkai_saxs_waxs_tensile_hard(t=1):
 
 
 def wenkai_waxs_tensile_2021_3(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a 2021 in-situ TENSILE WAXS time series — loops applying strain and taking WAXS images.
+    #
+    # 💡 NEWER, EASIER WAY: this is an in-situ kinetics / strain time series. 'smi_plans' has a
+    #   purpose-built time-series plan that takes frames on a schedule and records the REAL
+    #   elapsed time, position and beam INTO each frame (so the time/strain step is in the
+    #   data, not just the file name), and you don't manage the loop counter/clock by hand:
+    #     from smi_plans import time_series_run, kinetics_run
+    #     yield from time_series_run(name, dets=[pil900KW, pil2M], t=t, period=..., num=...)
+    #     # (drive the strain by moving stage.y between frames, as you do now)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 0/1 — Python loop around bp.count.)
+    # === end smi_plans note ================================================
     names = "LSC_RT_loop1"
 
-    dets = [pil900KW, pil300KW]
+    dets = [pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     wa = [0]
     yield from bps.mv(stage.y, 0.1)
     t0 = time.time()
     for i in range(2000):
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         name_fmt = "{sample}_14keV_{time}s_{i}_wa{wa}"
         t1 = time.time()
@@ -431,6 +582,22 @@ def wenkai_waxs_tensile_2021_3(t=0.5):
 
 
 def wenkai_saxs_tensile_2021_3(t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a 2021 in-situ TENSILE SAXS time series — loops applying strain and taking SAXS images.
+    #
+    # 💡 NEWER, EASIER WAY: this is an in-situ kinetics / strain time series. 'smi_plans' has a
+    #   purpose-built time-series plan that takes frames on a schedule and records the REAL
+    #   elapsed time, position and beam INTO each frame (so the time/strain step is in the
+    #   data, not just the file name), and you don't manage the loop counter/clock by hand:
+    #     from smi_plans import time_series_run, kinetics_run
+    #     yield from time_series_run(name, dets=[pil900KW, pil2M], t=t, period=..., num=...)
+    #     # (drive the strain by moving stage.y between frames, as you do now)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 0/1 — Python loop around bp.count.)
+    # === end smi_plans note ================================================
     names = "LSC_RT_loop6_samesample"
 
     dets = [pil2M]
@@ -438,7 +605,7 @@ def wenkai_saxs_tensile_2021_3(t=0.5):
     yield from bps.mv(stage.y, -0.3)
     t0 = time.time()
     for i in range(2000):
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         name_fmt = "{sample}_2484.24keV_{time}s_{i}_wa{wa}"
         t1 = time.time()
@@ -457,8 +624,25 @@ def wenkai_saxs_tensile_2021_3(t=0.5):
 
 
 def S_edge_measurments_2022_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a 2022 resonant sulfur-edge measurement over a bar of samples — aligns each, then sweeps the
+    #   S-edge energies taking images.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that does a
+    #   full energy (NEXAFS) scan in ONE line and records the energy/beam/incident angle
+    #   straight INTO the data and file name (so you can drop the bpm-in-the-name building):
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("wenkai_Sedge_2022", energies,
+    #                           t=t, dets=[pil900KW, pil2M], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle waits you can delete once you migrate.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # names = [    'A1',   'A2',   'A3',   'A4',  'A5',  'A6',  'B1',  'B2',  'B3',  
     #              'B4',   'B5',   'B6',   'C1',  'C2',  'C3',  'C4',  'C5', 'C6']
@@ -507,7 +691,7 @@ def S_edge_measurments_2022_3(t=1):
         yield from alignement_gisaxs_doblestack(0.4)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             yield from bps.mv(waxs, wa)
@@ -523,11 +707,11 @@ def S_edge_measurments_2022_3(t=1):
                 name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     if xbpm2.sumX.get() < 50:
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                     yield from bps.mv(piezo.x, xs + counter * 50)
                     counter += 1
 
@@ -538,11 +722,11 @@ def S_edge_measurments_2022_3(t=1):
                     yield from bp.count(dets, num=1)
 
                 yield from bps.mv(energy, 2490)
-                yield from bps.sleep(3)
+                yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 2470)
-                yield from bps.sleep(3)
+                yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 2450)
-                yield from bps.sleep(3)
+                yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
             yield from bps.mv(piezo.th, ai0)
 
@@ -550,6 +734,23 @@ def S_edge_measurments_2022_3(t=1):
 
 
 def waxs_S_edge_wenkai_2022_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a 2022 resonant sulfur-edge WAXS scan over a bar of samples — aligns each, then sweeps the
+    #   S-edge energies across the WAXS arcs.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that does a
+    #   full energy (NEXAFS) scan in ONE line and records the energy/beam/incident angle
+    #   straight INTO the data and file name (so you can drop the bpm-in-the-name building):
+    #     from smi_plans import nexafs_run        # do this once at the top of your session
+    #     yield from nexafs_run("wenkai_Sedge_2022_waxs", energies,
+    #                           t=t, dets=[pil900KW, pil2M], geometry="transmission")
+    #     # (loop over your samples; align_sample aligns each, incidence_axis sweeps the angle)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines; the 💡 lines are settle waits you can delete once you migrate.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
     dets = [pil900KW, pil2M]
 
     names = [   'A1',  'A2',  'A3',  'A4',  'A5',  'A6',  'A7',  'A8',  'B1',  'B2',  'B3',  'B4',  'B5',  'B6',  'B7',  'B8',
@@ -584,16 +785,16 @@ def waxs_S_edge_wenkai_2022_3(t=1):
             else:
                 dets = [pil900KW, pil2M]
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
             name_fmt = "{sample}_sdd{sdd}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e, xsss, ysss in zip(energies, xss, yss):
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(2)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
                 if xbpm2.sumX.get() < 50:
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
                 yield from bps.mv(piezo.y, ysss)
                 yield from bps.mv(piezo.x, xsss)
@@ -609,19 +810,33 @@ def waxs_S_edge_wenkai_2022_3(t=1):
                 yield from bp.count(dets, num=1)
 
             yield from bps.mv(energy, 2490)
-            yield from bps.sleep(3)
+            yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2470)
-            yield from bps.sleep(3)
+            yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, 2450)
-            yield from bps.sleep(3)
+            yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
 
 
 
 
 
 def hardxray_wenkai_2022_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a 2022 hard-X-ray SAXS+WAXS run over Wenkai's samples — moves to each sample and takes
+    #   images (a bar measurement).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs SAXS/WAXS measurements and bars for you, recording
+    #   position/beam INTO the data and file name. For a grazing run use giwaxs_bar; for a
+    #   capillary/transmission bar use transmission_bar:
+    #     from smi_plans import giwaxs_bar, transmission_bar, SampleList, align_sample
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan (see the ⚠️ notes below).
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # names = [ 'ZM_01', 'ZM_02', 'ZM_03', 'ZM_04', 'ZM_05', 'ZM_06', 'ZM_07', 'ZM_08', 
     #           'ZM_09', 'ZM_10', 'ZM_11','XSJ_01','XSJ_02','XSJ_03','XSJ_04',]
@@ -688,7 +903,7 @@ def hardxray_wenkai_2022_3(t=1):
         yield from alignement_gisaxs_doblestack(0.15)
 
         ai0 = piezo.th.position
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         for i, wa in enumerate(waxs_arc):
             # Do not take SAXS when WAXS detector in the way

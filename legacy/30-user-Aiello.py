@@ -2,6 +2,13 @@ def atten_move_in():
     """
     Move 4x + 2x Sn 60 um attenuators in
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: pushes two attenuator foils into the beam and waits until each
+    #   actually reports "Open" (a small helper used around the transmission readings below).
+    # 💡 NOTHING BROKEN HERE: these attenuators (att1_6, att1_7) still work the same way.
+    #   In smi_plans this kind of attenuator handling is built into the transmission helpers
+    #   (transmission_run / transmission_bar), so you usually don't write it by hand anymore.
+    # === end smi_plans note ================================================
     print('Moving attenuators in')
 
     while att1_7.status.get() != 'Open':
@@ -15,6 +22,12 @@ def atten_move_out():
     """
     Move 4x + 2x Sn 60 um attenuators out
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: pulls those two attenuator foils back out of the beam and waits
+    #   until each reports "Not Open" (the partner of atten_move_in above).
+    # 💡 NOTHING BROKEN HERE: att1_6 / att1_7 still work; smi_plans' transmission helpers
+    #   (transmission_run / transmission_bar) handle inserting/removing attenuators for you.
+    # === end smi_plans note ================================================
     print('Moving attenuators out')
     while att1_7.status.get() != 'Not Open':
         yield from bps.mv(att1_7.close_cmd, 1)
@@ -27,8 +40,18 @@ def take_test_det(t=0.5):
     """
     Take some data just in case WAXS complains
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes one throwaway SAXS+WAXS image to "wake up" the detectors
+    #   before a real run (a common warm-up trick).
+    # 💡 NEWER, EASIER WAY: the smi_plans technique runs (map_grid_run/map_line_run/etc.)
+    #   stage the detectors for you, so you usually don't need a manual warm-up shot.
+    #   (Your script below works as-is EXCEPT for the ⚠️ line, which needs a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' line below no longer sets
+    #   the exposure unless run as a plan (see the ⚠️ note on it).
+    # === end smi_plans note ================================================
     dets = [pil2M, pil900KW]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     sample_id(user_name="test", sample_name="test")
     yield from bp.count(dets)
 
@@ -36,6 +59,30 @@ def run_nist_linescans(t=0.5):
     """
     Microfocusing line scans along y axis, set y_range for each sample
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: micro-focus mapping — for each WAXS arc, it measures a direct beam
+    #   (for transmission), then for each sample takes a transmission reading and runs one
+    #   coordinated vertical line scan ('rel_scan' along y), taking an image at each point.
+    #
+    # 💡 NICE WORK + NEWER, EASIER WAY: collecting each sample as ONE 'rel_scan' is the
+    #   modern, tidy way — nice! smi_plans has a line-scan helper that does this AND records
+    #   the position/beam into each image and names the files for you; transmission_run can
+    #   take the direct-beam/sample readings so you don't hand-fetch them from 'db[-1]':
+    #
+    #     from smi_plans import map_line_run                 # do this once at the top of your session
+    #     yield from map_line_run(
+    #         "AAA0_a",                                      # the rest of the file name is added automatically
+    #         piezo.y, 0, 500, 101,                          # your y line scan, unchanged
+    #         t=t, dets=[pil2M, pil900KW],
+    #     )                                                  # loop the WAXS arc and samples around it as you do now
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for anything marked ⚠️ which genuinely needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil2M_bs_rod' was renamed — it's now 'pil2M.beamstop.x_rod';
+    #   (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a plan
+    #   (see the ⚠️ notes below). (internal: Tier 2.)
+    # === end smi_plans note ================================================
     
     # names =   ['PET1000_b','PET1000_c','PET1500_a','PET1500_b',    'PET1500_c','PET2000_a',   'PET2000_b',   'PET2000_c', 'PET3000_a',  'PET3000_b',   'PET3000c',    'PET4000a',    'PET4000b', 'PET4000c',  'PET0redo_a',  'PET0redo_b', 'PET0redo_c','PET4000S_a', 'PET4000S_b', 'PET4000S_c','PET3000S_a',   'PET3000S_b', 'PET3000S_c', 'PET2000S_a',  'PET2000S_b',  'PET2000S_c', 'PET1500S_a',  'PET1500S_b', 'PET1500S_c',  'PET1000S_a','PET1000S_b', 'PET1000S_c',  'PET500S_a', 'PET500S_b', 'PET500S_c',    'PET250S_a',   'PET250S_b', 'PET250S_c']
     # piezo_x = [   26600,    26000,          18000,       15500,         14000,       5750 ,          3250,         1750,        -2650,        -5650,        -8150,       -14650,         -17150,     -18650,        -23850,        -27350,       -30350,      -17350,       -15350,       -13350,       -7850,          -5350,        -2850,        1650,           4150,          7650,        12650,          15150,       17650,         22150,       25150,        28150,        34150,       36150,        38150,         44150,         46150,        48150]
@@ -83,12 +130,12 @@ def run_nist_linescans(t=0.5):
     # beamstop x position on SAXS
     bs_pos = 2.2
     yield from atten_move_out()
-    yield from bps.mv(pil2M_bs_rod.x, bs_pos)
+    yield from bps.mv(pil2M_bs_rod.x, bs_pos)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
         dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         condition = ( 19 < waxs.arc.position ) and ( waxs.arc.position < 21 )
 
@@ -97,7 +144,7 @@ def run_nist_linescans(t=0.5):
             yield from atten_move_in()
             yield from bps.mv(piezo.x, dbeam_x,
                               piezo.y, dbeam_y,
-                              pil2M_bs_rod.x, bs_pos + 5)
+                              pil2M_bs_rod.x, bs_pos + 5)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
             
             sample_name = f'empty-attn-direct'
             sample_id(user_name='test', sample_name=sample_name)
@@ -105,7 +152,7 @@ def run_nist_linescans(t=0.5):
             yield from bp.count([pil2M])
             stats1_direct = db[-1].table(stream_name='primary')['pil2M_stats1_total'].values[0]
 
-            yield from bps.mv(pil2M_bs_rod.x, bs_pos)
+            yield from bps.mv(pil2M_bs_rod.x, bs_pos)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
             yield from atten_move_out()
         
         # Measure samples
@@ -117,7 +164,7 @@ def run_nist_linescans(t=0.5):
             if condition:
                 yield from atten_move_in()
                 yield from bps.mv(piezo.y, y + y_r[1] / 2,
-                                  pil2M_bs_rod.x, bs_pos + 5,)
+                                  pil2M_bs_rod.x, bs_pos + 5,)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
 
                 sample_name = f'{name}-attn-sample'
                 sample_id(user_name='test', sample_name=sample_name)
@@ -130,7 +177,7 @@ def run_nist_linescans(t=0.5):
 
                 # Revert configuraton
                 yield from bps.mv(pil2M_bs_rod.x, bs_pos,
-                                  piezo.y, y,)
+                                  piezo.y, y,)  # ⚠️ FIXME(smi_plans): 'pil2M_bs_rod' was renamed (it would error). The SAXS beamstop rod is now 'pil2M.beamstop.x_rod' (or use the helpers  yield from pil2M.insert_beamstop('rod')  /  yield from pil2M.restore_beamstop()).
                 yield from atten_move_out()
             else:
                 trans = 0
@@ -142,13 +189,34 @@ def run_nist_linescans(t=0.5):
             yield from bp.rel_scan(dets, piezo.y, *y_r)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_nist_spirals(t=0.5):
     """
     Microfocusing spiral scans
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: micro-focus mapping — for each sample it runs one coordinated
+    #   spiral scan ('rel_spiral' over x and y), taking an image at each spiral point.
+    #
+    # 💡 NICE WORK + NEWER, EASIER WAY: collecting each sample as ONE 'rel_spiral' is the
+    #   modern, tidy way — nice! smi_plans has a spiral map helper that does this AND records
+    #   the position/beam into each image and names the files for you:
+    #
+    #     from smi_plans import map_spiral_run               # do this once at the top of your session
+    #     yield from map_spiral_run(
+    #         "180_100_50_PP_CS_L2_c",                       # the rest of the file name is added automatically
+    #         piezo.x, piezo.y, 500, 500, 50, 12,            # your spiral (x range, y range, dr, theta), unchanged
+    #         t=t, dets=[pil900KW, OAV_writing],
+    #     )
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes below). (internal: Tier 2.)
+    # === end smi_plans note ================================================
 
     names =   ['180_100_50_PP_CS_L2_c',],#'180_100_50_PP_CS_L1']
     piezo_x = [             40835,]#                  45585]
@@ -175,7 +243,7 @@ def run_nist_spirals(t=0.5):
         yield from bps.mv(waxs, wa)
         dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         dets.append(OAV_writing)
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         
         # Measure samples
         for name, x, y, r in zip(names, piezo_x, piezo_y, ranges):
@@ -188,12 +256,34 @@ def run_nist_spirals(t=0.5):
             yield from bp.rel_spiral(dets, piezo.x, piezo.y, *r)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 def run_nist_grids(t=0.3):
     """
     Microfocusing grid scans
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: micro-focus mapping — for each sample it runs one coordinated 2D
+    #   grid scan ('rel_grid_scan' over x and y), taking an image at every point of the raster.
+    #
+    # 💡 NICE WORK + NEWER, EASIER WAY: collecting each sample as ONE 'rel_grid_scan' is the
+    #   modern, tidy way — nice! smi_plans has a grid map helper that does this AND records the
+    #   position/beam into each image and names the files for you:
+    #
+    #     from smi_plans import map_grid_run                 # do this once at the top of your session
+    #     yield from map_grid_run(
+    #         "240_100_PP_CS_L2",                            # the rest of the file name is added automatically
+    #         piezo.x, -250, 250, 11,                        # your x range, unchanged
+    #         piezo.y, -150, 150, 16,                        # your y range, unchanged
+    #         t=t, dets=[pil900KW, OAV_writing],
+    #     )                                                  # loop the samples around it as you do now
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes below). (internal: Tier 2.)
+    # === end smi_plans note ================================================
     # Bar 2: 2,4,6,8,10,12,13-18
     #           2                   4                   6                      8                    10                  12                13                14                15                16                17                18
     # ['240_100_PP_CS_L2','240_100_100_PP_CS_L2','240_100_N1_CS_L2','240_100_100_N1_CS_L2','240_100_N2_CS_L2','240_100_100_CS_L2','180_10_PP_CS_LS','180_10_N1_CS_LS','180_10_N2_CS_LS','210_10_PP_CS_LS','210_10_N1_CS_LS','210_10_N2_CS_LS']
@@ -256,7 +346,7 @@ def run_nist_grids(t=0.3):
         yield from bps.mv(waxs, wa)
         dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
         dets.append(OAV_writing)
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         
         # Measure samples
         for name, x, y, rx, ry, in zip(names, piezo_x, piezo_y, ranges_x, ranges_y):
@@ -269,5 +359,5 @@ def run_nist_grids(t=0.3):
             yield from bp.rel_grid_scan(dets, piezo.x, *rx, piezo.y, *ry)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 

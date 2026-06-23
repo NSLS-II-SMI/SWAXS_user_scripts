@@ -2,29 +2,65 @@
 
 
 def aaron_rot(t=8):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a coupled-rotation scan — it rotates the sample (the rotation stage)
+    #   while moving stage.x and piezo.y together in lock-step (an "inner_product_scan", which
+    #   steps several motors at once), taking a SAXS image along the way; the segments cover
+    #   different angle ranges back-to-back.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans'. For rotating the
+    #   sample stage you'd use the tomography/texture plans, which rotate stage.phi (the
+    #   renamed rotation stage) and record the angle INTO the data; for moving several motors
+    #   together you compose paired axes built with motor_axis:
+    #     from smi_plans import acquire, motor_axis, tomography_run
+    #     # e.g. couple the rotation + x + y as paired motor_axis values, or use tomography_run
+    #     #      for a pure stage.phi rotation series.
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) the rotation stage 'prs' was removed — it's now 'stage.phi'
+    #   (it appears as a scanned motor in each inner_product_scan below); (2) the
+    #   'det_exposure_time(...)' call no longer sets the exposure unless run as a plan
+    #   (⚠️ notes below). (internal: commissioning utility.)
+    # === end smi_plans note ================================================
     sample_id(user_name="AM", sample_name="tetrahedral")
-    det_exposure_time(t)
+    det_exposure_time(t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t)  — or at the prompt:  RE(det_exposure_time(t)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bp.inner_product_scan(
-        [pil2M], 24, prs, 45, 22, stage.x, 0.23, 0.15, piezo.y, -1792.6, -1792.6
+        [pil2M], 24, prs, 45, 22, stage.x, 0.23, 0.15, piezo.y, -1792.6, -1792.6  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     )
     yield from bp.inner_product_scan(
-        [pil2M], 22, prs, 21, 0, stage.x, 0.15, 0.11, piezo.y, -1792.6, -1792.6
+        [pil2M], 22, prs, 21, 0, stage.x, 0.15, 0.11, piezo.y, -1792.6, -1792.6  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     )
     yield from bp.inner_product_scan(
-        [pil2M], 11, prs, -1, -11, stage.x, 0.11, 0.1, piezo.y, -1792.6, -1792.1
+        [pil2M], 11, prs, -1, -11, stage.x, 0.11, 0.1, piezo.y, -1792.6, -1792.1  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     )
     yield from bp.inner_product_scan(
-        [pil2M], 11, prs, -12, -22, stage.x, 0.1, 0.1, piezo.y, -1792.1, -1791.6
+        [pil2M], 11, prs, -12, -22, stage.x, 0.1, 0.1, piezo.y, -1792.1, -1791.6  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     )
     yield from bp.inner_product_scan(
-        [pil2M], 11, prs, -23, -33, stage.x, 0.1, 0.114, piezo.y, -1791.6, -1790.9
+        [pil2M], 11, prs, -23, -33, stage.x, 0.1, 0.114, piezo.y, -1791.6, -1790.9  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     )
     yield from bp.inner_product_scan(
-        [pil2M], 12, prs, -34, -45, stage.x, 0.114, 0.134, piezo.y, -1790.9, -1790.9
+        [pil2M], 12, prs, -34, -45, stage.x, 0.114, 0.134, piezo.y, -1790.9, -1790.9  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     )
 
 
 def brian_caps(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: walks along a bar of capillary samples (moving piezo.x/y to each) and
+    #   takes one SAXS image per sample.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs a whole bar from a list and records position/beam
+    #   INTO each image and into the file name:
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=samples, x=x_list, y=y_list)
+    #     yield from transmission_bar(samples, dets=[pil2M], t=t)
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). (internal: Tier 1.)
+    #
+    # NOTE: there are two functions named 'brian_caps' in this file; Python keeps only the
+    #   second one (lower down). This older one is shadowed — kept here for reference.
+    # === end smi_plans note ================================================
     x_list = [
         -36500,
         -30150,
@@ -59,7 +95,7 @@ def brian_caps(t=1):
     assert len(x_list) == len(
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     for x, y, sample in zip(x_list, y_list, samples):
         yield from bps.mv(piezo.x, x)
         yield from bps.mv(piezo.y, y)
@@ -68,10 +104,22 @@ def brian_caps(t=1):
         yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def brian_caps_2020_3(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a capillary bar run where each sample is measured as a burst of 240
+    #   frames (num=240) — a per-sample mini time-series at fixed position.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs the bar from a list and can take a burst per sample
+    #   while recording position/time/beam INTO the data and naming files for you:
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=samples, x=x_list, y=y_list, z=z_list)
+    #     yield from transmission_bar(samples, dets=[pil2M], t=t, num=240)
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # samples = ['buffer1', 'GB01', 'GB02', 'GB03', 'GB04', 'GB05', 'GB06', 'GB08', 'GB09', 'GB10', 'GB11', 'GB12']
     # samples = ['Y01', 'Y02', 'Y03', 'Y04', 'Y05', 'Y06']
 
@@ -206,7 +254,7 @@ def brian_caps_2020_3(t=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of Z coord ({len(z_list)})"
     ypos = [0, 50, 2]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     for x, y, z, sample in zip(x_list, y_list, z_list, samples):
         yield from bps.mv(piezo.x, x)
         yield from bps.mv(piezo.y, y)
@@ -216,10 +264,25 @@ def brian_caps_2020_3(t=1):
         yield from bp.count(dets, num=240)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def brian_caps_damage_2021_1(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a radiation-damage capillary bar run — one frame per sample, with a long
+    #   200-second wait between samples (note the long 1s/180s exposure set up top).
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs the bar from a list and records position/time/beam
+    #   INTO the data and names files for you; a fixed wait between samples can be set on the
+    #   bar plan instead of a hand-placed sleep:
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=samples, x=x_list, y=y_list, z=z_list)
+    #     yield from transmission_bar(samples, dets=[pil2M], t=t)
+    #   (The 200 s 'bps.sleep' between samples is a deliberate dose-spacing pause, so it's fine
+    #    to keep — it is NOT an energy settle.)
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     samples = [
         "V1_01",
@@ -384,7 +447,7 @@ def brian_caps_damage_2021_1(t=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of Z coord ({len(z_list)})"
     ypos = [0, 50, 2]
 
-    det_exposure_time(1, 180)
+    det_exposure_time(1, 180)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(1, 180)  — or at the prompt:  RE(det_exposure_time(1, 180)). (The smi_plans technique runs set exposure for you via t=.)
     for x, y, z, sample in zip(x_list, y_list, z_list, samples):
         yield from bps.mv(piezo.x, x)
         yield from bps.mv(piezo.y, y)
@@ -394,10 +457,22 @@ def brian_caps_damage_2021_1(t=1):
         yield from bps.sleep(200)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def brian_caps_2021_2(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a capillary bar run where each sample is measured with a small y line-scan
+    #   (rel_scan over piezo.y) rather than a single frame.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' can run the bar from a list and do a short line scan per
+    #   sample with map_line_run / a motor_axis sweep, recording position/beam INTO the data:
+    #     from smi_plans import transmission_bar, SampleList, map_line_run
+    #     # transmission_bar(SampleList(...)) for a frame per sample, or compose a y line scan
+    #     # per sample with map_line_run.
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). (internal: Tier 2.)
+    # === end smi_plans note ================================================
     # samples = ['NT1_01', 'NT1_02', 'NT1_03', 'NT1_04', 'NT1_05', 'NT1_06', 'NT1_08', 'NT1_09', 'NT1_10', 'NT1_11', 'NT1_12', 'NT1_13', 'NT1_14', 'NT1_15',
     #            'NT1_17', 'NT1_18', 'NT1_19', 'NT1_20', 'NT1_21', 'NT1_22', 'NT1_23', 'NT2_59', 'NT2_60', 'NT2_61', 'NT2_62', 'NT2_63', 'NT2_64',
     #            'NT2_73', 'NT2_74', 'NT2_75', 'NT2_76', 'NT2_77', 'NT2_78', 'NT2_79', 'NT2_80', 'NT2_81', 'NT2_82', 'NT2_83', 'NT2_84', 'NT2_85']
@@ -449,26 +524,39 @@ def brian_caps_2021_2(t=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of Z coord ({len(z_list)})"
     ypos = [0, 50, 2]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     for x, y, z, sample in zip(x_list, y_list, z_list, samples):
         yield from bps.mv(piezo.x, x)
         yield from bps.mv(piezo.y, y)
         yield from bps.mv(piezo.z, z)
 
-        det_exposure_time(1, 1)
+        det_exposure_time(1, 1)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(1, 1)  — or at the prompt:  RE(det_exposure_time(1, 1)). (The smi_plans technique runs set exposure for you via t=.)
 
         sample_id(user_name="BM", sample_name=sample + "_16.1keV_8.3m_1s")
         yield from bp.rel_scan(dets, piezo.y, *ypos)
         yield from bps.sleep(2)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_mesh_aaron_2021(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a micro-focus mesh/raster — for each sample it steps the beam over a grid
+    #   of x/y spots (nested loops) and takes an image at each, doing it twice at two SAXS
+    #   detector heights ("up" and "dn").
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-call grid-mapping plan that rasters x/y and
+    #   records position/beam INTO each image and into the file name:
+    #     from smi_plans import map_grid_run
+    #     yield from map_grid_run("sample_fe1", dets=[pil2M],
+    #                             x=(-25100, -24900, 9), y=(3600, 3800, 81), t=t)
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     name = "AM"
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     samples = ["sample_fe1"]
     x_list = [-25100]
@@ -524,10 +612,23 @@ def run_mesh_aaron_2021(t=1):
                 i += 1
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def brian_caps(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: walks along a bar of capillary samples (moving piezo.x/y/z to each) and
+    #   takes one SAXS image per sample. (This is the active 'brian_caps' — it redefines the
+    #   earlier one above.)
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs a whole bar from a list and records position/beam
+    #   INTO each image and into the file name:
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=samples, x=x_list, y=y_list, z=z_list)
+    #     yield from transmission_bar(samples, dets=[pil2M], t=t)
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     samples = [
         "sample44_1",
         "sample44_2",
@@ -559,7 +660,7 @@ def brian_caps(t=1):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of Z coord ({len(z_list)})"
     ypos = [0, 50, 2]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     for x, y, z, sample in zip(x_list, y_list, z_list, samples):
         yield from bps.mv(piezo.x, x)
         yield from bps.mv(piezo.y, y)
@@ -569,13 +670,25 @@ def brian_caps(t=1):
         yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_mesh_aaron(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a micro-focus mesh/raster — for each sample it does a coordinated grid
+    #   scan (rel_grid_scan) over x/y, taking an image at every spot. (This redefines the
+    #   earlier 'run_mesh_aaron_2021'-style mesh above.)
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has a one-call grid-mapping plan that rasters x/y and
+    #   records position/beam INTO each image and into the file name:
+    #     from smi_plans import map_grid_run
+    #     # per sample: map_grid_run(sample, dets=[pil2M], y=(0, 200, 101), x=(0, 150, 7), t=t)
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). (internal: Tier 2.)
+    # === end smi_plans note ================================================
     name = "AM"
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # samples = ['sample_b1_area1', 'sample_b1_area2']
     # x_list = [45365, 46145]
@@ -634,4 +747,4 @@ def run_mesh_aaron(t=1):
         yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)

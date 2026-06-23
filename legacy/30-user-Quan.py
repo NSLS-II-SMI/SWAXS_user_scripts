@@ -40,7 +40,26 @@ import sys, time
 
 # RE(measure_YQ(t=1, use_saxs=1, use_waxs=1, waxs_angle = 20, name='cap'))
 def measure_YQ(t=1, use_saxs=1, use_waxs=1, waxs_angle = 20, use_pdcurrent=1, name='sam1'):
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes one SAXS and/or WAXS image of a sample, and (optionally) measures
+    #   the transmitted beam on the pin-diode first (briefly inserting attenuators + opening the
+    #   fast shutter) so you have a transmission number for normalizing.
+    #
+    # 💡 NEWER, EASIER WAY: this "measure + transmission reading" is exactly what the smi_plans
+    #   transmission helper does for you in one line — it handles the attenuators/shutter, records
+    #   the pin-diode/beam reading INTO the data, and builds the file name from the recorded values
+    #   (so you don't have to hand-paste the position/beam/pd numbers into 'name_fmt'):
+    #
+    #     from smi_plans import transmission_run             # do this once at the top of your session
+    #     yield from transmission_run("sam1", t=t, dets=[pil2M, pil900KW])   # use_pdcurrent handled for you
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the one line marked ⚠️ which genuinely needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' line below no longer sets the
+    #   exposure unless run as a plan (see the ⚠️ note on it). (internal: Tier 1.)
+    # === end smi_plans note ================================================
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans transmission_run sets it for you via t=.)
 
     if use_waxs:
         yield from bps.mv(waxs, waxs_angle)

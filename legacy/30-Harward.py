@@ -1,7 +1,48 @@
 ####line scan
+# === smi_plans note (REVIEW 2026-06-22) ================================
+# WHAT THIS FILE DOES: the Harvard group's big toolbox of temperature and tensile/stretching
+#   experiments (mostly named by user + year). The recurring jobs are: (1) temperature ramps /
+#   holds while measuring SAXS+WAXS as a material melts/crystallizes (the run_*_temp /
+#   *_highrestemp / linkam_* plans), and (2) pulling/stretching samples and watching the structure
+#   (the *pull* / *tensile* / compression plans). Many do a linescan or grid of spots at each step.
+#
+# 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with one-call recipes
+#   for these. They drive the heater/stage, WAIT for it to truly settle, and record the REAL
+#   temperature/position INTO each image (so you don't sleep() by guess or stuff values into the
+#   file name by hand):
+#     from smi_plans import temperature_ramp_run, isothermal_kinetics_run, time_series_run, lakeshore_heater, linkam_heater
+#     heater = lakeshore_heater()                 # or linkam_heater() for the Linkam stage
+#     yield from temperature_ramp_run("sample", heater, [30, 100, 180], t=0.5, dets=[pil2M, pil900KW])
+#     yield from isothermal_kinetics_run("sample", heater, 150, n_frames=60, period=10, t=0.5)  # hold & watch
+#     yield from time_series_run("pull", n_frames=200, period=2, t=0.5, dets=[pil2M, pil900KW])  # stretch/kinetics
+#   For mapping each step, see map_line_run / map_grid_run.
+#
+#   GOOD NEWS: the newest functions in this file already RECORD ls.input_A (the Linkam temperature)
+#   as a real device in the detector list — that's exactly the modern pattern smi_plans uses (the
+#   temperature lands in the data, not just the file name). Keep doing that.
+#
+# Two run styles appear below: many call RE(...) inside Python loops (Tier 0); the rest are real
+#   plans (use 'yield from'). Nothing is broken EXCEPT the lines marked ⚠️ (mostly the
+#   'det_exposure_time(...)' calls, and a couple of 'prs'/'pil300KW' references that were renamed).
+# === end smi_plans note ================================================
 
 
 def run_harv_temp(tim=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a temperature run — sets each temperature on the Lakeshore heater (ls.ch1_sp),
+    #   soaks, then for each WAXS-arc angle visits each sample and a few x/y offsets, taking SAXS+WAXS
+    #   and writing the temperature into the file name.
+    # 💡 NEWER, EASIER WAY: temperature ramps are a one-call recipe in 'smi_plans', which drives the
+    #   heater, WAITS for it to settle, and records the REAL temperature INTO each image (so you don't
+    #   read ls.ch1_read.value into the name by hand):
+    #     from smi_plans import temperature_ramp_run, lakeshore_heater
+    #     yield from temperature_ramp_run(samples[0], lakeshore_heater(), temperatures,
+    #                                     t=tim, dets=[pil2M, pil900KW])
+    #   (For the per-sample x/y offsets, compose with map/spatial axes or a sample bar.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2)
+    #   'det_exposure_time(...)' no longer sets the exposure unless run as a plan. See the ⚠️ notes
+    #   on those lines. (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # Slowest cycle:
     temperatures = [25]
     name = "ML"
@@ -16,7 +57,7 @@ def run_harv_temp(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]  # ALL detectors
+    dets = [pil2M, pil300KW]  # ALL detectors  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     # dets = [pil300KW,ls.ch1_read, xbpm3.sumY] # WAXS detector ALONE
 
     x_offset = [0, 0, 400, 400]
@@ -26,7 +67,7 @@ def run_harv_temp(tim=0.5):
     name_fmt = "{sample}_pos{offset}_{temperature}C_wa{waxs}"
     yield from bps.mv(piezo.z, zoff)
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for i_t, t in enumerate(temperatures):
         yield from bps.mv(ls.ch1_sp, t)
         if i_t != 0:
@@ -50,7 +91,7 @@ def run_harv_temp(tim=0.5):
                     sample_id(user_name=name, sample_name=sample_name)
                     yield from bp.count(dets, num=1)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bps.mv(ls.ch1_sp, 28)
 
 
@@ -94,7 +135,7 @@ def run_harv_temp_all_2022_1(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]  # ALL detectors
+    dets = [pil2M, pil300KW]  # ALL detectors  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     # dets = [pil300KW,ls.ch1_read, xbpm3.sumY] # WAXS detector ALONE
 
     x_offset = [0, 0, 400, 400]
@@ -104,7 +145,7 @@ def run_harv_temp_all_2022_1(tim=0.5):
     name_fmt = "{sample}_2_pos{offset}_{temperature}C_wa{waxs}"
     yield from bps.mv(piezo.z, zoff)
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for i_t, t in enumerate(temperatures):
         yield from bps.mv(ls.ch1_sp, t)
         if i_t != 0:
@@ -143,7 +184,7 @@ def run_harv_temp_all_2022_1(tim=0.5):
                         sample_id(user_name=name, sample_name=sample_name)
                         yield from bp.count(dets, num=1)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bps.mv(ls.ch1_sp, 28)
 
 
@@ -184,7 +225,7 @@ def temp_2021_3(tim=0.5):
     waxs_arc = [0, 20]
     name_fmt = "{sample}_afterheating_18.25keV_1.6m_pos{offset}_{temperature}C_wa{waxs}"
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for i_t, t in enumerate(temperatures):
         t_kelvin = t + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -229,7 +270,7 @@ def temp_2021_3(tim=0.5):
                     yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -272,11 +313,11 @@ def temp_xscan_2022_1(tim=0.5):
 
     # Detectors, motors:
     dets = [pil2M, pil900KW]  # ALL detectors
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     waxs_arc = [0, 20]
     name_fmt = "{sample}_16.1keV_1.6m_pos{offset}_{temperature}C_wa{waxs}"
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for i_t, t in enumerate(temperatures):
         t_kelvin = t + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -312,7 +353,7 @@ def temp_xscan_2022_1(tim=0.5):
                     yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvi % rn)
@@ -359,7 +400,7 @@ def temp_yscan_2022_1(tim=1):
     waxs_arc = [0, 20]
     name_fmt = "{sample}_16.1keV_1.6m_pos{offset}_{temperature}C_wa{waxs}"
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for i_t, t in enumerate(temperatures):
         t_kelvin = t + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -396,7 +437,7 @@ def temp_yscan_2022_1(tim=1):
                     yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -427,14 +468,14 @@ def hydrogel_2021_1(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]  # ALL detectors
+    dets = [pil2M, pil300KW]  # ALL detectors  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     x_offset = [0, 0, 0]
     y_offset = [-200, 0, 200]
     waxs_arc = np.linspace(0, 32.5, 6)
     name_fmt = "{sample}_18.25keV_1.6m_pos{offset}_wa{waxs}"
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     for j, wa in enumerate(waxs_arc):
         yield from bps.mv(waxs, wa)
@@ -453,7 +494,7 @@ def hydrogel_2021_1(tim=0.5):
                 yield from bp.count(dets, num=1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -485,7 +526,7 @@ def run_harv_temp_all(tim=0.5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]  # ALL detectors
+    dets = [pil2M, pil300KW]  # ALL detectors  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     # dets = [pil300KW,ls.ch1_read, xbpm3.sumY] # WAXS detector ALONE
 
     x_offset = [0, 0, 400, 400]
@@ -495,7 +536,7 @@ def run_harv_temp_all(tim=0.5):
     name_fmt = "{sample}_pos{offset}_{temperature}C_wa{waxs}"
     yield from bps.mv(piezo.z, zoff)
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for i_t, t in enumerate(temperatures):
         yield from bps.mv(ls.ch1_sp, t)
         if i_t != 0:
@@ -519,7 +560,7 @@ def run_harv_temp_all(tim=0.5):
                     sample_id(user_name=name, sample_name=sample_name)
                     yield from bp.count(dets, num=1)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bps.mv(ls.ch1_sp, 28)
 
 
@@ -532,7 +573,7 @@ def run_linkam_cooling(t=0.15, tim=0.15):
     waxs_arc = [0, 20]
     name_fmt = "{sample}_wa{waxs}_time{ctime}s"
     now = time.time()
-    det_exposure_time(t, tim)
+    det_exposure_time(t, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, tim)  — or at the prompt:  RE(det_exposure_time(t, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for i in range(100):
         yield from bps.mvr(piezo.x, offset)
         for j, wa in enumerate(waxs_arc):
@@ -548,7 +589,7 @@ def run_linkam_cooling(t=0.15, tim=0.15):
             yield from bps.sleep(120)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_harv_linkam_waxs(t=0.2, tim=20):
@@ -560,7 +601,7 @@ def run_harv_linkam_waxs(t=0.2, tim=20):
     waxs_arc = [7]
     name_fmt = "{sample}_{temperature}C_wa{waxs}"
 
-    det_exposure_time(t, tim)
+    det_exposure_time(t, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, tim)  — or at the prompt:  RE(det_exposure_time(t, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     temp = ls.input_A_celsius.get()
     yield from bps.mvr(piezo.x, offset)
@@ -576,7 +617,7 @@ def run_harv_linkam_waxs(t=0.2, tim=20):
         yield from bps.sleep(tim + 1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_harv_linkam_saxs(t=0.2, tim=20):
@@ -588,7 +629,7 @@ def run_harv_linkam_saxs(t=0.2, tim=20):
     wa = 20
     name_fmt = "{sample}_{temperature}C"
 
-    det_exposure_time(t, tim)
+    det_exposure_time(t, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, tim)  — or at the prompt:  RE(det_exposure_time(t, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     temp = ls.input_A_celsius.get()
     yield from bps.mv(waxs, wa)
@@ -624,7 +665,7 @@ def run_harv_linkam_both(t=0.3, tim=0.3):
     wa = 20
     name_fmt = "{sample}_{temperature}C"
 
-    det_exposure_time(t, tim)
+    det_exposure_time(t, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, tim)  — or at the prompt:  RE(det_exposure_time(t, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     temp = ls.input_A_celsius.get()
     yield from bps.mv(waxs, wa)
@@ -660,7 +701,7 @@ def run_harv_linkam_both(t=0.3, tim=0.3):
             # yield from bps.sleep(tim+1)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_harv_temp_time(tim=0.2):
@@ -678,7 +719,7 @@ def run_harv_temp_time(tim=0.2):
     yield from bps.mv(GV7.open_cmd, 1)
     yield from bps.sleep(5)
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     temp = ls.ch1_read.value
     for i, gap in enumerate(timegaps):
@@ -701,7 +742,7 @@ def run_harv_temp_time(tim=0.2):
         sample_id(user_name=name, sample_name=sample_name)
         yield from bp.count(dets, num=1)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
     # Closing the gate valve
     yield from bps.mv(GV7.close_cmd, 1)
@@ -711,14 +752,29 @@ def run_harv_temp_time(tim=0.2):
 
 
 def harvphi(meas_t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a phi-rotation scan — for each WAXS-arc angle it rotates the sample in-plane
+    #   through a list of phi angles (driven by the motor this script calls 'prs') and takes a WAXS
+    #   image at each, to map orientation.
+    # 💡 NEWER, EASIER WAY: rotating phi while taking images is cdsaxs_rock_run, or compose a
+    #   motor_axis on the rotation stage in 'smi_plans' (which records the angle into each image):
+    #     from smi_plans import acquire, motor_axis
+    #     yield from acquire(name, [pil900KW],
+    #         [motor_axis("waxs_arc", waxs.arc, np.linspace(0, 32.5, 6)),
+    #          motor_axis("phi", stage.phi, np.linspace(-75, 75, 11))], t=meas_t)
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) the rotation stage 'prs' was removed — it's now 'stage.phi'
+    #   (the bps.mv(prs, ...) lines would crash); (2) 'pil300KW' was retired — it's now 'pil900KW';
+    #   (3) 'det_exposure_time(...)' no longer sets the exposure unless run as a plan. See the ⚠️
+    #   notes on those lines. (internal: Tier 1.)
+    # === end smi_plans note ================================================
     waxs_arc = np.linspace(0, 32.5, 6)  # (2th_min 2th_max steps)
-    dets = [pil300KW, pil2M]
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     names = ["DDDA5_vert_100C"]
     # phis = np.linspace(-90, 90, 13)
     phis = np.linspace(-75, 75, 11)
 
     for name in names:
-        det_exposure_time(meas_t, meas_t)
+        det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(meas_t, meas_t)  — or at the prompt:  RE(det_exposure_time(meas_t, meas_t)). (The smi_plans technique runs set exposure for you via t=.)
 
         name_fmt = "{sample}_phi{phi}deg_wa{waxs}"
         # waxs is the slowest cycle:
@@ -726,7 +782,7 @@ def harvphi(meas_t=0.5):
             yield from bps.mv(waxs, wa)
             # phi is scanned for a single waxs
             for i, phi in enumerate(phis):
-                yield from bps.mv(prs, phi)
+                yield from bps.mv(prs, phi)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
                 sample_name = name_fmt.format(
                     sample=name, phi="%2.1f" % phi, waxs="%2.1f" % wa
                 )
@@ -734,7 +790,7 @@ def harvphi(meas_t=0.5):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-        yield from bps.mv(prs, 0)
+        yield from bps.mv(prs, 0)  # ⚠️ FIXME(smi_plans): 'prs' no longer exists (it would error). The same rotation stage is now called 'stage.phi' — replace 'prs' with 'stage.phi'.
     sample_id(user_name="test", sample_name="test")
 
 
@@ -745,12 +801,12 @@ def run_harv_poly(tim=1, name="HarvPoly"):
     y_list = [-4740]
     samples = ["S29"]
     # Detectors, motors:
-    dets = [pil300KW, ls.ch1_read, xbpm3.sumY]
+    dets = [pil300KW, ls.ch1_read, xbpm3.sumY]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     name_fmt = "{sample}_{temperature}C"
     assert len(x_list) == len(
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for i_t, t in enumerate(temperatures):
         yield from bps.mv(ls.ch1_sp, t)
         # yield from bps.sleep(def run_harv_pos_scan(tim=3,name = 'Harv_SideOn_2.5_PA'):
@@ -761,11 +817,11 @@ def run_harv_poly(tim=1, name="HarvPoly"):
 
     # Detectors, motors:
     # dets = [pil2M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
-    dets = [pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE
+    dets = [pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     waxs_arc = [0, 30, 6]
     name_fmt = "{sample}_{xoffset}um_{temperature}C"
     #    param   = '16.1keV'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bps.mv(ls.ch1_sp, t)
     if i_t > 0:
         yield from bps.sleep(600)
@@ -798,7 +854,7 @@ def run_harv_micro(tim=3, name="HarvMicro_2_25C"):
     # samples = ['S29']
     # Detectors, motors:
     # dets = [pil2M, rayonix, pil300KW,ls.ch1_read, xbpm3.sumY] #ALL detectors
-    dets = [pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE
+    dets = [pil300KW, ls.ch1_read, xbpm3.sumY]  # WAXS detector ALONE  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     x_offset = [-704, -352, 0, 352, 704]
     y_range = [20, -20, 3]
     waxs_arc = [0, 30, 6]
@@ -807,7 +863,7 @@ def run_harv_micro(tim=3, name="HarvMicro_2_25C"):
     assert len(x_list) == len(
         samples
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for i_t, t in enumerate(temperatures):
         yield from bps.mv(ls.ch1_sp, t)
         if i_t > 0:
@@ -824,7 +880,7 @@ def run_harv_micro(tim=3, name="HarvMicro_2_25C"):
                 sample_id(user_name=name, sample_name=sample_name)
                 yield from bp.rel_scan(dets, piezo.y, *y_range)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bps.mv(ls.ch1_sp, 28)
 
 
@@ -843,12 +899,12 @@ def run_harv_pos(tim=5):
     ), f"Number of X coordinates ({len(x_list)}) is different from number of samples ({len(samples)})"
 
     # Detectors, motors:
-    dets = [pil2M, pil300KW]  # ALL detectors
+    dets = [pil2M, pil300KW]  # ALL detectors  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
     waxs_arc = [13]
     name_fmt = "{sample}_pos{offset}_wa{waxs}"
 
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     for j, wa in enumerate(waxs_arc):  #
         yield from bps.mv(waxs, wa)
 
@@ -864,7 +920,7 @@ def run_harv_pos(tim=5):
                 sample_id(user_name=name, sample_name=sample_name)
                 yield from bp.count(dets, num=1)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
     yield from bps.mv(ls.ch1_sp, 28)
 
 
@@ -872,7 +928,7 @@ def mesh_milan_2022_2(t=0.5):
     waxs_range = [0, 20]
 
     dets = [pil900KW, pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # these samples are very large areas and 3rd priority (lowest) except for the 1st teeth12.
     samples = [
@@ -967,14 +1023,14 @@ def mesh_milan_2022_2(t=0.5):
             yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def mesh_milan_temp_2022_2(t=0.5):
     waxs_range = [0, 20]
     temperatures = [100, 150]
     dets = [pil900KW, pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # second load, heated stage
     samples = [
@@ -1113,7 +1169,7 @@ def mesh_milan_temp_2022_2(t=0.5):
                 yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # Turn off the heating and set temperature to 23 deg C
     t_kelvin = 23 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -1177,7 +1233,7 @@ def linescan_milan_temp_2022_3(t=0.5):
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
                 dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
                 e = energy.position.energy / 1000  # energy keV
                 sdd = pil2M_pos.z.position / 1000  # SAXS detector distance
@@ -1202,7 +1258,7 @@ def linescan_milan_temp_2022_3(t=0.5):
                 yield from bp.rel_scan(dets, piezo.x, *scan_pts)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # Turn off the heating and set temperature to 23 deg C
     t_kelvin = 23 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -1260,7 +1316,7 @@ def milan_temp_2023_1(tim=0.2):
         yield from bps.mv(waxs, wa)
         
         dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
-        det_exposure_time(tim, tim)
+        det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
         for name, x, y, z in zip(names, piezo_x, piezo_y, piezo_z):
             yield from bps.mv(piezo.x, x,
@@ -1297,7 +1353,7 @@ def milan_temp_2023_1(tim=0.2):
                 yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
     #t_kelvin = 25 + 273.15
     #yield from ls.output1.mv_temp(t_kelvin)
@@ -1362,7 +1418,7 @@ def grid_milan_temp_2023_1(t=0.2):
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
                 dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
                 e = energy.position.energy / 1000
                 sdd = pil2M_pos.z.position / 1000
@@ -1387,7 +1443,7 @@ def grid_milan_temp_2023_1(t=0.2):
                 yield from bp.rel_grid_scan(dets, piezo.x, *scan_pts_x, piezo.y, *scan_pts_y)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # Turn off the heating and set temperature to 23 deg C
     t_kelvin = 23 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -1415,7 +1471,7 @@ def run_harv_linkam_swaxs_2023_2(t=0.2, t_tot=20, temp=25):
     assert len(piezo_x) == len(piezo_z), msg
 
     waxs_arc = [20, 7]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     user = "FS"
     waxs_rounds = int(np.ceil( t_tot / t / 2))
 
@@ -1450,7 +1506,7 @@ def run_harv_linkam_swaxs_2023_2(t=0.2, t_tot=20, temp=25):
 
     # End of the scan
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def grid_milan_temp_2023_2(t=0.5):
@@ -1475,7 +1531,7 @@ def grid_milan_temp_2023_2(t=0.5):
 
     waxs_arc = [0, 20]
     # #temperatures = [27,80,150]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # for temperature in temperatures:
     #     t_kelvin = temperature + 273.15
@@ -1547,7 +1603,7 @@ def grid_milan_temp_2023_2(t=0.5):
 
         waxs_arc = waxs_arc[::-1]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
     # Turn off the heating and set temperature to 23 deg C
     # t_kelvin = 23 + 273.15
@@ -1575,7 +1631,7 @@ def linescan_milan_temp_2023_2(t=0.5):
 
     waxs_arc = [0, 20]
     # temperatures = [27, 100, 150]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # for temperature in temperatures:
     #     t_kelvin = temperature + 273.15
@@ -1644,7 +1700,7 @@ def linescan_milan_temp_2023_2(t=0.5):
                 plt.close('all')
             waxs_arc = waxs_arc[::-1]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
     # # Turn off the heating and set temperature to 23 deg C
     # t_kelvin = 23 + 273.15
@@ -1673,7 +1729,7 @@ def linescan_milan_notemp_2023_3(t=0.5):
 
     waxs_arc = [0, 20]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     temp_degC = 25
     temp = str(np.round(float(temp_degC), 1)).zfill(5)
@@ -1696,7 +1752,7 @@ def linescan_milan_notemp_2023_3(t=0.5):
             plt.close('all')
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def run_linkam_temp_run_linescan_2023_3(t=0.5, temp=80, delay=60):
@@ -1719,7 +1775,7 @@ def run_linkam_temp_run_linescan_2023_3(t=0.5, temp=80, delay=60):
     assert len(piezo_z) == len(y_range), msg
 
     waxs_arc = [0, 20]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     temp = str(np.round(float(temp), 1)).zfill(5)
 
     for name, x, y, z, scan_pts_y in zip(names, piezo_x, piezo_y, piezo_z, y_range):
@@ -1747,7 +1803,7 @@ def run_linkam_temp_run_linescan_2023_3(t=0.5, temp=80, delay=60):
             yield from bp.rel_scan(dets, piezo.y, *scan_pts_y)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     print(f'Moving WAXS to {waxs_arc[0]} deg')
     yield from bps.mv(waxs, waxs_arc[0])
 
@@ -1773,7 +1829,7 @@ def milan_temp_2023_3(tim=0.2):
 
     temperatures = [24.5]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 50]
     y_offsets = [0, 50]
@@ -1836,7 +1892,7 @@ def milan_temp_2023_3(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -1904,7 +1960,7 @@ def grid_milan_temp_2023_2(t=0.5):
             for wa in waxs_arc:
                 yield from bps.mv(waxs, wa)
                 dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
                 e = energy.position.energy / 1000
                 sdd = pil2M_pos.z.position / 1000
@@ -1929,7 +1985,7 @@ def grid_milan_temp_2023_2(t=0.5):
                 yield from bp.rel_grid_scan(dets, piezo.x, *scan_pts_x, piezo.y, *scan_pts_y)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # Turn off the heating and set temperature to 23 deg C
     t_kelvin = 23 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -1963,7 +2019,7 @@ def run_linkam_temp_run_linescan_2024_1(t=0.5, temp=40, run=0, points=50):
 
     offset_x = 50
     waxs_arc = [0, 20]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     temp = str(np.round(float(temp), 1)).zfill(5)
 
     for name, x, y, z, scan_pts_x in zip(names, piezo_x, piezo_y, piezo_z, x_range):
@@ -1985,7 +2041,7 @@ def run_linkam_temp_run_linescan_2024_1(t=0.5, temp=40, run=0, points=50):
             yield from bp.rel_scan(dets, piezo.x, *scan_pts_x)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     print(f'Moving WAXS to {waxs_arc[0]} deg')
     yield from bps.mv(waxs, waxs_arc[0])
 
@@ -2011,7 +2067,7 @@ def milan_temp_2024_1(tim=0.5):
 
     temperatures = [26]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 50]
     y_offsets = [0, 50]
@@ -2073,7 +2129,7 @@ def milan_temp_2024_1(tim=0.5):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.5, 0.5)
+        det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -2101,7 +2157,7 @@ def milan_temp_2024_1_1(tim=0.2):
 
     temperatures = [130,160]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 50]
     y_offsets = [0, 50]
@@ -2164,7 +2220,7 @@ def milan_temp_2024_1_1(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -2199,7 +2255,7 @@ def milan_temp_grid_2024_1(tim=0.5):
 
     temperatures = [25]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     waxs_arc = [0, 20]
 
     for temperature in temperatures:
@@ -2249,7 +2305,7 @@ def milan_temp_grid_2024_1(tim=0.5):
                 yield from bp.rel_grid_scan(dets, piezo.x, *scan_pts_x, piezo.y, *scan_pts_y)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -2285,7 +2341,7 @@ def milan_temp_grid_2024_1_1(tim=0.5):
 
     temperatures = [25]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     waxs_arc = [0, 20]
 
     for temperature in temperatures:
@@ -2335,7 +2391,7 @@ def milan_temp_grid_2024_1_1(tim=0.5):
                 yield from bp.rel_grid_scan(dets, piezo.x, *scan_pts_x)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -2370,7 +2426,7 @@ def milan_Jacopo(tim=0.5):
 
     temperatures = [25]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     waxs_arc = [0, 20]
 
     for temperature in temperatures:
@@ -2420,7 +2476,7 @@ def milan_Jacopo(tim=0.5):
                 yield from bp.rel_grid_scan(dets, piezo.y, *scan_pts_y)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -2447,7 +2503,7 @@ def milan_temp_2024_1_fix(tim=0.2):
 
     temperatures = [30,40,60]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 50]
     y_offsets = [0, 50]
@@ -2510,7 +2566,7 @@ def milan_temp_2024_1_fix(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -2537,7 +2593,7 @@ def milan_single_measurement_2024_2(name='FT_I_01_90C_1', t_frame=0.2, t_tot=0.2
         yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 def milan_temp_2024_3_fix(tim=0.2):
     """
@@ -2560,7 +2616,7 @@ def milan_temp_2024_3_fix(tim=0.2):
 
     temperatures = [80,140]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 50]
     y_offsets = [0, 50]
@@ -2623,7 +2679,7 @@ def milan_temp_2024_3_fix(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -2649,7 +2705,7 @@ def milan_temp_2024_3_fixed(tim=0.2):
 
     temperatures = [30]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 50]
     y_offsets = [0, 50]
@@ -2712,7 +2768,7 @@ def milan_temp_2024_3_fixed(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -2745,7 +2801,7 @@ def milan_temp_2024_3_highrestemp(tim=0.2):
 
     temperatures = [30,40,50,60,70,80,90,110,120,130,140,160,180]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 75]
     y_offsets = [0, 75]
@@ -2808,7 +2864,7 @@ def milan_temp_2024_3_highrestemp(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -2841,7 +2897,7 @@ def milan_temp_grid_2024_1_1(tim=0.2):
 
     temperatures = [25]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
     waxs_arc = [0, 20]
 
     for temperature in temperatures:
@@ -2904,7 +2960,7 @@ def milan_single_measurement_2024_3(name='', t_frame=0.1, t_tot=10):
     As the name says, set coordinates via CSS, then take data
     WAXS only
     """
-    det_exposure_time(t_frame, t_tot, period_delay=0.005)
+    det_exposure_time(t_frame, t_tot, period_delay=0.005)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=0.005)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=0.005)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
     waxs_arc = [0] # Set 20 for SAXS
@@ -2929,7 +2985,7 @@ def milan_single_measurement_2024_3(name='FT_I_01-90C', t_frame=0.2, t_tot=0.2):
 
     This one is working, above does not at the moment
     """
-    det_exposure_time(t_frame, t_tot, period_delay=0.005)
+    det_exposure_time(t_frame, t_tot, period_delay=0.005)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=0.005)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=0.005)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
@@ -2941,7 +2997,7 @@ def milan_single_measurement_2024_3(name='FT_I_01-90C', t_frame=0.2, t_tot=0.2):
     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def milan_temp_2024_3_highrestemp(tim=0.2):
@@ -2972,7 +3028,7 @@ def milan_temp_2024_3_highrestemp(tim=0.2):
     # temperatures = [30,40,50,60,70,80,90,100,110,130,140,160,180,200]
     temperatures = [100,250]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 75]
     y_offsets = [0, 75]
@@ -3035,7 +3091,7 @@ def milan_temp_2024_3_highrestemp(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -3062,7 +3118,7 @@ def linescan_milan_temp_2023_2(t=0.5):
 
     waxs_arc = [0, 20]
     # temperatures = [27, 100, 150]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # for temperature in temperatures:
     #     t_kelvin = temperature + 273.15
@@ -3131,7 +3187,7 @@ def linescan_milan_temp_2023_2(t=0.5):
                 plt.close('all')
             waxs_arc = waxs_arc[::-1]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
     # # Turn off the heating and set temperature to 23 deg C
     # t_kelvin = 23 + 273.15
@@ -3160,7 +3216,7 @@ def linescan_milan_temp_2024_3(t=0.2):
 
     waxs_arc = [0, 20]
     temperatures = [100, 250]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         t_kelvin = temperature + 273.15
@@ -3229,7 +3285,7 @@ def linescan_milan_temp_2024_3(t=0.2):
     #             plt.close('all')
     #         waxs_arc = waxs_arc[::-1]
     # sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
     # Turn off the heating and set temperature to 23 deg C
     t_kelvin = 23 + 273.15
@@ -3245,7 +3301,7 @@ def milan_single_measurement_2025_1(name='FS_A_02_40-2', t_frame=0.05, t_tot=3):
     This one is working, above does not at the moment
     """
     yield from bps.mv(waxs, 0)
-    det_exposure_time(t_frame, t_tot, period_delay=0.005)
+    det_exposure_time(t_frame, t_tot, period_delay=0.005)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=0.005)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=0.005)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
@@ -3256,7 +3312,7 @@ def milan_single_measurement_2025_1(name='FS_A_02_40-2', t_frame=0.05, t_tot=3):
     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 def milan_temp_2025_1_highrestemp(tim=0.2):
     """
@@ -3270,6 +3326,22 @@ def milan_temp_2025_1_highrestemp(tim=0.2):
     piezo_z = [-13500, -13500, -13500, -11300, -10100, -12100, -11100, -10500, -9700, -10300, -10300, -8700, -8700, -8700, -8700, -8700, -8700, -8700, -8700, -7100, -7100, -7100, -6100, -6100, -4900]
     #piezo_z = [8400 for n in names]
      """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a high-resolution temperature run over a puck of samples — at each temperature
+    #   it does a fast x linescan at each sample (a few x/y offsets and WAXS-arc angles), and (nicely!)
+    #   records the Linkam temperature 'ls.input_A' AS A DEVICE in the scan, so the real temperature
+    #   is saved in the data stream alongside every image.
+    #
+    # 👍 THIS IS ALREADY THE MODERN PATTERN: putting 'ls.input_A' into the scan ('dets + [ls.input_A]')
+    #   is exactly what 'smi_plans' does — the temperature lands IN the recorded data, not just in the
+    #   file name. Keep doing this. 'smi_plans' just packages the whole ramp into one call:
+    #     from smi_plans import temperature_ramp_run, lakeshore_heater
+    #     yield from temperature_ramp_run(names[0], lakeshore_heater(), temperatures,
+    #                                     t=tim, dets=[pil2M, pil900KW])   # records temperature for you
+    #   (and map_line_run for the per-sample x scan).
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as
+    #   a plan (see the ⚠️ note on that line). (internal: Tier 3 — closest to modern in this file.)
+    # === end smi_plans note ================================================
      
     names =   ['FT_A_02','FT_B_01','FT_D_01','FT_D_03','FT_F_01','FT_F_02','FT_F_03','FT_F_04','FT_E_03r','FT_C_03','FT_G_02', 'FT_D_04', 'FT_E_05','FT_E_02', 'JM_A_01', 'JM_A_02', 'JM_A_03','JM_B_01', 'JM_B_02', 'JM_B_03', 'JM_C_01', 'JM_C_02', 'JM_D_01', 'JM_D_02', 'JM_E_02', 'JM_E_03']
     piezo_x = [56900, 53000, 48900, 43400, 40200, 36900, 33800, 28400, 24400, 20900, 15900, 9900, 7350, 3650, -3250, -7450, -11950, -15450, -18950, -22950, -27850, -31850, -34350, -38850, -43050, -46950]
@@ -3293,7 +3365,7 @@ def milan_temp_2025_1_highrestemp(tim=0.2):
     # temperatures = [30,40,50,60,70,80,90,100,110,130,140,160,180,200]
     temperatures = [260]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 75]
     y_offsets = [0, 75]
@@ -3398,7 +3470,7 @@ def milan_temp_2025_1_highrestemp(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -3435,7 +3507,7 @@ def linescan_milan_temp_2025_1(t=0.5):
 
     waxs_arc = [0]
     temperatures = [25]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         t_kelvin = temperature + 273.15
@@ -3480,7 +3552,7 @@ def linescan_milan_temp_2025_1(t=0.5):
             yield from bp.rel_scan(dets + [ls.input_A], piezo.x, *scan_pts_x)
             plt.close('all')
 
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
     # Turn off the heating and set temperature to 23 deg C
     t_kelvin = 23 + 273.15
@@ -3512,7 +3584,7 @@ def linescan_milan_tempy_2025_1(t=0.5):
 
     waxs_arc = [0]
     temperatures = [25]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         t_kelvin = temperature + 273.15
@@ -3556,7 +3628,7 @@ def linescan_milan_tempy_2025_1(t=0.5):
             yield from bp.rel_scan(dets + [ls.input_A], piezo.y, *scan_pts_y)
             plt.close('all')
 
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
     # Turn off the heating and set temperature to 23 deg C
     t_kelvin = 23 + 273.15
@@ -3572,7 +3644,7 @@ def milan_single_measurement_2025_1(name='FT_A_03', t_frame=0.5, t_tot=0.5):
     This one is working, above does not at the moment
     """
     yield from bps.mv(waxs, 0)
-    det_exposure_time(t_frame, t_tot, period_delay=0.005)
+    det_exposure_time(t_frame, t_tot, period_delay=0.005)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=0.005)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=0.005)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time(t_frame, t_tot)
     yield from bps.sleep(1)
 
@@ -3583,7 +3655,7 @@ def milan_single_measurement_2025_1(name='FT_A_03', t_frame=0.5, t_tot=0.5):
     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 def test_shot(name='test'):#, t_frame=0.5, t_tot=0.5):
     """
@@ -3632,7 +3704,7 @@ def milan_puck4pt_2025_1(tim=0.5,temp=200):
     # temperatures = [30,40,50,60,70,80,90,100,110,130,140,160,180,200]
     #temperatures = [40]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 75]
     y_offsets = [0, 75]
@@ -3663,7 +3735,7 @@ def milan_puck4pt_2025_1(tim=0.5,temp=200):
                     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -3690,7 +3762,7 @@ def milan_single_measurement_2025_1(name='RP_E_01_35C', t_frame=0.5, t_tot=0.5):
     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def milan_puck4pt2_2025_1(tim=0.2,temp=300):
@@ -3735,7 +3807,7 @@ def milan_puck4pt2_2025_1(tim=0.2,temp=300):
     # temperatures = [30,40,50,60,70,80,90,100,110,130,140,160,180,200]
     #temperatures = [40]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 75]
     y_offsets = [0, 75]
@@ -3766,7 +3838,7 @@ def milan_puck4pt2_2025_1(tim=0.2,temp=300):
                     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -3781,7 +3853,7 @@ def milan_single_measurement2_2025_1(name='MW_X_01', t_frame=1, t_tot=100):
     This one is working, above does not at the moment
     """
     yield from bps.mv(waxs, 0)
-    det_exposure_time(t_frame, t_tot, period_delay=0.005)
+    det_exposure_time(t_frame, t_tot, period_delay=0.005)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=0.005)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=0.005)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
@@ -3792,7 +3864,7 @@ def milan_single_measurement2_2025_1(name='MW_X_01', t_frame=1, t_tot=100):
     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 from datetime import datetime
 
@@ -3807,7 +3879,7 @@ def milan_single_measurement_2025_2(name='MR_D_02', t_frame=0.5, t_tot=600, peri
     tstart = datetime.now()
 
     yield from bps.mv(waxs, 0)
-    det_exposure_time(t_frame, t_tot, period_delay=period_delay)
+    det_exposure_time(t_frame, t_tot, period_delay=period_delay)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=period_delay)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=period_delay)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
@@ -3821,7 +3893,7 @@ def milan_single_measurement_2025_2(name='MR_D_02', t_frame=0.5, t_tot=600, peri
     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 def reena_single_measurement_2025_2(name='BK_A_02', t_frame=0.5, frames=1, delay=0.5):
 
@@ -3833,7 +3905,7 @@ def reena_single_measurement_2025_2(name='BK_A_02', t_frame=0.5, frames=1, delay
     """
 
     yield from bps.mv(waxs, 20)
-    det_exposure_time(t_frame, t_frame)
+    det_exposure_time(t_frame, t_frame)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_frame)  — or at the prompt:  RE(det_exposure_time(t_frame, t_frame)). (The smi_plans technique runs set exposure for you via t=.)
 
     dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
@@ -3851,7 +3923,7 @@ def reena_single_measurement_2025_2(name='BK_A_02', t_frame=0.5, frames=1, delay
             yield from bps.sleep(delay)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def linescan_milan_temp_2025_2(t=0.5):
@@ -3878,7 +3950,7 @@ def linescan_milan_temp_2025_2(t=0.5):
 
     waxs_arc = [0]
     # temperatures = [27, 100, 150]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # for temperature in temperatures:
     #     t_kelvin = temperature + 273.15
@@ -3947,7 +4019,7 @@ def linescan_milan_temp_2025_2(t=0.5):
                 plt.close('all')
             waxs_arc = waxs_arc[::-1]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
     # # Turn off the heating and set temperature to 23 deg C
     # t_kelvin = 23 + 273.15
@@ -3978,7 +4050,7 @@ def linescan_milan_temp_2025_3(t=0.5):
 
     waxs_arc = [0]
     # temperatures = [27, 100, 150]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # for temperature in temperatures:
     #     t_kelvin = temperature + 273.15
@@ -4047,7 +4119,7 @@ def linescan_milan_temp_2025_3(t=0.5):
                 plt.close('all')
             waxs_arc = waxs_arc[::-1]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
     # # Turn off the heating and set temperature to 23 deg C
     # t_kelvin = 23 + 273.15
@@ -4066,7 +4138,7 @@ def fotini_single_measurement_2025_2(name='test', temp=130, t_frame=0.5, t_tot=0
     temp = str(np.round(float(temp), 1)).zfill(5)
 
     yield from bps.mv(waxs, 0)
-    det_exposure_time(t_frame, t_tot, period_delay=0.005)
+    det_exposure_time(t_frame, t_tot, period_delay=0.005)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=0.005)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=0.005)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
@@ -4077,7 +4149,7 @@ def fotini_single_measurement_2025_2(name='test', temp=130, t_frame=0.5, t_tot=0
     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 def milan_temp_2025_1_highrestemp_1(tim=0.2):
     """
@@ -4114,7 +4186,7 @@ def milan_temp_2025_1_highrestemp_1(tim=0.2):
     temperatures = [30,45,55,65,75,85,95,105,115,130,140,160,180,200,250]
     
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 75]
     y_offsets = [0, 75]
@@ -4219,7 +4291,7 @@ def milan_temp_2025_1_highrestemp_1(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -4268,7 +4340,7 @@ def milan_puck4pt2_2025_2(tim=0.2,temp=300):
     temperatures = [30,45,55,65,75,85,95,105,115,130,140,160,180,200,250]
     #temperatures = [40]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 75]
     y_offsets = [0, 75]
@@ -4299,7 +4371,7 @@ def milan_puck4pt2_2025_2(tim=0.2,temp=300):
                     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
@@ -4335,7 +4407,7 @@ def milan_temp_2025_2_highrestemp_1(tim=0.2):
     # temperatures = [35,45,55,65,75,85,95,105,115,130,140,160,180,200,250]
     temperatures = [30,35,45,55,65,75,85,95,105,115,130,140,160,180,200,250]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 75]
     y_offsets = [0, 75]
@@ -4398,7 +4470,7 @@ def milan_temp_2025_2_highrestemp_1(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -4433,7 +4505,7 @@ def milan_temp_2025_2_highrestemp_1_waxs_slow(tim=0.2):
     # temperatures = [35,45,55,65,75,85,95,105,115,130,140,160,180,200,250]
     temperatures = [45,55,65,75,85,95,105,115,130,140,160,180,200,250]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     x_offsets = [0, 75]
     y_offsets = [0, 75]
@@ -4497,7 +4569,7 @@ def milan_temp_2025_2_highrestemp_1_waxs_slow(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -4527,7 +4599,7 @@ def linescan_reena_2025_2(t=0.5):
 
     waxs_arc = [0,20]
     # temperatures = [27, 100, 150]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     # for temperature in temperatures:
     #     t_kelvin = temperature + 273.15
@@ -4596,7 +4668,7 @@ def linescan_reena_2025_2(t=0.5):
                 plt.close('all')
             waxs_arc = waxs_arc[::-1]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def fotini_pucks_temp_2025_2(tim=0.2):
     """
@@ -4618,7 +4690,7 @@ def fotini_pucks_temp_2025_2(tim=0.2):
 
     temperatures = [100,180]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     #These are the offsets for the coordinates in the x and y direction 
 
@@ -4681,7 +4753,7 @@ def fotini_pucks_temp_2025_2(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -4716,7 +4788,7 @@ def fotini_pucks_roomtemp_2025_2(tim=0.2):
 
     temperatures = [30]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     #These are the offsets for the coordinates in the x and y direction 
 
@@ -4779,7 +4851,7 @@ def fotini_pucks_roomtemp_2025_2(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -4806,7 +4878,7 @@ def reena_pucks_roomtemp_2025_2(tim=0.2):
 
     temperatures = [30]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     #These are the offsets for the coordinates in the x and y direction 
 
@@ -4869,7 +4941,7 @@ def reena_pucks_roomtemp_2025_2(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -4897,7 +4969,7 @@ def fotini_pucks_temp_2025_3(tim=0.2):
 
     temperatures = [30, 70, 90, 130, 160]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     #These are the offsets for the coordinates in the x and y direction 
 
@@ -4960,7 +5032,7 @@ def fotini_pucks_temp_2025_3(tim=0.2):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -4991,7 +5063,7 @@ def linescan_fotini_2025_3(t=0.5):
     waxs_arc = [0,20]
     temperatures = [#27, 70, 90, 130, 
         175]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         t_kelvin = temperature + 273.15
@@ -5065,7 +5137,7 @@ def linescan_fotini_2025_3(t=0.5):
     #             plt.close('all')
     #         waxs_arc = waxs_arc[::-1]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
     yield from ls.output1.turn_off()
@@ -5081,7 +5153,7 @@ def fotini_single_measurement_2025_3(name='MR_D_02', t_frame=0.5, t_tot=600, per
     tstart = datetime.now()
 
     yield from bps.mv(waxs, 0)
-    det_exposure_time(t_frame, t_tot, period_delay=period_delay)
+    det_exposure_time(t_frame, t_tot, period_delay=period_delay)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=period_delay)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=period_delay)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
@@ -5095,7 +5167,7 @@ def fotini_single_measurement_2025_3(name='MR_D_02', t_frame=0.5, t_tot=600, per
     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 def fotini_single_measurement_2025_3(name='bkg-long-3', temp=25, t_frame=0.05, t_tot=2, saxs=False):
     
@@ -5117,7 +5189,7 @@ def fotini_single_measurement_2025_3(name='bkg-long-3', temp=25, t_frame=0.05, t
     tstart = datetime.now()
 
     temp = str(np.round(float(temp), 1)).zfill(5)
-    det_exposure_time(t_frame, t_tot, period_delay=0.005)
+    det_exposure_time(t_frame, t_tot, period_delay=0.005)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=0.005)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=0.005)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
@@ -5133,7 +5205,7 @@ def fotini_single_measurement_2025_3(name='bkg-long-3', temp=25, t_frame=0.05, t
 
     #yield from bps.mv(waxs, 0)
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 def puck_fotini_2025_3(t=0.5):
@@ -5165,7 +5237,7 @@ def puck_fotini_2025_3(t=0.5):
     # temperatures = [70, 90, 130]
     temperatures = [170]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         t_kelvin = temperature + 273.15
@@ -5222,7 +5294,7 @@ def puck_fotini_2025_3(t=0.5):
             waxs_arc = waxs_arc[::-1]
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
     yield from ls.output1.turn_off()
@@ -5260,7 +5332,7 @@ def linkam_fotini_2025_3(t=0.5):
     waxs_arc = [0]
     temperatures = [170]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         temp_degC = temperature
@@ -5318,7 +5390,7 @@ def linkam_fotini_2025_3(t=0.5):
             waxs_arc = waxs_arc[::-1]
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # t_kelvin = 25 + 273.15
     # yield from ls.output1.mv_temp(t_kelvin)
     # yield from ls.output1.turn_off()
@@ -5331,10 +5403,22 @@ def pull_measurement_2025_3(name='FT_G_04', t_frame=0.5, t_tot=600, period_delay
 
     This one is working, burst mode for tensile tests - cannot ctrl c - otherwise data will not save, do not use 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tensile (pulling) measurement in "burst mode" — it sets a fast frame time
+    #   (t_frame) over a total window (t_tot) and rapidly records a stack of WAXS/SAXS frames while
+    #   the sample is being stretched, so you capture the structure changing as it pulls.
+    # 💡 NEWER, EASIER WAY: a rapid timed stack while something changes is time_series_run /
+    #   kinetics_run in 'smi_plans', which records the elapsed time + frame number INTO each image and
+    #   manages the burst for you:
+    #     from smi_plans import time_series_run
+    #     yield from time_series_run(name, duration=t_tot, period=t_frame, t=t_frame, dets=[pil2M])
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' (here in burst form with period_delay)
+    #   no longer sets the exposure unless run as a plan (see the ⚠️ note on that line). (Tier 2.)
+    # === end smi_plans note ================================================
     tstart = datetime.now()
 
     yield from bps.mv(waxs, 0)
-    det_exposure_time(t_frame, t_tot, period_delay=period_delay)
+    det_exposure_time(t_frame, t_tot, period_delay=period_delay)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=period_delay)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=period_delay)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time_old(t_frame, t_tot)
     yield from bps.sleep(1)
 
@@ -5349,7 +5433,7 @@ def pull_measurement_2025_3(name='FT_G_04', t_frame=0.5, t_tot=600, period_delay
     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 def puck_reena_2025_3(t=0.5):
     """
@@ -5389,7 +5473,7 @@ def puck_reena_2025_3(t=0.5):
     # temperatures = []
     temperatures = [55, 85]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         t_kelvin = temperature + 273.15
@@ -5446,7 +5530,7 @@ def puck_reena_2025_3(t=0.5):
             waxs_arc = waxs_arc[::-1]
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
     yield from ls.output1.turn_off()
@@ -5481,7 +5565,7 @@ def linescan_and_puck_fritz_2025_3(t=0.5):
     # temperatures = [27, 70, 90, 130, 170]
     temperatures = [55, 85]
     
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         t_kelvin = temperature + 273.15
@@ -5538,7 +5622,7 @@ def linescan_and_puck_fritz_2025_3(t=0.5):
             waxs_arc = waxs_arc[::-1]
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     t_kelvin = 25 + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
     yield from ls.output1.turn_off()
@@ -5565,7 +5649,7 @@ def fotini_pucks_temp_2025_3(tim=0.5):
 
     temperatures = [32]
     user_name = 'MW'
-    det_exposure_time(tim, tim)
+    det_exposure_time(tim, tim)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(tim, tim)  — or at the prompt:  RE(det_exposure_time(tim, tim)). (The smi_plans technique runs set exposure for you via t=.)
 
     #These are the offsets for the coordinates in the x and y direction 
 
@@ -5628,7 +5712,7 @@ def fotini_pucks_temp_2025_3(tim=0.5):
                         yield from bp.count(dets)
 
         sample_id(user_name='test', sample_name='test')
-        det_exposure_time(0.2, 0.2)
+        det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
         t_kelvin = 25 + 273.15
         yield from ls.output1.mv_temp(t_kelvin)
@@ -5642,9 +5726,20 @@ def tensile_single_measurement_2025_3(name='FT_L_02', t_frame=0.5, frames=600, d
 
     THIS ONE FOR TENSILE MEASUREMENTS - CAN USE CTRL C and data will still save 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a tensile measurement done as a loop (so Ctrl-C is safe) — it takes `frames`
+    #   WAXS/SAXS images one after another (with an optional delay), stamping the time into each name,
+    #   while the sample is pulled.
+    # 💡 NEWER, EASIER WAY: a loop of timed frames is time_series_run in 'smi_plans', which records
+    #   the elapsed time + frame number INTO each image (no hand-built loc/time name):
+    #     from smi_plans import time_series_run
+    #     yield from time_series_run(name, n_frames=frames, period=delay, t=t_frame, dets=[pil2M, pil900KW])
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as
+    #   a plan (see the ⚠️ note on that line). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     yield from bps.mv(waxs, 0)
-    det_exposure_time(t_frame, t_frame)
+    det_exposure_time(t_frame, t_frame)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_frame)  — or at the prompt:  RE(det_exposure_time(t_frame, t_frame)). (The smi_plans technique runs set exposure for you via t=.)
 
     dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
@@ -5662,7 +5757,7 @@ def tensile_single_measurement_2025_3(name='FT_L_02', t_frame=0.5, frames=600, d
             yield from bps.sleep(delay)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
 
 def linkam_reena_2025_3(t=0.5):
     """
@@ -5692,7 +5787,7 @@ def linkam_reena_2025_3(t=0.5):
     waxs_arc = [20]
     temperatures = [200]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         temp_degC = temperature
@@ -5750,7 +5845,7 @@ def linkam_reena_2025_3(t=0.5):
             waxs_arc = waxs_arc[::-1]
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # t_kelvin = 25 + 273.15
     # yield from ls.output1.mv_temp(t_kelvin)
     # yield from ls.output1.turn_off()
@@ -5789,7 +5884,7 @@ def mustafa_linkam_horizontal_linescan_2025_3(t=0.5):
     waxs_arc = [0]
     temperatures = [100]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         temp_degC = temperature
@@ -5847,7 +5942,7 @@ def mustafa_linkam_horizontal_linescan_2025_3(t=0.5):
             waxs_arc = waxs_arc[::-1]
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # t_kelvin = 25 + 273.15
     # yield from ls.output1.mv_temp(t_kelvin)
     # yield from ls.output1.turn_off()
@@ -5898,7 +5993,7 @@ def linkam_horizontal_vertical_linescan_2025_3(t=0.5):
     waxs_arc = [0]
     temperatures = [200]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         temp_degC = temperature
@@ -5956,7 +6051,7 @@ def linkam_horizontal_vertical_linescan_2025_3(t=0.5):
             waxs_arc = waxs_arc[::-1]
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # t_kelvin = 25 + 273.15
     # yield from ls.output1.mv_temp(t_kelvin)
     # yield from ls.output1.turn_off()
@@ -5995,7 +6090,7 @@ def mustafa_linkam_horizontal_linescan_2025_3(t=0.5):
     waxs_arc = [20]
     temperatures = [25]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         temp_degC = temperature
@@ -6053,7 +6148,7 @@ def mustafa_linkam_horizontal_linescan_2025_3(t=0.5):
             waxs_arc = waxs_arc[::-1]
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # t_kelvin = 25 + 273.15
     # yield from ls.output1.mv_temp(t_kelvin)
     # yield from ls.output1.turn_off()
@@ -6132,6 +6227,20 @@ def linkam_sweep_reena_2026_1(t=0.5, run=0):
         line scan: y_range: [0, 0, 1], x_range = [0, 2500, 126] or as needed
         puck: y_range: [0, 75, 2], x_range: [0, 75, 2]
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a Linkam temperature sweep over a puck of samples — it walks a list of
+    #   temperatures, and at each one does a small x/y grid on every sample (with WAXS-arc angles),
+    #   recording the Linkam temperature in the data via Bluesky.
+    # 💡 NEWER, EASIER WAY: a temperature sweep with the Linkam stage is temperature_ramp_run /
+    #   temperature_bar in 'smi_plans' using the Linkam heater, which drives + settles the stage and
+    #   records the real temperature INTO each image:
+    #     from smi_plans import temperature_ramp_run, linkam_heater
+    #     yield from temperature_ramp_run(names[0], linkam_heater(), temperatures, t=t,
+    #                                     dets=[pil2M, pil900KW])
+    #   (Compose with map_grid_run for the per-sample x/y grid.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as
+    #   a plan (see the ⚠️ note on that line). (internal: Tier 2/3.)
+    # === end smi_plans note ================================================
 
     names =   [ 'RP-A-04', 'RP-A-02', 'RP-B-01', 'RP-B-02', 'RP-C-01', 'RP-C-02']
     piezo_x = [     -11800,      -8400,     -4400, -1100,       2400,       5900]
@@ -6150,14 +6259,14 @@ def linkam_sweep_reena_2026_1(t=0.5, run=0):
     temp_sweep =   [ 150,  25, ]
     temperatures = [ -20, -10, 0, 10, 25, 40, 60, 80, 100, 125, 150, 180 ]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
 
     def inner_cleanup():
         """
         """
         sample_id(user_name="test", sample_name="test")
-        det_exposure_time(0.3, 0.3)
+        det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
         LThermal.setTemperature(25)
         LThermal.off()
 
@@ -6286,7 +6395,7 @@ def swaxs_exsitu_RT_Reena_2026_1(t=1):
 
     temp = str(np.round(float(temp_degC), 1)).zfill(5)
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -6312,7 +6421,7 @@ def swaxs_exsitu_RT_Reena_2026_1(t=1):
             )
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # plt.close('all')
 
 
@@ -6327,6 +6436,18 @@ def linkam_transmission_temp_mustafa_2026_1(t=1, run=0):
         line scan: y_range: [0, 2500, 1], x_range = [0, 2500, 126]
         puck: y_range: [0, 75, 2], x_range: [0, 75, 2]
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a transmission temperature scan on the Linkam stage — walks a list of
+    #   temperatures and at each one does a y linescan on each sample, taking SAXS/WAXS.
+    # 💡 NEWER, EASIER WAY: temperature ramp + transmission is temperature_ramp_run with the Linkam
+    #   heater in 'smi_plans' (drives/settles the stage and records the real temperature into the
+    #   data), composed with map_line_run for the y scan:
+    #     from smi_plans import temperature_ramp_run, linkam_heater
+    #     yield from temperature_ramp_run(names[0], linkam_heater(), temperatures, t=t,
+    #                                     dets=[pil2M, pil900KW], geometry="transmission")
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as
+    #   a plan (see the ⚠️ note on that line). (internal: Tier 2/3.)
+    # === end smi_plans note ================================================
 
     names =   [ 'MA-G-01', 'MA-G-02']
     piezo_x = [-3600,-3600]
@@ -6344,14 +6465,14 @@ def linkam_transmission_temp_mustafa_2026_1(t=1, run=0):
 
     temperatures = [25, 50, 100, 150, 200, ]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
 
     def inner_cleanup():
         """
         """
         sample_id(user_name="test", sample_name="test")
-        det_exposure_time(0.3, 0.3)
+        det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
         LThermal.setTemperature(25)
         LThermal.off()
         plt.close('all')
@@ -6459,7 +6580,7 @@ def linkam_vertical_linescan_2026_1(t=1.0):
     waxs_arc = [0]
     temperatures = [25]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         temp_degC = temperature
@@ -6517,7 +6638,7 @@ def linkam_vertical_linescan_2026_1(t=1.0):
             waxs_arc = waxs_arc[::-1]
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # t_kelvin = 25 + 273.15
     # yield from ls.output1.mv_temp(t_kelvin)
     # yield from ls.output1.turn_off()
@@ -6565,7 +6686,7 @@ def linkam_vertical_linescan_fritz_2026_1(t=1.0):
     waxs_arc = [0,20]
     temperatures = [45]
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     for temperature in temperatures:
         temp_degC = temperature
@@ -6623,7 +6744,7 @@ def linkam_vertical_linescan_fritz_2026_1(t=1.0):
             waxs_arc = waxs_arc[::-1]
     
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
     # t_kelvin = 25 + 273.15
     # yield from ls.output1.mv_temp(t_kelvin)
     # yield from ls.output1.turn_off()
@@ -6637,7 +6758,7 @@ def fritz_single_measurement_2026_1(name='BK-A-01', t_frame=0.5, t_tot=0.5):
     This one is working, above does not at the moment
     """
     yield from bps.mv(waxs, 0)
-    det_exposure_time(t_frame, t_tot, period_delay=0.005)
+    det_exposure_time(t_frame, t_tot, period_delay=0.005)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_tot, period_delay=0.005)  — or at the prompt:  RE(det_exposure_time(t_frame, t_tot, period_delay=0.005)). (The smi_plans technique runs set exposure for you via t=.)
     # det_exposure_time(t_frame, t_tot)
     yield from bps.sleep(1)
 
@@ -6648,7 +6769,7 @@ def fritz_single_measurement_2026_1(name='BK-A-01', t_frame=0.5, t_tot=0.5):
     yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.2, 0.2)
+    det_exposure_time(0.2, 0.2)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.2, 0.2)  — or at the prompt:  RE(det_exposure_time(0.2, 0.2)). (The smi_plans technique runs set exposure for you via t=.)
 
 def reena_compression_measurement_2026_1(name='BK-A-04', t_frame=0.5, frames=50, delay=0.5):
 
@@ -6660,9 +6781,20 @@ def reena_compression_measurement_2026_1(name='BK-A-04', t_frame=0.5, frames=50,
 
     Used this one for compression measurements 
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a compression measurement done as a safe loop — takes `frames` WAXS/SAXS images
+    #   one after another (with an optional delay), stamping the time into each name, while the sample
+    #   is being compressed.
+    # 💡 NEWER, EASIER WAY: a timed loop of frames while something changes is time_series_run in
+    #   'smi_plans', which records elapsed time + frame number INTO each image:
+    #     from smi_plans import time_series_run
+    #     yield from time_series_run(name, n_frames=frames, period=delay, t=t_frame, dets=[pil2M, pil900KW])
+    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as
+    #   a plan (see the ⚠️ note on that line). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     yield from bps.mv(waxs, 0)
-    det_exposure_time(t_frame, t_frame)
+    det_exposure_time(t_frame, t_frame)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_frame)  — or at the prompt:  RE(det_exposure_time(t_frame, t_frame)). (The smi_plans technique runs set exposure for you via t=.)
 
     dets = [pil900KW] if waxs.arc.position < 15 else [pil2M, pil900KW]
 
@@ -6680,4 +6812,4 @@ def reena_compression_measurement_2026_1(name='BK-A-04', t_frame=0.5, frames=50,
             yield from bps.sleep(delay)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.3, 0.3)
+    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)

@@ -159,6 +159,22 @@ def align_gix_loop_samples( inc_ang = 0.15, ii_start = -1   ):
     #  0.48 -0.384     
 
      '''
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: walks the sample bar and aligns each sample, saving each one's tilt (th)
+    #   and height (y) into a dictionary you hand to the measurement plans; at the end it parks
+    #   the SAXS beamstop rod. Nice touch: it uses the modern 'pil2M.beamstop.x_rod' name.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' align_sample does grazing alignment AND records the found
+    #   position alongside your data automatically, so you don't keep a separate 'Aligned_Dict':
+    #     from smi_plans import align_sample, giwaxs_bar, SampleList
+    #     # giwaxs_bar(SampleList(...), align=align_sample, ...) aligns then measures each sample.
+    #   ⚠️ IMPORTANT (not a crash, but please read): this calls RE(...) INSIDE a normal Python
+    #   loop (RE is the "Run Engine" that actually executes a plan). That runs each step as its
+    #   OWN separate run, can't be composed into a bigger plan, and won't work if THIS function
+    #   is itself run with RE(...). The smi_plans way is to 'yield from' the helpers so alignment
+    #   and measurement live in one coherent plan started by a single RE(...).
+    #   (Nothing is flagged ⚠️-broken on a line; 'pil2M.beamstop.x_rod' is already the right name.)
+    # === end smi_plans note ================================================
     # define names of samples on sample bar     
     M, _, _ = get_motor(  ) 
     N = len( x_list )
@@ -213,6 +229,26 @@ def run_gix_loop_wsaxs(t=1, mode = [ 'waxs' ],
     RE(run_gix_loop_wsaxs(Aligned_Dict = Aligned_Dict))
 
     '''    
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence bar run (SAXS/WAXS) — for each WAXS arc angle it loops
+    #   every (pre-aligned) sample and measures over a few x positions and incident angles. If
+    #   no alignment dict is given, it aligns first. Parks the SAXS beamstop rod up front.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs a GIWAXS bar from a sample list in one call, sweeping
+    #   incident angle and WAXS arc and recording angle/position/beam INTO the data and file name
+    #   (so you can drop the long hand-built name and the manual Aligned_Dict):
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list, y=y_list)
+    #     yield from giwaxs_bar(samples, incident_angles=angle_arc, waxs_arcs=waxs_angle_array,
+    #                           dets=[pil900KW, pil2M], t=t, align=align_sample)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now. It also
+    #    calls align_gix_loop_samples, which uses the RE-inside-a-loop pattern flagged above.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes below). The exposure is also set AFTER bp.count
+    #   here, so it only affects the NEXT frame — worth a look when you migrate. (internal: Tier 1.)
+    # === end smi_plans note ================================================
     print( 'step--0' )
     assert len(x_list) == len(sample_list), f'Sample name/position list is borked'     
     if Aligned_Dict is None:    
@@ -225,7 +261,7 @@ def run_gix_loop_wsaxs(t=1, mode = [ 'waxs' ],
     for waxs_angle in waxs_angle_array: # loop through waxs angles        
         yield from bps.mv(waxs, waxs_angle)     
         dets = get_dets( waxs_angle = waxs_angle, mode = mode )                       
-        det_exposure_time(t,t)                  
+        det_exposure_time(t,t)                    # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (The smi_plans technique runs set exposure for you via t=.)
         for ii, (x, sample) in enumerate(zip(x_list,sample_list)):    #loop over samples on bar                
             yield from bps.mv(M.x, x )             
             TH = Aligned_Dict[ii]['th']  
@@ -246,14 +282,25 @@ def run_gix_loop_wsaxs(t=1, mode = [ 'waxs' ],
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
                     print(f'\n\t=== Sample: {sample_name} ===\n') 
                     yield from bp.count( dets, num=1)
-                    det_exposure_time(t,t)    
+                    det_exposure_time(t,t)      # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (The smi_plans technique runs set exposure for you via t=.)
             #print( 'HERE#############')
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 
 def align_Linkam_sample():   
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: aligns a single sample in the Linkam stage and saves its tilt/height.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' align_sample aligns and records the found position with
+    #   your data, so you don't keep a separate Aligned_Dict:  yield from align_sample()
+    #   ⚠️ IMPORTANT (not a crash, but please read): this calls RE(...) INSIDE a normal Python
+    #   loop (RE is the "Run Engine" that actually executes a plan). That runs each step as its
+    #   OWN separate run, can't be composed into a bigger plan, and won't work if THIS function
+    #   is itself run with RE(...). The smi_plans way is to 'yield from' the helpers so alignment
+    #   and measurement live in one coherent plan started by a single RE(...).
+    #   (Nothing is flagged ⚠️-broken on a specific line; the Linkam 'LThermal' is FINE.)
+    # === end smi_plans note ================================================
     Aligned_Dict= {}                   
     RE( alignement_gisaxs( 0.15  ) ) #run alignment routine          
     M, TH, YH = get_motor(  )   
@@ -271,6 +318,17 @@ def _run( Aligned_Dict,
          mode = [ 'waxs' ],  
         angle_arc = np.array([  0.15  ]),
          waxs_angle_array = np.array( [  0     ] ) ,   ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the inner measurement plan the temperature loops call — it sets the sample
+    #   name in the run metadata, then measures the (pre-aligned) sample at the given incident
+    #   angles and WAXS arcs.
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' a single run/sample with the name templated FROM the
+    #   recorded data is the giwaxs_run / one_sample_run pattern — no need to poke RE.md by hand:
+    #     from smi_plans import giwaxs_run, one_sample_run
+    #     # giwaxs_run(sample_name, incident_angles=angle_arc, waxs_arcs=waxs_angle_array, ...)
+    #   (Nothing is flagged ⚠️-broken on a specific line here; see the temperature plans that
+    #    call this for the bigger picture.)
+    # === end smi_plans note ================================================
     RE.md['sample_name'] = sample_name
     RE.md['sample'] = sample_name
      
@@ -296,7 +354,7 @@ def _run( Aligned_Dict,
             sample_id(user_name=  user_name , sample_name=_sample_name)                     
             print(f'\n\t=== Sample: {_sample_name} ===\n') 
             yield from bp.count( dets, num=1)
-            det_exposure_time(t,t)    
+            det_exposure_time(t,t)      # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (The smi_plans technique runs set exposure for you via t=.)
             #print( 'HERE#############')
     RE.md['sample_name'] = 'test'
     RE.md['sample'] = 'tes'
@@ -310,6 +368,21 @@ def collect_data_atT(T, Aligned_Dict, sample_name = 'xxx', angle_arc = np.array(
     
     '''
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: drives the Linkam (LThermal) to one temperature T, waits until it gets
+    #   there, then runs the _run measurement at that temperature.
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has temperature helpers that set the setpoint, WAIT for
+    #   it, and measure — recording the REAL temperature INTO the data — in one coherent plan:
+    #     from smi_plans import goto_temperature, giwaxs_run, isothermal_kinetics_run
+    #     # yield from goto_temperature(T); yield from giwaxs_run(name, ...)
+    #   (The Linkam 'LThermal' is FINE — no change needed.)
+    #   ⚠️ IMPORTANT (not a crash, but please read): this calls RE(...) INSIDE a normal Python
+    #   loop (RE is the "Run Engine" that actually executes a plan). That runs each step as its
+    #   OWN separate run, can't be composed into a bigger plan, and won't work if THIS function
+    #   is itself run with RE(...). The smi_plans way is to 'yield from' the helpers so alignment
+    #   and measurement live in one coherent plan started by a single RE(...).
+    #   (Nothing is flagged ⚠️-broken on a specific line here.)
+    # === end smi_plans note ================================================
     #print('step...0 ')
     LThermal.setTemperature(   T   )
     LThermal.on() # turn on 
@@ -364,6 +437,25 @@ def Temperature_Linkam_Fast_ThreeTs(
      
     '''
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a fast 3-temperature Linkam experiment — it ramps to T1, then while ramping
+    #   to T2 (and again to T3) it repeatedly runs the _run measurement and sleeps, so it captures
+    #   the structure changing as the temperature moves. Ends by cooling to 25C and heater off.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has temperature-ramp + kinetics plans that ramp, measure
+    #   while ramping, and record the REAL temperature INTO each frame, in one coherent plan:
+    #     from smi_plans import temperature_ramp_run, isothermal_kinetics_run, lakeshore_heater
+    #     # (drives the heater, measures during the ramp, records temperature as data)
+    #   (The Linkam 'LThermal' is FINE — no change needed.)
+    #   ⚠️ IMPORTANT (not a crash, but please read): this calls RE(...) INSIDE a normal Python
+    #   loop (RE is the "Run Engine" that actually executes a plan). That runs each step as its
+    #   OWN separate run, can't be composed into a bigger plan, and won't work if THIS function
+    #   is itself run with RE(...). The smi_plans way is to 'yield from' the helpers so alignment
+    #   and measurement live in one coherent plan started by a single RE(...).
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note below). (internal: Tier 0 — RE inside a while loop.)
+    # === end smi_plans note ================================================
     print('step...0 ')
     LThermal.setTemperature(   T1   )
     LThermal.on() # turn on
@@ -392,7 +484,7 @@ def Temperature_Linkam_Fast_ThreeTs(
 
     LThermal.setTemperature(   25    )
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (The smi_plans technique runs set exposure for you via t=.)
     LThermal.off()
     RE.md["sample_name"] = 'test'
 
@@ -425,6 +517,21 @@ def Temperature_Linkam_Step(
      
     '''
     
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a stepped Linkam experiment — it steps the temperature between low (TL) and
+    #   high (TH) setpoints and runs the _run measurement at the steps (a temperature cycle).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' temperature plans set each setpoint, wait, and measure,
+    #   recording the REAL temperature INTO the data, in one coherent plan:
+    #     from smi_plans import temperature_ramp_run, goto_temperature, lakeshore_heater
+    #   (The Linkam 'LThermal' is FINE — no change needed.)
+    #   ⚠️ IMPORTANT (not a crash, but please read): this calls RE(...) INSIDE a normal Python
+    #   loop (RE is the "Run Engine" that actually executes a plan). That runs each step as its
+    #   OWN separate run, can't be composed into a bigger plan, and won't work if THIS function
+    #   is itself run with RE(...). The smi_plans way is to 'yield from' the helpers so alignment
+    #   and measurement live in one coherent plan started by a single RE(...).
+    #   (Nothing is flagged ⚠️-broken on a specific line here.)
+    # === end smi_plans note ================================================
     Tlist = np.linspace( TH, TL, Tnum ) 
     for T in Tlist:
         collect_data_atT(T, Aligned_Dict, sample_name = sample_name,angle_arc = angle_arc, 
@@ -436,7 +543,7 @@ def Temperature_Linkam_Step(
  
     LThermal.setTemperature(   25    )
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (The smi_plans technique runs set exposure for you via t=.)
     LThermal.off()
     RE.md["sample_name"] = 'test'
 
@@ -526,6 +633,19 @@ def insitu_tgix_samples(  Aligned_Dict,  run_time= 3600 * 1 , sleep_time = 5    
     '''
 
 
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a long in-situ grazing-incidence (GIX) time series — it keeps looping for
+    #   'run_time' seconds, and each pass visits every pre-aligned sample, measures at a few x
+    #   positions and incident angles (SAXS+WAXS), then sleeps before repeating.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has time-series + grazing plans that take frames on a
+    #   schedule and record the REAL elapsed time / position / angle / beam INTO each frame:
+    #     from smi_plans import time_series_run, giwaxs_run, align_sample
+    #     # align each sample once, then loop a giwaxs_run / time_series_run for run_time.
+    #   (Heads-up: the companion align_gix_loop_samples uses RE(...) inside a loop; smi_plans lets
+    #    one plan align AND measure in a single coherent run, which is more robust for long runs.)
+    #   (Nothing is flagged ⚠️-broken on a specific line here. internal: Tier 0/1.)
+    # === end smi_plans note ================================================
     t=1
     dets = [pil2M, pil900KW]
     incident_angle=[      0.15   ]  
@@ -572,7 +692,7 @@ def insitu_tgix_samples(  Aligned_Dict,  run_time= 3600 * 1 , sleep_time = 5    
                     sample_id(user_name=  user_name , sample_name=sample_name)                     
                     print(f'\n\t=== Sample: {sample_name} ===\n') 
                     yield from bp.count( dets, num=1)
-                    det_exposure_time(t,t)    
+                    det_exposure_time(t,t)      # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t,t)  — or at the prompt:  RE(det_exposure_time(t,t)). (The smi_plans technique runs set exposure for you via t=.)
                     if camera: 
                         save_ova( sample_name )
                         save_hex( sample_name )     
@@ -584,6 +704,24 @@ def insitu_tgix_samples(  Aligned_Dict,  run_time= 3600 * 1 , sleep_time = 5    
 
 
 def run_giwaxs_Kim(t=1, username=username):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence (GIWAXS) bar run — for each sample it aligns, then sweeps
+    #   incident angle and WAXS arc, measuring SAXS+WAXS (alternating angle order each sample).
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' runs a GIWAXS bar from a sample list in one call, aligning
+    #   each sample and recording angle/position/beam INTO the data and file name (so you can drop
+    #   the hand-built name and the RE.md['scan_id'] read):
+    #     from smi_plans import giwaxs_bar, align_sample, SampleList
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list)
+    #     yield from giwaxs_bar(samples, incident_angles=angle_arc, waxs_arcs=waxs_angle_array,
+    #                           dets=[pil900KW, pil2M], t=t, align=align_sample)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW' (in the
+    #   'else' detector list); (2) the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # define names of samples on sample bar
     assert len(x_list) == len(sample_list), f"Sample name/position list is borked"
     angle_arc = np.array([0.05, 0.08, 0.10, 0.15, 0.2, 0.3])  # incident angles
@@ -605,7 +743,7 @@ def run_giwaxs_Kim(t=1, username=username):
         yield from alignement_gisaxs(0.1)  # run alignment routine
         th_meas = angle_arc + piezo.th.position
         th_real = angle_arc
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
         x_pos_array = x + x_shift_array
         if inverse_angle:
             Waxs_angle_array = waxs_angle_array[::-1]
@@ -621,7 +759,7 @@ def run_giwaxs_Kim(t=1, username=username):
                 ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
                 print("Meausre both saxs and waxs here for w-angle=%s" % waxs_angle)
             else:
-                dets = [pil900KW, pil300KW]
+                dets = [pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
 
             for x_meas in x_pos_array:  # measure at a few x positions
                 yield from bps.mv(piezo.x, x_meas)
@@ -649,7 +787,7 @@ def run_giwaxs_Kim(t=1, username=username):
         inverse_angle = not inverse_angle
         cts += 1
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
 
 
@@ -664,6 +802,22 @@ def temp_series_grid(name='temp',
                      dets=[pil2M], 
                      xs=np.linspace(-13,-12,11), 
                      ys=np.linspace(-2.3,-2.8,6)):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a temperature + spatial-grid SAXS series — for each x/y spot it steps the
+    #   Linkam through a list of temperatures, equilibrates at each, and takes a SAXS frame,
+    #   building the file name from a recorded 'target_file_name' Signal.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has temperature-ramp and grid-mapping plans that set/wait
+    #   on each temperature, raster x/y, and record the REAL temperature/position INTO the data
+    #   and file name (no throwaway target_file_name Signal needed):
+    #     from smi_plans import temperature_ramp_run, map_grid_run, spatial_grid_axes
+    #   (The Linkam 'LThermal' is FINE — no change needed.)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ line, which needs a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note below). (internal: Tier 3.)
+    # === end smi_plans note ================================================
        # function loop to bring linkam to temp, hold and measure
 # Function will begin at start_temp and take a SAXS measurement at every temperature given 
     
@@ -671,7 +825,7 @@ def temp_series_grid(name='temp',
     LThermal.setTemperature(temps[0])
     # LThermal.setTemperatureRate(ramp)
     LThermal.on() # turn on 
-    det_exposure_time(exp_time,exp_time)
+    det_exposure_time(exp_time,exp_time)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_time,exp_time)  — or at the prompt:  RE(det_exposure_time(exp_time,exp_time)). (The smi_plans technique runs set exposure for you via t=.)
 
     s = Signal(name='target_file_name', value='')
     RE.md["sample_name"] = '{target_file_name}'
@@ -728,6 +882,24 @@ def temp_series_grid(name='temp',
 
 
 def GIWAXS_TD_run():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a temperature-dependent grazing-incidence (GIWAXS) run — it drives the Linkam
+    #   (LThermal) through a list of temperatures (including sub-zero / cryo) and takes GIWAXS
+    #   images of each sample at each temperature.
+    #
+    # 💡 NEWER, EASIER WAY: this is GIWAXS combined with a Linkam temperature ramp. 'smi_plans'
+    #   has both pieces and a combined recipe:
+    #     from smi_plans import giwaxs_bar, align_sample, temperature_ramp_run
+    #     from smi_plans.recipes_combined import giwaxs_tempramp_energy_5loc
+    #   It drives the Linkam, waits for each setpoint, aligns each sample, and records the REAL
+    #   temperature + incident angle INTO the data and file name.
+    #   (The Linkam 'LThermal' is FINE — no change needed.)
+    #
+    #   (Your script below works as-is EXCEPT for any ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls (if any) no longer set the
+    #   exposure unless run as a plan (see the ⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     T_start = 20
     T_array = [-70,-50,25]
     names = ['PS3',       'PS7',     'PS11']

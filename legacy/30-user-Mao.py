@@ -24,30 +24,50 @@
 
 
 def move_8m():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a saved setup that drives the SAXS detector to the 8 m distance and
+    #   parks the beamstop (with its pin diode) at the matching spot.
+    # 💡 Setup helper — nothing to acquire here. Note it runs each move with RE(...), so it
+    #   can't be used with 'yield from' inside a plan. In smi_plans the detector distance and
+    #   beamstop are normal moves you 'yield from' (and beamstop has insert/restore helpers).
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the SAXS beamstop 'pil2M_bs_pd' was renamed — see the ⚠️
+    #   notes below. (SAXS.x/.y/.z detector-stage moves are fine.)
+    # === end smi_plans note ================================================
     # direct beam position [ 925, 559 ]
     RE(bps.mv(SAXS.x, 75))
     RE(bps.mv(SAXS.y, -61))
     RE(bps.mv(SAXS.z, 8000))
-    RE(bps.mv(pil2M_bs_pd.x, -199))
-    RE(bps.mv(pil2M_bs_pd.y, 9.2))
+    RE(bps.mv(pil2M_bs_pd.x, -199))  # ⚠️ FIXME(smi_plans): 'pil2M_bs_pd' was renamed (it would error). The SAXS beamstop (with pin diode) now lives under 'pil2M.beamstop' — reach its rod axis as 'pil2M.beamstop.x_rod' (or use  yield from pil2M.insert_beamstop(...)  /  yield from pil2M.restore_beamstop()). Ask staff for the exact pin-diode-beamstop axis name.
+    RE(bps.mv(pil2M_bs_pd.y, 9.2))  # ⚠️ FIXME(smi_plans): 'pil2M_bs_pd' was renamed (it would error). The SAXS beamstop is now under 'pil2M.beamstop' (e.g. 'pil2M.beamstop.x_rod'); use the insert/restore helpers if you can. Ask staff for the exact pin-diode-beamstop axis name.
 
 
 def move_5m():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: same as move_8m but for the 5 m SAXS distance.
+    # 💡 Setup helper — nothing to acquire; runs moves with RE(...). ⚠️ NEEDS A FIX: the
+    #   SAXS beamstop 'pil2M_bs_pd' was renamed (⚠️ notes below).
+    # === end smi_plans note ================================================
     # direct beam position [ 961, 561 ]
     RE(bps.mv(SAXS.x, 75))
     RE(bps.mv(SAXS.y, -61))
     RE(bps.mv(SAXS.z, 5000))
-    RE(bps.mv(pil2M_bs_pd.x, -198.5))
-    RE(bps.mv(pil2M_bs_pd.y, 8.8))
+    RE(bps.mv(pil2M_bs_pd.x, -198.5))  # ⚠️ FIXME(smi_plans): 'pil2M_bs_pd' was renamed (it would error). The SAXS beamstop (with pin diode) is now under 'pil2M.beamstop' (e.g. 'pil2M.beamstop.x_rod'); use  yield from pil2M.insert_beamstop(...)  /  yield from pil2M.restore_beamstop()  if you can. Ask staff for the exact axis name.
+    RE(bps.mv(pil2M_bs_pd.y, 8.8))  # ⚠️ FIXME(smi_plans): 'pil2M_bs_pd' was renamed (it would error). The SAXS beamstop is now under 'pil2M.beamstop'; use the insert/restore helpers. Ask staff for the exact pin-diode-beamstop axis name.
 
 
 def move_2m():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: same as move_8m but for the 2 m SAXS distance.
+    # 💡 Setup helper — nothing to acquire; runs moves with RE(...). ⚠️ NEEDS A FIX: the
+    #   SAXS beamstop 'pil2M_bs_pd' was renamed (⚠️ notes below).
+    # === end smi_plans note ================================================
     # direct beam position [ 921, 561 ]
     RE(bps.mv(SAXS.x, 75))
     RE(bps.mv(SAXS.y, -61))
     RE(bps.mv(SAXS.z, 2000))
-    RE(bps.mv(pil2M_bs_pd.x, -198.5))
-    RE(bps.mv(pil2M_bs_pd.y, 8.8))
+    RE(bps.mv(pil2M_bs_pd.x, -198.5))  # ⚠️ FIXME(smi_plans): 'pil2M_bs_pd' was renamed (it would error). The SAXS beamstop (with pin diode) is now under 'pil2M.beamstop' (e.g. 'pil2M.beamstop.x_rod'); use  yield from pil2M.insert_beamstop(...)  /  yield from pil2M.restore_beamstop()  if you can. Ask staff for the exact axis name.
+    RE(bps.mv(pil2M_bs_pd.y, 8.8))  # ⚠️ FIXME(smi_plans): 'pil2M_bs_pd' was renamed (it would error). The SAXS beamstop is now under 'pil2M.beamstop'; use the insert/restore helpers. Ask staff for the exact pin-diode-beamstop axis name.
 
 
 # reminder
@@ -127,6 +147,13 @@ user_name = "YM"
 
 
 def close_flow():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: turns off both the wet and dry gas flows (so the humidity controller
+    #   stops adjusting) and returns the current time as a "t0" timestamp.
+    # 💡 In 'smi_plans' the humidity is driven through set_rh / the RH axis (rh_axis), which
+    #   manage the wet/dry flows for you; you wouldn't usually poke the flows by hand. (Not
+    #   broken — just simpler once you migrate.) (moxa_in flow channels are fine.)
+    # === end smi_plans note ================================================
     wet_old = moxa_in.ch2_sp.get()
     dry_old = moxa_in.ch1_sp.get()
     ch = readHumidity()
@@ -160,6 +187,18 @@ def set_humidity(h):
     50          3   2.7
     42%         3   3
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: sets the chamber humidity to a chosen value by looking up the wet/dry
+    #   gas flow rates from a calibration table and applying them, then returns a "t0" time.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has set_rh, which sets a target relative humidity for
+    #   you (and rh_axis / rh_step_series_run sweep humidity as part of a scan, recording the
+    #   actual RH into the data). So instead of a hand-tuned flow table you'd say:
+    #     from smi_plans import set_rh
+    #     yield from set_rh(80)          # go to 80% RH (smi_plans handles the flows)
+    #   (Just a tidier option — your table-based version still works as-is; nothing broken.)
+    #   (moxa_in flow channels and readHumidity() are fine.)
+    # === end smi_plans note ================================================
     available_h = [0, 20, 42, 50, 60, 70, 80, 100]
     h_dict = {
         0: [0, 4],
@@ -189,6 +228,7 @@ def set_humidity(h):
 
 
 def get_humidity():
+    # smi_plans: no acquisition logic here — just reads back the current humidity.
     return readHumidity()
 
 
@@ -197,6 +237,26 @@ def get_humidity():
 
 def measure_one_humidity_many_cycling(t0, N=10, sleep_time=1):
     """suppose the waxs is off the beam"""
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: repeats a full "measure every sample" pass N times at a fixed humidity,
+    #   waiting sleep_time between passes and slowly walking the sample up/down (dy) so you
+    #   probe a fresh strip each pass — i.e. a humidity-kinetics time series.
+    #
+    # 💡 NEWER, EASIER WAY: "hold a humidity and re-measure on a timer" is exactly what
+    #   'smi_plans' rh_swelling_kinetics_run / rh_step_series_run do. They drive the RH, then
+    #   re-measure on a cadence, and record the real humidity, time, and positions into each
+    #   image and file name (so you can drop the long hand-built name):
+    #     from smi_plans import rh_swelling_kinetics_run
+    #     yield from rh_swelling_kinetics_run(
+    #         "WT-AS-1", [pil2M], rh=80,        # your target humidity
+    #         num=N, period=sleep_time, t=0.5)  # repeats and timing
+    #
+    # 💡 ONE HEADS-UP (not broken): this loops in plain Python and the actual data is taken
+    #   deeper down with RE(bp.count(...)) (see _measure_one). RE(...) means "run now", so
+    #   this function can't be run with RE(...) or 'yield from' itself. smi_plans plans are
+    #   'yield from'-ed, so the whole cycle becomes one runnable plan. (Nothing errors here.)
+    #   (internal: Tier 0.)
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())  # [:1]
     dx = 0
     n = 30
@@ -210,6 +270,14 @@ def measure_one_humidity_many_cycling(t0, N=10, sleep_time=1):
 
 
 def measure_one_humidity_continue(t0, N=10, sleep_time=10):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: like the cycling version but stays on the same spot — measures every
+    #   sample N times with a wait between passes (no dy walk).
+    # 💡 NEWER, EASIER WAY: same 'smi_plans' RH-kinetics pattern (rh_step_series_run /
+    #   rh_swelling_kinetics_run) with num=N, period=sleep_time. It records humidity + time
+    #   into the data for you. (Not broken — just tidier; note the data is taken via
+    #   RE(bp.count) deep down, so this can't be 'yield from'-ed as written.) (internal: Tier 0.)
+    # === end smi_plans note ================================================
     for i in range(N):
         measure_one_humidity(t0, dx=0, dy=0, t=0.5)
         time.sleep(sleep_time)
@@ -220,6 +288,13 @@ def measure_one_humidity_continue(t0, N=10, sleep_time=10):
 
 def measure_one_humidity(t0, dx=0, dy=0, t=0.5):
     """suppose the waxs is off the beam"""
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: one measurement pass at the current humidity — here it just calls the
+    #   SAXS version for every sample (the WAXS version is commented out).
+    # 💡 In 'smi_plans' you'd pick the SAXS or WAXS technique (transmission_run/giwaxs_run) or
+    #   the RH-kinetics run directly; the humidity/time/position get recorded for you.
+    #   (Not broken — just a thin dispatcher; nothing to fix.)
+    # === end smi_plans note ================================================
     ks = list(sample_dict.keys())  # [:1]
     # measure_one_humidity_WAXS( t0=t0, ks=ks,  dx=dx, dy=dy ,  t=t   )
     measure_one_humidity_SAXS(t0=t0, ks=ks, dx=dx, dy=dy, t=t)
@@ -227,6 +302,13 @@ def measure_one_humidity(t0, dx=0, dy=0, t=0.5):
 
 
 def measure_one_humidity_WAXS(t0, ks, dx=0, dy=0, t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a WAXS pass at the current humidity — steps the WAXS arc through a set
+    #   of angles and measures every sample at each angle.
+    # 💡 In 'smi_plans' the WAXS-arc sweep over a bar is giwaxs_bar with a motor_axis("waxs",
+    #   waxs, [...]); the arc angle / humidity / position get recorded into each image.
+    #   (Not broken — note the data is taken via RE(bp.count) in _measure_one.) (Tier 0.)
+    # === end smi_plans note ================================================
     WA = np.array([0, 5, 15, 25, 45])  # [:1]
     # WA = np.array( [ 0, 5, 15, 25 ])   # [:1]
     # WA = np.array( [ 0, 5  ])   # [:1]
@@ -239,6 +321,14 @@ def measure_one_humidity_WAXS(t0, ks, dx=0, dy=0, t=0.5):
 
 # def measure_one_humidity_SAXS(  t0,  ks, wa=45,  dx=0, dy=0 ,  t=0.5   ):
 def measure_one_humidity_SAXS(t0, ks, wa=25, dx=0, dy=0, t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a SAXS pass at the current humidity — measures every sample, shifts the
+    #   detector y by ~30 pixels, measures again (to fill a detector gap), then shifts back.
+    # 💡 In 'smi_plans' a transmission/SAXS run over a bar records humidity/position for you;
+    #   the detector-gap y-shift can be a second acquire or a per-sample axis. (Not broken —
+    #   note the data is taken via RE(bp.count) in _measure_one, so this can't be 'yield from'-
+    #   ed; SAXS.y moves are fine.) (Tier 0.)
+    # === end smi_plans note ================================================
     _measure_one(t0=t0, ks=ks, dets=[pil2M], waxs_angle=wa, dx=dx, dy=dy, t=t)
     RE(bps.mvr(SAXS.y, 30 * 0.172))
     _measure_one(t0=t0, ks=ks, dets=[pil2M], waxs_angle=wa, dx=dx, dy=dy, t=t)
@@ -246,6 +336,21 @@ def measure_one_humidity_SAXS(t0, ks, wa=25, dx=0, dy=0, t=0.5):
 
 
 def _measure_one(t0, ks, dets, waxs_angle, dx=0, dy=0, t=0.5):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: the shared inner worker — for each sample it moves there, nudges x/y,
+    #   builds a long file name with the humidity/time/positions baked in, and takes one
+    #   image.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' records humidity/time/position straight INTO the data
+    #   and templates the file name from those recorded fields, so the whole hand-built
+    #   "{sample}_x..._h{h}_..." name and the per-sample RE(bp.count) loop are replaced by one
+    #   bar/RH run (e.g. transmission_bar / rh_step_series_run with a SampleList).
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line below no longer sets the
+    #   exposure unless run as a plan (⚠️ note below). Also note this takes data with
+    #   RE(bp.count(...)) inside a Python loop, which writes one run per point and can't be
+    #   'yield from'-ed — smi_plans does one coordinated run instead. (internal: Tier 0.)
+    # === end smi_plans note ================================================
     for k in ks:
         mov_sam(k)
         sample = RE.md["sample"]
@@ -266,7 +371,7 @@ def _measure_one(t0, ks, dets, waxs_angle, dx=0, dy=0, t=0.5):
             expt=t,
             scan_id=RE.md["scan_id"],
         )
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' techniques set it for you via t=.)
         sample_id(user_name=user_name, sample_name=sample_name)
         print(f"\n\t=== Sample: {sample_name} ===\n")
         print("Collect data here....")
@@ -274,12 +379,28 @@ def _measure_one(t0, ks, dets, waxs_angle, dx=0, dy=0, t=0.5):
 
 
 def test_waxs_move_time():
+    # smi_plans: no acquisition logic here — just times how long a WAXS-arc move takes.
     t0 = time.time()
     move_waxs(45)
     print("It takes %.2f min to move waxs from 0 to 45." % ((time.time() - t0) / 60))
 
 
 def measure_saxs(t=1, att="None", dy=0, user_name="YM", sample=None):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes one SAXS image of the current sample, building the file name by
+    #   hand from the position, detector distance, attenuator, and scan id.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has transmission_run for a SAXS measurement, and it
+    #   records position / detector distance / beam into the image and file name for you (so
+    #   you can drop the hand-built "{sample}_x..._att{att}..." name):
+    #     from smi_plans import transmission_run
+    #     yield from transmission_run(sample, [pil2M], t=t)
+    #   (Just a tidier option — your script below works as-is EXCEPT the ⚠️ line.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' line below no longer sets the
+    #   exposure unless run as a plan (⚠️ note below). (stage.y / attenuators are fine.)
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
     if sample is None:
         sample = RE.md["sample"]
     dets = [pil2M]
@@ -299,7 +420,7 @@ def measure_saxs(t=1, att="None", dy=0, user_name="YM", sample=None):
         scan_id=RE.md["scan_id"],
     )
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' transmission_run sets it for you via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")
@@ -310,10 +431,25 @@ def measure_saxs(t=1, att="None", dy=0, user_name="YM", sample=None):
 
 
 def measure_waxs(t=1, waxs_angle=0, att="None", dy=0, user_name="YM", sample=None):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: moves the WAXS arc to an angle and takes one WAXS image of the current
+    #   sample, building the file name by hand from the position and scan id.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' has giwaxs_run for a WAXS measurement; it records the
+    #   WAXS-arc angle / position / beam into the image and file name for you:
+    #     from smi_plans import giwaxs_run, motor_axis
+    #     yield from giwaxs_run(sample, [pil2M, pil900KW], t=t,
+    #                           axes=[motor_axis("waxs", waxs, [waxs_angle])])
+    #   (Just a tidier option — your script works as-is EXCEPT the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' (WAXS) was retired — it's now 'pil900KW'
+    #   (⚠️ note below); (2) the 'det_exposure_time(...)' line no longer sets the exposure
+    #   unless run as a plan (⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     if sample is None:
         sample = RE.md["sample"]
     yield from bps.mv(waxs, waxs_angle)
-    dets = [pil900KW, pil300KW]
+    dets = [pil900KW, pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' (WAXS) was removed (this would error). The current WAXS detector is 'pil900KW' — use that instead (different camera, so check beam-center/calibration). (pil900KW is already in this list.)
     # att_in( att )
     if dy:
         yield from bps.mvr(stage.y, dy)
@@ -328,7 +464,7 @@ def measure_waxs(t=1, waxs_angle=0, att="None", dy=0, user_name="YM", sample=Non
         scan_id=RE.md["scan_id"],
     )
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_run sets it for you via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")
@@ -338,6 +474,12 @@ def measure_waxs(t=1, waxs_angle=0, att="None", dy=0, user_name="YM", sample=Non
 
 
 def measure_pindiol_current():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a quick reading helper — opens the fast shutter, waits, reads the pin-
+    #   diode current, closes the shutter, and returns the value. No image is taken.
+    # 💡 Diagnostic helper — nothing to migrate. In smi_plans the pin diode is recorded as a
+    #   readable alongside your data, so you rarely read it by hand. (Not broken.)
+    # === end smi_plans note ================================================
     fs.open()
     yield from bps.sleep(0.3)
     pd_curr = pdcurrent1.value
@@ -347,10 +489,25 @@ def measure_pindiol_current():
 
 
 def measure_wsaxs(t=1, waxs_angle=20, att="None", dy=0, user_name="XZ", sample=None):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a combined WAXS + SAXS image of the current sample at one WAXS
+    #   arc angle, building the file name by hand from the position, detector distance, etc.
+    #
+    # 💡 NEWER, EASIER WAY: 'smi_plans' giwaxs_run measures SAXS + WAXS together and records
+    #   the WAXS-arc angle / position / detector distance / beam into the image and file name:
+    #     from smi_plans import giwaxs_run, motor_axis
+    #     yield from giwaxs_run(sample, [pil2M, pil900KW], t=t,
+    #                           axes=[motor_axis("waxs", waxs, [waxs_angle])])
+    #   (Just a tidier option — your script works as-is EXCEPT the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' (WAXS) was retired — it's now 'pil900KW'
+    #   (⚠️ note below); (2) the 'det_exposure_time(...)' line no longer sets the exposure
+    #   unless run as a plan (⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     if sample is None:
         sample = RE.md["sample"]
     yield from bps.mv(waxs, waxs_angle)
-    dets = [pil900KW, pil300KW, pil2M]
+    dets = [pil900KW, pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' (WAXS) was removed (this would error). The current WAXS detector is 'pil900KW' — use that instead (different camera, so check beam-center/calibration). (pil900KW is already in this list.)
     # att_in( att )
     if dy:
         yield from bps.mvr(stage.y, dy)
@@ -366,7 +523,7 @@ def measure_wsaxs(t=1, waxs_angle=20, att="None", dy=0, user_name="XZ", sample=N
         scan_id=RE.md["scan_id"],
     )
 
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_run sets it for you via t=.)
     sample_id(user_name=user_name, sample_name=sample_name)
     print(f"\n\t=== Sample: {sample_name} ===\n")
     print("Collect data here....")
@@ -384,6 +541,26 @@ def measure_waxs_multi_angles(
     waxs_angles=[0.0, 6.5, 13.0],
     inverse_angle=False,
 ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: sweeps the WAXS arc through several angles on the current sample,
+    #   taking an image at each (optionally adding SAXS at the largest angle), and can
+    #   alternate the arc direction to save time.
+    #
+    # 💡 NEWER, EASIER WAY: a WAXS-arc sweep is the 'smi_plans' giwaxs_run with a WAXS axis;
+    #   giwaxs_bar_arc_economy is the version that alternates the arc direction like the
+    #   inverse_angle flag here. It records the arc angle / position / beam into each image
+    #   and file name (so you can drop the hand-built name):
+    #     from smi_plans import giwaxs_run, motor_axis
+    #     yield from giwaxs_run(
+    #         RE.md["sample"], [pil2M, pil900KW], t=t,
+    #         axes=[motor_axis("waxs", waxs, [0.0, 6.5, 13.0])])   # your waxs_angles
+    #   (Just a tidier option — your script works as-is EXCEPT the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' (WAXS) was retired — it's now 'pil900KW'
+    #   (⚠️ notes below); (2) the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). (rayonix only appears in an old comment here.)
+    #   (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     # waxs_angles = np.linspace(0, 65, 11)   #the max range
     # waxs_angles =   np.linspace(0, 65, 11),
@@ -392,7 +569,7 @@ def measure_waxs_multi_angles(
     waxs_angle_array = np.array(waxs_angles)
     if inverse_angle:
         waxs_angle_array = waxs_angle_array[::-1]
-    dets = [pil300KW]
+    dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' (WAXS) was removed (this would error). The current WAXS detector is 'pil900KW' — use that instead (different camera, so check beam-center/calibration).
     max_waxs_angle = np.max(waxs_angle_array)
     for waxs_angle in waxs_angle_array:
         yield from bps.mv(waxs, waxs_angle)
@@ -414,18 +591,18 @@ def measure_waxs_multi_angles(
             if waxs_angle == max_waxs_angle:
                 dets = [
                     pil2M,
-                    pil300KW,
+                    pil300KW,  # ⚠️ FIXME(smi_plans): 'pil300KW' (WAXS) was removed (this would error). The current WAXS detector is 'pil900KW' — use that instead (different camera, so check beam-center/calibration).
                 ]  # waxs, maxs, saxs = [pil300KW, rayonix, pil2M]
             else:
-                dets = [pil300KW]
+                dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' (WAXS) was removed (this would error). The current WAXS detector is 'pil900KW' — use that instead (different camera, so check beam-center/calibration).
 
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' giwaxs_run sets it for you via t=.)
         sample_id(user_name=user_name, sample_name=sample_name)
         print(f"\n\t=== Sample: {sample_name} ===\n")
         # yield from bp.scan(dets, waxs, *waxs_arc)
         yield from bp.count(dets, num=1)
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5)
+    det_exposure_time(0.5)  # ⚠️ FIXME(smi_plans): same as above — this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5)  — or at the prompt:  RE(det_exposure_time(0.5)).
 
 
 ##################################################
@@ -434,30 +611,44 @@ def measure_waxs_multi_angles(
 
 
 def movx(dx):
+    # smi_plans: setup helper (hand jog of stage.x) — nothing to migrate; runs the move
+    # with RE(...), so it can't be used with 'yield from'.
     RE(bps.mvr(stage.x, dx))
 
 
 def movy(dy):
+    # smi_plans: setup helper (hand jog of stage.y) — nothing to migrate; runs the move
+    # with RE(...), so it can't be used with 'yield from'.
     RE(bps.mvr(stage.y, dy))
 
 
 def get_posxy():
+    # smi_plans: no acquisition logic here — just reads back stage x/y.
     return round(stage.x.user_readback.value, 2), round(stage.y.user_readback.value, 2)
 
 
 def move_waxs(waxs_angle=8.0):
+    # smi_plans: setup helper (drives the WAXS arc) — nothing to migrate; runs the move with
+    # RE(...). In smi_plans the arc is swept as motor_axis("waxs", waxs, ...) inside a plan.
     RE(bps.mv(waxs, waxs_angle))
 
 
 def move_waxs_off(waxs_angle=8.0):
+    # smi_plans: setup helper (parks the WAXS arc) — nothing to migrate; runs the move with RE(...).
     RE(bps.mv(waxs, waxs_angle))
 
 
 def move_waxs_on(waxs_angle=0.0):
+    # smi_plans: setup helper (WAXS arc on-axis) — nothing to migrate; runs the move with RE(...).
     RE(bps.mv(waxs, waxs_angle))
 
 
 def mov_sam(pos):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: drives to a sample by dictionary key (x and y) and records its name in
+    #   the run metadata. 💡 In smi_plans this is goto_sample on a SampleList (a normal plan
+    #   you 'yield from'); note this version uses RE(...), so it can't be composed into a plan.
+    # === end smi_plans note ================================================
     px, py = pxy_dict[pos]
     RE(bps.mv(stage.x, px))
     RE(bps.mv(stage.y, py))
@@ -467,12 +658,15 @@ def mov_sam(pos):
 
 
 def name_sam(pos):
+    # smi_plans: no acquisition logic here — just relabels the current sample in metadata.
     sample = sample_dict[pos]
     print("Change sample name at pos=%s to:%s" % (pos, sample))
     RE.md["sample"] = sample
 
 
 def check_saxs_sample_loc(sleep=5):
+    # smi_plans: a setup "tour" of the bar (drives to each sample, pauses) — nothing to
+    # migrate; it calls mov_sam, which uses RE(...).
     ks = list(sample_dict.keys())
     for k in ks:
         mov_sam(k)
@@ -480,14 +674,26 @@ def check_saxs_sample_loc(sleep=5):
 
 
 def snap_waxs(t=0.1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a single quick WAXS snapshot of the current sample.
+    # 💡 A one-shot grab in smi_plans records the energy/beam into the image automatically.
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the
+    #   exposure unless run as a plan (⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     dets = [pil900KW]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(t)
+    det_exposure_time(t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t)  — or at the prompt:  RE(det_exposure_time(t)).
     yield from (bp.count(dets, num=1))
 
 
 def snap_saxs(t=0.1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes a single quick SAXS snapshot of the current sample.
+    # 💡 A one-shot grab in smi_plans records the energy/beam into the image automatically.
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the
+    #   exposure unless run as a plan (⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     dets = [pil2M]
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(t)
+    det_exposure_time(t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t)  — or at the prompt:  RE(det_exposure_time(t)).
     yield from (bp.count(dets, num=1))

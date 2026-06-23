@@ -35,11 +35,27 @@ import sys, time
 # det = [pil2M, pdcurrent, pdcurrent1, pdcurrent2]
 # dets = [pil300KW, pil2M]
 def ct(dets=[pil2M], t=1):
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: takes one SAXS frame at the given exposure (a quick "count").
+    # 💡 NEWER, EASIER WAY:  from smi_plans import acquire
+    #     yield from acquire("ct", [pil2M], [], t=t)   # one frame; records beam into the data
+    #   Heads-up: 'bp.count(...)' below is missing a 'yield from', so as written it never
+    #   actually runs the count — acquire(...) would do the right thing in one line.
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
     bp.count(dets, num=1)
 
 
 def test_pdcurrent(Natt=2, add_att1_9=1, add_att1_10=0, add_att1_11=0, add_att1_12=0):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a helper to find a good attenuator combination — it inserts the chosen
+    #   att1_* attenuators, opens the shutter, reads the pin-diode current, then removes them,
+    #   so you can pick filters that keep the diode in a sensible range.
+    #   Nothing here is broken: att1_* attenuators, the fast shutter, and the pin-diode all
+    #   still work the same way. smi_plans leaves this kind of by-hand attenuator tuning to you.
+    # === end smi_plans note ================================================
     if add_att1_9 == 1:
         for aa in np.arange(0, Natt):
             yield from bps.mv(att1_9.open_cmd, 1)
@@ -103,7 +119,21 @@ def test_pdcurrent(Natt=2, add_att1_9=1, add_att1_10=0, add_att1_11=0, add_att1_
             yield from bps.sleep(1)
 
 def measure_EM(t=1, name='in-situ', extra='check'):
-    det_exposure_time(t, t)
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: sets the exposure, reads the Linkam temperature, and builds a descriptive
+    #   sample name (with temperature + stage x/y). (As written it stops at naming — there's no
+    #   bp.count here, so it sets up but doesn't take the image.)
+    # 💡 NEWER, EASIER WAY: in 'smi_plans' you don't stuff the temperature / position into the
+    #   file name by hand — acquire records them INTO the data and fills {ls_temperature_*} /
+    #   {stage_x} tokens into the name for you:
+    #     from smi_plans import acquire
+    #     yield from acquire(f"{name}_{extra}", [pil2M], [], t=t,
+    #                        reads=[ls])               # records temperature alongside the image
+    #   (Your code below works as-is EXCEPT for the ⚠️ line, which needs a fix now.)
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     dets = [pil2M]
     curr_tempC = LThermal.temperature()
@@ -139,9 +169,30 @@ def insitu_EM(
     use_waxs=0,
     interval_waxs=5,
 ):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a long in-situ kinetics time series — it loops up to ~9000 times, and on
+    #   each pass inserts attenuators to read the pin-diode, removes them, reads the Linkam
+    #   temperature, takes a SAXS image (optionally a WAXS one every few frames), then waits
+    #   'wait_time_sec' before repeating. It stamps time/temperature/pin-current into the name.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   purpose-built time-series plan (a "plan" is a recipe of steps Bluesky runs for you). It
+    #   takes images on a schedule and records the REAL elapsed time, temperature, pin-diode
+    #   current and position INTO each image (so they're in the data, not just the file name),
+    #   and you don't manage the counter/clock or the name by hand:
+    #     from smi_plans import time_series_run
+    #     yield from time_series_run(name, dets=[pil2M, pin_diode], t=t,
+    #                                period=wait_time_sec, num=9000, reads=[ls])
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW' (in the
+    #   optional WAXS branch); (2) the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (⚠️ notes below). (internal: Tier 0/1 — Python while-loop series.)
+    # === end smi_plans note ================================================
 
     dets = [pil2M, pdcurrent, pdcurrent1, pdcurrent2]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
     t0 = time.time()
     number = number_start
@@ -238,11 +289,11 @@ def insitu_EM(
         if use_waxs == 1:
             if number % interval_waxs == 0:
                 yield from bps.mv(waxs, 0)
-                dets = [pil300KW]
+                dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
             else:
                 yield from bps.mv(waxs, 13)
                 dets = [pil2M]
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
         #### Define sample name & Measure
         t1 = time.time()
@@ -314,6 +365,25 @@ x_list = [
 
 #######################################################
 def exsitu_EM(t=1, x_range_um=0, Nx=1, Nrep=3, add_att=1, more_scans=0, use_waxs=0):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an ex-situ bar run — for each sample it moves into place, reads the
+    #   pin-diode (with attenuators in) to gauge brightness, then takes several SAXS frames
+    #   (optionally scaling the number of repeats to the brightness), and at the end can do a
+    #   WAXS pass over the bar.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs a
+    #   whole bar of samples from a simple list and records position / pin-diode / beam INTO
+    #   each image and into the file name for you:
+    #     from smi_plans import transmission_bar, SampleList
+    #     samples = SampleList.from_columns(name=sample_list, x=x_list)
+    #     yield from transmission_bar(samples, dets=[pil2M, pin_diode], t=t)
+    #
+    #   (Your script below works as-is EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW' (in the WAXS
+    #   pass); (2) the 'det_exposure_time(...)' calls no longer set the exposure unless run as a
+    #   plan (⚠️ notes below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
 
     assert len(x_list) == len(sample_list), f"Sample name/position list is incorrect!"
 
@@ -373,7 +443,7 @@ def exsitu_EM(t=1, x_range_um=0, Nx=1, Nrep=3, add_att=1, more_scans=0, use_waxs
             print("\n--------- Nscan = {}---------\n".format(Nscan))
 
             for nn in np.arange(0, Nscan, 1):
-                det_exposure_time(t, t)
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
                 if add_att:
                     for aa in np.arange(0, Natt):
@@ -414,8 +484,8 @@ def exsitu_EM(t=1, x_range_um=0, Nx=1, Nrep=3, add_att=1, more_scans=0, use_waxs
             for x_meas in x_pos_array:  # measure at a few x positions
                 yield from bps.mv(piezo.x, x_meas)
 
-                dets = [pil300KW]
-                det_exposure_time(t, t)
+                dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
+                det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
 
                 #### Define sample name & Measure
                 t1 = time.time()

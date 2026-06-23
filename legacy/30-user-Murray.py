@@ -1,4 +1,26 @@
 def ex_situ(meas_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: walks along a bar of capillary samples (moving piezo.x to each one)
+    #   and takes a single SAXS image per sample.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that can run a
+    #   whole bar of samples for you from a simple list. It records the position, detector
+    #   distance, beam intensity, etc. INTO each image and builds the file name automatically,
+    #   so you don't have to read piezo.x.position / pil2M_pos.z / RE.md["scan_id"] by hand:
+    #
+    #     from smi_plans import transmission_bar, SampleList   # import once at session start
+    #     samples = SampleList.from_columns(
+    #         name=sample_list_E,                              # your sample names, unchanged
+    #         x=x_list_E,                                      # your bar x positions, unchanged
+    #     )
+    #     yield from transmission_bar(samples, dets=[pil2M], t=meas_t)
+    #
+    #   (This is just a tidier option to try later — your script below works as-is EXCEPT for
+    #    the ⚠️ line, which genuinely needs a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (⚠️ note below). (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # x_list = [45300, 38800, 32600, 26100, 19500, 13500, 7000, 600, -5700, -12100, -18400, -25200, -31500, -37500, -43700]
     # sample_list = ['cap1', 'cap2', 'cap3', 'cap4', 'cap5', 'cap6', 'cap7', 'cap8', 'cap9', 'cap10', 'cap11', 'cap12',  'cap13', 'cap14', 'cap15']
 
@@ -53,7 +75,7 @@ def ex_situ(meas_t=1):
 
     for x, sample in zip(x_list_E, sample_list_E):  # loop over samples on bar
         yield from bps.mv(piezo.x, x)
-        det_exposure_time(meas_t, meas_t)
+        det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(meas_t, meas_t)  — or at the prompt:  RE(det_exposure_time(meas_t, meas_t)). (The smi_plans technique runs set exposure for you via t=.)
 
         name_fmt = "{sample}_x{x_pos}_y{y_pos}_sax{saxs_z}m_{meas_t}s_{scan_id}"
         sample_name = name_fmt.format(
@@ -71,6 +93,37 @@ def ex_situ(meas_t=1):
 
 
 def in_situ(meas_t=1, t0=0):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a long in-situ *time series* — it loops up to 50000 times, and on each
+    #   pass visits a few samples (moving piezo.y to each) and takes an image, stamping the
+    #   elapsed time into the file name. It's watching colloidal assembly happen over hours.
+    #
+    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with a
+    #   purpose-built time-series plan (a "plan" is a recipe of steps Bluesky runs for you).
+    #   It keeps taking images on a schedule and records the REAL elapsed time, position and
+    #   beam intensity INTO each image — so the time ends up in the data itself, not just in
+    #   the file name, and you don't manage the counter/clock by hand:
+    #
+    #     from smi_plans import time_series_run            # import once at session start
+    #     yield from time_series_run(
+    #         "Kin40_Fe11_PbS22B",                         # the rest of the file name is added automatically
+    #         dets=[pil900KW, pil2M],                      # WAXS is pil900KW now — see ⚠️ below
+    #         t=meas_t,                                    # your exposure, unchanged
+    #         period=None, num=50000,                      # how often / how many frames (tune to taste)
+    #     )
+    #     # (to revisit several y-spots each pass, loop time_series_run over your y_list/sample_list)
+    #
+    #   Why this is nicer here: the old "for ii in range(50000)" loop drives the run from plain
+    #   Python around bp.count, so the timing drifts and the elapsed time lives only in the file
+    #   name; the smi_plans version records the true timestamps as data you can plot directly.
+    #
+    #   (This is just a suggestion to try later — your script below works as-is EXCEPT for the
+    #    ⚠️ lines, which genuinely need a fix to run now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the
+    #   'det_exposure_time(...)' call no longer sets the exposure unless run as a plan
+    #   (⚠️ notes below). (internal: Tier 0 — RE-driven Python loop around bp.count.)
+    # === end smi_plans note ================================================
     y_list = [6200, 2150, -2200, -6350]
     # y_list = [-6350]
 
@@ -84,7 +137,7 @@ def in_situ(meas_t=1, t0=0):
     # sample_list = ['xtestgreen32', 'xtestyellow31', 'xtestred30', 'xtestblue29']
     # sample_list = ['green', 'yellow', 'red', 'blue']
 
-    dets = [pil300KW, pil2M]
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     if t0 < 10:
         t0 = time.time()
 
@@ -95,7 +148,7 @@ def in_situ(meas_t=1, t0=0):
     for ii in range(50000):
         for y, sample in zip(y_list, sample_list):  # loop over samples on bar
             yield from bps.mv(piezo.y, y)
-            det_exposure_time(meas_t, meas_t)
+            det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(meas_t, meas_t)  — or at the prompt:  RE(det_exposure_time(meas_t, meas_t)). (The smi_plans technique runs set exposure for you via t=.)
 
             name_fmt = (
                 "{sample}_x{x_pos}_y{y_pos}_sax{saxs_z}m_{meas_t}s_t{t}s_{scan_id}"
@@ -122,6 +175,17 @@ def in_situ(meas_t=1, t0=0):
 
 
 def in_situ_wrap(meas_t=1, t0=0):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a safety wrapper around in_situ() — if the long time-series errors out,
+    #   it waits 2 seconds and restarts it, so an overnight run keeps going after a glitch.
+    #
+    # 💡 NEWER, EASIER WAY: you usually won't need this hand-rolled retry once you migrate.
+    #   smi_plans' time_series_run (see the note on in_situ above) is the supported way to do a
+    #   long, robust in-situ acquisition. If you do want automatic restart-on-error, ask
+    #   beamline staff about the suspender/auto-resume support that the newer plans plug into,
+    #   rather than catching every exception with a bare 'except:' (which can also swallow a
+    #   real stop request). (This wrapper isn't broken — it's just no longer the easiest path.)
+    # === end smi_plans note ================================================
     if t0 < 10:
         t0 = time.time()
     try:

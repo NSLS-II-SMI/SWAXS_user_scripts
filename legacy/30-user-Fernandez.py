@@ -1,4 +1,28 @@
 def giwaxs_Fernandez(t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a grazing-incidence (GIWAXS) scan over a bar of ~13 samples. For each WAXS
+    #   detector-arc angle it visits every sample (moving stage/piezo to its saved spot + aligned
+    #   incidence angle), then sweeps the incident angle through 15 values, snapping a SAXS+WAXS
+    #   image at each. ("Grazing incidence" = the beam skims the surface at a shallow angle.)
+    #
+    # 💡 NEWER, EASIER WAY: this is the bread-and-butter "GIWAXS bar" workflow in 'smi_plans'. You
+    #   list the samples (and their positions/angles) once and it visits each, sweeps the incidence
+    #   angle and WAXS arc, and writes angle/position/beam INTO every image — so you don't hand-build
+    #   the "{sample}_..._ai{angle}deg_wa{waxs}" name:
+    #
+    #     from smi_plans import giwaxs_bar, SampleList, incidence_axis
+    #     samples = SampleList.from_columns(name=names, x=x_piezo, y=y_piezo_aligned, z=z_piezo)
+    #     yield from giwaxs_bar(samples, t=t,
+    #                           incident_angles=np.linspace(0.04, 0.18, 15),
+    #                           waxs_arc=np.linspace(0, 19.5, 4))
+    #     # (giwaxs_bar_arc_economy reorders the loops to spend less time moving the WAXS arc.)
+    #
+    #   (Just a tidier option — your loops below still work as-is EXCEPT for the ⚠️ lines.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: (1) 'pil300KW' was retired — it's now 'pil900KW'; (2) the
+    #   'det_exposure_time(...)' call no longer sets the exposure unless run as a plan. See the
+    #   ⚠️ notes on those lines below. (internal: Tier 1.)
+    # === end smi_plans note ================================================
     # sample alignement
     global names, x_piezo, z_piezo, incident_angles, y_piezo_aligned, xs_hexa
     # names =  ['BKGD',  'A1',  'A2', 'A3',   'A4',   'A5',
@@ -128,7 +152,7 @@ def giwaxs_Fernandez(t=1):
     print(incident_angles)
     print(y_piezo_aligned)
 
-    dets = [pil300KW, pil2M]
+    dets = [pil300KW, pil2M]  # ⚠️ FIXME(smi_plans): 'pil300KW' was removed (it would error). The current WAXS detector is 'pil900KW' — use that instead (note: it's a different camera, so check beam-center/calibration).
     waxs_arc = np.linspace(0, 19.5, 4)
     angle = np.linspace(0.04, 0.18, 15)
 
@@ -144,7 +168,7 @@ def giwaxs_Fernandez(t=1):
             yield from bps.mv(piezo.z, zs)
             yield from bps.mv(piezo.th, aiss)
 
-            det_exposure_time(t, t)
+            det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
             name_fmt = "{sample}_sdd5m_12keV_ai{angle}deg_wa{waxs}"
 
             for num, an in enumerate(angle):

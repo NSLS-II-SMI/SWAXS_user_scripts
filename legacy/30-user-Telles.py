@@ -1,4 +1,26 @@
 def sample_bar_2022_1(meas_t=1):
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a multi-sample bar (rows 7-10) — for each WAXS arc it visits every sample
+    #   on the bar and runs one coordinated vertical line scan ('rel_scan' along y), taking an
+    #   image at each point.
+    #
+    # 💡 NICE WORK + NEWER, EASIER WAY: collecting each sample as ONE 'rel_scan' is the modern,
+    #   tidy way — nice! smi_plans has a bar helper that takes a sample list (positions + names)
+    #   and runs the line scan at each, recording position/beam INTO each image and naming the
+    #   files for you (so you can drop the hand-built 'name_fmt'):
+    #
+    #     from smi_plans import map_bar, SampleList           # do this once at the top of your session
+    #     samples = SampleList.from_columns(name=sample_names, x=x_list, y=y_list)
+    #     yield from map_bar("row_7-10", samples, kind="line",
+    #                        scan=(piezo.y, 0, 1100, 111),     # your y line scan, unchanged
+    #                        t=meas_t, dets=[pil900KW, pil2M])  # loop the WAXS arc around it as you do now
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes below). (internal: Tier 2.)
+    # === end smi_plans note ================================================
 
     # bar_number = 'row_1-6'
 
@@ -342,7 +364,7 @@ def sample_bar_2022_1(meas_t=1):
 
     waxs_arc = [1, 20]
     dets = [pil900KW, pil2M]
-    det_exposure_time(meas_t, meas_t)
+    det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(meas_t, meas_t)  — or at the prompt:  RE(det_exposure_time(meas_t, meas_t)). (The smi_plans bar runs set exposure for you via t=.)
 
     assert len(x_list) == len(
         sample_names
@@ -372,10 +394,32 @@ def sample_bar_2022_1(meas_t=1):
             yield from bp.rel_scan(dets, piezo.y, *y_r)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans bar runs set exposure for you via t=.)
 
 
 def sample_bar(meas_t=1):  # older version
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an older multi-sample bar — for each WAXS arc it visits every sample and
+    #   runs one coordinated vertical line scan ('rel_scan' along y), taking an image at each point.
+    #   (Heads up: the sample/position lists this needs — sample_names, x_list, y_list, y_range —
+    #    are all commented out below, so as written it would stop with a "name is not defined"
+    #    error before measuring; pick one of the commented bar_* blocks to use it.)
+    #
+    # 💡 NICE WORK + NEWER, EASIER WAY: collecting each sample as ONE 'rel_scan' is the modern,
+    #   tidy way — nice! smi_plans has a bar helper that takes a sample list and runs the line scan
+    #   at each, recording position/beam INTO each image and naming the files for you:
+    #
+    #     from smi_plans import map_bar, SampleList           # do this once at the top of your session
+    #     samples = SampleList.from_columns(name=sample_names, x=x_list, y=y_list)
+    #     yield from map_bar("bar_A", samples, kind="line",
+    #                        scan=(piezo.y, 0, 1100, 111), t=meas_t, dets=[pil900KW, pil2M])
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the ⚠️ line, which needs a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call no longer sets the exposure
+    #   unless run as a plan (see the ⚠️ note below). (internal: Tier 2.)
+    # === end smi_plans note ================================================
     # bar_number = 'bar_A'
     # sample_names=['sample_01', 'sample_02', 'sample_03', 'sample_04', 'sample_05', 'sample_06', 'sample_07', 'sample_08', 'sample_09',
     #  'sample_10', 'sample_11', 'sample_12', 'sample_13', 'sample_14', 'sample_15', 'sample_16',
@@ -486,7 +530,7 @@ def sample_bar(meas_t=1):  # older version
 
     waxs_arc = [0, 2, 20]
     dets = [pil900KW, pil2M]
-    det_exposure_time(meas_t, meas_t)
+    det_exposure_time(meas_t, meas_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(meas_t, meas_t)  — or at the prompt:  RE(det_exposure_time(meas_t, meas_t)). (The smi_plans bar runs set exposure for you via t=.)
 
     assert len(x_list) == len(
         sample_names
@@ -526,6 +570,27 @@ def rodrigo_yscans_2022_2(t=0.5):
         y_range: [0 as you start from the piezo_y, then relative distance in um to the end of the smple, number
                   of points to get 10 um step + 1,]
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a multi-sample bar of vertical line scans — for each WAXS arc it visits each
+    #   sample and runs one coordinated 'rel_scan' along y, building the file name from the live
+    #   energy / detector-distance / scan-id readings.
+    #
+    # 💡 NICE WORK + NEWER, EASIER WAY: collecting each sample as ONE 'rel_scan' is the modern,
+    #   tidy way — nice! smi_plans records the energy / detector distance / position / beam straight
+    #   INTO each image and fills them into the file name for you (so you don't need to hand-read
+    #   'energy.position', 'pil2M_pos.z', 'db[-1].start[...]' and paste them into 'name_fmt'):
+    #
+    #     from smi_plans import map_bar, SampleList           # do this once at the top of your session
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from map_bar("rodrigo", samples, kind="line",
+    #                        scan=(piezo.y, 0, 900, 91), t=t, dets=[pil900KW, pil2M])
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes below). (internal: Tier 2.)
+    # === end smi_plans note ================================================
     names = [f"sample_{v}" for v in [1, 2, 3, 4, 5, 16, 17, 19, 20]]
     piezo_x = [-41600, -35600, -28900, -23600, -17600, -41600, 35200, -23400, -16900]
     piezo_y = [
@@ -568,7 +633,7 @@ def rodrigo_yscans_2022_2(t=0.5):
         yield from bps.mv(waxs, wa)
 
         dets = [pil900KW] if wa < 15 else [pil900KW, pil2M]
-        det_exposure_time(t, t)
+        det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans bar runs set exposure for you via t=.)
 
         for name, x, y, y_r in zip(names, piezo_x, piezo_y, y_range):
             yield from bps.mv(piezo.x, x, piezo.y, y)
@@ -595,7 +660,7 @@ def rodrigo_yscans_2022_2(t=0.5):
             yield from bp.rel_scan(dets, piezo.y, *y_r)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans bar runs set exposure for you via t=.)
 
 
 def alice_grid_scans_2022_2(t=0.5):
@@ -611,6 +676,27 @@ def alice_grid_scans_2022_2(t=0.5):
         x_range: [0 as you start from the piezo_x, then relative distance in um to the end of the smple, number
                   of points to get 10 um step + 1,]
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a multi-sample bar of small 2D maps — for each sample it runs one coordinated
+    #   grid scan ('rel_grid_scan' over y and x), building the file name from the live energy /
+    #   detector-distance / scan-id readings.
+    #
+    # 💡 NICE WORK + NEWER, EASIER WAY: collecting each sample as ONE 'rel_grid_scan' is the modern,
+    #   tidy way — nice! smi_plans records the energy / detector distance / position / beam straight
+    #   INTO each image and names the files for you (no hand-read of 'energy.position' / 'db[-1]...'):
+    #
+    #     from smi_plans import map_bar, SampleList           # do this once at the top of your session
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from map_bar("alice", samples, kind="grid",
+    #                        scan=(piezo.y, 0, 650, 66, piezo.x, 0, 1250, 51),
+    #                        t=t, dets=[pil2M])
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes below). (internal: Tier 2.)
+    # === end smi_plans note ================================================
     names = ["DR2AP", "DR1.3AP", "DR1.3AP", "DR2AN"]
     piezo_x = [-41750, 5500, 5350, 14550]
     piezo_y = [-5000, -6700, 3050, 2750]
@@ -628,7 +714,7 @@ def alice_grid_scans_2022_2(t=0.5):
 
     yield from bps.mv(waxs, 20)
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans bar runs set exposure for you via t=.)
 
     for name, x, y in zip(names, piezo_x, piezo_y):
         yield from bps.mv(piezo.x, x, piezo.y, y)
@@ -648,7 +734,7 @@ def alice_grid_scans_2022_2(t=0.5):
         yield from bp.rel_grid_scan(dets, piezo.y, *y_range, piezo.x, *x_range, 0)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans bar runs set exposure for you via t=.)
 
 
 def alice_filament_yscans_2022_2(t=0.5):
@@ -662,6 +748,26 @@ def alice_filament_yscans_2022_2(t=0.5):
         y_range: [0 as you start from the piezo_y, then relative distance in um to the end of the smple, number
                   of points to get 10 um step + 1,]
     """
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: a multi-sample bar of vertical line scans (37 filament samples) — for each
+    #   sample it runs one coordinated 'rel_scan' along y, building the file name from the live
+    #   energy / detector-distance / scan-id readings.
+    #
+    # 💡 NICE WORK + NEWER, EASIER WAY: collecting each sample as ONE 'rel_scan' is the modern,
+    #   tidy way — nice! smi_plans records the energy / detector distance / position / beam straight
+    #   INTO each image and names the files for you (no hand-read of 'energy.position' / 'db[-1]...'):
+    #
+    #     from smi_plans import map_bar, SampleList           # do this once at the top of your session
+    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
+    #     yield from map_bar("alice_filament", samples, kind="line",
+    #                        scan=(piezo.y, 0, 750, 76), t=t, dets=[pil2M])
+    #
+    #   (This is just a tidier option to try later — your script below still works as-is,
+    #    EXCEPT for the ⚠️ lines, which need a fix now.)
+    #
+    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
+    #   unless run as a plan (see the ⚠️ notes below). (internal: Tier 2.)
+    # === end smi_plans note ================================================
     names = [f"sample_{v}" for v in range(37)]
     piezo_x = [
         -12100,
@@ -795,7 +901,7 @@ def alice_filament_yscans_2022_2(t=0.5):
 
     yield from bps.mv(waxs, 20)
     dets = [pil2M]
-    det_exposure_time(t, t)
+    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans bar runs set exposure for you via t=.)
 
     for name, x, y, y_r in zip(names, piezo_x, piezo_y, y_range):
         yield from bps.mv(piezo.x, x, piezo.y, y)
@@ -814,10 +920,18 @@ def alice_filament_yscans_2022_2(t=0.5):
         yield from bp.rel_scan(dets, piezo.y, *y_r)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)
+    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans bar runs set exposure for you via t=.)
 
 
 def run_overnight_exsitu_2022_2():
+    # === smi_plans note (REVIEW 2026-06-22) ================================
+    # WHAT THIS DOES: an overnight "run-book" driver — sets the proposal/folder and runs the three
+    #   bar routines above in sequence (wrapped in try/except so one failing bar doesn't stop the
+    #   night).
+    # 💡 NEWER, EASIER WAY: this is just glue. Once the routines it calls use the smi_plans bar
+    #   helpers (see their notes), this stays a thin sequence. (Nothing here is broken on its own —
+    #   the routines it calls have the ⚠️ items.)
+    # === end smi_plans note ================================================
 
     try:
         proposal_id("2022_2", "309101_Telles_exsitu")
