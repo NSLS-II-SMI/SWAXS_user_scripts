@@ -415,7 +415,7 @@ def move_energy_slowly(target_e, e_step=100):
     #
     # 💡 NEWER, EASIER WAY: the beamline 'smi_plans' helper library has a single
     #   energy-move plan that does ALL of this for you — it pauses the feedback, steps
-    #   in <=50 eV hops, settles, turns feedback back on, and re-seeks if the beam dips:
+    #   in <=50 eV hops, settles, and the device manages the feedback/gap/harmonic:
     #
     #     from smi_plans import move_energy_fb
     #     yield from move_energy_fb(target_e)        # replaces this whole routine
@@ -434,7 +434,7 @@ def move_energy_slowly(target_e, e_step=100):
 
             feedback('off')
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
             feedback('on')
             yield from bps.sleep(5)
     else:
@@ -460,7 +460,7 @@ def test_DI(t=1):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -640,7 +640,7 @@ def take_energy_temp_scan(name='test', temp=25):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -660,8 +660,8 @@ def take_energy_temp_scan(name='test', temp=25):
 
     for nrg in energies:
         yield from bps.mv(energy, nrg)
-        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, nrg)
             yield from bps.sleep(2)
@@ -952,7 +952,7 @@ def take_energy_scan_2024_1(t=1):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -995,8 +995,8 @@ def take_energy_scan_2024_1(t=1):
 
             for nrg in energies:
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1099,7 +1099,7 @@ def run_swaxs_2024_1_par2tender(t=5):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -1173,7 +1173,7 @@ def run_swaxs_2024_1_par2tender_energy(t=2):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -1218,8 +1218,8 @@ def run_swaxs_2024_1_par2tender_energy(t=2):
 
             for nrg in energies:
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1323,7 +1323,7 @@ def grazing_brsc_zinc_2024_2(t=3):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -1393,7 +1393,7 @@ def grazing_brsc_zinc_2024_2(t=3):
                 for en in energies:
                     
                     yield from bps.mv(energy, en)
-                    yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                    yield from bps.sleep(3)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     for ai in incident_angles:
                         yield from bps.mv(piezo.th, ai0 + ai)
 
@@ -1403,7 +1403,7 @@ def grazing_brsc_zinc_2024_2(t=3):
                         print(f"\n\n\n\t=== Sample: {sample_name} ===")
                         yield from bp.count(dets)
                 yield from bps.mv(energy, energies[0])
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
@@ -1514,7 +1514,7 @@ def run_swaxs_2024_2_Paren_tender(t=2):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -1564,8 +1564,8 @@ def run_swaxs_2024_2_Paren_tender(t=2):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1608,7 +1608,7 @@ def run_swaxs_2024_2_Paren_tender_long_exposure(t=7):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -1661,8 +1661,8 @@ def run_swaxs_2024_2_Paren_tender_long_exposure(t=7):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -1701,7 +1701,7 @@ def run_swaxs_2024_2_Paren_tender_nexafs(t=2):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -1768,8 +1768,8 @@ def run_swaxs_2024_2_Paren_tender_nexafs(t=2):
 
                 for i, nrg in enumerate(energies):
                     yield from bps.mv(energy, nrg)
-                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, nrg)
                         yield from bps.sleep(2)
@@ -1907,7 +1907,7 @@ def run_swaxs_2024_2_Paren_tender_long_exposure2(t=10):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -1965,8 +1965,8 @@ def run_swaxs_2024_2_Paren_tender_long_exposure2(t=10):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -2000,7 +2000,7 @@ def run_Paren_tender_initial_nexafs(t=2):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -2056,8 +2056,8 @@ def run_Paren_tender_initial_nexafs(t=2):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -2092,7 +2092,7 @@ def run_Paren_tender_2024_3(t=1):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -2143,8 +2143,8 @@ def run_Paren_tender_2024_3(t=1):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -2205,8 +2205,8 @@ def run_Paren_tender_darks_2024_3(t=1):
         for name in names:
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -2243,7 +2243,7 @@ def run_Paren_tender_overnight_2024_3(t=3):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -2295,8 +2295,8 @@ def run_Paren_tender_overnight_2024_3(t=3):
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -2376,7 +2376,7 @@ def run_Paren_flatfield(t=30):
         yield from bps.mv(energy, nrg,
                             piezo.y, y + (i + 1) * y_step)
         yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, nrg)
             yield from bps.sleep(2)
@@ -3078,7 +3078,7 @@ def run_Paren_tender_overnight_2025_1(t=2):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -3133,7 +3133,7 @@ def run_Paren_tender_overnight_2025_1(t=2):
                 yield from bps.mv(energy, nrg)
                 yield from bps.mv(piezo.y, y + i * step_y)
                 yield from bps.sleep(2)
-                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -3203,7 +3203,7 @@ def run_Paren_flatfield_2025_1(t=10):
             piezo.y, y + i  * y_step,
             )
         yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+        if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
             yield from bps.sleep(2)
             yield from bps.mv(energy, nrg)
             yield from bps.sleep(2)
@@ -3813,7 +3813,7 @@ def run_Paren_tender_2025_2(t=2):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -3905,13 +3905,13 @@ def run_Paren_tender_2025_2(t=2):
             e_down = np.arange(2460, 2500, 10)[::-1]
             for e_step in e_down:
                 yield from bps.mv(energy, e_step)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
                 yield from bps.mv(piezo.y, y + i * step_y)
                 yield from bps.sleep(2)
-                if xbpm3.sumX.get() < 10:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                if xbpm3.sumX.get() < 10:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -3924,7 +3924,7 @@ def run_Paren_tender_2025_2(t=2):
     e_down = np.arange(2500, max(energies), 10)[::-1]
     for e_step in e_down:
         yield from bps.mv(energy, e_step)
-        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
 
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
@@ -3993,7 +3993,7 @@ def run_Paren_tender_hightemp_2025_2(t=2):
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback, and re-seeks if the beam dips
+    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
     #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
     #
     #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
@@ -4079,13 +4079,13 @@ def run_Paren_tender_hightemp_2025_2(t=2):
             e_down = np.arange(2460, 2500, 10)[::-1]
             for e_step in e_down:
                 yield from bps.mv(energy, e_step)
-                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
 
             for i, nrg in enumerate(energies):
                 yield from bps.mv(energy, nrg)
                 yield from bps.mv(piezo.y, y + i * step_y)
                 yield from bps.sleep(2)
-                if xbpm3.sumX.get() < 10:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                if xbpm3.sumX.get() < 10:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.sleep(2)
                     yield from bps.mv(energy, nrg)
                     yield from bps.sleep(2)
@@ -4098,7 +4098,7 @@ def run_Paren_tender_hightemp_2025_2(t=2):
     e_down = np.arange(2500, max(energies), 10)[::-1]
     for e_step in e_down:
         yield from bps.mv(energy, e_step)
-        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
 
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)

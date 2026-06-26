@@ -295,7 +295,7 @@ def saxs_S_edge_temperature_Hoang_2022_2(t=0.5):
                 for e, ysss in zip(energies, yss):
                     yield from bps.mv(piezo.y, ysss)
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
 
                     # Metadata
                     bpm = xbpm3.sumX.get()
@@ -325,7 +325,7 @@ def saxs_S_edge_temperature_Hoang_2022_2(t=0.5):
                     yield from bp.count(dets)"""
 
                 # Go back gently with energy
-                yield from bps.mv(energy, 2480)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+                yield from bps.mv(energy, 2480)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 2450)
 
     # End of the scan

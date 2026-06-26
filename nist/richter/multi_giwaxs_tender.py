@@ -121,7 +121,7 @@ def Cl_edge_measurments_2025_2_tiledstyle_guillaume(t=1):
                     
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
@@ -140,7 +140,7 @@ def Cl_edge_measurments_2025_2_tiledstyle_guillaume(t=1):
                 
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
@@ -287,7 +287,7 @@ def Cl_edge_measurments_2025_2_tiledstyle(t=1):
                     counter = 0
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
@@ -326,7 +326,7 @@ def Cl_edge_measurments_2025_2_tiledstyle(t=1):
                     counter = 0
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
@@ -349,7 +349,7 @@ def Cl_edge_measurments_2025_2_tiledstyle(t=1):
                     counter = 0
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
@@ -372,7 +372,7 @@ def Cl_edge_measurments_2025_2_tiledstyle(t=1):
                     counter = 0
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
@@ -557,7 +557,7 @@ def Cl_edge_measurments_2025_2_tiledstyle_singleWAXS(t=1):
                     counter = 0
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
@@ -596,7 +596,7 @@ def Cl_edge_measurments_2025_2_tiledstyle_singleWAXS(t=1):
                     counter = 0
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
@@ -619,7 +619,7 @@ def Cl_edge_measurments_2025_2_tiledstyle_singleWAXS(t=1):
                     counter = 0
                     for e in energies:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)
@@ -642,7 +642,7 @@ def Cl_edge_measurments_2025_2_tiledstyle_singleWAXS(t=1):
                     counter = 0
                     for e in energies[::-1]:
                         yield from bps.mv(energy, e)
-                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this energy settle + the beam-loss re-seek just below — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         if xbpm2.sumX.get() < 50:
                             yield from bps.sleep(2)
                             yield from bps.mv(energy, e)

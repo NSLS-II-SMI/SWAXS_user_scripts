@@ -686,7 +686,7 @@ def run_giwaxsEnergyBoc(x_list, sample_list, energy_arc_waxs, t=5, tag=""):
     #
     # 💡 NEWER, EASIER WAY: sweeping energy while collecting GIWAXS is the 'smi_plans' GIWAXS +
     #   energy combination. energy_axis steps the energy AND manages the beam feedback (pauses
-    #   it, steps in safe hops, settles, re-seeks if the beam dips) — so you can drop the manual
+    #   it in one bps.mv -- the device manages gap/feedback/harmonic) — so you can drop the manual
     #   remove_suspender/install_suspender + sleep scaffolding. align_sample aligns each sample
     #   and saves it; the energy/angle are recorded into each image and file name:
     #     from smi_plans import giwaxs_bar, SampleList, energy_axis, motor_axis, align_sample
@@ -735,7 +735,7 @@ def run_giwaxsEnergyBoc(x_list, sample_list, energy_arc_waxs, t=5, tag=""):
         yield from remove_suspender(susp_xbpm2_sum)
         yield from bps.mv(energy, energy_arc_waxs[0])
 
-        yield from bps.sleep(10)  # 💡 smi_plans: you can drop this settle wait and the manual remove_suspender/install_suspender around it — move_energy_fb/energy_axis step the energy in safe hops, pause the beam feedback, wait for it to settle, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+        yield from bps.sleep(10)  # 💡 smi_plans: you can drop this settle wait and the manual remove_suspender/install_suspender around it — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
         yield from install_suspender(susp_xbpm2_sum)
 
         yield from alignement_gisaxs(0.1)  # run alignment routine
@@ -772,7 +772,7 @@ def run_giwaxsEnergyBoc(x_list, sample_list, energy_arc_waxs, t=5, tag=""):
 
                 yield from remove_suspender(susp_xbpm2_sum)
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(10)  # 💡 smi_plans: you can drop this settle wait and the manual suspender management — move_energy_fb/energy_axis step the energy in safe hops, pause the beam feedback, settle, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                yield from bps.sleep(10)  # 💡 smi_plans: you can drop this settle wait and the manual suspender management — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                 yield from install_suspender(susp_xbpm2_sum)
 
                 # yield from bp.scan(dets, energy, e, e, 1)
@@ -929,7 +929,7 @@ def run_saxswaxsEnergyBoc(
         det_exposure_time(ct_nexafs, ct_nexafs)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(ct_nexafs, ct_nexafs)  — or at the prompt:  RE(det_exposure_time(ct_nexafs, ct_nexafs)). (smi_plans' nexafs_run sets it for you via t=.)
         yield from remove_suspender(susp_xbpm2_sum)
         yield from bps.mv(energy, energy_arc_nexafs[0])
-        yield from bps.sleep(10)  # 💡 smi_plans: you can drop this settle wait and the manual suspender management — move_energy_fb/energy_axis step the energy in safe hops, pause the beam feedback, settle, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+        yield from bps.sleep(10)  # 💡 smi_plans: you can drop this settle wait and the manual suspender management — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
         yield from install_suspender(susp_xbpm2_sum)
 
         yield from nexafs_scan([pil2M], energy_arc_nexafs, 0.10, ct_nexafs)
@@ -946,7 +946,7 @@ def run_saxswaxsEnergyBoc(
 
             yield from remove_suspender(susp_xbpm2_sum)
             yield from bps.mv(energy, e)
-            yield from bps.sleep(10)  # 💡 smi_plans: you can drop this settle wait and the manual suspender management — move_energy_fb/energy_axis step the energy in safe hops, pause the beam feedback, settle, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+            yield from bps.sleep(10)  # 💡 smi_plans: you can drop this settle wait and the manual suspender management — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
             yield from install_suspender(susp_xbpm2_sum)
 
             # yield from bp.scan(dets, energy, e, e, 1)
@@ -1152,7 +1152,7 @@ def run_saxsEnergyBoc(t=1, tag=""):
                 sample_name += "_" + tag
             sample_id(user_name=name, sample_name=sample_name)
             print(f"\n\t=== Sample: {sample_name} ===\n")
-            energy.move(e)  # 💡 smi_plans: you can drop this double energy command + sleep — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+            energy.move(e)  # 💡 smi_plans: you can drop this double energy command + sleep — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
             yield from bps.mv(energy, e)
             sleep(1)
 

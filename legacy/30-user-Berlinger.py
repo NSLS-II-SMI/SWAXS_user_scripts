@@ -7,7 +7,7 @@ def Nafion_waxs_S_edge(t=1):
     #   full energy scan like this in one line. It records the energy, beam intensity, etc.
     #   straight into the data and fills them into the file name for you (no hand-built
     #   "{energy}eV_..._bpm{xbpm}"). It also drives the energy move robustly — pausing the
-    #   beam feedback, stepping in ≤50 eV hops, settling, and re-seeking if the beam dips — so
+    #   beam feedback, moving the energy in one bps.mv (the device manages gap/feedback/harmonic) — so
     #   the try/except + sleep "energy failed, wait 30 s and retry" dance below is no longer
     #   needed. Same measurement (per-sample) as below:
     #
@@ -57,7 +57,7 @@ def Nafion_waxs_S_edge(t=1):
             det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan" (a recipe Bluesky runs), so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans technique runs set it for you via t=.)
             name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e, xsss, ysss in zip(energies, xss, yss):
-                try:  # 💡 smi_plans: you can drop this whole try/except + sleep retry — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+                try:  # 💡 smi_plans: you can drop this whole try/except + sleep retry — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                     yield from bps.mv(energy, e)
                 except:
                     print("energy failed to move, sleep for 30 s")

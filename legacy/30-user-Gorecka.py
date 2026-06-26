@@ -79,7 +79,7 @@ def saxs_S_edge_linkam_2024_1(t=1,temps=[30]):
         name_fmt = "{sample}_sdd1.8m_{energy}eV_wa{wax}_bpm{xbpm}"
         for e, xsss, ysss in zip(energies, xss, yss):
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and the beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+            yield from bps.sleep(2)  # 💡 smi_plans: you can drop this (and the beam-recheck just below) once you migrate — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed.)
             if xbpm2.sumX.get() < 50:
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, e)
@@ -97,7 +97,7 @@ def saxs_S_edge_linkam_2024_1(t=1,temps=[30]):
             yield from bp.count(dets, num=1)
 
         yield from bps.mv(energy, 2500)
-        yield from bps.sleep(2)  # 💡 smi_plans: these settle waits after each energy move are handled for you by move_energy_fb/energy_axis once you migrate. (Not broken, just no longer needed.)
+        yield from bps.sleep(2)  # 💡 smi_plans: these settle waits after each energy move are handled for you by move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed.)
         yield from bps.mv(energy, 2480)
         yield from bps.sleep(2)
         yield from bps.mv(energy, 2445)

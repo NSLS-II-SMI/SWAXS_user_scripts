@@ -234,7 +234,11 @@ correctly (as in-stream moves / configured signals / baseline):
   moves inside the run; the new spot position is then recorded automatically.
 - **Arc-conditional detectors** (`[pil900KW] if arc<~15 else [pil900KW, pil2M]`) — keep;
   prefer separate declared SAXS/WAXS streams.
-- **Beam-loss re-seek** (`if xbpm.sumX < thr: re-move energy`) and DCM suspenders — keep.
+- **Beam-loss re-seek** (`if xbpm.sumX < thr: re-move energy`) — keep, but it is now an **opt-in
+  plan-level guard**: pass `flux_signal=`/`flux_threshold=` to `energy_axis`/`move_energy_fb`. The
+  DCM feedback, undulator gap, and harmonic are now managed by the **`energy` device itself** (a
+  plain `bps.mv(energy, E)`), so do NOT hand-manage feedback / step in "≤50 eV hops" / double-set —
+  the `max_step`/`fb_settle`/`double_set` params were removed.
 - **Align-once/measure-many** with offset caching and failure logging — keep; record alignment
   offsets as baseline/signals rather than `RE.md` lists.
 - **GI in-vacuum choreography** (GV7/attenuator/beamstop sequencing) — keep.
@@ -322,17 +326,23 @@ The acquisition-maturity tiers are defined in `USE_CASE_TAXONOMY.md` §2. Typica
 These came out of the survey and need beamline-staff decisions before we lock the
 best-practices + build tooling:
 
-1. **Filename templating contract.** What is the exact, supported set of `{stream_field}`
-   keys the file-naming machinery resolves (e.g. `{energy_energy}`,
-   `{pin_diode_current2_mean_value}`, `{xbpm2_sumX}`)? We should document the canonical list and
-   the naming convention (`{device_signal_subfield}`), since the gold exemplar relies on it.
+1. **Filename templating contract.** ✅ **RESOLVED (2026-06).** The supported `{stream_field}` keys
+   are documented in `smi-plans/skills/naming-and-filename-tokens.md` + `_core.COMMON_TOKENS`
+   (`{energy_energy}`, `{pin_diode_current2_mean_value}`, `{xbpm2_sumX}`, `{waxs_arc}`, …); the
+   convention is `{device_signal}` (the recorded data key). `acquire` now **validates tokens at build
+   time** (a clear error instead of a post-run `KeyError`). The trap: a token must be the real key
+   (`{piezo_x}` not `{x}`; a centered `spatial_grid_axes` records relative `{x}`/`{y}`).
 2. **Baseline vs primary stream policy.** Recommend a default baseline set (energy, SDD,
    attenuator state, sample positions, alignment offsets, temperature setpoint) so users don't
    have to think about it, and a clear rule for what must additionally go in the primary stream.
-3. **Multi-open-run ergonomics.** "Tom's" prototype (Gann §1138) is the right pattern but is
-   raw. Should we ship a thin helper (e.g. `multi_run(samples, slow_axis, plan_per_point,
-   md_per_sample)`) plus the `RunRouter`/`finalize_wrapper` boilerplate so users don't
-   re-implement it? What's the policy on the slow axis (arc/prs) granularity?
+3. **Multi-open-run ergonomics.** ✅ **RESOLVED (2026-06).** The thin helper shipped:
+   `smi_plans._core.multi_sample_run(samples, slow_axis, slow_positions, point, *, dets, …)` (the
+   Gann/"Tom" prototype generalized, with `finalize`/`RunRouter` boilerplate handled), plus
+   `multi_sample_run_split` (one independent run per (sample, slow-position) — the no-concurrent-runs
+   fallback). A real bug was found + fixed along the way: classic-ophyd AreaDetector Resource/Datum
+   ownership across concurrently-open runs (the `UnresolvableForeignKeyError`) — detectors are now
+   staged per (sample, slow-position) point. Beamline-tested. `technique_B.giwaxs_bar_arc_economy`
+   uses it (each arc its own stream).
 4. **Separate SAXS/WAXS streams vs arc-conditional det lists.** Do we standardize on
    `declare_stream` per detector (Gann's commented scaffold) and retire the
    `[pil900KW] if arc<15 else [...]` idiom, or keep the conditional? Affects every GI script.

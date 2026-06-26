@@ -167,7 +167,7 @@ def test_en(en):
     # WHAT THIS DOES: a tiny helper that just moves the X-ray energy to a value you give it.
     # 💡 NEWER, EASIER WAY: 'smi_plans' has move_energy_fb, which moves the energy the safe way —
     #   it pauses the beam-position feedback, steps in small (<=50 eV) hops, waits to settle,
-    #   turns feedback back on, and re-seeks if the beam dips:
+    #   and the device manages the feedback/gap/harmonic:
     #     from smi_plans import move_energy_fb
     #     yield from move_energy_fb(en)
     #   (Nothing here is broken — this is just the recommended, more robust way to move energy.)

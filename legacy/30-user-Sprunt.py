@@ -130,7 +130,7 @@ def waxs_S_edge_cherun(t=1):
             name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
             for e in energies:
                 yield from bps.mv(energy, e)
-                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this wait once you migrate — move_energy_fb/energy_axis already pause after each energy move, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this wait once you migrate — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed.)
 
                 bpm = xbpm2.sumX.value
 
@@ -141,7 +141,7 @@ def waxs_S_edge_cherun(t=1):
                 print(f"\n\t=== Sample: {sample_name} ===\n")
                 yield from bp.count(dets, num=1)
 
-            yield from bps.mv(energy, 2490)  # 💡 smi_plans: this step-down to a "parking" energy (2490→2470→2450) was a way to lower energy gently. energy_axis/move_energy_fb already step in ≤50 eV hops with settling, so you can just move straight to your target once you migrate. (Not broken, just no longer needed.)
+            yield from bps.mv(energy, 2490)  # 💡 smi_plans: this step-down to a "parking" energy (2490→2470→2450) was a way to lower energy gently. energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed.)
             yield from bps.mv(energy, 2470)
             yield from bps.mv(energy, 2450)
 
@@ -194,7 +194,7 @@ def nexafs_S_edge_cherun(t=1):
         for e, yss in zip(energies, ys):
             yield from bps.mv(piezo.y, yss)
             yield from bps.mv(energy, e)
-            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this wait once you migrate — move_energy_fb/energy_axis already pause after each energy move, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+            yield from bps.sleep(1)  # 💡 smi_plans: you can drop this wait once you migrate — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed.)
             bpm = xbpm2.sumX.value
             sample_name = name_fmt.format(
                 sample=name, energy="%6.2f" % e, xbpm="%4.3f" % bpm
@@ -203,7 +203,7 @@ def nexafs_S_edge_cherun(t=1):
             print(f"\n\t=== Sample: {sample_name} ===\n")
             yield from bp.count(dets, num=1)
 
-        yield from bps.mv(energy, 2490)  # 💡 smi_plans: this gentle step-down to a parking energy (2490→2470→2450) is no longer needed — energy_axis/move_energy_fb step in ≤50 eV hops with settling, so you can move straight to your target after migrating. (Not broken, just no longer needed.)
+        yield from bps.mv(energy, 2490)  # 💡 smi_plans: this gentle step-down to a parking energy (2490→2470→2450) is no longer needed — energy_axis/move_energy_fb do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed.)
         yield from bps.mv(energy, 2470)
         yield from bps.mv(energy, 2450)
 
@@ -341,7 +341,7 @@ def instec_insitu_tender_xray(t=0.5):
 
             for k, energ in enumerate(energies):
                 yield from bps.mv(energy, energ)
-                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this wait once you migrate — move_energy_fb/energy_axis already pause after each energy move, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+                yield from bps.sleep(1)  # 💡 smi_plans: you can drop this wait once you migrate — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed.)
                 # yield from bps.mv(stage.x, x + (k * 0.1))
 
                 name_fmt = "{sample}_{temperature}C_wa{waxs}_sdd1.6m_{ener}eV"

@@ -62,7 +62,7 @@ def run_waxs_IC(t=1):
             if e == 2405:
                 yield from bps.mv(energy, 2430)
             elif e == 2481:
-                yield from bps.mv(energy, 2460)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+                yield from bps.mv(energy, 2460)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 2430)
                 yield from bps.mv(energy, 2405)
                 name_fmt = "{sample}_2405eV_postedge"
@@ -75,7 +75,7 @@ def run_waxs_IC(t=1):
     x = [-5000]
     dets = [pil300KW]  # ⚠️ FIXME(smi_plans): 'pil300KW' (WAXS) was removed (this would error). The current WAXS detector is 'pil900KW' — use that instead (different camera, so check beam-center/calibration).
     yield from bps.mv(waxs, 20)
-    yield from bps.mv(energy, 2420)  # 💡 smi_plans: you can drop this stepped energy ramp-up — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+    yield from bps.mv(energy, 2420)  # 💡 smi_plans: you can drop this stepped energy ramp-up — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2440)
     yield from bps.mv(energy, 2450)
     energies = np.linspace(2450, 2531, 163)
@@ -93,7 +93,7 @@ def run_waxs_IC(t=1):
             if e == 2405:
                 yield from bps.mv(energy, 2430)
             elif e > 2530.6:
-                yield from bps.mv(energy, 2500)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+                yield from bps.mv(energy, 2500)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 2470)
                 yield from bps.mv(energy, 2430)
                 yield from bps.mv(energy, 2405)
@@ -153,7 +153,7 @@ def film_Sn_edge2(t=0.5):
                 yield from bps.mv(energy, 3875)
 
             elif e > 3939.5:
-                yield from bps.mv(energy, 3920)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+                yield from bps.mv(energy, 3920)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 3890)
                 yield from bps.mv(energy, 3850)
                 name_fmt = "{sample}_3850eV_postedge"
@@ -213,7 +213,7 @@ def film_Sn_edge1(t=0.5):
                 yield from bps.mv(energy, 3875)
 
             elif e > 3944.5:
-                yield from bps.mv(energy, 3920)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+                yield from bps.mv(energy, 3920)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 3890)
                 yield from bps.mv(energy, 3850)
                 name_fmt = "{sample}_3850eV_postedge"
@@ -267,7 +267,7 @@ def film_Sn_edge(t=0.5):
                 yield from bps.mv(energy, 3875)
 
             elif e == 3945:
-                yield from bps.mv(energy, 3920)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+                yield from bps.mv(energy, 3920)  # 💡 smi_plans: you can drop this stepped energy walk-back — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                 yield from bps.mv(energy, 3890)
                 yield from bps.mv(energy, 3850)
                 i = 1
@@ -446,7 +446,7 @@ def ai_scan_multilayer_nightscan(t=1):
                     print(f"\n\t=== Sample: {sample_name} ===\n")
                     yield from bp.count(dets, num=1)
 
-            yield from bps.mv(energy, 3960)  # 💡 smi_plans: you can drop this energy walk-down + sleep — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+            yield from bps.mv(energy, 3960)  # 💡 smi_plans: you can drop this energy walk-down + sleep — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
             yield from bps.sleep(5)
             yield from bps.mv(energy, 3920)
 
@@ -838,8 +838,8 @@ def mv_energy(set_point, t=3, step=30):
     #   flaky.
     # 💡 NEWER, EASIER WAY: the beamline's energy move was fixed, and 'smi_plans' does all of
     #   this for you. move_energy_fb (and energy_axis, used inside the technique runs) steps
-    #   the energy in safe hops, pauses the beam feedback, settles, turns feedback back on,
-    #   and re-seeks if the beam dips — so you don't need this hand-rolled stepper anymore:
+    #   the energy in one move (the device manages the feedback),
+    #   (re-seek is opt-in) — so you don't need this hand-rolled stepper anymore:
     #     from smi_plans import move_energy_fb
     #     yield from move_energy_fb(set_point)     # safe stepped move + settle, done for you
     #   (This isn't broken — it just becomes unnecessary once you migrate. See the 💡 below.)
@@ -850,7 +850,7 @@ def mv_energy(set_point, t=3, step=30):
             f"LARGE ENERGY DIFFERENCE. TAKING STEP SIZE OF {step}eV. @ GUI: DONT FORGET TO VENMO LUKE"
         )
         yield from bps.mvr(energy, sign(e_diff) * 30)
-        yield from bps.sleep(t)  # 💡 smi_plans: you can drop this settle wait (and this whole stepped loop) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+        yield from bps.sleep(t)  # 💡 smi_plans: you can drop this settle wait (and this whole stepped loop) — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
         e_diff = set_point - energy.energy.position
     yield from bps.mv(energy, set_point)
 

@@ -189,7 +189,7 @@ def S_edge_one_sample(t=1, sample = None, reverse=False, bps_sleep_time=2,  ):
     name_fmt = "{sample}_pos1_{energy}eV_bpm{xbpm}"
     for e in Elist:        
         yield from bps.mv(energy, e)
-        if bps_sleep_time !=0:  # 💡 smi_plans: you can drop this settle wait (and the beam-recheck just below) once you migrate — move_energy_fb/energy_axis already wait for the energy to settle, manage the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed.)
+        if bps_sleep_time !=0:  # 💡 smi_plans: you can drop this settle wait (and the beam-recheck just below) once you migrate — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed.)
             yield from bps.sleep(bps_sleep_time)
         if xbpm2.sumX.get() < 100:
             yield from bps.sleep(2)
@@ -205,7 +205,7 @@ def S_edge_one_sample(t=1, sample = None, reverse=False, bps_sleep_time=2,  ):
         name_fmt = "{sample}_pos2_{energy}eV_wa_{wa}_bpm{xbpm}"
         for e in Elist[::-1]:
             yield from bps.mv(energy, e)
-            yield from bps.sleep(2)  # 💡 smi_plans: same as the up-sweep above — this settle wait and the beam-recheck are handled for you by move_energy_fb/energy_axis once you migrate. (Not broken, just no longer needed.)
+            yield from bps.sleep(2)  # 💡 smi_plans: same as the up-sweep above — this settle wait and the beam-recheck are handled for you by move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed.)
             if xbpm2.sumX.get() < 10:
                 yield from bps.sleep(2)
                 yield from bps.mv(energy, e)

@@ -21,7 +21,7 @@ def single_scan_test(t=1, name="Test", ai_list: list[int]|None = None, xstep=10,
     #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, xbpm2, xbpm3])
     #
     #   Bonus: smi_plans' energy move already waits for the energy to settle, manages the beam
-    #   feedback, and re-seeks if the beam dips — so the sleep + beam re-seek here become
+    #   feedback (re-seek opt-in) — so the sleep + beam re-seek here become
     #   unnecessary (see the 💡 notes).
     #
     # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls below no longer set the
@@ -62,8 +62,8 @@ def single_scan_test(t=1, name="Test", ai_list: list[int]|None = None, xstep=10,
                 
                 for e in energies:
                     yield from bps.mv(energy, e)
-                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
-                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis already re-seek the beam if it dips after an energy move (and wait for it to settle). (Not broken, just no longer needed once you migrate.)
+                    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+                    if xbpm2.sumX.get() < 50:  # 💡 smi_plans: you can drop this whole beam re-seek — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
                         yield from bps.sleep(2)
                         yield from bps.mv(energy, e)
                         yield from bps.sleep(2)
