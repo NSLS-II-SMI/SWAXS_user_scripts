@@ -31,11 +31,14 @@ deploy the updated smi-plans into the beamline env before running this).
 
 import bluesky.plan_stubs as bps
 
-from smi_plans._compose import acquire, incidence_axis, energy_axis, spatial_grid_axes
+from smi_plans._compose import acquire, acquire_bar, incidence_axis, energy_axis, spatial_grid_axes
 from smi_plans._core import goto_sample
 from smi_plans._preprocessors import fresh_spot_wrapper
 from smi_plans import (load_holder, get_aligned, needs_alignment, save_aligned,
                        sample_center, resolve_list)
+# Technique bars used by the ultra-thin rewrites at the bottom of this file (reference versions).
+from smi_plans.technique_E_transmission import transmission_bar
+from smi_plans.technique_A_energy_edge import nexafs_bar
 import numpy as np
 
 
@@ -371,3 +374,84 @@ def giwaxs_bar_energy(holder_name, project, *,
                     name_tokens=["{energy_energy}eV", "ai{incident_angle}", f"wa{arc_value:04.1f}"],
                     check_order=False),
                 piezo.x, fresh_step)                             # noqa: F821
+
+
+# ###########################################################################
+# ULTRA-THIN REWRITES (reference) -- "if we fully accept the smi_plans calls"
+# ###########################################################################
+# The three functions above keep the field-tuned scan STRUCTURE in this file (arc-as-outer loop,
+# arc-aware SAXS drop, friendly prints, skip-if-no-position).  Below is the OTHER extreme: the
+# smallest call that delegates everything to the smi_plans technique bars.  These are kept as a
+# REFERENCE to show the potential reduction -- the originals above remain the working versions.
+#
+# What you GAIN by going thin: ~1 line of intent per plan; one place (the backend) owns the idioms.
+# What you GIVE UP vs the originals (so you can decide per plan):
+#   * per-arc SAXS drop (ARC_SAXS_BLOCK_DEG): the bars take a fixed `dets`, not arc-aware.  (To keep
+#     it, pass dets per call, or measure low/high arcs in separate calls with different dets.)
+#   * the friendly per-sample prints + "skip sample with no stored x/y".
+#   * the relative {x}/{y} filename tokens: the transmission bar records absolute {piezo_x}/{piezo_y}.
+#   * #3 (GIWAXS x energy x incidence over a holder) has NO single backend bar yet -- see note below.
+
+
+def transmission_bar_grid_thin(holder_name, project, *, t=1.0, waxs_arc=(0,),
+                               nx=3, ny=3, dx=150.0, dy=150.0, store=None):
+    """Thin: ONE transmission run per (sample, arc), nx*ny spot grid.  == transmission_bar_grid.
+
+    Maps directly onto smi_plans.technique_E.transmission_bar:
+      * holder -> SampleList via load_holder
+      * grid   -> points_fast/points_slow + d_fast/d_slow (piezo.y fast, piezo.x slow)
+      * arcs   -> waxs_arc (swept OUTERMOST, one run per (sample, arc))
+    """
+    yield from transmission_bar(
+        load_holder(holder_name, store=store),
+        t=t, waxs_arc=list(waxs_arc),
+        points_fast=ny, points_slow=nx, d_fast=dy, d_slow=dx,
+        md={"project_name": project})
+
+
+def transmission_bar_energies_thin(holder_name, project, *, energies, t=1.0, store=None):
+    """Thin: transmission energy sweep over a bar (single spot/sample).  ~= transmission_bar_energies.
+
+    Maps onto smi_plans.technique_A.nexafs_bar (an energy axis per sample, one run each).
+    `energies` accepts a list OR a stored-list name (resolve_list).
+    NOTE: nexafs_bar does up+down by default and does NOT sweep waxs.arc or do the per-energy
+    fresh-spot y-walk -- if you need those, use the structured transmission_bar_energies above.
+    """
+    yield from nexafs_bar(
+        load_holder(holder_name, store=store),
+        resolve_list(energies, kind="energy"),
+        t=t, geometry="transmission",
+        md={"project_name": project})
+
+
+def giwaxs_bar_energy_thin(holder_name, project, *, incident_angles=(0.08, 0.12, 0.16),
+                           energies, align=None, align_angle=0.15, waxs_arc=(0, 20),
+                           fresh_step=-100.0, store=None):
+    """Thin-ish: GIWAXS x energy x incidence over a bar.  ~= giwaxs_bar_energy.
+
+    There is NO single backend bar that does energy x incidence x arc over a holder (technique_B
+    giwaxs_bar measures incidence x arc but NOT energy).  So this composes the backend axes via
+    acquire_bar -- still far thinner than the structured original, but it needs an `align` callable
+    (e.g. alignement_gisaxs_hex) and uses acquire_bar's own per-sample goto/align hooks.
+
+    This is the honest "closest thin form"; if/when a backend giwaxs_energy_bar lands, this becomes
+    a one-liner like the two above.
+    """
+    bar = load_holder(holder_name, store=store)
+    es = resolve_list(energies, kind="energy")
+    ais = resolve_list(incident_angles, kind="incidence")
+
+    def axes_for(s):
+        th0, _y = get_aligned(s)
+        return [energy_axis(es, settle=2.0, record=False),
+                incidence_axis(piezo.th, th0, ais)]                 # noqa: F821
+
+    for arc_value in waxs_arc:                                      # arc OUTER, one run per (s, arc)
+        yield from bps.mv(waxs.arc, arc_value)                     # noqa: F821
+        yield from bps.sleep(1)
+        yield from acquire_bar(
+            bar, _dets_at_arc(arc_value), axes_for,
+            reads=[xbpm2, xbpm3, piezo],                           # noqa: F821
+            geometry="reflection", scan_name="giwaxs_energy",
+            name_tokens=["{energy_energy}eV", "ai{incident_angle}", f"wa{arc_value:04.1f}"],
+            md={"project_name": project}, check_order=False)

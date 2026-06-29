@@ -286,7 +286,7 @@ def NEXAFS_Ti_edge(t=0.5):
         print(f"\n\t=== Sample: {sample_name} ===\n")
         yield from bp.count(dets, num=1)
 
-    yield from bps.mv(energy, 5030)  # 💡 smi_plans: you can drop this stepped energy walk-back (the following mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+    yield from bps.mv(energy, 5030)  # 💡 smi_plans: you can drop this stepped energy walk-back (the following mv(energy,...) lines too) — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 5010)
     yield from bps.mv(energy, 4990)
     yield from bps.mv(energy, 4970)
@@ -328,7 +328,7 @@ def NEXAFS_SAXS_Ti_edge(t=0.5):
         print(f"\n\t=== Sample: {sample_name} ===\n")
         yield from bp.count(dets, num=1)
 
-    yield from bps.mv(energy, 5030)  # 💡 smi_plans: you can drop this stepped energy walk-back (the following mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
+    yield from bps.mv(energy, 5030)  # 💡 smi_plans: you can drop this stepped energy walk-back (the following mv(energy,...) lines too) — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 5010)
     yield from bps.mv(energy, 4990)
     yield from bps.mv(energy, 4970)
@@ -604,7 +604,7 @@ def NEXAFS_P_edge(t=0.5):
     name_fmt = "{sample}_{energy}eV_xbpm{xbpm}"
     for e in energies:
         yield from bps.mv(energy, e)
-        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+        yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
 
         sample_name = name_fmt.format(
             sample=name, energy=e, xbpm="%3.2f" % xbpm3.sumY.value
@@ -613,18 +613,18 @@ def NEXAFS_P_edge(t=0.5):
         print(f"\n\t=== Sample: {sample_name} ===\n")
         yield from bp.count(dets, num=1)
 
-    yield from bps.mv(energy, 2190)  # 💡 smi_plans: you can drop this stepped energy walk-back (the following mv(energy,...) lines too) — move_energy_fb/energy_axis step the energy in safe hops, wait for it to settle, and handle the beam feedback. (Not broken, just no longer needed once you migrate.)
-    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+    yield from bps.mv(energy, 2190)  # 💡 smi_plans: you can drop this stepped energy walk-back (the following mv(energy,...) lines too) — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2180)
-    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2170)
-    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2160)
-    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2150)
-    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
     yield from bps.mv(energy, 2140)
-    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis already wait for the energy to settle, handle the beam feedback, and re-seek if the beam dips. (Not broken, just no longer needed once you migrate.)
+    yield from bps.sleep(2)  # 💡 smi_plans: you can drop this — move_energy_fb/energy_axis do this for you: a plain bps.mv(energy, E) -- the energy device itself manages the DCM feedback, the undulator gap and the harmonic, so no manual feedback handling, energy hops, or beam re-seek is needed (pass flux_signal=/flux_threshold= if you want a beam-loss guard). (Not broken, just no longer needed once you migrate.)
 
 
 def cd_saxs_new2(th_ini, th_fin, th_st, exp_t=1):
@@ -3319,7 +3319,7 @@ def cdsaxsstd_2026_2_nischal(t=1):
     #   (internal: Tier 2-4 — CD-SAXS rock.)
     # === end smi_plans note ================================================
     det = [pil2M]
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
+    yield from det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     phi_offest = -2.75
     """
@@ -3343,7 +3343,24 @@ def cdsaxsstd_2026_2_nischal(t=1):
                          0.3,            0.3, 
                         0.45,           0.45, 
                            0,              0]
+    """
 
+    names = [     'cxx_2p1',     'cxx_bkg',
+                   'c01_2p1',     'c01_bkg']
+    x =     [          17900,          17900,
+                       49100,          49100]
+    ysmar=  [           6364,           9364,
+                        6364,           9364]
+    z=      [          -1209,          -1209, 
+                        1790,           1700]
+    chi=    [          -0.05,          -0.05,
+                         1.7,            1.7]
+    
+    names = [     'c01_2p1',     'c01_bkg']
+    x =     [          -49100,          -49100]
+    ysmar=  [           6364,           9364]
+    z=      [           1790,           1700]
+    chi=    [            1.7,            1.7]
     # th = 0.427
 
     assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
@@ -3388,9 +3405,21 @@ def cdsaxsstd_2026_2_nischal(t=1):
                          0.3,            0.3, 
                         0.45,           0.45, 
                            0,              0]
-
-    det_exposure_time(3, 3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(3, 3)  — or at the prompt:  RE(det_exposure_time(3, 3)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
-    nume = 200
+    """
+    names = [     'cxx_2p1',     'cxx_bkg',
+                   'c01_2p1',     'c01_bkg']
+    x =     [          17900,          17900,
+                       -49100,          -49100]
+    ysmar=  [           6364,           9364,
+                        6364,           9364]
+    z=      [          -1209,          -1209, 
+                        1790,           1700]
+    chi=    [          -0.05,          -0.05,
+                         1.7,            1.7]
+    
+    
+    yield from det_exposure_time(3, 3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(3, 3)  — or at the prompt:  RE(det_exposure_time(3, 3)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
+    nume = 500
     
     yield from bps.mv(stage.phi, phi_offest)
     for i in range(1):
@@ -3435,7 +3464,7 @@ def cd_saxs_newstage(th_ini, th_fin, th_st, exp_t=1, sample='test', nume=1, det=
     #   (internal: Tier 2-4 — CD-SAXS rock.)
     # === end smi_plans note ================================================
 
-    det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
+    yield from det_exposure_time(exp_t, exp_t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(exp_t, exp_t)  — or at the prompt:  RE(det_exposure_time(exp_t, exp_t)). (smi_plans' cdsaxs_rock_run/cdsaxs_bar set exposure for you via t=.)
 
     for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
         yield from bps.mv(stage.phi, theta)
