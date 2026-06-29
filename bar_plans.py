@@ -18,6 +18,10 @@ All three:
   * record energy / WAXS-arc / incident-angle into the data (so the file name can template them),
   * print a friendly "what is running" line per sample.
 
+Filename customization: pass ``name_spec={...}`` to any plan to tailor the filename, e.g.
+``name_spec={"name_prefix": "annealed", "include_energy": False, "arc_fmt": "_waxs_{:.0f}_",
+"extra_tokens": ["px{piezo_x}", "py{piezo_y}", "pz{piezo_z}"]}``.  See :func:`_name_tokens`.
+
 This is a THIN wrapper over the ``smi_plans`` backend: the holder loading, alignment persistence,
 energy stepping, spatial grid, and positioning all live there now (this file only carries the scan
 *structure* + friendly prints).  ``energies`` / ``incident_angles`` / ``waxs_arc`` accept either an
@@ -91,6 +95,63 @@ def _grid_offsets(nx, ny, dx, dy):
     return list(xs), list(ys)
 
 
+def _name_tokens(arc_value, *, name_prefix="", include_energy=True, energy_token="{energy_energy}eV",
+                 include_arc=True, arc_fmt="wa{:04.1f}", include_incidence=False,
+                 incidence_token="ai{incident_angle}", grid=False, extra_tokens=None):
+    """Assemble the filename ``{token}`` list for a run, in a stable order.
+
+    The final filename is
+    ``<sample>_<name_prefix>_<energy>_<arc>_ai{incident_angle}_x{x}_y{y}_<extra>_`` with each piece
+    optional and individually formattable.  Every ``{field}`` token must resolve to a RECORDED data
+    key (``acquire`` validates this at build time): ``{energy_energy}`` (energy device, via the
+    naming preprocessor), ``{incident_angle}`` (the incidence axis Signal), ``{x}``/``{y}`` (the
+    grid's relative-offset Signals), and anything in ``extra_tokens`` (e.g. ``px{piezo_x}`` --
+    ``piezo`` is in ``reads`` so ``piezo_x/y/z`` are recorded).
+
+    Parameters
+    ----------
+    arc_value : float
+        WAXS arc value, substituted into ``arc_fmt`` (a Python format string -> a LITERAL token).
+    name_prefix : str
+        Free label inserted right after the sample name (e.g. ``"annealed"`` -> ``S1_annealed_...``).
+    include_energy : bool
+        Include the energy token (default True).  Energy is still recorded in the data regardless.
+    energy_token : str
+        The energy token text (default ``"{energy_energy}eV"``).  Change it to reformat, e.g.
+        ``"E{energy_energy}"`` -> ``E2480.123...``.
+    include_arc : bool
+        Include the WAXS-arc token (default True).
+    arc_fmt : str
+        Python format string for the arc value (default ``"wa{:04.1f}"`` -> ``wa20.0``).  Examples:
+        ``"waxs_{:g}"`` -> ``waxs_20``; ``"_waxs_{:.0f}_"`` -> ``_waxs_20_``; ``"arc{:05.2f}deg"``.
+        (This is an f-string-style LITERAL -- the arc value is a Python number, not a recorded key,
+        so it is baked in here, NOT filled by the file writer.)
+    include_incidence : bool
+        Include the incident-angle token (default False; the GIWAXS plan sets True).
+    incidence_token : str
+        The incident-angle token text (default ``"ai{incident_angle}"``).
+    grid : bool
+        Include the ``x{x}`` / ``y{y}`` relative-grid tokens (caller sets True when nx*ny > 1).
+    extra_tokens : list of str, optional
+        Extra ``{token}`` strings appended verbatim, e.g. ``["px{piezo_x}", "py{piezo_y}",
+        "pz{piezo_z}"]``.  Each must be a real recorded key.
+    """
+    toks = []
+    if name_prefix:
+        toks.append(str(name_prefix))
+    if include_energy:
+        toks.append(energy_token)
+    if include_incidence:
+        toks.append(incidence_token)
+    if include_arc:
+        toks.append(arc_fmt.format(arc_value))
+    if grid:
+        toks += ["x{x}", "y{y}"]
+    if extra_tokens:
+        toks += list(extra_tokens)
+    return toks
+
+
 def _grid_axes(cx, cy, ox, oy, *, snake=True):
     """Spot-grid axes centered on ``(cx, cy)`` that record relative ``{x}``/``{y}`` tokens.
 
@@ -117,6 +178,7 @@ def _goto_grazing(s):
 def transmission_bar_grid(holder_name, project, *, t=1.0,
                           waxs_arc=(0,),
                           nx=3, ny=3, dx=150.0, dy=150.0,
+                          name_spec=None,
                           use_saxs=True, use_waxs=True, store=None):
     """ONE transmission run per (sample, WAXS arc): a ``nx`` x ``ny`` grid of spots around each
     sample center, repeated at each WAXS arc angle.
@@ -137,6 +199,15 @@ def transmission_bar_grid(holder_name, project, *, t=1.0,
         Grid points in x and y (1 => no walk in that axis).
     dx, dy : float
         Grid spacing in microns.
+    name_spec : dict, optional
+        Filename customization, e.g. ``{"name_prefix": "annealed", "include_energy": False,
+        "arc_fmt": "waxs_{:g}", "extra_tokens": ["px{piezo_x}", "py{piezo_y}"]}``.  Keys (all
+        optional): ``name_prefix`` (label after the sample name), ``include_energy``/``energy_token``
+        (default ``"{energy_energy}eV"``), ``include_arc``/``arc_fmt`` (default ``"wa{:04.1f}"`` ->
+        ``wa20.0``; e.g. ``"_waxs_{:.0f}_"`` -> ``_waxs_20_``), ``extra_tokens`` (extra ``{token}``s;
+        each must be a REAL recorded key -- ``piezo`` is read so ``piezo_x/y/z`` work; validated at
+        build time).  See :func:`_name_tokens`.  (Do NOT set ``grid``/``include_incidence`` here --
+        those are plan-controlled.)
     use_saxs, use_waxs : bool
         Which detectors to use (arc-aware: SAXS dropped if the WAXS arc occludes it).
     """
@@ -172,11 +243,13 @@ def transmission_bar_grid(holder_name, project, *, t=1.0,
                 s.name, dets, axes,
                 reads=reads, geometry="transmission", scan_name="transmission",
                 sample=s, md=run_md,
-                # {energy_energy}/{waxs_arc} go in the file name and are read ONCE by the naming
-                # preprocessor; the plan itself does not read energy/waxs (avoids a collision).
-                # {x}/{y} resolve to the relative-offset Signals recorded by spatial_grid_axes(center=...).
-                name_tokens=(["{energy_energy}eV", f"wa{arc_value:04.1f}"]
-                             + (["x{x}", "y{y}"] if nx * ny > 1 else [])),
+                # Filename tokens (customizable: name_prefix / include_energy / include_arc /
+                # extra_tokens).  energy/waxs are read ONCE by the naming preprocessor (the plan
+                # doesn't read them -> no collision); {x}/{y} are the grid's relative-offset Signals.
+                name_tokens=_name_tokens(
+                    arc_value, grid=(nx * ny > 1),
+                    **{k: v for k, v in (name_spec or {}).items()
+                       if k not in ("grid", "include_incidence")}),
                 check_order=False)
 
 
@@ -187,6 +260,7 @@ def transmission_bar_energies(holder_name, project, *, energies, t=1.0,
                               waxs_arc=(0,),
                               nx=1, ny=1, dx=150.0, dy=150.0,
                               fresh_step=1.0,
+                              name_spec=None,
                               use_saxs=True, use_waxs=True, store=None):
     """ONE transmission run per (sample, WAXS arc), stepping through ``energies`` (energy OUTER),
     optionally with a grid of spots per energy, with a fresh-spot walk on ``piezo.y`` per frame.
@@ -214,6 +288,11 @@ def transmission_bar_energies(holder_name, project, *, energies, t=1.0,
     fresh_step : float
         piezo.y step (microns) after each recorded frame (fresh spot; default 1).  Set to 0 (or
         use a y-grid ``ny > 1``) to disable.
+    name_spec : dict, optional
+        Filename customization (see :func:`_name_tokens` / the same key set as the other plans):
+        ``name_prefix``, ``include_energy``/``energy_token``, ``include_arc``/``arc_fmt`` (e.g.
+        ``"_waxs_{:.0f}_"`` -> ``_waxs_20_``), ``extra_tokens`` (e.g. ``["px{piezo_x}",
+        "py{piezo_y}"]``; must be real recorded keys, validated at build time).
     use_saxs, use_waxs : bool
         Detector selection.
     """
@@ -262,11 +341,13 @@ def transmission_bar_energies(holder_name, project, *, energies, t=1.0,
                 s.name, dets, axes,
                 reads=reads, geometry="transmission", scan_name="transmission_energy",
                 sample=s, md=run_md,
-                # {energy_energy}/{waxs_arc} go in the file name and are read ONCE by the naming
-                # preprocessor; the plan itself does not read energy/waxs (avoids a collision).
-                # {x}/{y} resolve to the relative-offset Signals recorded by spatial_grid_axes(center=...).
-                name_tokens=(["{energy_energy}eV", f"wa{arc_value:04.1f}"]
-                             + (["x{x}", "y{y}"] if nx * ny > 1 else [])),
+                # Filename tokens (customizable: name_prefix / include_energy / include_arc /
+                # extra_tokens).  energy/waxs read ONCE by the naming preprocessor; {x}/{y} are the
+                # grid's relative-offset Signals.
+                name_tokens=_name_tokens(
+                    arc_value, grid=(nx * ny > 1),
+                    **{k: v for k, v in (name_spec or {}).items()
+                       if k not in ("grid", "include_incidence")}),
                 check_order=False)
             if do_fresh:
                 run = fresh_spot_wrapper(run, piezo.y, fresh_step)   # noqa: F821 (1um/frame on y)
@@ -281,7 +362,9 @@ def giwaxs_bar_energy(holder_name, project, *,
                       energies, t=1.0,
                       waxs_arc=(0, 20), align_arc=20,
                       align_angle=0.15, realign=False,
-                      fresh_step=-100.0, use_saxs=True, use_waxs=True, store=None):
+                      fresh_step=-100.0,
+                      name_spec=None,
+                      use_saxs=True, use_waxs=True, store=None):
     """Grazing-incidence energy scan over a bar at one or more WAXS arc angles.
 
     Aligns each sample ONCE (at ``align_arc``; cached/persisted to Redis -- skipped on re-run
@@ -312,6 +395,11 @@ def giwaxs_bar_energy(holder_name, project, *,
         If True, re-align every sample even if a cached alignment exists.
     fresh_step : float
         piezo.x step (microns) after each recorded frame (fresh spot; negative walks "down").
+    name_spec : dict, optional
+        Filename customization (see :func:`_name_tokens`): ``name_prefix``,
+        ``include_energy``/``energy_token``, ``include_arc``/``arc_fmt`` (e.g. ``"_waxs_{:.0f}_"`` ->
+        ``_waxs_20_``), ``incidence_token`` (default ``"ai{incident_angle}"``), ``extra_tokens``
+        (real recorded keys, validated at build time).  Incidence is included by default for GIWAXS.
     use_saxs, use_waxs : bool
         Detector selection (arc-aware: SAXS dropped at low arc where it is blocked).
     """
@@ -367,11 +455,14 @@ def giwaxs_bar_energy(holder_name, project, *,
                     s.name, dets, axes,
                     reads=reads, geometry="reflection", scan_name="giwaxs_energy",
                     sample=s, md=run_md,
-                    # These {tokens} go in the file name AND tell the naming preprocessor which
-                    # devices to read once into the stream (energy/waxs_arc); the plan itself must
-                    # NOT also read energy/waxs (it doesn't -- see reads + energy axis record=False)
-                    # or trigger_and_read would double-read them ('Data keys ... collide').
-                    name_tokens=["{energy_energy}eV", "ai{incident_angle}", f"wa{arc_value:04.1f}"],
+                    # Filename tokens (customizable via name_spec).  These also tell the naming
+                    # preprocessor which devices to read once (energy/waxs_arc); the plan itself
+                    # must NOT also read energy/waxs (it doesn't) or trigger_and_read collides.
+                    # incidence is on by default here (GIWAXS records {incident_angle}).
+                    name_tokens=_name_tokens(
+                        arc_value, include_incidence=True,
+                        **{k: v for k, v in (name_spec or {}).items()
+                           if k not in ("grid", "include_incidence")}),
                     check_order=False),
                 piezo.x, fresh_step)                             # noqa: F821
 
