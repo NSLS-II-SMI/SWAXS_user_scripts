@@ -225,6 +225,8 @@ ARC_SAXS_BLOCK_DEG = 30 # 15        # below this WAXS arc angle pil2M (SAXS) is 
 
 
 def _dets_at_arc(arc_value, *, use_saxs=True, use_waxs=True):
+    # OUTDATED: detector selection now belongs in smi_plans helpers / the clean root bar_plans.py.
+    # Keep this copy only as historical beamtime notes.
     """WAXS always (if wanted); SAXS only when the arc isn't blocking it.
 
     (``use_*`` names so they don't shadow the ``waxs`` device global.)"""
@@ -237,6 +239,7 @@ def _dets_at_arc(arc_value, *, use_saxs=True, use_waxs=True):
 
 
 def _grid_offsets(nx, ny, dx, dy):
+    # OUTDATED: root bar_plans.py now keeps only a small example wrapper around smi_plans.
     """Absolute-ish offset lists: nx by ny points centered on 0, spacing dx/dy (microns)."""
     xs = (np.arange(nx) - (nx - 1) / 2.0) * dx if nx > 1 else np.array([0.0])
     ys = (np.arange(ny) - (ny - 1) / 2.0) * dy if ny > 1 else np.array([0.0])
@@ -244,6 +247,7 @@ def _grid_offsets(nx, ny, dx, dy):
 
 
 def _grid_axes(cx, cy, ox, oy, *, snake=True):
+    # OUTDATED: use smi_plans._compose.spatial_grid_axes(center=...) directly.
     """Spot-grid axes centered on ``(cx, cy)`` that record relative ``{x}``/``{y}`` tokens.
 
     Thin wrapper over the backend ``spatial_grid_axes(center=...)`` (which records a relative-offset
@@ -257,6 +261,7 @@ def _grid_axes(cx, cy, ox, oy, *, snake=True):
 
 
 def _goto_grazing(s):
+    # OUTDATED: use smi_plans._core.goto_sample(..., skip={piezo.y, piezo.th}) directly.
     """Move a GIWAXS sample's coarse position EXCEPT piezo.y/th (those come from alignment).
 
     Uses the backend ``goto_sample`` (reads the runnable nominal/refined Position) with the
@@ -270,6 +275,8 @@ def transmission_bar_grid(holder_name, project, *, t=1.0,
                           waxs_arc=(0,),
                           nx=3, ny=3, dx=150.0, dy=150.0,
                           use_saxs=True, use_waxs=True, store=None):
+    # OUTDATED: use /home/xf12id/SWAXS_user_scripts/bar_plans.py instead.  This copy predates the
+    # smi_plans helper ingestion and is retained only as the Gao/Yugang beamtime command log.
     """ONE transmission run per (sample, WAXS arc): a ``nx`` x ``ny`` grid of spots around each
     sample center, repeated at each WAXS arc angle.
 
@@ -340,6 +347,8 @@ def transmission_bar_energies(holder_name, project, *, energies, t=1.0,
                               nx=1, ny=1, dx=150.0, dy=150.0,
                               fresh_step=1.0,
                               use_saxs=True, use_waxs=True, store=None):
+    # OUTDATED: use the clean root bar_plans.py wrapper.  Energy moves, holder loading,
+    # fresh-spot behavior, and filename-token validation now come from smi_plans.
     """ONE transmission run per (sample, WAXS arc), stepping through ``energies`` (energy OUTER),
     optionally with a grid of spots per energy, with a fresh-spot walk on ``piezo.y`` per frame.
 
@@ -434,6 +443,8 @@ def giwaxs_bar_energy(holder_name, project, *,
                       waxs_arc=(0, 20), align_arc=20,
                       align_angle=0.15, realign=False,
                       fresh_step=-100.0, use_saxs=True, use_waxs=True, store=None):
+    # OUTDATED: use the clean root bar_plans.py wrapper.  Alignment persistence and the GIWAXS
+    # energy/incidence axes have been moved into smi_plans-backed examples.
     """Grazing-incidence energy scan over a bar at one or more WAXS arc angles.
 
     Aligns each sample ONCE (at ``align_arc``; cached/persisted to Redis -- skipped on re-run
@@ -547,6 +558,7 @@ def giwaxs_bar_energy(holder_name, project, *,
 
 def transmission_bar_grid_thin(holder_name, project, *, t=1.0, waxs_arc=(0,),
                                nx=3, ny=3, dx=150.0, dy=150.0, store=None):
+    # OUTDATED REFERENCE: kept only to show the migration direction during the beamtime.
     """Thin: ONE transmission run per (sample, arc), nx*ny spot grid.  == transmission_bar_grid.
 
     Maps directly onto smi_plans.technique_E.transmission_bar:
@@ -562,6 +574,7 @@ def transmission_bar_grid_thin(holder_name, project, *, t=1.0, waxs_arc=(0,),
 
 
 def transmission_bar_energies_thin(holder_name, project, *, energies, t=1.0, store=None):
+    # OUTDATED REFERENCE: root bar_plans.py now shows the supported clean examples.
     """Thin: transmission energy sweep over a bar (single spot/sample).  ~= transmission_bar_energies.
 
     Maps onto smi_plans.technique_A.nexafs_bar (an energy axis per sample, one run each).
@@ -579,6 +592,7 @@ def transmission_bar_energies_thin(holder_name, project, *, energies, t=1.0, sto
 def giwaxs_bar_energy_thin(holder_name, project, *, incident_angles=(0.08, 0.12, 0.16),
                            energies, align=None, align_angle=0.15, waxs_arc=(0, 20),
                            fresh_step=-100.0, store=None):
+    # OUTDATED REFERENCE: root bar_plans.py now shows the supported clean example.
     """Thin-ish: GIWAXS x energy x incidence over a bar.  ~= giwaxs_bar_energy.
 
     There is NO single backend bar that does energy x incidence x arc over a holder (technique_B
