@@ -18,24 +18,10 @@ All three:
   * record energy / WAXS-arc / incident-angle into the data (so the file name can template them),
   * print a friendly "what is running" line per sample.
 
-Filename customization: pass ``name_spec={...}`` to any plan to tailor the filename, e.g.
-``name_spec={"name_prefix": "annealed", "include_energy": False, "include_exposure": True,
-"arc_fmt": "_waxs_{:.0f}_", "extra_tokens": ["px{piezo_x}", "py{piezo_y}", "pz{piezo_z}"]}`` ->
-``annealed_<sample>_exp_1.0s__waxs_20_...`` (``name_prefix`` goes in FRONT of the sample name;
-exposure time is recorded as a soft ``{exposure_s}`` Signal and added with ``include_exposure``).
-Preview it with ``preview_name(...)``.  See :func:`_name_tokens`.
-
 This is a THIN wrapper over the ``smi_plans`` backend: the holder loading, alignment persistence,
 energy stepping, spatial grid, and positioning all live there now (this file only carries the scan
 *structure* + friendly prints).  ``energies`` / ``incident_angles`` / ``waxs_arc`` accept either an
 explicit list OR the NAME of a stored list (resolved via ``smi_plans.resolve_list``).
-
-Utilities (call directly at the console, NOT plans -- no ``RE(...)``):
-``adjust_bar_positions(holder, delta={...}, absolute={...}, base="runnable"|"nominal")`` bulk-
-"refines" every sample's run position in Redis (offset and/or set axes; ``base`` picks whether to
-compute from the current run position or from nominal).  ``sort_bar_by_name(holder)`` reorders the
-holder's run priority into sample-name order.  ``preview_name(...)`` shows a run's filename before
-taking data.  All default to a dry run.
 
 Requires the live beamline session (devices pil2M/pil900KW/piezo/stage/energy/waxs/... and
 det_exposure_time/alignment_gisaxs in the namespace) and a CURRENT ``smi_plans`` install
@@ -43,14 +29,165 @@ det_exposure_time/alignment_gisaxs in the namespace) and a CURRENT ``smi_plans``
 deploy the updated smi-plans into the beamline env before running this).
 """
 
+
+
+'''
+2026/6/29 1:00 pm
+Samples:
+UConn, Prof. Gao Group
+Jose
+
+Sample holder 1: 45 samples
+From S1 - S45
+Using Eliot's new data acq software
+pass-318919
+
+317437	Standard	Approved	GU-318919: Autonomous Fluidic Synthesis of Cu-Based Colloidal Nanocrystals with Real-Time SAXS/WAXS/ASAXS/XAS: Correlating Processing, Electronic State, and Structure	Hyeong Jin Kim	
+
+RE(shopen())
+RE(restartWAXS())
+proposal_swap(318919)
+project_set('calibration')
+sample_id(user_name='EG', sample_name=f'AGB')
+set_energy(en_ev=16150)
+RE(det_exposure_time(1,1))
+RE(bp.count([pil2M,pil900KW,pin_diode]))
+RE(bp.count([pil2M,pil900KW,pin_diode]))
+RE(bp.mv(waxs,15))
+RE(bps.mv(waxs,15))
+RE(bp.count([pil2M,pil900KW,pin_diode]))
+RE(bp.count([pil2M,pil900KW,pin_diode]))
+RE(bp.count([pil2M,pil900KW,pin_diode]))
+RE(bp.count([pil2M,pil900KW,pin_diode]))
+RE(bp.count([pil2M,pil900KW,pin_diode]))
+RE(bp.count([pil2M,pil900KW,pin_diode]))
+RE(bp.count([pil2M,pil900KW,pin_diode]))
+RE(bp.count([pil2M,pil900KW,pin_diode]))
+RE(shclose())
+RE.md
+%run -i /home/xf12id/SWAXS_user_scripts/bar_plans.py
+%run -i /home/xf12id/SWAXS_user_scripts/bar_plans.py
+summarize_plan(transmission_bar_grid('holder1',None,waxs_arc=(0,20,40),nx=1,ny=1))
+RE(transmission_bar_grid('holder1',None,waxs_arc=(0,20,40),nx=1,ny=1))
+RE.stop()
+RE(shopen())
+RE(transmission_bar_grid('holder1',None,waxs_arc=(0,20,40),nx=1,ny=1))
+RE.stop()
+RE(bps.mv(waxs,0))
+RE(bps.mv(waxs,0))
+RE(transmission_bar_grid('holder1',None,waxs_arc=(15,35),nx=1,ny=1))
+%run -i /home/xf12id/SWAXS_user_scripts/bar_plans.py
+RE.abort()
+
+
+data are saved in 
+/nsls2/data/smi/proposals/2026-2/pass-318919/projects
+
+sample info are through Eliot's webgui
+http://localhost:5098/acquire_app
+
+
+
+RE(transmission_bar_grid('holder1','PGao',waxs_arc=(15,25,35),nx=1,ny=1))
+
+%run -i /home/xf12id/SWAXS_user_scripts/bar_plans.py
+
+
+RE(transmission_bar_grid('holder1','PGao',waxs_arc=(15,35),nx=1,ny=1,name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x}", "
+                                               ⋮ py_{piezo_y}, pz_{piezo_z}"],'name_prefix':'','include_exposure':True}))
+
+                                               
+
+RE(transmission_bar_grid('holder1','PGao',waxs_arc=(15, 25, 35),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'Gao','include_exposure':True}))
+
+
+
+RE(transmission_bar_grid('WL_Holder1','YZhang',waxs_arc=(15, 25, 35),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'YZhang','include_exposure':True}))
+
+
+RE(transmission_bar_grid('WL_Holder1','YZhang',waxs_arc=(15, 25, 35),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'YZhang','include_exposure':True}))
+
+RE(transmission_bar_grid('Holder3','PGao',waxs_arc=(15, 25, 35),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'Gao','include_exposure':True}))
+
+RE(transmission_bar_grid('Holder3','PGao',waxs_arc=(25, 35),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'Gao','include_exposure':True}))
+
+RE(transmission_bar_grid('Holder3','PGao',waxs_arc=(15, 25, 35),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'Gao','include_exposure':True}))
+
+
+RE(transmission_bar_grid('holder4','PGao',waxs_arc=(15, 25, 35),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'Gao','include_exposure':True}))
+ 
+RE(transmission_bar_grid('holder5','PGao',waxs_arc=(15, 25, 35),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'Gao','include_exposure':True}))
+
+
+
+RE(transmission_bar_grid('holder5','PGao',waxs_arc=(0,),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'Gao','include_exposure':True}))
+
+
+RE(transmission_bar_grid('holder4','PGao',waxs_arc=(0,),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'Gao','include_exposure':True}))
+
+
+
+
+
+
+
+RE(transmission_bar_grid('SY_H1','SYang',waxs_arc=(0,15, 25, 35 ),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'SYang','include_exposure':True}))
+
+
+
+RE(transmission_bar_grid('AgBH_H1','Standard',waxs_arc=(0,15, 25, 35 ),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'Standard','include_exposure':True}))
+
+
+
+
+RE(transmission_bar_grid('ChemH1','WaterOxidation',waxs_arc=(0,15, 25, 35 ),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'ChemH1','include_exposure':True}))
+
+
+
+'''
+
+
+
+
+
+
+
+
+
+
 import bluesky.plan_stubs as bps
 
 from smi_plans._compose import acquire, acquire_bar, incidence_axis, energy_axis, spatial_grid_axes
-from smi_plans._core import goto_sample, fname
+from smi_plans._core import goto_sample
 from smi_plans._preprocessors import fresh_spot_wrapper
 from smi_plans import (load_holder, get_aligned, needs_alignment, save_aligned,
                        sample_center, resolve_list)
-from smi_plans._samples import Position
 # Technique bars used by the ultra-thin rewrites at the bottom of this file (reference versions).
 from smi_plans.technique_E_transmission import transmission_bar
 from smi_plans.technique_A_energy_edge import nexafs_bar
@@ -84,7 +221,7 @@ _pull_beamline_globals()
 # ---------------------------------------------------------------------------
 # shared defaults
 # ---------------------------------------------------------------------------
-ARC_SAXS_BLOCK_DEG = 30 #15        # below this WAXS arc angle pil2M (SAXS) is blocked -> don't read it
+ARC_SAXS_BLOCK_DEG = 30 # 15        # below this WAXS arc angle pil2M (SAXS) is blocked -> don't read it
 
 
 def _dets_at_arc(arc_value, *, use_saxs=True, use_waxs=True):
@@ -104,375 +241,6 @@ def _grid_offsets(nx, ny, dx, dy):
     xs = (np.arange(nx) - (nx - 1) / 2.0) * dx if nx > 1 else np.array([0.0])
     ys = (np.arange(ny) - (ny - 1) / 2.0) * dy if ny > 1 else np.array([0.0])
     return list(xs), list(ys)
-
-
-def _name_tokens(arc_value, *, name_prefix="", include_energy=True, energy_token="{energy_energy}eV",
-                 include_exposure=False, exposure_token="exp_{exposure_s}s",
-                 include_arc=True, arc_fmt="wa{:04.1f}", include_incidence=False,
-                 incidence_token="ai{incident_angle}", grid=False, extra_tokens=None):
-    """Assemble the filename ``{token}`` list for a run, in a stable order.
-
-    The final filename is
-    ``<name_prefix>_<sample>_<energy>_<exposure>_<arc>_ai{incident_angle}_x{x}_y{y}_<extra>_`` with
-    each piece optional and individually formattable.  (``name_prefix`` is NOT a token -- it is
-    prepended to the sample-name *base* by the plan, so it lands in FRONT of the sample name.)  Every
-    ``{field}`` token returned here must resolve to a RECORDED data
-    key (``acquire`` validates this at build time): ``{energy_energy}`` (energy device, via the
-    naming preprocessor), ``{exposure_s}`` (a soft Signal the plan records when it sets the exposure),
-    ``{incident_angle}`` (the incidence axis Signal), ``{x}``/``{y}`` (the
-    grid's relative-offset Signals), and anything in ``extra_tokens`` (e.g. ``px{piezo_x}`` --
-    ``piezo`` is in ``reads`` so ``piezo_x/y/z`` are recorded).
-
-    Parameters
-    ----------
-    arc_value : float
-        WAXS arc value, substituted into ``arc_fmt`` (a Python format string -> a LITERAL token).
-    name_prefix : str
-        Free label prepended to the sample name (e.g. ``"annealed"`` -> ``annealed_S1_...``).  This
-        is applied to the filename *base* by the plan -- it is NOT returned in the token list here.
-    include_energy : bool
-        Include the energy token (default True).  Energy is still recorded in the data regardless.
-    energy_token : str
-        The energy token text (default ``"{energy_energy}eV"``).  Change it to reformat, e.g.
-        ``"E{energy_energy}"`` -> ``E2480.123...``.
-    include_exposure : bool
-        Include the per-frame exposure-time token (default False).  The plan ALWAYS records the
-        exposure as a soft ``Signal(name="exposure_s")`` (so ``{exposure_s}`` is available); this flag
-        only controls whether it appears in the FILENAME.
-    exposure_token : str
-        The exposure token text (default ``"exp_{exposure_s}s"`` -> ``exp_1.0s``).  ``exposure_s`` is
-        a recorded data key (the soft Signal), filled by the file writer at scan time.
-    include_arc : bool
-        Include the WAXS-arc token (default True).
-    arc_fmt : str
-        Python format string for the arc value (default ``"wa{:04.1f}"`` -> ``wa20.0``).  Examples:
-        ``"waxs_{:g}"`` -> ``waxs_20``; ``"_waxs_{:.0f}_"`` -> ``_waxs_20_``; ``"arc{:05.2f}deg"``.
-        (This is an f-string-style LITERAL -- the arc value is a Python number, not a recorded key,
-        so it is baked in here, NOT filled by the file writer.)
-    include_incidence : bool
-        Include the incident-angle token (default False; the GIWAXS plan sets True).
-    incidence_token : str
-        The incident-angle token text (default ``"ai{incident_angle}"``).
-    grid : bool
-        Include the ``x{x}`` / ``y{y}`` relative-grid tokens (caller sets True when nx*ny > 1).
-    extra_tokens : list of str, optional
-        Extra ``{token}`` strings appended verbatim, e.g. ``["px{piezo_x}", "py{piezo_y}",
-        "pz{piezo_z}"]``.  Each must be a real recorded key.
-    """
-    toks = []
-    # NOTE: name_prefix is intentionally NOT added here -- it is prepended to the sample-name base
-    # by the plan (see _apply_prefix) so it lands in FRONT of the sample name, not after it.
-    if include_energy:
-        toks.append(energy_token)
-    if include_exposure:
-        toks.append(exposure_token)
-    if include_incidence:
-        toks.append(incidence_token)
-    if include_arc:
-        toks.append(arc_fmt.format(arc_value))
-    if grid:
-        toks += ["x{x}", "y{y}"]
-    if extra_tokens:
-        toks += list(extra_tokens)
-    return toks
-
-
-def _apply_prefix(base, name_spec):
-    """Prepend ``name_spec["name_prefix"]`` to the filename base so it lands BEFORE the sample name.
-
-    ``name_prefix`` is a pure literal, so it is applied to the base passed to ``acquire`` (which puts
-    the base first), giving ``<name_prefix>_<sample>_...`` -- not as a token (which would land after
-    the sample name).
-    """
-    prefix = (name_spec or {}).get("name_prefix", "")
-    return "{}_{}".format(prefix, base) if prefix else base
-
-
-def _record_exposure(t):
-    """Record the per-frame exposure ``t`` into a soft ``Signal(name="exposure_s")`` and return it.
-
-    Detector ``cam.acquire_time`` is a *configuration* attr (it lands in describe_configuration, NOT
-    in the per-event data), so ``{...}`` filename tokens can't reach it.  This mirrors the backend's
-    ``_grid_axis``/``incidence_axis`` soft-Signal pattern: make a Signal whose ``name`` is the token
-    key, set it once via a message (no bare ``.put()``), and add it to ``reads`` so it is recorded at
-    every event -- making ``{exposure_s}`` a valid filename token.  Call right after
-    ``det_exposure_time(t, t)`` and append the returned Signal to ``reads``.
-    """
-    sig = Signal(name="exposure_s", value=float(t))    # noqa: F821 (Signal is beamline-injected)
-    yield from bps.mv(sig, float(t))
-    return sig
-
-
-# Fake example values for the common {data-key} tokens, so a filename preview looks realistic.
-_FAKE_TOKEN_VALUES = {
-    "energy_energy": 2480.123,
-    "exposure_s": 1.0,
-    "incident_angle": 0.12,
-    "x": -100.0, "y": 100.0,
-    "piezo_x": 55000.0, "piezo_y": 4000.0, "piezo_z": -1200.0, "piezo_th": 0.15,
-    "stage_x": 1.0, "stage_y": 2.0, "stage_z": 3.0,
-    "stage_theta": 0.0, "stage_chi": 0.0, "stage_phi": 20.0,
-    "xbpm2_sumX": 1234.5, "xbpm3_sumX": 2345.6,
-    "pin_diode_current2_mean_value": 0.0123,
-}
-
-
-def preview_name(sample="S1", *, arc=20.0, grid=False, incidence=False, exposure=None,
-                 name_spec=None, fake=None):
-    """Print what a run's filename will look like for a given ``name_spec`` -- BEFORE taking data.
-
-    Shows (a) the TEMPLATE that gets stored as ``sample_name`` (with ``{data_key}`` placeholders
-    still unfilled) and (b) a FILLED example using fake values for every data-key token, so you can
-    see the real shape.  Use this to dial in a ``name_spec`` at the console::
-
-        preview_name("OPV_s1", arc=20, name_spec={"arc_fmt": "_waxs_{:.0f}_",
-                                                  "extra_tokens": ["px{piezo_x}", "py{piezo_y}"]})
-
-    Parameters
-    ----------
-    sample : str
-        Example sample name (the start of the filename).
-    arc : float
-        Example WAXS arc value (baked into the literal arc token).
-    grid : bool
-        Preview as if a spot grid is on (adds the ``x{x}``/``y{y}`` tokens).
-    incidence : bool
-        Preview as if grazing (adds the ``ai{incident_angle}`` token) -- the GIWAXS case.
-    exposure : float, optional
-        Example per-frame exposure (s) used to fill ``{exposure_s}`` in the preview.  Only shows in
-        the filename if ``name_spec={"include_exposure": True}`` (or you set ``exposure_token``).
-    name_spec : dict, optional
-        The SAME ``name_spec`` you would pass to a plan.
-    fake : dict, optional
-        Override/extend the fake values used to fill ``{data_key}`` tokens (e.g.
-        ``{"energy_energy": 7112.0}``).
-    """
-    import re as _re
-    spec = {k: v for k, v in (name_spec or {}).items()
-            if k not in ("grid", "include_incidence")}
-    toks = _name_tokens(arc, grid=grid, include_incidence=incidence, **spec)
-    template = fname(_apply_prefix(sample, name_spec), *toks)
-
-    values = dict(_FAKE_TOKEN_VALUES)
-    if exposure is not None:
-        values["exposure_s"] = float(exposure)
-    if fake:
-        values.update(fake)
-
-    # which {fields} does the template still contain (the runtime data-key tokens)?
-    fields = _re.findall(r"\{([^}:!]+)", template)
-    missing = [f for f in fields if f not in values]
-    fill = dict(values)
-    for f in missing:                       # unknown token -> a visible placeholder
-        fill[f] = "<{}>".format(f)
-
-    try:
-        filled = template.format(**fill)
-    except Exception as exc:                # e.g. a format spec the fake value can't take
-        filled = "(could not fill: {!r})".format(exc)
-
-    print("name_spec : {}".format(name_spec or {}))
-    print("TEMPLATE  : {}".format(template))
-    print("EXAMPLE   : {}   (data tokens filled with fake values)".format(filled))
-    if fields:
-        print("runtime tokens (filled from recorded data at scan time): {}".format(
-            ", ".join("{{{}}}".format(f) for f in fields)))
-    if missing:
-        print("  !! NOTE: {} not in the fake-value table -- shown as <{}>. If real, make sure the "
-              "device is in `reads` (acquire validates this at scan time).".format(
-                  ["{{{}}}".format(f) for f in missing], "...".join(missing)))
-    return template
-
-
-# Position axes that may be adjusted (matches smi_plans._samples.Position fields).
-_POSITION_AXES = ("piezo_x", "piezo_y", "piezo_z", "piezo_th",
-                  "stage_x", "stage_y", "stage_z", "stage_theta", "stage_chi", "stage_phi")
-
-
-def adjust_bar_positions(holder_name, *, delta=None, absolute=None, base="runnable",
-                         store=None, dry_run=True):
-    """Bulk-"refine" every sample's RUN position on a holder, in Redis -- offset and/or set axes.
-
-    A manual, whole-bar version of alignment: for each sample it takes a starting position, applies
-    your changes, and writes the result to the sample's ``refined`` position (the run cache that
-    ``goto_sample`` / ``sample_center`` read).  The starting position depends on ``base``:
-
-      * ``base="runnable"`` (default): start from what actually runs now
-        (``runnable_position()`` = ``refined`` if the sample has one, else ``nominal``).  So an
-        existing refined position is adjusted refined -> refined; a sample with none gets a refined
-        position created from its nominal.
-      * ``base="nominal"``: ALWAYS start from the sample's ``nominal`` (holder-relative source of
-        truth), ignoring any existing refined, and write the adjusted result to ``refined``.  Use
-        this to re-derive the whole bar's run positions from nominal + a known offset (e.g. after a
-        bad alignment), discarding the old refined.
-
-    Either way ``nominal`` is left untouched (source of truth) and the change takes effect
-    immediately for runs.  **Defaults to a dry run** -- it prints a before/after table and writes
-    NOTHING; pass ``dry_run=False`` to actually persist.
-
-    Parameters
-    ----------
-    holder_name : str
-        The holder whose samples to adjust (same name you pass to the plans).
-    delta : dict, optional
-        Axis -> amount to ADD, e.g. ``{"piezo_y": -50.0}`` shifts every sample down 50 um in y.
-        An axis with no current value is skipped for a delta (nothing to offset) and reported.
-    absolute : dict, optional
-        Axis -> value to SET, e.g. ``{"piezo_z": -1200.0}`` puts every sample at that z.  Applied
-        after ``delta`` (so for the same axis, ``absolute`` wins).  Set even if currently unset.
-    base : {"runnable", "nominal"}
-        Which position to compute FROM (see above).  Default ``"runnable"``.  The result is always
-        written to ``refined``.
-    store : SampleStore, optional
-        An existing store; if ``None`` opens Redis (db=2) -- the only place Redis is touched.
-    dry_run : bool
-        ``True`` (default): preview only, no writes.  ``False``: persist to Redis.
-
-    Examples
-    --------
-    >>> adjust_bar_positions("holder1", delta={"piezo_y": -50}, absolute={"piezo_z": -1200})
-    ... # preview; then re-run with dry_run=False to commit
-    >>> adjust_bar_positions("holder1", delta={"piezo_y": -50}, dry_run=False)
-
-    Returns
-    -------
-    int
-        Number of samples whose position changed (or WOULD change, in a dry run).
-    """
-    delta = dict(delta or {})
-    absolute = dict(absolute or {})
-    if not delta and not absolute:
-        raise ValueError("nothing to do: pass delta={...} and/or absolute={...}")
-
-    bad = sorted((set(delta) | set(absolute)) - set(_POSITION_AXES))
-    if bad:
-        raise ValueError(
-            "unknown position axis/axes {}. Valid axes: {}".format(bad, list(_POSITION_AXES)))
-    if base not in ("runnable", "nominal"):
-        raise ValueError("base must be 'runnable' or 'nominal', got {!r}".format(base))
-
-    bar = load_holder(holder_name, store=store)
-    st = bar.store
-    touched = sorted(set(delta) | set(absolute))
-
-    print("{} holder {!r}: {} sample(s); base={} axes {} | delta={} absolute={}".format(
-        "DRY-RUN (no writes) --" if dry_run else "WRITING --",
-        holder_name, len(bar), base, touched, delta or {}, absolute or {}))
-
-    n_changed = 0
-    for i, s in enumerate(bar, 1):
-        had_refined = s.refined is not None
-        run = s.nominal if base == "nominal" else s.runnable_position()
-        new = Position.from_dict(run.to_dict())     # copy -> becomes the (new) refined
-        new.frame = "lab"                           # refined positions are absolute/lab-frame
-
-        changes = []
-        skipped = []
-        for ax in touched:
-            old_val = getattr(run, ax)
-            if ax in delta:
-                if old_val is None:
-                    skipped.append(ax)              # can't offset an unset axis
-                else:
-                    setattr(new, ax, float(old_val) + float(delta[ax]))
-            if ax in absolute:                      # absolute wins over delta for the same axis
-                setattr(new, ax, float(absolute[ax]))
-            nv = getattr(new, ax)
-            ov = getattr(run, ax)
-            if nv != ov:
-                changes.append("{}: {} -> {}".format(ax, _fmt_pos(ov), _fmt_pos(nv)))
-
-        if base == "nominal":
-            src = "nominal->refined(overwrite)" if had_refined else "nominal->refined(new)"
-        else:
-            src = "refined" if had_refined else "nominal->refined(new)"
-        if changes:
-            n_changed += 1
-            print("  [{}/{}] {:<24} ({}): {}".format(
-                i, len(bar), s.name, src, "; ".join(changes)))
-            if not dry_run:
-                st.update_refined(s.id, new)        # persist (creates refined if it didn't exist)
-                s.refined = new                     # keep the in-memory bar in sync
-        else:
-            print("  [{}/{}] {:<24} ({}): no change".format(i, len(bar), s.name, src))
-        if skipped:
-            print("        (skipped delta on unset axis/axes: {} -- use `absolute` to set them)"
-                  .format(skipped))
-
-    print("{}: {} of {} sample(s) {}changed.".format(
-        "DRY-RUN" if dry_run else "DONE", n_changed, len(bar),
-        "would be " if dry_run else ""))
-    if dry_run and n_changed:
-        print("  -> re-run with dry_run=False to persist these changes to Redis.")
-    return n_changed
-
-
-def _fmt_pos(v):
-    return "None" if v is None else "{:g}".format(v)
-
-
-def _natural_key(name):
-    """Sort key that orders embedded numbers numerically (so s2 < s10, not s10 < s2)."""
-    import re as _re
-    parts = _re.split(r"(\d+)", str(name))
-    return [int(p) if p.isdigit() else p.lower() for p in parts]
-
-
-def sort_bar_by_name(holder_name, *, reverse=False, natural=True, store=None, dry_run=True):
-    """Reorder a holder's run PRIORITY so samples are visited in NAME order, persisted in Redis.
-
-    A bar's run order is the holder's declared member order (``holder.sample_ids``), which the plans
-    follow (via ``load_holder``).  This rewrites that order to be sorted by sample name, so the next
-    time you run the holder the samples are measured in name order.  Positions/alignment are NOT
-    touched -- only the visiting order.  **Defaults to a dry run** (prints the old -> new order and
-    writes nothing); pass ``dry_run=False`` to persist.
-
-    Parameters
-    ----------
-    holder_name : str
-        The holder to reorder.
-    reverse : bool
-        Sort Z->A instead of A->Z.
-    natural : bool
-        Natural numeric sort (default) so ``s2`` comes before ``s10``; set ``False`` for plain
-        lexicographic (``s10`` before ``s2``).
-    store : SampleStore, optional
-        An existing store; if ``None`` opens Redis (db=2) -- the only place Redis is touched.
-    dry_run : bool
-        ``True`` (default): preview only.  ``False``: persist the new order to Redis.
-
-    Returns
-    -------
-    bool
-        Whether the order changed (or WOULD change, in a dry run).
-    """
-    bar = load_holder(holder_name, store=store)
-    st = bar.store
-    holder = bar.holder
-
-    key = _natural_key if natural else (lambda n: str(n).lower())
-    old_order = [s.name for s in bar]
-    ordered = sorted(bar, key=lambda s: key(s.name), reverse=reverse)
-    new_order = [s.name for s in ordered]
-    changed = (old_order != new_order)
-
-    print("{} holder {!r}: {} sample(s){}".format(
-        "DRY-RUN (no writes) --" if dry_run else "WRITING --",
-        holder_name, len(bar), " [reverse]" if reverse else ""))
-    print("  current order: {}".format(", ".join(old_order) or "(empty)"))
-    print("  name order   : {}".format(", ".join(new_order) or "(empty)"))
-
-    if not changed:
-        print("DONE: already in name order -- nothing to do.")
-        return False
-
-    if not dry_run:
-        holder.sample_ids = [s.id for s in ordered]   # the canonical run priority
-        st.put_holder(holder)
-        print("DONE: holder run order updated to name order.")
-    else:
-        print("DRY-RUN: order WOULD change. Re-run with dry_run=False to persist.")
-    return True
 
 
 def _grid_axes(cx, cy, ox, oy, *, snake=True):
@@ -501,7 +269,6 @@ def _goto_grazing(s):
 def transmission_bar_grid(holder_name, project, *, t=1.0,
                           waxs_arc=(0,),
                           nx=3, ny=3, dx=150.0, dy=150.0,
-                          name_spec=None,
                           use_saxs=True, use_waxs=True, store=None):
     """ONE transmission run per (sample, WAXS arc): a ``nx`` x ``ny`` grid of spots around each
     sample center, repeated at each WAXS arc angle.
@@ -522,15 +289,6 @@ def transmission_bar_grid(holder_name, project, *, t=1.0,
         Grid points in x and y (1 => no walk in that axis).
     dx, dy : float
         Grid spacing in microns.
-    name_spec : dict, optional
-        Filename customization, e.g. ``{"name_prefix": "annealed", "include_energy": False,
-        "arc_fmt": "waxs_{:g}", "extra_tokens": ["px{piezo_x}", "py{piezo_y}"]}``.  Keys (all
-        optional): ``name_prefix`` (label after the sample name), ``include_energy``/``energy_token``
-        (default ``"{energy_energy}eV"``), ``include_arc``/``arc_fmt`` (default ``"wa{:04.1f}"`` ->
-        ``wa20.0``; e.g. ``"_waxs_{:.0f}_"`` -> ``_waxs_20_``), ``extra_tokens`` (extra ``{token}``s;
-        each must be a REAL recorded key -- ``piezo`` is read so ``piezo_x/y/z`` work; validated at
-        build time).  See :func:`_name_tokens`.  (Do NOT set ``grid``/``include_incidence`` here --
-        those are plan-controlled.)
     use_saxs, use_waxs : bool
         Which detectors to use (arc-aware: SAXS dropped if the WAXS arc occludes it).
     """
@@ -547,7 +305,6 @@ def transmission_bar_grid(holder_name, project, *, t=1.0,
     print(f"\n=== Transmission grid: holder {holder_name!r}, project {project!r}, "
           f"{n} samples, {nx}x{ny} spots/sample, arcs {arcs} ===")
     yield from det_exposure_time(t, t)                            # noqa: F821
-    reads.append((yield from _record_exposure(t)))    # records {exposure_s} for the filename token
 
     for arc_value in arcs:
         dets = _dets_at_arc(arc_value, use_saxs=use_saxs, use_waxs=use_waxs)
@@ -555,12 +312,7 @@ def transmission_bar_grid(holder_name, project, *, t=1.0,
         yield from bps.mv(waxs.arc, arc_value)                    # noqa: F821 (arc OUTER)
         yield from bps.sleep(1)
         for i, s in enumerate(bar, 1):
-
-
             cx, cy = sample_center(s)                            # from runnable Position (nominal/refined)
-
-
-
             if cx is None or cy is None:
                 print(f"  !! Sample {i}/{n}: {s.name} has no x/y position in the store -- skipping")
                 continue
@@ -569,16 +321,14 @@ def transmission_bar_grid(holder_name, project, *, t=1.0,
             yield from goto_sample(s)                          # move to the sample's stored position
             axes = _grid_axes(cx, cy, ox, oy)   # records {x}/{y} relative offsets
             yield from acquire(
-                _apply_prefix(s.name, name_spec), dets, axes,
+                s.name, dets, axes,
                 reads=reads, geometry="transmission", scan_name="transmission",
                 sample=s, md=run_md,
-                # Filename tokens (customizable: name_prefix / include_energy / include_arc /
-                # extra_tokens).  energy/waxs are read ONCE by the naming preprocessor (the plan
-                # doesn't read them -> no collision); {x}/{y} are the grid's relative-offset Signals.
-                name_tokens=_name_tokens(
-                    arc_value, grid=(nx * ny > 1),
-                    **{k: v for k, v in (name_spec or {}).items()
-                       if k not in ("grid", "include_incidence")}),
+                # {energy_energy}/{waxs_arc} go in the file name and are read ONCE by the naming
+                # preprocessor; the plan itself does not read energy/waxs (avoids a collision).
+                # {x}/{y} resolve to the relative-offset Signals recorded by spatial_grid_axes(center=...).
+                name_tokens=(["{energy_energy:.1f}eV", f"wa{arc_value:04.1f}"]
+                             + (["x{x}", "y{y}"] if nx * ny > 1 else [])),
                 check_order=False)
 
 
@@ -589,7 +339,6 @@ def transmission_bar_energies(holder_name, project, *, energies, t=1.0,
                               waxs_arc=(0,),
                               nx=1, ny=1, dx=150.0, dy=150.0,
                               fresh_step=1.0,
-                              name_spec=None,
                               use_saxs=True, use_waxs=True, store=None):
     """ONE transmission run per (sample, WAXS arc), stepping through ``energies`` (energy OUTER),
     optionally with a grid of spots per energy, with a fresh-spot walk on ``piezo.y`` per frame.
@@ -617,11 +366,6 @@ def transmission_bar_energies(holder_name, project, *, energies, t=1.0,
     fresh_step : float
         piezo.y step (microns) after each recorded frame (fresh spot; default 1).  Set to 0 (or
         use a y-grid ``ny > 1``) to disable.
-    name_spec : dict, optional
-        Filename customization (see :func:`_name_tokens` / the same key set as the other plans):
-        ``name_prefix``, ``include_energy``/``energy_token``, ``include_arc``/``arc_fmt`` (e.g.
-        ``"_waxs_{:.0f}_"`` -> ``_waxs_20_``), ``extra_tokens`` (e.g. ``["px{piezo_x}",
-        "py{piezo_y}"]``; must be real recorded keys, validated at build time).
     use_saxs, use_waxs : bool
         Detector selection.
     """
@@ -640,7 +384,6 @@ def transmission_bar_energies(holder_name, project, *, energies, t=1.0,
           f"{n} samples, {len(energies)} energies ({energies[0]}..{energies[-1]} eV), "
           f"arcs {arcs}{fresh_note} ===")
     yield from det_exposure_time(t, t)                            # noqa: F821
-    reads.append((yield from _record_exposure(t)))    # records {exposure_s} for the filename token
 
     for arc_value in arcs:
         dets = _dets_at_arc(arc_value, use_saxs=use_saxs, use_waxs=use_waxs)
@@ -668,16 +411,14 @@ def transmission_bar_energies(holder_name, project, *, energies, t=1.0,
             if nx * ny > 1:
                 axes += _grid_axes(cx, cy, ox, oy)  # records {x}/{y} rel offsets
             run = acquire(
-                _apply_prefix(s.name, name_spec), dets, axes,
+                s.name, dets, axes,
                 reads=reads, geometry="transmission", scan_name="transmission_energy",
                 sample=s, md=run_md,
-                # Filename tokens (customizable: name_prefix / include_energy / include_arc /
-                # extra_tokens).  energy/waxs read ONCE by the naming preprocessor; {x}/{y} are the
-                # grid's relative-offset Signals.
-                name_tokens=_name_tokens(
-                    arc_value, grid=(nx * ny > 1),
-                    **{k: v for k, v in (name_spec or {}).items()
-                       if k not in ("grid", "include_incidence")}),
+                # {energy_energy}/{waxs_arc} go in the file name and are read ONCE by the naming
+                # preprocessor; the plan itself does not read energy/waxs (avoids a collision).
+                # {x}/{y} resolve to the relative-offset Signals recorded by spatial_grid_axes(center=...).
+                name_tokens=(["eV_{energy_energy}", f"waxs_{arc_value:04.1f}", 'px_{px:.1f}', 'py_{py:.1f}', 'pz_{}' ]
+                             + (["x{x}", "y{y}"] if nx * ny > 1 else [])),
                 check_order=False)
             if do_fresh:
                 run = fresh_spot_wrapper(run, piezo.y, fresh_step)   # noqa: F821 (1um/frame on y)
@@ -692,9 +433,7 @@ def giwaxs_bar_energy(holder_name, project, *,
                       energies, t=1.0,
                       waxs_arc=(0, 20), align_arc=20,
                       align_angle=0.15, realign=False,
-                      fresh_step=-100.0,
-                      name_spec=None,
-                      use_saxs=True, use_waxs=True, store=None):
+                      fresh_step=-100.0, use_saxs=True, use_waxs=True, store=None):
     """Grazing-incidence energy scan over a bar at one or more WAXS arc angles.
 
     Aligns each sample ONCE (at ``align_arc``; cached/persisted to Redis -- skipped on re-run
@@ -725,11 +464,6 @@ def giwaxs_bar_energy(holder_name, project, *,
         If True, re-align every sample even if a cached alignment exists.
     fresh_step : float
         piezo.x step (microns) after each recorded frame (fresh spot; negative walks "down").
-    name_spec : dict, optional
-        Filename customization (see :func:`_name_tokens`): ``name_prefix``,
-        ``include_energy``/``energy_token``, ``include_arc``/``arc_fmt`` (e.g. ``"_waxs_{:.0f}_"`` ->
-        ``_waxs_20_``), ``incidence_token`` (default ``"ai{incident_angle}"``), ``extra_tokens``
-        (real recorded keys, validated at build time).  Incidence is included by default for GIWAXS.
     use_saxs, use_waxs : bool
         Detector selection (arc-aware: SAXS dropped at low arc where it is blocked).
     """
@@ -758,7 +492,6 @@ def giwaxs_bar_energy(holder_name, project, *,
             print(f"  [skip  {i}/{n}] {s.name}: already aligned (th0={th0:.4f}, y={y0:.1f})")
 
     yield from det_exposure_time(t, t)                           # noqa: F821
-    reads.append((yield from _record_exposure(t)))    # records {exposure_s} for the filename token
 
     # --- 2) Measure: WAXS arc OUTER, sample, then energy x incident angle (fresh-spot walk). ---
     for arc_value in arcs:
@@ -783,17 +516,14 @@ def giwaxs_bar_energy(holder_name, project, *,
             ]
             yield from fresh_spot_wrapper(
                 acquire(
-                    _apply_prefix(s.name, name_spec), dets, axes,
+                    s.name, dets, axes,
                     reads=reads, geometry="reflection", scan_name="giwaxs_energy",
                     sample=s, md=run_md,
-                    # Filename tokens (customizable via name_spec).  These also tell the naming
-                    # preprocessor which devices to read once (energy/waxs_arc); the plan itself
-                    # must NOT also read energy/waxs (it doesn't) or trigger_and_read collides.
-                    # incidence is on by default here (GIWAXS records {incident_angle}).
-                    name_tokens=_name_tokens(
-                        arc_value, include_incidence=True,
-                        **{k: v for k, v in (name_spec or {}).items()
-                           if k not in ("grid", "include_incidence")}),
+                    # These {tokens} go in the file name AND tell the naming preprocessor which
+                    # devices to read once into the stream (energy/waxs_arc); the plan itself must
+                    # NOT also read energy/waxs (it doesn't -- see reads + energy axis record=False)
+                    # or trigger_and_read would double-read them ('Data keys ... collide').
+                    name_tokens=["{energy_energy}eV", "ai{incident_angle}", f"wa{arc_value:04.1f}"],
                     check_order=False),
                 piezo.x, fresh_step)                             # noqa: F821
 
