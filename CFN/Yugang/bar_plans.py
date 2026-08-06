@@ -169,6 +169,9 @@ name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_
 'name_prefix':'ChemH1','include_exposure':True}))
 
 
+RE(transmission_bar_grid('holder1','PGao',waxs_arc=(0,),nx=1,ny=1,
+name_spec={'include_energy':False,"arc_fmt": "waxs_{:.0f}","extra_tokens": ["px_{piezo_x:.1f}", "py_{piezo_y:.1f}", "pz_{piezo_z:.1f}"],
+'name_prefix':'Gao','include_exposure':True}))
 
 '''
 

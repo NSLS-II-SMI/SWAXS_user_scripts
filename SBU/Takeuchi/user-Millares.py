@@ -1,27 +1,7 @@
 def run_Millares_hard_2026_1(t=1):
     """
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: walks through a list of capillary/tube samples (each at its own
-    #   piezo x/y/z position) and takes a SAXS+WAXS image of each, repeating the whole list
-    #   at two WAXS-arc positions (0 and 20).
-    #
-    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that can run
-    #   a whole list of samples as ONE coordinated measurement — it moves to each sample for
-    #   you and records which sample (and the beam readings) each image belongs to, so you
-    #   don't build the name by hand with get_scan_md(). The pattern is a "bar" plan:
-    #
-    #     from smi_plans import transmission_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
-    #     yield from transmission_bar(samples, t=t)     # loops the samples for you
-    #
-    #   (For the two-arc looping, see saxs_waxs_dets / the arc motor_axis in smi_plans. This
-    #    is just a tidier option to try later — your script below still works as-is, except
-    #    the 'det_exposure_time' line marked ⚠️.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' lines below (see the ⚠️ notes
-    #   on them).
-    # === end smi_plans note ================================================
+
     # %run -i /home/xf12id/SWAXS_user_scripts/SBU/Takeuchi/user-Millares.py
     # RE(run_Millares_hard_2026_1(t=1))
 
@@ -49,7 +29,7 @@ def run_Millares_hard_2026_1(t=1):
     waxs_arc = [ 0, 20 ]
 
     user = "MM"
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but after a software update it's now a "plan" (a recipe Bluesky runs), so this plain call silently does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
+    yield from det_exposure_time(t, t)
 
     msg = "Wrong number of coordinates"
     assert len(piezo_x) == len(names), msg
@@ -76,8 +56,7 @@ def run_Millares_hard_2026_1(t=1):
             yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this resets the exposure, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)).
-
+    yield from det_exposure_time(0.3, 0.3)
 
 def name_sample(name, tstamp, user_name='MM'):
     """
@@ -88,18 +67,7 @@ def name_sample(name, tstamp, user_name='MM'):
         tstamp (time): referenced start time created separately as
             tstamp = time.time()
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: builds a long file name by hand — it glues your sample name together
-    #   with the scan metadata, an elapsed time, and the current x/y/z positions (via the
-    #   get_positions helper below), then registers it with sample_id.
-    #
-    # 💡 NEWER, EASIER WAY: with the 'smi_plans' helper library you usually don't build the
-    #   name like this at all. The acquisition plans record the positions, beam intensity,
-    #   energy, time, etc. straight INTO the saved data, and you put placeholders like
-    #   "{piezo_x}" or "{time}" in the name — smi_plans fills them in from the recorded data
-    #   automatically. So get_positions()/get_scan_md() become unnecessary once you migrate.
-    #   (Nothing here is broken — this is just a tidier approach to consider.)
-    # === end smi_plans note ================================================
+
 
     eplased = time.time() - tstamp
     sample_name = f'{name}_{get_scan_md()}_t{eplased:.1f}_{get_positions()}'
@@ -140,27 +108,7 @@ def continous_run_prealigned_positions_2026_1(t=0.5, wait=100):
         saxs_frame (int): frame interval for which to take full SWAXS dataset.
 
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: repeatedly (forever) revisits a couple of pre-aligned sample spots
-    #   and, at each, runs a short 5-point raster across piezo.x, waiting a bit between
-    #   passes — a simple kinetic/time-series follow-up.
-    #
-    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', with
-    #   time-series/kinetics helpers that take frames on a schedule and record the elapsed
-    #   time + positions + beam readings straight into the saved data (so you don't call
-    #   name_sample / get_scan_md by hand). For the little x-raster, map_line_run does a
-    #   line scan and stamps the positions in for you. Roughly:
-    #
-    #     from smi_plans import kinetics_run, map_line_run
-    #     # ...loop your prealigned spots, and at each:
-    #     yield from map_line_run(name, piezo.x, -600, 600, 5, dets=[pil900KW])
-    #
-    #   (This is just a tidier option to try later — your loop below still works as-is,
-    #    except the 'det_exposure_time' line marked ⚠️.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(t, t)' line below (see the ⚠️ note
-    #   on it).
-    # === end smi_plans note ================================================
+
 
     names   = ['AP351-17-5', 'AP351-17-4', ]
     piezo_x = [      -42800,        43500, ]
@@ -173,7 +121,7 @@ def continous_run_prealigned_positions_2026_1(t=0.5, wait=100):
     
     tstamp = time.time()
 
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
+    yield from det_exposure_time(t, t)
     yield from bps.mv(waxs, 0)
 
     while True:
@@ -199,30 +147,7 @@ def grazing_Millares_2026_1(t=0.5):
     """
     standard GI-S/WAXS on double stack holder
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a grazing-incidence (GISAXS/GIWAXS) run over a whole bar of samples on
-    #   the double-stack holder. For each sample it moves into place, auto-aligns it, then
-    #   takes SAXS+WAXS images at several incident angles and WAXS-arc positions.
-    #
-    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that runs a
-    #   whole bar of grazing samples in one call — it moves to each sample, aligns it, loops
-    #   the incident angles, and records which sample/angle (and the beam readings) each
-    #   image belongs to. The pattern is:
-    #
-    #     from smi_plans import giwaxs_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y,
-    #                                       z=piezo_z, hexa_x=hexa_x)
-    #     yield from giwaxs_bar(samples, incident_angles=[0.05, 0.10, 0.5],
-    #                           t=t, align=align_sample)
-    #
-    #   (align_sample is smi_plans' built-in alignment; see also giwaxs_bar_arc_economy if
-    #    you want to minimize arc moves. This is just a tidier option to try later — your
-    #    script below still works as-is, except the 'det_exposure_time' lines marked ⚠️.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' lines below (see the ⚠️ notes
-    #   on them). NOTE: 'pil2M.beamstop.x_rod' used here is already the correct current name,
-    #   so that line is fine.
-    # === end smi_plans note ================================================
+
     
     
     names_1   = ["AP335-173-12"] 
@@ -262,13 +187,13 @@ def grazing_Millares_2026_1(t=0.5):
     for arr in [piezo_x, piezo_y, piezo_z, hexa_x]:
         assert len(arr) == len(names), msg
 
-    waxs_arc = [ 0, 7, 20 ]
+    # waxs_arc = [ 0, 7, 20 ] # 7  is no good as beamstop motor is broken at the moment
+    waxs_arc = [ 0, 20 ]
     x_off = [0]
     incident_angles = [ 0.05, 0.10, 0.5 ]
     user_name = 'MM'
 
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
-
+    yield from det_exposure_time(t, t)
     bp_pos_x = 6.8
 
 
@@ -318,8 +243,7 @@ def grazing_Millares_2026_1(t=0.5):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this resets the exposure, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
-
+    yield from det_exposure_time(0.5, 0.5)
 
 def alignment_gisaxs_Millares(angle=0.1):
     """
@@ -329,26 +253,12 @@ def alignment_gisaxs_Millares(angle=0.1):
     Parameters:
         angle (float): Angle at which the alignment on the reflected beam will be done.
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: the GISAXS/GIWAXS alignment routine — it finds the sample surface by
-    #   scanning height and incident angle on the direct beam, then refines on the reflected
-    #   beam, leaving the sample sitting flat (incident angle 0).
-    #
-    # 💡 NEWER, EASIER WAY: with the 'smi_plans' helper library you don't usually call an
-    #   alignment routine by hand in each script. Alignment is done once up front via
-    #   align_sample (or passed as align=... into the grazing presets like giwaxs_bar), and
-    #   the alignment result is recorded with the data automatically, so it's reproducible.
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(0.3, 0.3)' line below (see the ⚠️
-    #   note on it).
-    # === end smi_plans note ================================================
-    
 
     # Activate the automated derivative calculation
     bec._calc_derivative_and_stats = True
     yield from smi.setReflectedBeamROI(total_angle=angle, technique="gisaxs")
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)).
+    yield from det_exposure_time(0.3, 0.3)  
 
     yield from smi.modeAlignment(technique="gisaxs")
 
@@ -378,35 +288,43 @@ def alignment_gisaxs_Millares(angle=0.1):
     # Deactivate the automated derivative calculation
     bec._calc_derivative_and_stats = False
 
+def alignment_directbeam_gisaxs_Millares():
+    """
+    Scan the sample height and incident angle on the direct beam.
+    """
+
+    # Activate the automated derivative calculation
+    bec._calc_derivative_and_stats = True
+    sample_id(user_name="test", sample_name="test")
+    yield from det_exposure_time(0.3, 0.3)  
+
+    yield from smi.modeAlignment(technique="gisaxs")
+
+    # Set direct beam ROI
+    yield from smi.setDirectBeamROI()
+
+    # Scan theta and height
+    cb = close_plots()
+    yield from align_gisaxs_height(800, 31, der=True)
+    yield from align_gisaxs_th(1.5, 31)
+    yield from align_gisaxs_height(200, 21, der=True)
+    yield from align_gisaxs_th(0.5, 21)
+    yield from smi.modeMeasurement()
+
+    # Deactivate the automated derivative calculation
+    bec._calc_derivative_and_stats = False
+
 
 def grazing_after_manual_alignment(name='test', t=0.5):
     """
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: assumes you've already aligned the sample flat by hand, then takes
-    #   SAXS+WAXS images at several incident angles and WAXS-arc positions on that one
-    #   sample.
-    #
-    # 💡 NEWER, EASIER WAY: the beamline now has a helper library, 'smi_plans', that loops
-    #   incident angles for you and records the angle + beam readings into the saved data
-    #   and file name (so you don't build the name with get_scan_md by hand). For a single
-    #   pre-aligned sample:
-    #
-    #     from smi_plans import giwaxs_run
-    #     yield from giwaxs_run(name, incident_angles=[0.05, 0.10, 0.5], t=t)
-    #
-    #   (This is just a tidier option to try later — your script below still works as-is,
-    #    except the 'det_exposure_time' lines marked ⚠️.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' lines below (see the ⚠️ notes
-    #   on them).
-    # === end smi_plans note ================================================
-
-    waxs_arc = [ 0, 7, 20 ]
-    incident_angles = [ 0.05, 0.10, 0.5 ]
+    
+    # waxs_arc = [ 0, 7, 20 ] # 7  is no good as beamstop motor is broken at the moment
+    waxs_arc = [ 0, 20 ]
+    incident_angles = [ 0.10, 0.20, 0.30 ]
     user_name = 'MM'
 
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (smi_plans' technique runs set it for you via t=.)
+    yield from det_exposure_time(t, t) 
 
     # Sample flat at ai0
     ai0 = piezo.th.position
@@ -427,7 +345,314 @@ def grazing_after_manual_alignment(name='test', t=0.5):
             print(f"\n\n\n\t=== Sample: {sample_name} ===")
             yield from bp.count(dets)
 
-    yield from bps.mv(piezo.th, ai0)
+        yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this resets the exposure, but it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)).
+    yield from det_exposure_time(0.5, 0.5)
+
+def sample_id(user_name='test',sample_name='test'):
+
+    sample_name = f'{user_name}_{sample_name}'.translate(
+                {ord(c): "_" for c in r"!@#$%^&*{}:/<>?\|`~+ =,"})
+    RE.md["sample_name"] = sample_name
+
+def get_scan_md(tender=False):
+    """
+    Create a string with scan metadata
+    """
+
+    # Metadata
+    e = energy.position.energy / 1000
+    #temp = str(np.round(float(temp_degC), 1)).zfill(5)
+    wa = waxs.arc.position + 0.001
+    wa = str(np.round(float(wa), 1)).zfill(4)
+    sdd = pil2m_pos.z.position / 1000
+
+    md_fmt = ("_{energy}keV_wa{wa}_sdd{sdd}m")
+
+    if tender:
+        scan_md = md_fmt.format(
+            energy = "%.5f" % e ,
+            wa = wa,
+            sdd = "%.1f" % sdd,
+        )
+    else:
+        scan_md = md_fmt.format(
+            energy = "%.2f" % e ,
+            wa = wa,
+            sdd = "%.1f" % sdd,
+        )
+    return scan_md
+
+
+def grazing_Millares_2026_2(t=0.5):
+    """
+    standard GI-S/WAXS on double stack holder
+    """
+       
+    names_1   = [ ] 
+    piezo_x_1 = [ ]
+    piezo_y_1 = [     ]         
+    piezo_z_1 = [      ]
+    hexa_x_1 =  [             ]   
+    
+    names_2   = [ 'NV354-013-02_Cap_rerun1', 'NV354-013-03_Cap_rerun1', 'NV354-013-08_Cap_rerun1']
+    piezo_x_2 = [              28800 +300,              43400 + 300,              57600 + 300]
+    piezo_y_2 = [                700,               1200,               1600]              
+    piezo_z_2 = [               1800,               1800,                400]
+    hexa_x_2 =  [                  0,                  0,                  0]
+    
+    names_3   = []
+    piezo_x_3 = []
+    piezo_y_3 = [ ]
+    piezo_z_3 = [ ]
+    hexa_x_3 =  [ ]
+
+
+    #names_1   = [ 'NV338-142-04_Cap', 'NV338-142-11_Cap', 'NV354-013-01_Cap'] 
+    #piezo_x_1 = [             -15600,                400,              15800]
+    #piezo_y_1 = [               -800,               -300,                200]         
+    #piezo_z_1 = [               3400,               4600,               3000]
+    #hexa_x_1 =  [                  0,                  0,                  0]   
+    
+    #names_2   = [ 'NV354-013-02_Cap', 'NV354-013-03_Cap', 'NV354-013-08_Cap']
+    #piezo_x_2 = [              28800,              43400,              57600]
+    #piezo_y_2 = [                700,               1200,               1600]              
+    #piezo_z_2 = [               1800,               1800,                400]
+    #hexa_x_2 =  [                  0,                  0,                  0]
+    
+    names_3   = ['NV338-142-12_Cap']
+    piezo_x_3 = [             73600]
+    piezo_y_3 = [              2200]
+    piezo_z_3 = [              -600]
+    hexa_x_3 =  [                 0]
+
+
+    names   = names_1   + names_2 + names_3
+    piezo_x = piezo_x_1 + piezo_x_2 + piezo_x_3
+    piezo_y = piezo_y_1 + piezo_y_2 + piezo_y_3
+    piezo_z = piezo_z_1 + piezo_z_2 + piezo_z_3
+    hexa_x  = hexa_x_1  + hexa_x_2 + hexa_x_3
+
+
+    # Starting from ith sample
+    i = 0
+    names   = names[i:]
+    piezo_x = piezo_x[i:]
+    piezo_y = piezo_y[i:]
+    piezo_z = piezo_z[i:]
+    hexa_x =  hexa_x[i:]
+
+    msg = 'Wrong number of coordinates'
+    for arr in [piezo_x, piezo_y, piezo_z, hexa_x]:
+        assert len(arr) == len(names), msg
+
+    # waxs_arc = [ 0, 7, 20 ] # 7  is no good as beamstop motor is broken at the moment
+    waxs_arc = [ 0, 20 ]
+    x_off = [0]
+    incident_angles = [ 0.10, 0.20, 0.30 ]
+    user_name = 'MM'
+
+    yield from det_exposure_time(t, t)
+    bp_pos_x = 6.45
+
+
+    try:
+        misaligned_samples = RE.md['misaligned_samples']
+    except:
+        misaligned_samples = []
+        RE.md['misaligned_samples'] = misaligned_samples
+
+
+    for name, x, y, z, hx in zip(names, piezo_x, piezo_y, piezo_z, hexa_x):
+
+        yield from bps.mv(piezo.x, x,
+                          piezo.y, y,
+                          piezo.z, z,
+                          stage.x, hx)
+
+        # Align the sample
+        try:
+            #yield from alignement_gisaxs_doblestack(0.1)
+            # did not work fully
+            #yield from alignment_gisaxs_Millares(angle=0.1)
+            # was not reflective enough
+            yield from alignment_directbeam_gisaxs_Millares()
+        except:
+            misaligned_samples.append(name)
+            RE.md['misaligned_samples'] = misaligned_samples
+
+        # Sample flat at ai0
+        ai0 = piezo.th.position
+        yield from bps.mv(pil2M.beamstop.x_rod, bp_pos_x)
+
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 15 else [pil900KW, pil2M]
+
+            # problems with the beamstop
+            #yield from bps.mv(waxs.bs_y, -3)
+
+            for ai in incident_angles:
+                yield from bps.mv(piezo.th, ai0 + ai)
+
+                sample_name = f'{name}{get_scan_md()}_ai{ai}'
+
+                sample_id(user_name=user_name, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+
+        yield from bps.mv(piezo.th, ai0)
+
+    sample_id(user_name='test', sample_name='test')
+    yield from det_exposure_time(0.5, 0.5)
+
+
+
+def alignment_gisaxs_Millares(angle=0.1):
+    """
+    Regular alignment routine for GISAXS and GIWAXS. First, scan the sample height and incident angle on the direct beam.
+    Then scan the incident angle, height, and incident angle again on the reflected beam.
+
+    Parameters:
+        angle (float): Angle at which the alignment on the reflected beam will be done.
+    """
+
+    
+
+    # Activate the automated derivative calculation
+    bec._calc_derivative_and_stats = True
+    yield from smi.setReflectedBeamROI(total_angle=angle, technique="gisaxs")
+    sample_id(user_name="test", sample_name="test")
+    yield from det_exposure_time(0.3, 0.3)  
+
+    yield from smi.modeAlignment(technique="gisaxs")
+
+    # Set direct beam ROI
+    yield from smi.setDirectBeamROI()
+
+    # Scan theta and height
+    yield from align_gisaxs_height(800, 21, der=True)
+    yield from align_gisaxs_th(2.5, 31)
+
+    # move to theta 0 + value
+    yield from bps.mv(piezo.th, ps.peak + angle)
+
+    # Set reflected ROI
+    yield from smi.setReflectedBeamROI(total_angle=angle, technique="gisaxs")
+
+    # Scan theta and height
+    yield from align_gisaxs_th(0.2, 21)
+    yield from align_gisaxs_height_rb(150, 16)    
+    cb=close_plots()
+    yield from bpp.subs_wrapper(align_gisaxs_th(0.1, 31), cb)  
+
+    # Return angle
+    yield from bps.mv(piezo.th, piezo.th.position-angle)
+    yield from smi.modeMeasurement()
+
+    # Deactivate the automated derivative calculation
+    bec._calc_derivative_and_stats = False
+
+def continous_run_prealigned_positions_2026_2(t=0.5, wait=300):
+
+    """
+    At each prealigned region of interest, take a finer scan across x.
+
+    Args:
+        t (float): exposure time,
+        wait (float): wait time after one series of scans is done,
+
+
+    """
+
+    names   = ['AP351-67-1', 'AP351-67-2',   'AP351-67-3']
+    piezo_x = [      -17800,        28600,         69800 ]
+    piezo_y = [       -5700,        -5400,         -4700 ]
+    piezo_z = [       -6000,        -6000,         -4200 ]
+    stage_x = [         -15,            0,            20 ]
+
+    msg = 'Wrong number of coordinates'
+    for arr in [piezo_x, piezo_y, piezo_z, stage_x]:
+        assert len(arr) == len(names), msg
+    
+    tstamp = time.time()
+
+    yield from det_exposure_time(t, t)
+    yield from bps.mv(waxs, 0)
+
+    while True:
+        
+        print(f'Taking infinite number of frames')
+
+        for name, x, y, z, hx in zip(names, piezo_x, piezo_y, piezo_z, stage_x):
+            yield from bps.mv(
+                piezo.y, y,
+                piezo.x, x,
+                piezo.z, z,
+                stage.x, hx,
+                # stage y happens to go to -10 each time move was executed.....
+                stage.y, -30,
+            )
+
+            while stage.x != hx:
+                yield from bps.mv(stage.x, hx)
+                yield from bps.sleep(5)
+
+
+            name_sample(name, tstamp)
+            sample_name = RE.md['sample_name']
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+            yield from rel_grid_scan([pil900KW], piezo.x, -600, 600, 5)
+
+        print(f'\nWaiting {wait} s')
+        yield from bps.sleep(wait)
+
+
+def continous_run_one_cell_2026_2(t=0.5, wait=600):
+
+    """
+    At each prealigned region of interest, take a finer scan across x.
+
+    Args:
+        t (float): exposure time,
+        wait (float): wait time after one series of scans is done,
+
+
+    """
+
+    names   = ['AP351-67-4',  'AP351-68-1']
+    piezo_x = [      -24200,        37000 ]
+    piezo_y = [        2100,        -1100 ]
+    piezo_z = [        7500,         6000 ]
+    stage_x = [         -10,          -10 ]
+
+    msg = 'Wrong number of coordinates'
+    for arr in [piezo_x, piezo_y, piezo_z, stage_x]:
+        assert len(arr) == len(names), msg
+    
+    tstamp = time.time()
+
+    yield from det_exposure_time(t, t)
+    yield from bps.mv(waxs, 0)
+
+    while True:
+        
+        print(f'Taking infinite number of frames')
+
+        for name, x, y, z, hx in zip(names, piezo_x, piezo_y, piezo_z, stage_x):
+            yield from bps.mv(
+                piezo.y, y,
+                piezo.x, x,
+                piezo.z, z,
+                # stage y happens to go to -10 each time move was executed.....
+                stage.y, -30,
+            )
+
+            name_sample(name, tstamp)
+            sample_name = RE.md['sample_name']
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+            yield from rel_grid_scan([pil900KW], piezo.x, -600, 600, 5)
+
+        print(f'\nWaiting {wait} s')
+        yield from bps.sleep(wait)

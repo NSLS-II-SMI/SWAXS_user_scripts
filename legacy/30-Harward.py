@@ -6781,17 +6781,6 @@ def reena_compression_measurement_2026_1(name='BK-A-04', t_frame=0.5, frames=50,
 
     Used this one for compression measurements 
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a compression measurement done as a safe loop — takes `frames` WAXS/SAXS images
-    #   one after another (with an optional delay), stamping the time into each name, while the sample
-    #   is being compressed.
-    # 💡 NEWER, EASIER WAY: a timed loop of frames while something changes is time_series_run in
-    #   'smi_plans', which records elapsed time + frame number INTO each image:
-    #     from smi_plans import time_series_run
-    #     yield from time_series_run(name, n_frames=frames, period=delay, t=t_frame, dets=[pil2M, pil900KW])
-    # ⚠️ NEEDS A FIX TO RUN NOW: 'det_exposure_time(...)' no longer sets the exposure unless run as
-    #   a plan (see the ⚠️ note on that line). (internal: Tier 1.)
-    # === end smi_plans note ================================================
 
     yield from bps.mv(waxs, 0)
     det_exposure_time(t_frame, t_frame)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t_frame, t_frame)  — or at the prompt:  RE(det_exposure_time(t_frame, t_frame)). (The smi_plans technique runs set exposure for you via t=.)

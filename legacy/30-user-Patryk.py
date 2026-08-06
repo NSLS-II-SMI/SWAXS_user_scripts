@@ -3,26 +3,7 @@ def patryk_saxs_overnight(t=1):
     SAXS mapping
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an overnight SAXS map — for each sample it snaps the on-axis camera then rasters a
-    #   grid of points (rel_grid_scan), taking a SAXS image at each.
-    #
-    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
-    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
-    #   it has grid maps; for 'a few points per sample for averaging' it has the
-    #   transmission/map runs. Either way it records each position/beam into the
-    #   saved data and templates the file name from them (no hand-built name + no
-    #   manual sample_id call needed):
-    #
-    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
-    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
-    #     # each point's coordinates into the data.
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
+
     names =     ['ORF7A-C-60um', 'ORF7A-C-60um-bkg', 'ORF7A-D-50um-wet', 'ORF7A-D-50um-wet-bkg', 
              'ORF7A-D-50um-dry', 'ORF7A-D-50um-dry-bkg', ]
 
@@ -245,7 +226,7 @@ def run_swaxs_fibres_2023_1(t=1):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 
 def run_swaxs_textile_2023_2(t=0.5):
@@ -325,7 +306,7 @@ def run_swaxs_textile_2023_2(t=0.5):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 
 def run_swaxs_workaround_2023_2(t=0.5):
@@ -401,7 +382,7 @@ def run_swaxs_workaround_2023_2(t=0.5):
                     yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 def move_energy_slowly(target_e, e_step=100):
     """
@@ -567,7 +548,7 @@ def test_example_SWAXS_2023_3(t=0.5):
             yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 # DT-313930
 
@@ -1407,7 +1388,7 @@ def grazing_brsc_zinc_2024_2(t=3):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 
 def grazing_brsc_2024_2(t=1):
@@ -1490,7 +1471,7 @@ def grazing_brsc_2024_2(t=1):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
     proposal_id('2024_2', '000000_tests')
 
 
@@ -2614,7 +2595,7 @@ def grazing(t=0.5):
         yield from bps.mv(piezo.th, ai0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 def get_scan_time(scan_id=-1):
     """
@@ -2693,7 +2674,7 @@ def overnight_mapping(t=0.5):
             yield from bp.rel_grid_scan(dets, piezo.y, -350, 350, 291,  piezo.x, -350, 350, 29, 0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
     
 def overday_mapping(t=2):
     """
@@ -2754,7 +2735,7 @@ def overday_mapping(t=2):
                 yield from bp.rel_grid_scan(dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 11, 0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 def overnight_mapping(t=1):
     """
@@ -2817,7 +2798,7 @@ def overnight_mapping(t=1):
                 yield from bp.rel_grid_scan(dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 11, 0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
     
     
 def take_bkg(name='bkg4-N2', t=2):
@@ -2854,7 +2835,7 @@ def take_bkg(name='bkg4-N2', t=2):
         yield from bp.rel_grid_scan(dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 11, 0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 def rh(prefix='_RH'):
     # === smi_plans note (REVIEW 2026-06-22) ================================
@@ -2875,24 +2856,6 @@ def run_Ray_swaxs_2024_3(t=1):
     Make sample names unique for each scan point
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: SWAXS on a humidity-cell point, making each scan point's name unique.
-    #
-    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
-    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
-    #   loops the sample table and the per-sample offsets for you and records each
-    #   position/beam into the saved data + file name (so you can drop the manual
-    #   name strings and sample_id calls):
-    #
-    #     from smi_plans import transmission_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
-    #     yield from transmission_bar(samples, t=t)
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     names =   ['CEC-Anneal','CEC-WT','CEC-L44A',]
     #stage_x = [ -7.4 , -1.0, 5.3,]
     #stage_x = [-13.7 , -7.4 , -1.0, 5.3, 11.6, 17.9, 24.3, 30.548]
@@ -2932,7 +2895,7 @@ def run_Ray_swaxs_2024_3(t=1):
             yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 
 def run_Ray_swaxs_2024_3_single(t=1):
@@ -2995,32 +2958,13 @@ def run_Ray_swaxs_2024_3_single(t=1):
             yield from bp.count(dets)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 
 def andrew_mapping_2025_1(t=3):
     """
     Grid mapping on samples
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a SAXS/WAXS raster map over a grid of points.
-    #
-    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
-    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
-    #   it has grid maps; for 'a few points per sample for averaging' it has the
-    #   transmission/map runs. Either way it records each position/beam into the
-    #   saved data and templates the file name from them (no hand-built name + no
-    #   manual sample_id call needed):
-    #
-    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
-    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
-    #     # each point's coordinates into the data.
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     names =   [         'Claw',        'bkg-Claw',          'Club1',      'bkg-Club1',         'Chitin',         'Club2',       'bkg-Club2', ]
     piezo_x = [          23500,             24250,            -2230,            -2980,            42450,           13790,             14540, ]
     piezo_y = [           -570,              -570,              110,              110,             -650,            -260,              -260, ]
@@ -3038,7 +2982,7 @@ def andrew_mapping_2025_1(t=3):
     assert len(piezo_x) == len(x_range), msg
 
     waxs_arc = [ 0 ]
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(t, t)
 
     for wa in waxs_arc:
         yield from bps.mv(waxs, wa)
@@ -3059,34 +3003,13 @@ def andrew_mapping_2025_1(t=3):
             yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
             
             sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 
 def run_Paren_tender_overnight_2025_1(t=2):
     """
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an overnight tender-energy sweep across the edge for all samples.
-    #
-    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
-    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
-    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
-    #   name from the recorded energy/beam:
-    #
-    #     from smi_plans import nexafs_run
-    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
-    #
-    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
-    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
-    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
-    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
-    # === end smi_plans note ================================================
     names_1   = [ 'MNa20', 'MLi20', 'SNa20', 'SLi20', 'MNa10r', 'MLi10r', 'SLi5', 'vacuum', ]
     piezo_x_1 = [  -13700,   -9600,   -3600,    1600,     6800,    12000,  21800,    35800, ]
     piezo_y_1 = [   -5700,   -5800,   -5600,   -6600,    -7150,    -6500,  -6900,    -6650, ]
@@ -3155,21 +3078,6 @@ def run_Paren_flatfield_2025_1(t=10):
     """
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: collects FLAT-FIELD reference frames across the tender energies for later correction.
-    #
-    # 💡 NEWER, EASIER WAY: collecting flat-field / dark reference frames is just
-    #   repeated acquisition with the beam set up a certain way; the beamline
-    #   'smi_plans' helper library can take those frames with acquire(...) (or a
-    #   transmission run) and record the conditions into the data automatically, so
-    #   you don't hand-build the reference file names.
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
-    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
-    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
-    # === end smi_plans note ================================================
     name =   'flatfield-MNa20-30s'
     x =      -14900
     y =      -5600
@@ -3219,14 +3127,7 @@ def run_Paren_flatfield_2025_1(t=10):
     yield from bps.mv(waxs, 0)
 
 def run_scans_Paren_2025_1():
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: runs the overnight tender sweep and then the flat-field collection, back-to-back.
-    #
-    # 💡 NEWER, EASIER WAY: this just runs several of the measurement functions above
-    #   back-to-back. In the beamline 'smi_plans' helper library you'd chain the
-    #   matching 'bar'/run plans the same way (one `yield from` each), and each keeps
-    #   recording its own metadata into the data. Nothing here is broken.
-    # === end smi_plans note ================================================
+
     yield from run_Paren_tender_overnight_2025_1(t=2)
     yield from run_Paren_flatfield_2025_1(t=30)
 
@@ -3234,24 +3135,6 @@ def run_Paren_hard_2025_1(t=5):
     """
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a hard-X-ray transmission run — WAXS/SAXS at a few spots per sample for averaging.
-    #
-    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
-    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
-    #   loops the sample table and the per-sample offsets for you and records each
-    #   position/beam into the saved data + file name (so you can drop the manual
-    #   name strings and sample_id calls):
-    #
-    #     from smi_plans import transmission_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
-    #     yield from transmission_bar(samples, t=t)
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     names_1   = [ 'MNa20-b', 'MLi20-b', 'SNa20-b', 'SLi20-b', 'MNa10r-b', 'MLi10r-b', 'SLi5-b', 'vacuum', ]
     piezo_x_1 = [   -14600,      -9200,     -3200,      2000,       7300,      12400,    22200,    35800, ]
     piezo_y_1 = [    -5550,      -5800,     -5800,     -5800,      -6400,      -6400,    -6400,    -6650, ]
@@ -3310,20 +3193,6 @@ def run_Paren_flatfield_hard_2025_1(t=30):
     """
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: collects hard-X-ray FLAT-FIELD reference frames for later correction.
-    #
-    # 💡 NEWER, EASIER WAY: collecting flat-field / dark reference frames is just
-    #   repeated acquisition with the beam set up a certain way; the beamline
-    #   'smi_plans' helper library can take those frames with acquire(...) (or a
-    #   transmission run) and record the conditions into the data automatically, so
-    #   you don't hand-build the reference file names.
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     name =   'flatfield-SNa0-30s'
     x =      37400
     y =       6700
@@ -3355,14 +3224,7 @@ def run_Paren_flatfield_hard_2025_1(t=30):
     yield from bps.mv(waxs, 0)
 
 def run_scans_hard_Paren_2025_1():
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: runs the hard transmission run and then the hard flat-field collection, back-to-back.
-    #
-    # 💡 NEWER, EASIER WAY: this just runs several of the measurement functions above
-    #   back-to-back. In the beamline 'smi_plans' helper library you'd chain the
-    #   matching 'bar'/run plans the same way (one `yield from` each), and each keeps
-    #   recording its own metadata into the data. Nothing here is broken.
-    # === end smi_plans note ================================================
+
     yield from run_Paren_hard_2025_1(t=5)
     yield from run_Paren_flatfield_hard_2025_1()
 
@@ -3373,25 +3235,6 @@ def overnight_mapping_Das_2025_1(t=2):
 
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an overnight SAXS-priority raster map (large grid) for the Das samples.
-    #
-    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
-    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
-    #   it has grid maps; for 'a few points per sample for averaging' it has the
-    #   transmission/map runs. Either way it records each position/beam into the
-    #   saved data and templates the file name from them (no hand-built name + no
-    #   manual sample_id call needed):
-    #
-    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
-    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
-    #     # each point's coordinates into the data.
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     names =   [   'S1',   'S2',   'S3',   'S4',  'S5',  'S6',  'S7',  'bkg', ]
     piezo_x = [ -39000, -28000,  14000,   2000, 15000, 28000, 41000,  45000, ]
     piezo_y = [    500,    500,    500,    500,   500,   600,   900,    900, ]
@@ -3430,7 +3273,7 @@ def overnight_mapping_Das_2025_1(t=2):
                 yield from bp.rel_grid_scan(dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 11, 0)
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 
 def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
@@ -3438,27 +3281,7 @@ def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
     WAXS or SAXS/WAXS at once, 300x300, 61(y) x 13(x)
 
     """
-    # Sample name and coordinates
-    
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an in-situ SAXS/WAXS raster map for the Das samples.
-    #
-    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
-    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
-    #   it has grid maps; for 'a few points per sample for averaging' it has the
-    #   transmission/map runs. Either way it records each position/beam into the
-    #   saved data and templates the file name from them (no hand-built name + no
-    #   manual sample_id call needed):
-    #
-    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
-    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
-    #     # each point's coordinates into the data.
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
+
     name = 'BKG-Air'
     x =    -6300
     y =     2200
@@ -3523,31 +3346,13 @@ def insitu_mapping_Das_2025_1(t=1, waxs_only=False):
 
 
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 def andrew_mapping_2025_2(t=3.5):
     """
     Grid mapping on samples
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a SAXS/WAXS raster map over a grid of points.
-    #
-    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
-    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
-    #   it has grid maps; for 'a few points per sample for averaging' it has the
-    #   transmission/map runs. Either way it records each position/beam into the
-    #   saved data and templates the file name from them (no hand-built name + no
-    #   manual sample_id call needed):
-    #
-    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
-    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
-    #     # each point's coordinates into the data.
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
+
     names =   [    'Pre-sol-t',   'bkg-Pre-sol-t',     'Pre-sol-s', 'bkg-Pre-sol-s',          'Sol-s',     'bkg-Sol-s',          'Sol-t',     'bkg-Sol-t',         'Worker',    'bkg-Worker',         'Hornet',    'bkg-Hornet',         'Beetle', ]
     piezo_x = [          38320,             38820,           29970,           30470,            21190,           20390,            11060,           11560,             3080,            3530,            -7370,           -7970,           -18830, ]
     piezo_y = [           1680,              1680,            1410,            1710,              770,             870,              910,             910,             1290,            1290,             1430,            1160,              385, ]
@@ -3587,7 +3392,7 @@ def andrew_mapping_2025_2(t=3.5):
             yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
             
             sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 
 
@@ -3595,24 +3400,6 @@ def run_Paren_hard_2025_2(t=5):
     """
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a hard-X-ray transmission run — WAXS/SAXS at a few spots per sample for averaging.
-    #
-    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
-    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
-    #   loops the sample table and the per-sample offsets for you and records each
-    #   position/beam into the saved data + file name (so you can drop the manual
-    #   name strings and sample_id calls):
-    #
-    #     from smi_plans import transmission_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
-    #     yield from transmission_bar(samples, t=t)
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     names_1   = ['MNa0-ii',  'SNa12-1k-ii',   'SNa10-1k-ii',   'SNa5-1k-ii', 'MNa12-1k-ii', 'MNa10-1k-ii', 'MNa5-1k-ii']#] 'SNa0-0.5uL',  'SNa0-1uL',   'SNa0-2uL',     'MNa0',   'SNa12-1k',   'SNa10-1k',   'SNa5-1k']
     piezo_x_1 = [    26800,          21400,           16800,          11600,          6400,          1200,       -4000,]#        41400,       36400,        31200,      26200,        21200,        16200,       10900]
     #piezo_y_1 = [    -6450,          -6450,           -6450,          -6450,         -6450,         -6450,       -6450,]#   -1600,       -1600,        -1600,      -2000,        -1400,        -1800,       -1600]
@@ -3674,23 +3461,6 @@ def run_Paren_temperature_hard_2025_2(t=0.5):
     """
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a hard-X-ray transmission run taken at controlled temperature(s) — WAXS/SAXS at a
-    #   few spots per sample.
-    #
-    # 💡 NEWER, EASIER WAY: ramping/holding temperature (Linkam or Lakeshore) while
-    #   collecting is the beamline 'smi_plans' helper library's temperature run. It
-    #   drives the heater, waits for setpoints, and records the temperature into the
-    #   saved data + file name for you:
-    #
-    #     from smi_plans import temperature_ramp_run, isothermal_kinetics_run, goto_temperature
-    #     # e.g. hold at T and take frames over time: isothermal_kinetics_run(...)
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     names_1   = [ 'SNa0-0.5uL',  'SNa0-1uL',   'SNa0-2uL',     'SNa5-1k']
     piezo_x_1 = [        41400,       36400,        31200,         10900]
     piezo_y_1 = [        -1550,       -1550,        -1550,         -1550]
@@ -3801,27 +3571,6 @@ def run_Paren_tender_2025_2(t=2):
     """
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a tender-energy sweep across the edge for each sample (walks the energy down at the end).
-    #
-    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
-    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
-    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
-    #   name from the recorded energy/beam:
-    #
-    #     from smi_plans import nexafs_run
-    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
-    #
-    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
-    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
-    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
-    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
-    # === end smi_plans note ================================================
     names_1   = ['SNa0-0.5uL-a', 'SNa0-0.5uL-b', 'SNa0-1uL',   'SNa0-2uL',       'SNa5-1k', ]
     piezo_x_1 = [         41820,          42120,      36800,        32400,           11300, ]
     piezo_y_1 = [         -1950,          -1950,      -2400,        -1900,           -2100, ]
@@ -3932,18 +3681,7 @@ def run_Paren_tender_2025_2(t=2):
 def go_to_temp(temperature=90):
     """
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: drives the heater to a target temperature and waits for it to get there.
-    #
-    # 💡 NEWER, EASIER WAY: the beamline 'smi_plans' helper library has goto_temperature
-    #   for exactly this (drive the heater and wait), and the temperature runs
-    #   (temperature_ramp_run / isothermal_kinetics_run) call it for you.
-    #
-    #     from smi_plans import goto_temperature
-    #     yield from goto_temperature(temperature)
-    #
-    #   (Nothing here is broken — just a tidier building block.)
-    # === end smi_plans note ================================================
+
     t_kelvin = temperature + 273.15
     yield from ls.output1.mv_temp(t_kelvin)
 
@@ -3981,27 +3719,6 @@ def run_Paren_tender_hightemp_2025_2(t=2):
     """
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a tender-energy sweep across the edge at high temperature for each sample.
-    #
-    # 💡 NEWER, EASIER WAY: sweeping the X-ray energy across an edge (and recording
-    #   the energy + beam into the data) is the beamline 'smi_plans' helper library's
-    #   energy/NEXAFS run. It does the whole sweep in one line and templates the file
-    #   name from the recorded energy/beam:
-    #
-    #     from smi_plans import nexafs_run
-    #     yield from nexafs_run(name, energies, t=t, dets=[pil2M, pil900KW, xbpm2, xbpm3])
-    #
-    #   Bonus: smi_plans' energy move (move_energy_fb / energy_axis) already waits for
-    #   the energy to settle, manages the beam feedback (re-seek is opt-in via flux_signal=/flux_threshold=)
-    #   — so the sleep/re-seek scaffolding here becomes unnecessary (see 💡 notes).
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) no longer set the
-    #   exposure unless run as a plan (⚠️ notes below). The energy settle 'sleep's and
-    #   beam re-seeks are NOT broken — smi_plans handles them for you (💡 notes).
-    # === end smi_plans note ================================================
     names_1   = ['SNa0-0.5uL-a', 'SNa0-0.5uL-b', 'SNa0-1uL',   'SNa0-2uL',       'SNa5-1k', ]
     piezo_x_1 = [       41820,            42120,      36800,        32400,           11300, ]
     piezo_y_1 = [       -1950,            -1950,      -2400,        -1900,           -2100, ]
@@ -4111,47 +3828,16 @@ def run_Paren_overnight_2025_2():
     """
     RT and HT
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: runs the room-temperature tender sweep, heats to 90 degC, then runs the high-temp
-    #   tender sweep — a full RT-then-HT overnight sequence.
-    #
-    # 💡 NEWER, EASIER WAY: this just runs several of the measurement functions above
-    #   back-to-back. In the beamline 'smi_plans' helper library you'd chain the
-    #   matching 'bar'/run plans the same way (one `yield from` each), and each keeps
-    #   recording its own metadata into the data. Nothing here is broken.
-    # === end smi_plans note ================================================
     yield from run_Paren_tender_2025_2(t=2)
     yield from go_to_temp(temperature=90)
     yield from run_Paren_tender_hightemp_2025_2(t=2)
     
-
-
 # function to take a scan
-
 
 
 def run_Paren_hard_2nd_2025_2(t=2):
     """
     """
-
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a second hard-X-ray transmission run — WAXS/SAXS at a few spots per sample.
-    #
-    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
-    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
-    #   loops the sample table and the per-sample offsets for you and records each
-    #   position/beam into the saved data + file name (so you can drop the manual
-    #   name strings and sample_id calls):
-    #
-    #     from smi_plans import transmission_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
-    #     yield from transmission_bar(samples, t=t)
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     names_1   = [ 'SNa0',         'MNa0', 'SNa12-1k', 'SNa10-1k', 'SNa5-1k',  ]
     piezo_x_1 = [  42050,          39250,      35450,      31800,     27400,  ]
     piezo_y_1 = [   5400,           5400,       5600,       5850,      5000,  ]
@@ -4212,21 +3898,13 @@ def run_Paren_hard_2nd_2025_2(t=2):
             yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.3, 0.3)
 
 def create_timestamp():
     """
     store in RE.md and print
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: stores the current time in RE.md (so later file names/metadata can reference it)
-    #   and prints it.
-    #   (Heads-up: there are TWO functions named 'create_timestamp' in this file — the
-    #   lower definition is the one Python keeps, so the upper one is shadowed/ignored.)
-    #
-    # 💡 smi_plans: nothing to migrate here — it's just a metadata timestamp, not
-    #   acquisition. (smi_plans timestamps every run for you anyway.) Nothing is broken.
-    # === end smi_plans note ================================================
+
     RE.md['tstamp'] = time.time()
     print('\nTime stamp created in RE.md')
     tstamp = RE.md['tstamp']
@@ -4239,25 +3917,6 @@ def insitu_loop_mapping_Das_2025_3(t=1, waxs_only=False):
 
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an in-situ raster map that loops repeatedly over the Das sample grid.
-    #
-    # 💡 NEWER, EASIER WAY: visiting positions and taking SAXS/WAXS images at each
-    #   is the beamline 'smi_plans' helper library's bread and butter. For a raster
-    #   it has grid maps; for 'a few points per sample for averaging' it has the
-    #   transmission/map runs. Either way it records each position/beam into the
-    #   saved data and templates the file name from them (no hand-built name + no
-    #   manual sample_id call needed):
-    #
-    #     from smi_plans import map_grid_run, spatial_grid_axes, saxs_waxs_dets
-    #     # spatial_grid_axes builds the y/x grid; map_grid_run drives it and saves
-    #     # each point's coordinates into the data.
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     project_set('Mn3O4-IE-RT')
 
     # Sample name and coordinates
@@ -4272,7 +3931,7 @@ def insitu_loop_mapping_Das_2025_3(t=1, waxs_only=False):
     else:
         waxs_arc = [ 14.5 ]
     
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(t, t)
 
     run = 0
 
@@ -4311,7 +3970,7 @@ def insitu_loop_mapping_Das_2025_3(t=1, waxs_only=False):
             run += 1
     
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.5, 0.5)
 
 
 def run_Paren_hard_multiplesaxs_2025_3(t=1):
@@ -4325,25 +3984,6 @@ def run_Paren_hard_multiplesaxs_2025_3(t=1):
             pil2M.beamstop.x_rod, pil2M.beamstop.y_rod - rod positions
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a hard transmission run repeated at several SAXS detector distances (SDD), for a
-    #   large sample bar.
-    #
-    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
-    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
-    #   loops the sample table and the per-sample offsets for you and records each
-    #   position/beam into the saved data + file name (so you can drop the manual
-    #   name strings and sample_id calls):
-    #
-    #     from smi_plans import transmission_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
-    #     yield from transmission_bar(samples, t=t)
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     saxs_dct = {
         0 : {'sdd': 2000, 'beam_centre': [860.5, 1196], 'bs': 'pd', 'energy': 16100,
              'bs_x': -227.3, 'bs_y': 6.4},
@@ -4407,8 +4047,7 @@ def run_Paren_hard_multiplesaxs_2025_3(t=1):
     
     waxs_arc = [ 40, 20, 0 ]
     user = "BP"
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
-
+    det_exposure_time(t, t)
     msg = 'Wrong number of coordinates'
     for arr in [piezo_x, piezo_y, piezo_z, ]:
         assert len(arr) == len(names), msg
@@ -4461,7 +4100,7 @@ def run_Paren_hard_multiplesaxs_2025_3(t=1):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.3, 0.3)
 
 
 def run_Paren_hard_cap_multiplesaxs_2025_3(t=2):
@@ -4475,24 +4114,6 @@ def run_Paren_hard_cap_multiplesaxs_2025_3(t=2):
             pil2M.beamstop.x_rod, pil2M.beamstop.y_rod - rod positions
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a hard transmission run on capillaries, repeated at several SAXS distances.
-    #
-    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
-    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
-    #   loops the sample table and the per-sample offsets for you and records each
-    #   position/beam into the saved data + file name (so you can drop the manual
-    #   name strings and sample_id calls):
-    #
-    #     from smi_plans import transmission_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
-    #     yield from transmission_bar(samples, t=t)
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     saxs_dct = {
         0 : {'sdd': 2000, 'beam_centre': [860.5, 1196], 'bs': 'pd', 'energy': 16100,
              'bs_x': -227.3, 'bs_y': 6.4},
@@ -4521,7 +4142,7 @@ def run_Paren_hard_cap_multiplesaxs_2025_3(t=2):
     
     waxs_arc = [ 40, 20, 0 ]
     user = "BP"
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(t, t)
 
     msg = 'Wrong number of coordinates'
     for arr in [piezo_x, piezo_y, piezo_z, ]:
@@ -4575,31 +4196,13 @@ def run_Paren_hard_cap_multiplesaxs_2025_3(t=2):
                 yield from bp.count(dets)
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.3, 0.3)
 
 def rerun_Paren_hard_cap_multiplesaxs_2025_3(t=15):
     """
     Run standard hard transmission over multiple SAXS distances
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a re-run of the capillary hard transmission at several SAXS distances.
-    #
-    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
-    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
-    #   loops the sample table and the per-sample offsets for you and records each
-    #   position/beam into the saved data + file name (so you can drop the manual
-    #   name strings and sample_id calls):
-    #
-    #     from smi_plans import transmission_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
-    #     yield from transmission_bar(samples, t=t)
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     saxs_dct = {
         #1 : {'sdd': 5000, 'beam_centre': [861, 1195.5], 'bs': 'pd', 'energy': 16100,
         #     'bs_x': -227.5, 'bs_y': 6.6},
@@ -4627,7 +4230,7 @@ def rerun_Paren_hard_cap_multiplesaxs_2025_3(t=15):
     
     waxs_arc = [ 20, ]
     user = "BP"
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(t, t)  
 
     msg = 'Wrong number of coordinates'
     for arr in [piezo_x, piezo_y, piezo_z, ]:
@@ -4695,24 +4298,6 @@ def run_Paren_hard_multiplesaxs_2026_1(t=1):
             pil2M.beamstop.x_rod, pil2M.beamstop.y_rod - rod positions
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a hard transmission run repeated at several SAXS distances, with mapping per spot.
-    #
-    # 💡 NEWER, EASIER WAY: taking a few points per sample (for averaging) across a
-    #   sample bar is the beamline 'smi_plans' helper library's transmission run. It
-    #   loops the sample table and the per-sample offsets for you and records each
-    #   position/beam into the saved data + file name (so you can drop the manual
-    #   name strings and sample_id calls):
-    #
-    #     from smi_plans import transmission_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
-    #     yield from transmission_bar(samples, t=t)
-    #
-    #   (Optional tidy-up — your script below works as-is, EXCEPT for the ⚠️ lines.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call(s) below no longer
-    #   set the exposure unless run as a plan (see the ⚠️ FIXME notes on those lines).
-    # === end smi_plans note ================================================
     saxs_dct = {
         #0 : {'sdd': 2000, 'beam_centre': [744, 1110], 'bs': 'pd', 'energy': 16100,
         #     'bs_x': -227.3, 'bs_y': 6.4},
@@ -4731,7 +4316,7 @@ def run_Paren_hard_multiplesaxs_2026_1(t=1):
     
     waxs_arc = [ 40, 20, 0 ]
     user = "PW"
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(t, t)
 
     msg = 'Wrong number of coordinates'
     for arr in [piezo_x, piezo_y, piezo_z, ]:
@@ -4793,4 +4378,544 @@ def run_Paren_hard_multiplesaxs_2026_1(t=1):
                 )
 
     sample_id(user_name="test", sample_name="test")
-    det_exposure_time(0.3, 0.3)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (The smi_plans technique runs set exposure for you via t=.)
+    det_exposure_time(0.3, 0.3)
+
+def sample_id(user_name='test', sample_name='test'):
+
+    sample_name = f'{user_name}_{sample_name}'.translate(
+                {ord(c): "_" for c in r"!@#$%^&*{}:/<>?\|`~+ =,"})
+    RE.md["sample_name"] = f'{sample_name}_{get_scan_md()}'
+    RE.md["sname"] = sample_name
+
+def get_scan_md(tender=False):
+    """
+    Create a string with scan metadata
+    """
+
+    # Metadata
+    e = energy.position.energy / 1000
+    #temp = str(np.round(float(temp_degC), 1)).zfill(5)
+    wa = waxs.arc.position + 0.001
+    wa = str(np.round(float(wa), 1)).zfill(4)
+    sdd = pil2m_pos.z.position / 1000
+
+    md_fmt = ("_{energy}keV_wa{wa}_sdd{sdd}m")
+
+    if tender:
+        scan_md = md_fmt.format(
+            energy = "%.5f" % e ,
+            wa = wa,
+            sdd = "%.1f" % sdd,
+        )
+    else:
+        scan_md = md_fmt.format(
+            energy = "%.2f" % e ,
+            wa = wa,
+            sdd = "%.1f" % sdd,
+        )
+    return scan_md
+
+
+def manual_humidity(name, rh=50, t=1, take_saxs=False, use_stage=False):
+    """
+    Take data after reaching humidity level Linkam RH stage
+
+    Args:
+        name (str): sample name to use, indicate up or down
+        rh (float): relative humidity as read from Linkam software
+        t (float): exposure time for the detector
+        take_saxs (bool): whether to take WAXS at 0 or also SAXS at 0, 20
+        use_stage (bool): whether to move Huber stage directly in the macro
+            in case misbehaves (goes somewhere else than set in CSS)
+    """
+
+    # Values in case stage goes somewhere else than what is set in CSS
+    stage_x =  25.8
+    stage_y =  -5.2
+    stage_z =  -7.0
+
+    rh = str(np.round(float(rh), 1)).zfill(4)
+
+    waxs_arc = [ 0, 20 ] if take_saxs else [ 0, ]
+
+    yield from det_exposure_time(t, t)
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+
+        if use_stage:
+            yield from bps.mv(
+                stage.x, stage_x,
+                stage.y, stage_y,
+                stage.z, stage_z,
+            )
+
+        sample_name = f'{name}_RH{rh}_{get_scan_md()}'
+        sample_id(user_name='RT', sample_name=sample_name)
+        print(f"\n\n\n\t=== Sample: {sample_name} ===")
+        yield from bp.count(dets)
+    
+    if take_saxs:
+        yield from bps.mv(waxs, 0)
+
+def measure_capillaries(t=1):
+    """
+    Scan capillaries, from each point piezo.y scan vertically
+    """
+    names_1   = [ 'S1-a0', 'S1-a1', 'S1-b1', 'S1-b0', 'S2-a1', 'S2-b1', 'S2-b0', 'S3-a1', ]
+    piezo_x_1 = [   -6800,   -6950,    -550,     100,    5500,   11400,   11200,   18500, ]
+    piezo_y_1 = [    1550,    4550,    4550,   -7600,    8900,    5000,   -6000,   -3500, ]
+    stage_y_1 = [     -20,     -20,     -20,     -20,     -20,     -13,     -11,     -11, ]
+    stage_x_1 = [ 0 for n in names_1 ]
+
+
+    names_2   = [ 'S3-a0', 'S3-b0', 'S3-b1', 'S3-c0', 'S3-c1', 'S4-a0', 'S4-a1', 'S4-a2', ]
+    piezo_x_2 = [   18350,   24350,   24250,   30400,   30400,   37450,   37300,   37200, ]
+    piezo_y_2 = [    8000,    7500,    9200,    -200,    2800,    4800,    7300,    8800, ]
+    stage_y_2 = [     -20,     -20,     -18,     -18,     -18,     -18,      -18,    -18, ]
+    stage_x_2 = [ 0 for n in names_2 ]
+
+    names_3   = [ 'S5-a0', 'S5-a1', 'S5-b1', 'S6-a0', 'S6-a1', 'S6-b0', 'S6-b1', 'S6-c0', 'S6-c1', ]
+    piezo_x_3 = [   43800,   42800,   50000,   49500,   49650,   50900,   50200,   51050,   51650, ]
+    piezo_y_3 = [    4500,    9000,   -4500,    7500,   -5500,   -1000,    8000,     200,   -4900, ]
+    stage_y_3 = [     -20,     -10,     -10,     -10,     -10,     -10,      -8,      -8,     -15, ]
+    stage_x_3 = [      0 ,       0,       0,       6,       6,      12,      12,      18,      18, ]
+
+    names   =   names_1 +   names_2 +   names_3
+    piezo_x = piezo_x_1 + piezo_x_2 + piezo_x_3
+    piezo_y = piezo_y_1 + piezo_y_2 + piezo_y_3
+    
+    stage_x = stage_x_1 + stage_x_2 + stage_x_3
+    stage_y = stage_y_1 + stage_y_2 + stage_y_3
+    
+    piezo_z = [ 4600 for n in names ]
+    
+    waxs_arc = [ 0, 20]
+
+    user = 'PW'
+    yield from det_exposure_time(t, t)
+
+    msg = "Wrong number of coordinates"
+    for arr in [piezo_x, piezo_y, piezo_z, stage_x, stage_y]:
+        assert len(arr) == len(names), f'{msg}: {arr}'
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+        
+        for name, x, y, z, sx, sy, in zip(names, piezo_x, piezo_y, piezo_z,
+                                                 stage_x, stage_y):
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+                stage.x, sx,
+                stage.y, sy,
+            )
+
+
+            sample_name = f'{name}_{get_scan_md()}'
+            RE.md['sname'] = name
+            sample_id(user_name=user, sample_name=sample_name)
+
+            if wa == waxs_arc[0]:
+                yield from bp.count([OAV_writing])
+
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+            yield from bp.rel_scan(dets, piezo.y, 0, 500, 5)
+
+    sample_id(user_name="test", sample_name="test")
+    yield from det_exposure_time(0.3, 0.3)
+
+
+def overnight_mapping_2026_2(t=5):
+    """
+    Grid mapping on samples
+    """
+    """
+    names =   [      'left-side',       'top-side',      'all-rough', ]
+    piezo_x = [            39860,            40460,            40460, ]
+    piezo_y = [             7000,             6490,             7000, ]
+
+    y_range = [[ -700, 700, 141], [ -200, 100, 31], [ -600, 600, 31], ]
+    x_range = [[ -200, 100,  13], [ -700, 700, 47], [ -600, 600, 41], ]
+    
+    piezo_z = [ 9600 for n in names ]
+    stage_x = [ 31 for n in names ]
+    stage_y = [-10 for n in names ]
+    """
+
+    names =   [   'left-side-BV',    'top-side-BV',          'all-BV',          'bkg-2', ]
+    piezo_x = [            31850,            32480,             32400,            36700, ]
+    piezo_y = [             2295,             1820,              2380,             2380, ]
+
+    y_range = [[ -700, 700, 141], [ -200, 100, 31], [ -700, 700, 281],  [ -250, 250, 5], ]
+    x_range = [[ -200, 100,  13], [ -700, 700, 47], [ -700, 700,  57],  [ -250, 250, 5], ]
+    
+    piezo_z = [ 10600 for n in names ]
+    stage_x = [ 33 for n in names ]
+    stage_y = [-10 for n in names ]
+    stage_z = [  0 for n in names ]
+
+    waxs_arc = [ 20 ]
+
+    user = 'PW'
+    yield from det_exposure_time(t, t)
+
+    msg = "Wrong number of coordinates"
+    for arr in [piezo_x, piezo_y, piezo_z, stage_x, stage_y, y_range, x_range]:
+        assert len(arr) == len(names), f'{msg}: {arr}'
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [ pil2M ]
+
+        for name, x, y, z, sx, sy, sz, y_r, x_r in zip(names,
+                                                       piezo_x, piezo_y, piezo_z,
+                                                       stage_x, stage_y, stage_z,
+                                                       y_range, x_range
+                                                      ):
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+                #stage.x, sx,
+                #stage.y, sy,
+                #stage.z, sz,
+            )
+
+            sample_name = f'{name}'
+            sample_id(user_name='PW', sample_name=sample_name)
+            RE.md['sname'] = name
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+            yield from bp.count([OAV_writing])
+            yield from bp.rel_grid_scan(dets, piezo.y, *y_r, piezo.x, *x_r, 0)
+            
+    sample_id(user_name='test', sample_name='test')
+    yield from det_exposure_time(0.5, 0.5)
+
+def manual_humidity(name, rh=50, temp=25, t=1, take_saxs=False, use_stage=False):
+    """
+    Take data after reaching humidity level Linkam RH stage
+
+    Args:
+        name (str): sample name to use, indicate up or down
+        rh (float): relative humidity as read from Linkam software
+        temp (float): temp of Linkam stage
+        t (float): exposure time for the detector
+        take_saxs (bool): whether to take WAXS at 0 or also SAXS at 0, 20
+        use_stage (bool): whether to move Huber stage directly in the macro
+            in case misbehaves (goes somewhere else than set in CSS)
+    """
+
+    # Values in case stage goes somewhere else than what is set in CSS
+    stage_x =  25.1
+    stage_y =  -5.6
+    stage_z =   8.0
+
+    rh = str(np.round(float(rh), 1)).zfill(4)
+    temp = str(np.round(float(temp), 1)).zfill(5)
+
+    waxs_arc = [ 0, 20 ] if take_saxs else [ 0, ]
+
+    yield from det_exposure_time(t, t)
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+
+        if use_stage:
+            yield from bps.mv(
+                stage.x, stage_x,
+                stage.y, stage_y,
+                stage.z, stage_z,
+            )
+
+        sample_name = f'{name}_RH{rh}_025.0degC'
+        sample_id(user_name='BP', sample_name=sample_name)
+        print(f"\n\n\n\t=== Sample: {sample_name} ===")
+        yield from bp.count(dets)
+    
+    if take_saxs:
+        yield from bps.mv(waxs, 0)
+
+def run_Paren_humidity_2026_2(t=2):
+    """
+    Humidity transmission using in-house humidity stage and RH lookup table
+        2026 07 22  
+        humidity,   wet,    dry
+            1.3         5       0
+            20          2.05    3
+            30          2.31    3
+            40          2.61    3
+            50          3       2.93
+            60          3       2.54
+            70          3       2.25
+            80          3       2.03
+            90          4       1.9
+            95          4       1.78
+            100         4       1.5
+    """
+
+    # Humidity look up table
+    #humidity,   wet,    dry
+    rh_dct = {
+        20  : { 'wetflow' : 2.05, 'dryflow' : 3    },
+        30  : { 'wetflow' : 2.31, 'dryflow' : 3    },
+        40  : { 'wetflow' : 2.61, 'dryflow' : 3    },
+        50  : { 'wetflow' : 3,    'dryflow' : 2.93 },
+        60  : { 'wetflow' : 3,    'dryflow' : 2.54 },
+        70  : { 'wetflow' : 3,    'dryflow' : 2.25 },
+        80  : { 'wetflow' : 3,    'dryflow' : 2.03 },
+        90  : { 'wetflow' : 4,    'dryflow' : 1.9  },
+        95  : { 'wetflow' : 4,    'dryflow' : 1.78 },
+        100 : { 'wetflow' : 4,    'dryflow' : 1.5  },
+    }
+
+
+    names_1   = [     'vacuum', 'mTPN-100',  'pTPN-100', ]
+    stage_x_1 = [         69.1,       62.8,        56.5, ]
+    stage_y_1 = [         -9.7,       -9.7,        -9.7, ]
+
+    names_2   = [    'BPN-100',  'FMN-100',   'FMN2-50', ]
+    stage_x_2 = [         50.1,       43.8,        37.4, ]
+    stage_y_2 = [         -9.7,       -9.7,        -9.6, ]
+
+    names_3   = [    'FMN2-60',  'NafionH', 'BP-ArFy4H', ]
+    stage_x_3 = [         31.1,       24.7,        18.4, ]
+    stage_y_3 = [         -9.6,       -9.6,        -9.6, ]
+    
+    names_4   = [ 'BP-SoArSAH',    'BPSAH',  'BPSArSAH', ]
+    stage_x_4 = [         12.1,        5.7,        -0.6, ]
+    stage_y_4 = [         -9.6,       -9.6,        -9.6, ]
+
+    names_5   = [   'NafionNa',   'BPArF4',   'FAA3-50', ]
+    stage_x_5 = [         -7.0,      -13.4,       -19.7, ]
+    stage_y_5 = [         -9.6,       -9.6,        -9.6, ]
+
+    names   =   names_1 +   names_2 +   names_3 +   names_4 +   names_5 
+    stage_x = stage_x_1 + stage_x_2 + stage_x_3 + stage_x_4 + stage_x_5
+    stage_y = stage_y_1 + stage_y_2 + stage_y_3 + stage_y_4 + stage_y_5
+    
+    stage_z = [ 9.6 for n in names ]
+
+    # Move all position by 0.05 in stage_y
+    stage_y = np.array(stage_y) + 0.05
+    
+    waxs_arc = [ 0, 20 ]
+    user = 'BP'
+    stabilise_time = 30 * 60
+    step_y = 0.1
+    
+    msg = 'Wrong number of coordinates'
+    for arr in [stage_x, stage_y, stage_z, ]:
+        assert len(arr) == len(names), msg
+
+    yield from det_exposure_time(t, t)
+
+    # Go over humidity LUT
+    for i, (k, v) in enumerate(sorted(rh_dct.items())):
+
+        rh_target = k
+        dryflow = v['dryflow']
+        wetflow = v['wetflow']
+
+        print(f'Going to target RH: {rh_target}, dryflow: {dryflow}, wetflow: {wetflow}')
+        print(f'Will wait for {stabilise_time / 60} min before measurement')
+
+        setDryFlow(dryflow)
+        setWetFlow(wetflow)
+        yield from bps.sleep(stabilise_time)
+
+
+        true_rh = readHumidity()
+        print(f'\n\nRH reading: {true_rh}')
+
+        rh = str(np.round(float(true_rh), 1)).zfill(4)
+        temp = str(np.round(float(25), 1)).zfill(5)
+        
+        # Go over WAXS angles
+        for wa in waxs_arc:
+            yield from bps.mv(
+                waxs, wa,
+                stage.y, stage_y[0],
+                stage.x, stage_x[0],
+            )
+
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+            
+            for name, x, y, z, in zip(names, stage_x, stage_y, stage_z):
+
+                yield from bps.mv(
+                    stage.y, y + i * step_y,
+                    stage.x, x,
+                    stage.z, z,
+                )
+
+                sample_name = f'{name}_RH{rh}_{temp}degC'
+                sample_id(user_name=user, sample_name=sample_name)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+        
+        true_rh = readHumidity()
+        print(f'\n\nRH reading: {true_rh}')
+    
+    sample_id(user_name="test", sample_name="test")
+    yield from det_exposure_time(0.3, 0.3)
+
+
+def measure_Paren_hard_2026_2(t=2):
+    """
+    Scan capillaries, from each point piezo.y scan vertically
+
+    """
+
+    names_1   = [ 'PMTFSI-Na_8kPEO_10', 'NaTFSI_1kPEO_10','NaTFSI_1kPEO_10_2']
+    piezo_x_1 = [                37300,             34300,              34250]
+    piezo_y_1 = [                 8500,             7000,                6900]
+    
+
+    names_2   = [ '220CT','296CT','301CT', '325CT', '327CT', 'S-ref_CT']
+    piezo_x_2 = [   14250,   8250,   4250,   -2750,  -10750,     -16750]
+    piezo_y_2 = [   8300,    8800,   8800,    8300,    8300,       8300]
+    
+
+    names_3   = [ '0C6-NTf2', '1Cell', '2Cell', '3Cell', '4Cell', '5CMI', '6CMI', 'vaccum']
+    piezo_x_3 = [     -21750,  -28350,  -34350,  -39250,  -45250, -47250, -40550,  -33000]
+    piezo_y_3 = [       7800,    7800,    7700,    7600,    7600,  -5100,  -5100,   -5100]
+    
+
+    names   =   names_1 +   names_2 +   names_3
+    piezo_x = piezo_x_1 + piezo_x_2 + piezo_x_3
+    piezo_y = piezo_y_1 + piezo_y_2 + piezo_y_3
+
+    piezo_z = [ 7200 for n in names ]
+    waxs_arc = [ 0, 20]
+
+    saxs_sdd = [ 5000, 2000, ]
+
+    user = 'BP'
+    yield from det_exposure_time(t, t)
+
+    msg = "Wrong number of coordinates"
+    for arr in [piezo_x, piezo_y, piezo_z, ]:
+        assert len(arr) == len(names), f'{msg}: {arr}'
+
+    for sdd in saxs_sdd:
+
+        yield from bps.mv(pil2M.motor.z, sdd)
+
+        project_set(f'hard-{sdd}mm')
+
+        # Go over WAXS angles
+        waxs_arc = [ 20 ] if sdd < 3000 else [ 0, 20 ]
+
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+
+            if sdd > 3000:
+                dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+            else:
+                dets = [pil2M]
+
+            for name, x, y, z, in zip(names, piezo_x, piezo_y, piezo_z, ):
+
+                yield from bps.mv(
+                    piezo.x, x,
+                    piezo.y, y,
+                    piezo.z, z,
+                )
+
+                sample_name = f'{name}'
+                RE.md['sname'] = name
+                sample_id(user_name=user, sample_name=sample_name)
+
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                yield from bp.count(dets)
+
+    sample_id(user_name="test", sample_name="test")
+    yield from det_exposure_time(0.3, 0.3)
+
+
+def measure_hard_2026_2(t=1):
+    """
+    Standard SWAXS, take a line scan along piezo.y
+    """
+    yield from shopen()
+
+    proposal_swap(320656)
+    RE.md['SAF_number'] = 318899
+    project_set(f'exsitu')
+
+    names_1   = [   'S25',  'S26',  'S27',  'S28',  'S29',  'S30', ]
+    piezo_x_1 = [  -52000, -33500, -12000,   9000,  29000,  50000, ]
+    piezo_y_1 = [   -3000,  -3000,  -3000,  -3000,  -3000,  -2500, ]
+    stage_x_1 = [      33,     33,     33,     33,     33,     33, ]
+    
+    names_2   = [ ]
+    piezo_x_2 = [ ]
+    piezo_y_2 = [ ]
+    stage_x_2 = [ ]
+    
+    names_3   = [ ]
+    piezo_x_3 = [ ]
+    piezo_y_3 = [ ]
+    stage_x_3 = [ ]
+    
+    names   =   names_1 +   names_2 +   names_3
+    piezo_x = piezo_x_1 + piezo_x_2 + piezo_x_3
+    piezo_y = piezo_y_1 + piezo_y_2 + piezo_y_3
+    stage_x = stage_x_1 + stage_x_2 + stage_x_3
+
+    piezo_z = [ 7200 for n in names ]
+    sy = -10
+    sz = 0
+    waxs_arc = [ 0, 20]
+
+    user = 'PW'
+    yield from det_exposure_time(t, t)
+
+    msg = "Wrong number of coordinates"
+    for arr in [piezo_x, piezo_y, piezo_z, stage_x]:
+        assert len(arr) == len(names), f'{msg}: {arr}'
+
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+
+        dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+
+        for name, x, y, z, sx in zip(names, piezo_x, piezo_y, piezo_z, stage_x):
+
+            yield from bps.mv(
+                stage.x, sx,
+                stage.y, sy,
+                stage.z, sz,
+                
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+            )
+
+            sample_name = f'{name}'
+            RE.md['sname'] = name
+            sample_id(user_name=user, sample_name=sample_name)
+
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+            if wa == waxs_arc[0]:
+                yield from bp.count([OAV_writing])
+            yield from bp.rel_scan(dets, piezo.y, 0, 1000, 5)
+
+    yield from bps.mv(
+                waxs, waxs_arc[0],
+                stage.x, stage_x[0],
+                piezo.x, piezo_x[0],
+                piezo.y, piezo_y[0],
+                piezo.z, piezo_z[0],
+            )
+    sample_id(user_name="test", sample_name="test")
+    yield from det_exposure_time(0.3, 0.3)
+

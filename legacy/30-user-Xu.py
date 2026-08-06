@@ -10,27 +10,7 @@ def run_capillaries_Alexandra_2023_3(ts=0.5, tl=5, waxs_only=False):
     RE(count([pil900KW]))
     
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a transmission SAXS/WAXS run on a row of capillaries — for each sample it
-    #   moves there, sweeps the WAXS arc, reads the pin-diode current (for transmission), and takes
-    #   short + long exposures at a couple of y spots along the capillary.
-    #
-    # 💡 NEWER, EASIER WAY: capillary/transmission measurements are 'smi_plans' transmission_bar;
-    #   you give it the sample list once and it loops, records the pin-diode/beam INTO the data, and
-    #   fills the file name for you (instead of f'{name}_exp..._pd{pd}{get_scan_md()}'):
-    #
-    #     from smi_plans import transmission_bar, SampleList, motor_axis, manual_axis
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
-    #     yield from transmission_bar(
-    #         samples, dets=[pil2M, pil900KW, pin_diode],
-    #         exposures=[ts, tl],                    # your two exposures, unchanged
-    #         axes=[motor_axis("waxs_arc", waxs, [0, 20])],
-    #     )
-    #   (records pin_diode for transmission; 'waxs', 'piezo.*' all still work.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
-    #   unless run as a plan (see the ⚠️ notes on them below).
-    # === end smi_plans note ================================================
+    
     # yield from bps.sleep(1500)
     names = ['NAP7_100mM_correct_more']
     # names = ['EC_H_DCM_10mgml_waxs']
@@ -112,25 +92,7 @@ def run_temp_capillaries_Alexandra_2023_3(ts=0.5, tl=1, waxs_only=False):
     RE(count([pil900KW]))
     
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: same capillary transmission run as above, but first ramps the resistive
-    #   heating stage (the Lakeshore 'ls') to a set temperature, waits for it to equalise, then
-    #   measures each capillary (short + long exposures) at that temperature.
-    #
-    # 💡 NEWER, EASIER WAY: heating to a temperature and then running a transmission bar is the
-    #   'smi_plans' temperature + transmission combination; goto_temperature handles the ramp/soak
-    #   and transmission_bar loops the samples, recording the temperature and pin-diode INTO the data:
-    #
-    #     from smi_plans import goto_temperature, transmission_bar, SampleList, lakeshore_heater
-    #     for temperature in temperatures:
-    #         yield from goto_temperature(lakeshore_heater(ls), temperature)   # ramp + wait, recorded
-    #         samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y, z=piezo_z)
-    #         yield from transmission_bar(samples, dets=[pil2M, pil900KW, pin_diode], exposures=[ts, tl])
-    #   ('ls', the Lakeshore, still works as-is — goto_temperature just wraps the ramp/equalise loop.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' calls no longer set the exposure
-    #   unless run as a plan (see the ⚠️ notes on them below).
-    # === end smi_plans note ================================================
+    
     # yield from bps.sleep(1500)
     names = ['sample41_43C','sample42_43C','sample43_43C','sample44_43C','sample45_43C','sample46_43C']
     piezo_x = [6600, 12800,19400, 25600, 32000,38400]

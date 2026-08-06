@@ -199,6 +199,12 @@ for j in range( 30 ):
 
 '''
 
+ypos = 0
+xpos = 0
+username = 'CFN' 
+sample_dict = {   1: 'AgBH'  }  #PZ = 8400
+pxy_dict = {    1:[ 0, 0  ]   } 
+
 
 
 pxy_dict = {  k: [ pxy_dict[k][0],  pxy_dict[k][1] + ypos ]  for k in pxy_dict }
@@ -210,8 +216,13 @@ pxy_dict = {  k: [ pxy_dict[k][0],  pxy_dict[k][1] + ypos ]  for k in pxy_dict }
 
 
 
-motorX = MDrive.m5 #
-motorZ = MDrive.m3
+#otorX = MDrive.m5 #
+#otorZ = MDrive.m3
+
+
+motorZ= MDrive.m5 #
+motorX= MDrive.m3
+
 
 ###NOTE
 # X (MotorX): 88.4 #motor 5
@@ -374,7 +385,8 @@ def measure_wsaxs( t=1, waxs_angle=20, att="None", dx=0, dy=0, user_name=None, s
     
 
 
-def measure_multi_waxs_loop_angles(  t= [1], waxs_angles=[0, 15, 20, 40   ], 
+def measure_multi_waxs_loop_angles(  t= [1],waxs_angles=[0, 16, 20, 40   ], 
+                                   # waxs_angles=[0, 15, 20, 40   ], 
                                    dxs=[0], dys=[0], saxs_on=True ,
                                    user_name= user_name  ):
     """    

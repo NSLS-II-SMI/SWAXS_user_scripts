@@ -1144,9 +1144,9 @@ def yz_alignement_height(  ):
 ## From 37-Alignement
 import datetime 
 smi = SMI_Beamline()#
-def yz_alignement_gisaxs(angle=0.15):        
+def alignement_gisaxs(angle=0.15):        
     sample_id(user_name='test', sample_name='test')
-    det_exposure_time(0.3, 0.3)          # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
+    yield from det_exposure_time(0.3, 0.3)          # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.3, 0.3)  — or at the prompt:  RE(det_exposure_time(0.3, 0.3)). (smi_plans' giwaxs_run/transmission_run set exposure for you via t=.)
     smi = SMI_Beamline()
     yield from smi.modeAlignment(technique='gisaxs')        
     # Set direct beam ROI
@@ -1163,16 +1163,18 @@ def yz_alignement_gisaxs(angle=0.15):
     # Scan theta and height
     yield from align_gisaxs_th(0.2, 31)
     yield from align_gisaxs_height(150, 21)
+    H = piezo.y.position
     yield from align_gisaxs_th(0.025, 21)        
     # Close all the matplotlib windows
     ###plt.close('all')        
     # Return angle
-    yield from bps.mv(piezo.th, ps.cen - angle)
-    yield from smi.modeMeasurement()
+    yield from bps.mv(piezo.th, ps.cen - angle)    
+    #yield from bps.mv(piezo.y, H ) 
+    #yield from smi.modeMeasurement()
 
 
 
-def yz_alignement_gisaxs_hex(angle=0.1, rough_y=0.5):
+def alignement_gisaxs_hex(angle=0.1, rough_y=0.5):
     """
     Regular alignement routine for gisaxs and giwaxs using the hexapod. First, scan of the sample height
     and incident angle on the direct beam.
@@ -1208,7 +1210,7 @@ def yz_alignement_gisaxs_hex(angle=0.1, rough_y=0.5):
     plt.close("all")
     # Return angle
     yield from bps.mv(stage.th, ps.cen - angle)
-    yield from smi.modeMeasurement()
+    #yield from smi.modeMeasurement()
     # Deactivate the automated derivative calculation
     bec._calc_derivative_and_stats = False
 

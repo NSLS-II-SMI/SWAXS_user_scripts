@@ -1,35 +1,41 @@
-def get_positions():
+def get_positions(stage_used=False):
     """
     Create a string with scan metadata
     """
     
     # Metadata
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: reads and prints the current motor positions (a quick status check). No data taken.
-    #
-    # 💡 NEWER, EASIER WAY: with the beamline 'smi_plans' helper library you usually
-    #   don't manage this by hand — it records positions/beam/temperature/etc. INTO the
-    #   saved data for every frame and templates the file name from them. So printing positions by hand
-    #   becomes unnecessary once you migrate. (Nothing here is broken.)
-    # === end smi_plans note ================================================
+
     x = piezo.x.position
     y = piezo.y.position
     z = piezo.z.position
     th = piezo.th.position
     temp = ls.input_A.get() - 273.15
 
-    
     x = str(np.round(float(x), 0)).zfill(5)
     y = str(np.round(float(y), 0)).zfill(5)
     z = str(np.round(float(z), 0)).zfill(5)
     th = str(np.round(float(th), 4)).zfill(0)
     temp = str(np.round(float(temp), 1)).zfill(5)
     # f'_ai{str(np.round(0.02555, 3)).zfill(4)}'
-   
+
+    if stage_used:
+        x = stage.x.position
+        y = stage.y.position
+        z = stage.z.position
+        th = stage.th.position
+
+        x = str(np.round(float(x), 3)).zfill(5)
+        y = str(np.round(float(y), 3)).zfill(5)
+        z = str(np.round(float(z), 3)).zfill(5)
+        th = str(np.round(float(th), 4)).zfill(0)
+        # f'_ai{str(np.round(0.02555, 3)).zfill(4)}'
+
+
+
     return f'x={x}_y={y}_z={z}_th={th}_temp{temp}degC'
 
 
-def name_sample(name, tstamp):
+def name_sample(name, tstamp, stage_used=False):
     """
     Create sample name with metadata
 
@@ -39,34 +45,14 @@ def name_sample(name, tstamp):
             tstamp = time.time()
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: builds a sample/file name from a base name and a timestamp and stores it in RE.md.
-    #
-    # 💡 NEWER, EASIER WAY: with the beamline 'smi_plans' helper library you usually
-    #   don't manage this by hand — it records positions/beam/temperature/etc. INTO the
-    #   saved data for every frame and templates the file name from them. So this manual name-building
-    #   becomes unnecessary once you migrate. (Nothing here is broken.)
-    # === end smi_plans note ================================================
     eplased = time.time() - tstamp
-    sample_name = f'{name}{get_scan_md()}_t{eplased:.1f}_{get_positions()}'
+    sample_name = f'{name}{get_scan_md()}_t{eplased:.1f}_{get_positions(stage_used=stage_used)}'
     sample_id(user_name='YCK', sample_name=sample_name)
     print(f'\n\n\n{sample_name}\n')
 
 def take_data_manually(name, t=2):
     """
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: sets the exposure, names the file, and takes a single WAXS image by hand.
-    #
-    # 💡 NEWER, EASIER WAY: the beamline 'smi_plans' helper library takes one labelled
-    #   image in a single call and records the beam/positions into the data + file name:
-    #
-    #     from smi_plans import acquire, saxs_waxs_dets
-    #     yield from acquire(name, saxs_waxs_dets(use_saxs=False), [])
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below no longer sets
-    #   the exposure unless run as a plan (see the ⚠️ FIXME note on that line).
-    # === end smi_plans note ================================================
     try:
         tstamp = RE.md['tstamp']
     except:
@@ -382,23 +368,7 @@ def grazing_Chen_Wiegart_2023_3(t=0.5):
     # piezo_y =  [    6984,                     6984,                    6784,                     6684,                   6584,                    6484,                     6484,                    6284                   ]          
     # piezo_z =  [    8800,                     7800,                    7300,                     6800,                   6800,                    6300,                     6300,                    4800                   ]
     # hexa_x =   [     -13,                      -13,                     -13,                      -13,                    -13,                     -13,                      -13,                    -13                    ]
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a grazing-incidence S/WAXS run — for each sample it aligns, then takes WAXS/SAXS at
-    #   several incident angles.
-    #
-    # 💡 NEWER, EASIER WAY: aligning each sample then sweeping incident angle / WAXS
-    #   arc is the beamline 'smi_plans' helper library's GIWAXS run. align_sample
-    #   aligns and saves the result, and incidence_axis sweeps the angle while
-    #   recording it into the data:
-    #
-    #     from smi_plans import giwaxs_bar, SampleList, incidence_axis, align_sample
-    #     samples = SampleList.from_columns(name=names, x=stage_x, y=stage_y)
-    #     yield from giwaxs_bar(samples, incidence_axis(piezo.th, th0, incident_angles),
-    #                           t=t, align=align_sample)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below no longer
-    #   sets the exposure unless run as a plan (see the ⚠️ FIXME note on that line).
-    # === end smi_plans note ================================================
+
     names   =  [  'Cufoil_reflection']
     piezo_x =  [  1900]
     piezo_y =  [  7856]          
@@ -467,22 +437,11 @@ def grazing_Chen_Wiegart_2023_3(t=0.5):
     sample_id(user_name='test', sample_name='test')
     det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
 
-def alignment_on(beamstop_x=6.55):
+def alignment_on(beamstop_x=6.5):
     """
     Alignment mode on
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an alignment helper — sets exposure and moves the beamstop in for aligning.
-    #
-    # 💡 NEWER, EASIER WAY: alignment like this is handled by the beamline 'smi_plans'
-    #   helper library's align_sample (used as the 'align=' step of a GIWAXS/transmission
-    #   run), which aligns each sample once and saves the result WITH the data, so you
-    #   don't keep separate alignment routines and look-up tables by hand.
-    #   (Nothing here is broken.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below no longer
-    #   sets the exposure unless run as a plan (see the ⚠️ FIXME note on that line).
-    # === end smi_plans note ================================================
+
     smi = SMI_Beamline()
     yield from smi.modeAlignment(technique="gisaxs")
     yield from smi.setDirectBeamROI(size=[48, 20])
@@ -490,22 +449,14 @@ def alignment_on(beamstop_x=6.55):
     yield from bps.mv(pil2M.beamstop.x_rod, beamstop_x + 5)
     sample_id(user_name='test', sample_name='test')
 
-    det_exposure_time(0.5, 0.5)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(0.5, 0.5)  — or at the prompt:  RE(det_exposure_time(0.5, 0.5)). (The smi_plans technique runs set exposure for you via t=.)
+    yield from det_exposure_time(0.5, 0.5) 
     print('\t\tALIGNMENT MODE ON')
 
-def alignment_off(beamstop_x=6.55):
+def alignment_off(beamstop_x=6.5):
     """
     Alignment mode off
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an alignment helper — restores the beamstop after aligning.
-    #
-    # 💡 NEWER, EASIER WAY: alignment like this is handled by the beamline 'smi_plans'
-    #   helper library's align_sample (used as the 'align=' step of a GIWAXS/transmission
-    #   run), which aligns each sample once and saves the result WITH the data, so you
-    #   don't keep separate alignment routines and look-up tables by hand.
-    #   (Nothing here is broken.)
-    # === end smi_plans note ================================================
+   
     print('\t\tALIGNMENT MODE OFF and WAXS arc to 0 deg')
     smi = SMI_Beamline()
     yield from smi.modeMeasurement()
@@ -518,16 +469,7 @@ def atten_move_in():
     """
     Move 4x + 2x Sn 60 um attenuators in
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an alignment helper — inserts attenuators (to protect the detector during alignment).
-    #   (Heads-up: this function is defined TWICE in this file; Python keeps the LOWER one,
-    #   so the upper copy is shadowed/ignored.)
-    #
-    # 💡 NEWER, EASIER WAY: inserting/removing attenuators around alignment is folded
-    #   into the beamline 'smi_plans' helper library's align step, so you usually don't
-    #   call these by hand once you migrate. The attenuators themselves (att1_*/att2_*)
-    #   still work fine — nothing here is broken.
-    # === end smi_plans note ================================================
+    
     print('Moving attenuators in')
 
     while att1_7.status.get() != 'Open':
@@ -541,15 +483,7 @@ def atten_move_out():
     """
     Move 4x + 2x Sn 60 um attenuators out
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an alignment helper — removes the attenuators after alignment.
-    #   (Heads-up: defined TWICE in this file; the LOWER definition is the one Python keeps.)
-    #
-    # 💡 NEWER, EASIER WAY: inserting/removing attenuators around alignment is folded
-    #   into the beamline 'smi_plans' helper library's align step, so you usually don't
-    #   call these by hand once you migrate. The attenuators themselves (att1_*/att2_*)
-    #   still work fine — nothing here is broken.
-    # === end smi_plans note ================================================
+   
     print('Moving attenuators out')
     while att1_7.status.get() != 'Not Open':
         yield from bps.mv(att1_7.close_cmd, 1)
@@ -564,16 +498,7 @@ def alignment_on_stepbystep():
     yield from bps.mv(
     RE.md['SAXS_setup']['bs_x']
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a step-by-step alignment helper (beamstop/attenuators in).
-    #   (Heads-up: defined TWICE in this file; the LOWER definition is the one Python keeps.)
-    #
-    # 💡 NEWER, EASIER WAY: alignment like this is handled by the beamline 'smi_plans'
-    #   helper library's align_sample (used as the 'align=' step of a GIWAXS/transmission
-    #   run), which aligns each sample once and saves the result WITH the data, so you
-    #   don't keep separate alignment routines and look-up tables by hand.
-    #   (Nothing here is broken.)
-    # === end smi_plans note ================================================
+
     smi = SMI_Beamline()
     yield from atten_move_in()
     yield from bps.mv(waxs, 15)
@@ -587,16 +512,7 @@ def alignment_off_stepbystep(bs_x=None):
     yield from bps.mv(
     RE.md['SAXS_setup']['bs_x']
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a step-by-step alignment helper (restore beamstop/attenuators).
-    #   (Heads-up: defined TWICE in this file; the LOWER definition is the one Python keeps.)
-    #
-    # 💡 NEWER, EASIER WAY: alignment like this is handled by the beamline 'smi_plans'
-    #   helper library's align_sample (used as the 'align=' step of a GIWAXS/transmission
-    #   run), which aligns each sample once and saves the result WITH the data, so you
-    #   don't keep separate alignment routines and look-up tables by hand.
-    #   (Nothing here is broken.)
-    # === end smi_plans note ================================================
+
     if bs_x is None:
         bs_x = RE.md['SAXS_setup']['bs_x']
 
@@ -623,24 +539,7 @@ def continous_run_change_xpos(sname='20250630_op_a_echem', t=2, wait=100, frames
         frames(int): number of frames to take,
         x_off (list of floats): relative x positions to take data at.
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a long operando run that, frame after frame, steps across x and takes WAXS at each
-    #   (e.g. an echem cell scanned in x over time).
-    #
-    # 💡 NEWER, EASIER WAY: a long operando run that revisits prealigned spots frame
-    #   after frame is the beamline 'smi_plans' helper library's operando/time-series
-    #   run. It loops frames and the prealigned positions for you and records each
-    #   position/beam (and the cell potential, if echem) into the saved data:
-    #
-    #     from smi_plans import operando_kinetics_run     # or time_series_run
-    #     # feed it your prealigned positions; it loops frames x positions and saves
-    #     # each point's coordinates/beam into the data + file name.
-    #
-    #   (The 'sleep(wait)' between rounds is just spacing — NOT broken.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below no longer
-    #   sets the exposure unless run as a plan (see the ⚠️ FIXME note on that line).
-    # === end smi_plans note ================================================
+
     try:
         tstamp = RE.md['tstamp']
     except:
@@ -672,18 +571,8 @@ def continous_run_change_xpos(sname='20250630_op_a_echem', t=2, wait=100, frames
 
 def take_data_across_x(sname='20241030_op_Na_Cu_bar_b', t=2, x_off=[-500, -400, -300, -250, -200,-150, -100, -50, 0, 50, 
                                                                   100,150, 200, 250, 300, 400, 500]):
-
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: scans across x (a list of offsets) and takes WAXS at each — a single x line scan.
-    #
-    # 💡 NEWER, EASIER WAY: taking WAXS/SAXS at several sample positions is the
-    #   beamline 'smi_plans' helper library's transmission run. It loops the sample
-    #   table for you and records each position/beam into the data + file name:
-    #
-    #     from smi_plans import transmission_bar, SampleList
-    #     samples = SampleList.from_columns(name=names, x=piezo_x, y=piezo_y)
-    #     yield from transmission_bar(samples, t=t)
-    # === end smi_plans note ================================================
+    """
+    """
     try:
         tstamp = RE.md['tstamp']
     except:
@@ -709,16 +598,6 @@ def align_across_x():
 
     Need to go manually
     """
-
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an alignment routine that scans across x to find/refine sample alignment.
-    #
-    # 💡 NEWER, EASIER WAY: alignment like this is handled by the beamline 'smi_plans'
-    #   helper library's align_sample (used as the 'align=' step of a GIWAXS/transmission
-    #   run), which aligns each sample once and saves the result WITH the data, so you
-    #   don't keep separate alignment routines and look-up tables by hand.
-    #   (Nothing here is broken.)
-    # === end smi_plans note ================================================
     try:
         sample_pos = RE.md['sample_pos0']
         x0 = sample_pos['x0']
@@ -778,14 +657,6 @@ def save_alignment_to_md(point='0'):
     Save alignment positon for single point
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: saves the current alignment (positions) into RE.md so it can be reused later.
-    #
-    # 💡 NEWER, EASIER WAY: with the beamline 'smi_plans' helper library you usually
-    #   don't manage this by hand — it records positions/beam/temperature/etc. INTO the
-    #   saved data for every frame and templates the file name from them. So hand-saving the alignment look-up table
-    #   becomes unnecessary once you migrate. (Nothing here is broken.)
-    # === end smi_plans note ================================================
     dict1 = dict(
         x = np.round(piezo.x.position, 2),
         y = np.round(piezo.y.position, 2),
@@ -804,14 +675,6 @@ def move_to_sample_pos0(key='sample_pos0'):
     Move to starting position based on RE.md
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: moves the stages back to a saved 'sample_pos0' stored in RE.md.
-    #
-    # 💡 NEWER, EASIER WAY: with the beamline 'smi_plans' helper library you usually
-    #   don't manage this by hand — it records positions/beam/temperature/etc. INTO the
-    #   saved data for every frame and templates the file name from them. So hand-managed saved positions
-    #   becomes unnecessary once you migrate. (Nothing here is broken.)
-    # === end smi_plans note ================================================
     try:
         sample_pos = RE.md[key]
     except:
@@ -832,14 +695,6 @@ def save_sample_pos0():
     Save sample start position into metadata after alignment
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: saves the current stage positions as 'sample_pos0' in RE.md.
-    #
-    # 💡 NEWER, EASIER WAY: with the beamline 'smi_plans' helper library you usually
-    #   don't manage this by hand — it records positions/beam/temperature/etc. INTO the
-    #   saved data for every frame and templates the file name from them. So hand-managed saved positions
-    #   becomes unnecessary once you migrate. (Nothing here is broken.)
-    # === end smi_plans note ================================================
     x0 = np.round(piezo.x.position, 2)
     y0 = np.round(piezo.y.position, 2)
     z0 = np.round(piezo.z.position, 2)
@@ -854,14 +709,6 @@ def clear_md():
     Remove time stamp, sample zero, and alignment after changing the cell
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: clears some bookkeeping entries from RE.md.
-    #
-    # 💡 NEWER, EASIER WAY: with the beamline 'smi_plans' helper library you usually
-    #   don't manage this by hand — it records positions/beam/temperature/etc. INTO the
-    #   saved data for every frame and templates the file name from them. So manual RE.md bookkeeping
-    #   becomes unnecessary once you migrate. (Nothing here is broken.)
-    # === end smi_plans note ================================================
     keys = [ 'tstamp', 'alignment_LUT', 'sample_pos0']
     
     for k in keys:
@@ -882,21 +729,6 @@ def continous_run_prealigned_positions_2024_1(sname='20250630_op_a_interval', t=
         wait (float): wait time after one series of points is done.
     """
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a long operando run — frame after frame, it revisits a set of prealigned points and
-    #   takes WAXS at each.
-    #
-    # 💡 NEWER, EASIER WAY: a long operando run that revisits prealigned spots frame
-    #   after frame is the beamline 'smi_plans' helper library's operando/time-series
-    #   run. It loops frames and the prealigned positions for you and records each
-    #   position/beam (and the cell potential, if echem) into the saved data:
-    #
-    #     from smi_plans import operando_kinetics_run     # or time_series_run
-    #     # feed it your prealigned positions; it loops frames x positions and saves
-    #     # each point's coordinates/beam into the data + file name.
-    #
-    #   (The 'sleep(wait)' between rounds is just spacing — NOT broken.)
-    # === end smi_plans note ================================================
     try:
         alignment = RE.md['alignment_LUT']
     except:
@@ -938,10 +770,10 @@ def continous_run_prealigned_positions_2024_1(sname='20250630_op_a_interval', t=
         yield from bps.sleep(wait)
 
 def continous_run_change_xpos_thpos(
-        sname='20250709_op_a_pretest',
-        t=2, wait=100, frames=5000,
-        x_off=[-150, -100, -50, 0, 50, 100, 150],
-        ai_off=[0.05, 0.10, 0.15, 0.20, 0.30, 0.4, 0.5],
+        sname='20260709DPT5F_LiCu_InSituCell_P1_A2',
+        t=2, wait=10, frames=1,
+        x_off=[0],
+        ai_off=[0.0, 0.05, 0.10, 0.15, 0.3, 0.5, 1.0],
     ):
     """
     Take data continously
@@ -956,24 +788,7 @@ def continous_run_change_xpos_thpos(
         frames(int): number of frames to take,
         x_off (list of floats): relative x positions to take data at.
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a long operando run that, frame after frame, steps across x AND incident angle,
-    #   taking WAXS at each combination.
-    #
-    # 💡 NEWER, EASIER WAY: a long operando run that revisits prealigned spots frame
-    #   after frame is the beamline 'smi_plans' helper library's operando/time-series
-    #   run. It loops frames and the prealigned positions for you and records each
-    #   position/beam (and the cell potential, if echem) into the saved data:
-    #
-    #     from smi_plans import operando_kinetics_run     # or time_series_run
-    #     # feed it your prealigned positions; it loops frames x positions and saves
-    #     # each point's coordinates/beam into the data + file name.
-    #
-    #   (The 'sleep(wait)' between rounds is just spacing — NOT broken.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below no longer
-    #   sets the exposure unless run as a plan (see the ⚠️ FIXME note on that line).
-    # === end smi_plans note ================================================
+
     try:
         tstamp = RE.md['tstamp']
     except:
@@ -984,11 +799,12 @@ def continous_run_change_xpos_thpos(
     try:
         th0 = RE.md['th0']
     except:
-        th0 = piezo.th.position
+        #th0 = piezo.th.position
+        th0 = stage.th.position
         RE.md['th0'] = th0
         print(f'Setting th0 to current position of {th0} deg')
 
-    det_exposure_time(t, t)  # ⚠️ FIXME(smi_plans): this used to set the exposure directly; it's now a "plan", so the plain call does nothing. Inside a plan write:  yield from det_exposure_time(t, t)  — or at the prompt:  RE(det_exposure_time(t, t)). (The smi_plans technique runs set exposure for you via t=.)
+    yield from det_exposure_time(t, t)
     x_0 = piezo.x.position
 
     for i in range(frames):
@@ -999,22 +815,29 @@ def continous_run_change_xpos_thpos(
             yield from bps.mv(piezo.x, x_0 + x_step)
 
             for ai in ai_off:
-                yield from bps.mv(piezo.th, th0 + ai)
+                #yield from bps.mv(piezo.th, th0 + ai)
+                yield from bps.mv(stage.th, th0 + ai)
                 # update sample name
                 name_sample(sname, tstamp)
+                # Add incident angle to sample name
+                ai_md = f'_ai_{ai:.3f}'
+                name = RE.md['sample_name']
+                RE.md['sample_name'] = name + ai_md
 
                 # take one frame
                 yield from bp.count([pil900KW])
         
         yield from bps.mv(piezo.x, x_0,
-                          piezo.th, th0)
+                          #piezo.th, th0,
+                          stage.th, th0,
+                          )
 
         # don't wait
         print(f'\nWaiting {wait} s')
         yield from bps.sleep(wait)
 
 
-def continous_run_prealigned_positions_2025_2(sname='20260601_op_echem', t=2
+def continous_run_prealigned_positions_2025_2(sname='20260804_multi_exp2', t=2
                                               , wait=100, frames=5000):
 
     """
@@ -1031,36 +854,25 @@ def continous_run_prealigned_positions_2025_2(sname='20260601_op_echem', t=2
     # x_off (list of floats): offset values in um for x scans,
     # ai_off (list of floats): values of incident angles to take scans at.
 
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a long operando run — at each prealigned region it does a finer x-by-incident-angle
-    #   scan, repeated frame after frame.
-    #   (Heads-up: several OLDER copies of this same function (the op_d / op_c / op_b /
-    #   op_a / Pristine_Cu versions) appear further down in this file, but they are
-    #   commented out inside ''' ''' blocks, so only THIS one is active. That's fine —
-    #   just know the commented copies below are dormant, not running.)
-    #
-    # 💡 NEWER, EASIER WAY: a long operando run that revisits prealigned spots frame
-    #   after frame is the beamline 'smi_plans' helper library's operando/time-series
-    #   run. It loops frames and the prealigned positions for you and records each
-    #   position/beam (and the cell potential, if echem) into the saved data:
-    #
-    #     from smi_plans import operando_kinetics_run     # or time_series_run
-    #     # feed it your prealigned positions; it loops frames x positions and saves
-    #     # each point's coordinates/beam into the data + file name.
-    #
-    #   (The 'sleep(wait)' between rounds is just spacing — NOT broken.)
-    # === end smi_plans note ================================================
+
     yield from bps.mv(waxs, 0)
     x_off  = [-100, 0, 100]
     ai_off = [0.05, 0.10, 0.15, 0.20, 0.30]
+
+    yield from det_exposure_time(t, t)
+
+    date_prefix = '20260804'
 
     try:
         alignment = RE.md['alignment_LUT']
     except:
         alignment =  {
-            '-1000': {'x': -11900, 'y': 10221.8, 'z': 7400, 'th': 0.239},  
-                '0': {'x': -12900, 'y': 10225.2, 'z': 7400, 'th': 0.099},
-            '+1000': {'x': -13900, 'y': 10230.9, 'z': 7400, 'th': 0.3499} 
+            # 'op_a_pos1_after_echem': {'x': -25000, 'y': 4686.7, 'z': 5200, 'th': 0.448},  
+            # 'op_a_pos2_after_echem': {'x': -24000, 'y': 4698.6, 'z': 5200, 'th': 0.398},
+            # 'op_a_pos3_after_echem': {'x': -23000, 'y': 4710.9, 'z': 5200, 'th': 0.298},
+            'op_c_pos1_echem': {'x': 17000, 'y': 5954, 'z': 5200, 'th': -1.2},
+            'op_c_pos2_echem': {'x': 18000, 'y': 5980.4, 'z': 5200, 'th': -1.2},
+            'op_c_pos3_echem': {'x': 19000, 'y': 6004.8, 'z': 5200, 'th': -1.2},
                         
         }
         RE.md['alignment_LUT'] = alignment
@@ -1077,6 +889,8 @@ def continous_run_prealigned_positions_2025_2(sname='20260601_op_echem', t=2
 
         # Iterate over region of interest
         for key, value in alignment.items():
+
+            project_set(f'{date_prefix}_{key}')
 
             # ROI alignment values
             x0 = value['x']
@@ -1127,7 +941,7 @@ def continous_run_prealigned_positions_2025_2(sname='20260601_op_echem', t=2
 
 
 def continous_run_prealigned_positions_2025_3_swaxs(
-        sname='20260601_exp_a_test2', t=2, wait=10, frames=2, saxs_frame=100000):
+        sname='20260804_test', t=2, wait=10, frames=2, saxs_frame=100000):
 
     """
     At each prealigned region of interest, take a finer scan across x with several
@@ -1143,21 +957,7 @@ def continous_run_prealigned_positions_2025_3_swaxs(
         saxs_frame (int): frame interval for which to take full SWAXS dataset.
 
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a long operando SWAXS run — frame after frame it revisits prealigned points and
-    #   takes SAXS+WAXS at each.
-    #
-    # 💡 NEWER, EASIER WAY: a long operando run that revisits prealigned spots frame
-    #   after frame is the beamline 'smi_plans' helper library's operando/time-series
-    #   run. It loops frames and the prealigned positions for you and records each
-    #   position/beam (and the cell potential, if echem) into the saved data:
-    #
-    #     from smi_plans import operando_kinetics_run     # or time_series_run
-    #     # feed it your prealigned positions; it loops frames x positions and saves
-    #     # each point's coordinates/beam into the data + file name.
-    #
-    #   (The 'sleep(wait)' between rounds is just spacing — NOT broken.)
-    # === end smi_plans note ================================================
+
     x_off  = [-100, 0, 100]
     ai_off = [0.05, 0.10, 0.15, 0.20, 0.30]
     
@@ -1169,8 +969,8 @@ def continous_run_prealigned_positions_2025_3_swaxs(
         alignment = RE.md['alignment_LUT']
     except:
         alignment =  {
-            '-1000': {'x': -15000, 'y': 9994.3, 'z': 7400, 'th': 0.094},  
-                '0': {'x': -14000, 'y': 9972.3, 'z': 7400, 'th': 0.094}
+
+                '0': {'x': -3000, 'y': 5134.6, 'z': 5200, 'th': -0.699}
                    
         }
         RE.md['alignment_LUT'] = alignment
@@ -1463,24 +1263,6 @@ def grazing_Dean_2025_3(t=0.5):
     """
     #project_set('ex-situ')
 
-    # Sample set 1
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a grazing-incidence S/WAXS run on the hexapod (for humidity) — aligns each sample,
-    #   then takes WAXS/SAXS at several incident angles.
-    #
-    # 💡 NEWER, EASIER WAY: aligning each sample then sweeping incident angle / WAXS
-    #   arc is the beamline 'smi_plans' helper library's GIWAXS run. align_sample
-    #   aligns and saves the result, and incidence_axis sweeps the angle while
-    #   recording it into the data:
-    #
-    #     from smi_plans import giwaxs_bar, SampleList, incidence_axis, align_sample
-    #     samples = SampleList.from_columns(name=names, x=stage_x, y=stage_y)
-    #     yield from giwaxs_bar(samples, incidence_axis(piezo.th, th0, incident_angles),
-    #                           t=t, align=align_sample)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below no longer
-    #   sets the exposure unless run as a plan (see the ⚠️ FIXME note on that line).
-    # === end smi_plans note ================================================
     names_1   = ['20251117_exsitu_sample_a']
     stage_x_1 = [27]
     stage_y_1 = [-0.02]
@@ -1567,23 +1349,7 @@ def prealigned_grazing_Dean_2025_3(t=0.5):
     #project_set('ex-situ')
 
     # Sample set 1
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a grazing-incidence S/WAXS run using prealigned positions — takes WAXS/SAXS at
-    #   several incident angles per sample.
-    #
-    # 💡 NEWER, EASIER WAY: aligning each sample then sweeping incident angle / WAXS
-    #   arc is the beamline 'smi_plans' helper library's GIWAXS run. align_sample
-    #   aligns and saves the result, and incidence_axis sweeps the angle while
-    #   recording it into the data:
-    #
-    #     from smi_plans import giwaxs_bar, SampleList, incidence_axis, align_sample
-    #     samples = SampleList.from_columns(name=names, x=stage_x, y=stage_y)
-    #     yield from giwaxs_bar(samples, incidence_axis(piezo.th, th0, incident_angles),
-    #                           t=t, align=align_sample)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below no longer
-    #   sets the exposure unless run as a plan (see the ⚠️ FIXME note on that line).
-    # === end smi_plans note ================================================
+    
     names   = ['20251117_exsitu_sample_a_pos9']
     stage_x = [27.4]
     stage_y = [-0.253]
@@ -1641,19 +1407,6 @@ def alignement_gisaxs_hex_rough_Dean(angle=0.1):
 
     """
 
-    # Activate the automated derivative calculation
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a rough GISAXS alignment routine on the hexapod (find the sample/beam roughly).
-    #
-    # 💡 NEWER, EASIER WAY: alignment like this is handled by the beamline 'smi_plans'
-    #   helper library's align_sample (used as the 'align=' step of a GIWAXS/transmission
-    #   run), which aligns each sample once and saves the result WITH the data, so you
-    #   don't keep separate alignment routines and look-up tables by hand.
-    #   (Nothing here is broken.)
-    #
-    # ⚠️ NEEDS A FIX TO RUN NOW: the 'det_exposure_time(...)' call below no longer
-    #   sets the exposure unless run as a plan (see the ⚠️ FIXME note on that line).
-    # === end smi_plans note ================================================
     bec._calc_derivative_and_stats = True
 
     sample_id(user_name="test", sample_name="test")
@@ -1699,16 +1452,7 @@ def atten_move_in():
     """
     Move 4x + 2x Sn 60 um attenuators in
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an alignment helper — inserts attenuators (to protect the detector during alignment).
-    #   (Heads-up: this function is defined TWICE in this file; Python keeps the LOWER one,
-    #   so the upper copy is shadowed/ignored.)
-    #
-    # 💡 NEWER, EASIER WAY: inserting/removing attenuators around alignment is folded
-    #   into the beamline 'smi_plans' helper library's align step, so you usually don't
-    #   call these by hand once you migrate. The attenuators themselves (att1_*/att2_*)
-    #   still work fine — nothing here is broken.
-    # === end smi_plans note ================================================
+
     print('Moving attenuators in')
 
     while att1_7.status.get() != 'Open':
@@ -1722,15 +1466,7 @@ def atten_move_out():
     """
     Move 4x + 2x  + 1x Sn 60 um attenuators out
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: an alignment helper — removes the attenuators after alignment.
-    #   (Heads-up: defined TWICE in this file; the LOWER definition is the one Python keeps.)
-    #
-    # 💡 NEWER, EASIER WAY: inserting/removing attenuators around alignment is folded
-    #   into the beamline 'smi_plans' helper library's align step, so you usually don't
-    #   call these by hand once you migrate. The attenuators themselves (att1_*/att2_*)
-    #   still work fine — nothing here is broken.
-    # === end smi_plans note ================================================
+
     print('Moving attenuators out')
     while att1_7.status.get() != 'Not Open':
         yield from bps.mv(att1_7.close_cmd, 1)
@@ -1749,16 +1485,7 @@ def alignment_on_stepbystep():
     yield from bps.mv(
     RE.md['SAXS_setup']['bs_x']
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a step-by-step alignment helper (beamstop/attenuators in).
-    #   (Heads-up: defined TWICE in this file; the LOWER definition is the one Python keeps.)
-    #
-    # 💡 NEWER, EASIER WAY: alignment like this is handled by the beamline 'smi_plans'
-    #   helper library's align_sample (used as the 'align=' step of a GIWAXS/transmission
-    #   run), which aligns each sample once and saves the result WITH the data, so you
-    #   don't keep separate alignment routines and look-up tables by hand.
-    #   (Nothing here is broken.)
-    # === end smi_plans note ================================================
+    
     smi = SMI_Beamline()
     yield from atten_move_in()
     yield from bps.mv(waxs, 15)
@@ -1772,16 +1499,7 @@ def alignment_off_stepbystep(bs_x=None):
     yield from bps.mv(
     RE.md['SAXS_setup']['bs_x']
     """
-    # === smi_plans note (REVIEW 2026-06-22) ================================
-    # WHAT THIS DOES: a step-by-step alignment helper (restore beamstop/attenuators).
-    #   (Heads-up: defined TWICE in this file; the LOWER definition is the one Python keeps.)
-    #
-    # 💡 NEWER, EASIER WAY: alignment like this is handled by the beamline 'smi_plans'
-    #   helper library's align_sample (used as the 'align=' step of a GIWAXS/transmission
-    #   run), which aligns each sample once and saves the result WITH the data, so you
-    #   don't keep separate alignment routines and look-up tables by hand.
-    #   (Nothing here is broken.)
-    # === end smi_plans note ================================================
+    
     if bs_x is None:
         bs_x = RE.md['SAXS_setup']['bs_x']
 
@@ -1790,3 +1508,104 @@ def alignment_off_stepbystep(bs_x=None):
     yield from bps.mv(pil2M.beamstop.x_rod, bs_x)
 
     print('\t\tALIGNMENT MODE OFF and WAXS arc to 0 deg')
+
+# from 30-user-Patryk
+def sample_id(user_name='test', sample_name='test'):
+
+    sample_name = f'{user_name}_{sample_name}'.translate(
+                {ord(c): "_" for c in r"!@#$%^&*{}:/<>?\|`~+ =,"})
+    RE.md["sample_name"] = f'{sample_name}_{get_scan_md()}_'
+    RE.md["sname"] = sample_name
+
+def get_scan_md(tender=False):
+    """
+    Create a string with scan metadata
+    """
+
+    # Metadata
+    e = energy.position.energy / 1000
+    #temp = str(np.round(float(temp_degC), 1)).zfill(5)
+    wa = waxs.arc.position + 0.001
+    wa = str(np.round(float(wa), 1)).zfill(4)
+    sdd = pil2m_pos.z.position / 1000
+
+    md_fmt = ("_{energy}keV_wa{wa}_sdd{sdd}m")
+
+    if tender:
+        scan_md = md_fmt.format(
+            energy = "%.5f" % e ,
+            wa = wa,
+            sdd = "%.1f" % sdd,
+        )
+    else:
+        scan_md = md_fmt.format(
+            energy = "%.2f" % e ,
+            wa = wa,
+            sdd = "%.1f" % sdd,
+        )
+    return scan_md
+
+
+def exsitu_humidity_align_and_measure(sname='0701DPTZ5F_LiCuB', t=2):
+
+    """
+    Manually align sample in the humidity cell, then run this to collect data
+
+    Args:
+        sname (str): sample name,
+        t (float): exposure time,
+    """
+
+    project_set('exsitu-humid')
+
+    sx_off  = [-0.25, 0, 0.25]
+    ai_off = [0.05, 0.10, 0.15, 0.20, 0.30]
+
+    waxs_arc = [0]
+    yield from det_exposure_time(t, t)
+    
+    # This is Huber stage, not SmarAct piezo
+    alignment =  {
+            '-1000': {'sx': -49, 'sy': -11.45, 'sz': 5.46, 'sth': -0.5},            
+    }
+    
+    # Iterate over region of interest
+    for key, value in alignment.items():
+
+        # ROI alignment values
+        sx0 = value['sx']
+        sy0 = value['sy']
+        sz0 = value['sz']
+        sth0 = value['sth']
+
+        yield from bps.mv(
+            stage.x, sx0,
+            stage.y, sy0,
+            stage.z, sz0,
+            stage.th, sth0,
+        )
+
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 14.9 else [pil900KW, pil2M]
+
+            # Fine scan across x
+            for x_step in sx_off:
+                yield from bps.mv(stage.x, sx0 + x_step)
+
+                # Go over incident angles
+                for ai_step in ai_off:
+                    yield from bps.mv(stage.th, sth0 + ai_step)
+
+                    name_sample(sname, time.time(), stage_used=True)
+                    # Add incident angle to sample name
+                    ai_md = f'_ai_{ai_step:.3f}'
+                    print(f'Incident angle:\t{ai_step}')
+                    name = RE.md['sample_name']
+                    RE.md['sample_name'] = name + ai_md
+                    RE.md['sname'] = name + ai_md
+                    yield from bp.count(dets)
+
+    yield from bps.mv(waxs, 0)
+    sample_id(user_name='test', sample_name=f'test')
+    project_set('exsitu-alignment')
