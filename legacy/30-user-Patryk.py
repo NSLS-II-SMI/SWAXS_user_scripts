@@ -3632,3 +3632,50 @@ def run_Paren_hard_multiplesaxs_2026_1(t=1):
 
     sample_id(user_name="test", sample_name="test")
     det_exposure_time(0.3, 0.3)
+
+
+def get_scan_md(tender=False):
+    """
+    """
+
+    # Metadata
+    e = energy.position.energy / 1000
+    #temp = str(np.round(float(temp_degC), 1)).zfill(5)
+    wa = waxs.arc.position + 0.001
+    wa = str(np.round(float(wa), 1)).zfill(4)
+    sdd = pil2m_pos.z.position / 1000
+
+    md_fmt = ("_{energy}keV_wa{wa}_sdd{sdd}m")
+
+    if tender:
+        scan_md = md_fmt.format(
+            energy = "%.5f" % e ,
+            wa = wa,
+            sdd = "%.1f" % sdd,
+        )
+    else:
+        scan_md = md_fmt.format(
+            energy = "%.2f" % e ,
+            wa = wa,
+            sdd = "%.1f" % sdd,
+        )
+    return scan_md
+
+def get_more_md(tender=True, bpm=True):
+    """"""
+
+    more_md = f'{get_scan_md(tender=tender)}'
+
+    if bpm:
+        xbpm = xbpm2.sumX.get()
+        xbpm = str(np.round(float(xbpm), 3)).zfill(5)
+        more_md = f'{more_md}_xbpm{xbpm}'
+
+    return more_md
+
+def sample_id(user_name='test',sample_name='test'):
+
+    sample_name = f'{user_name}_{sample_name}'.translate(
+                {ord(c): "_" for c in r"!@#$%^&*{}:/<>?\|`~+ =,"})
+
+    RE.md["sample_name"] = sample_name

@@ -565,3 +565,554 @@ def run_multiple_exposures_Das_2026_1():
     yield from exsitu_swaxs_Das_2026_1(t=5)
     project_set('pw-exsitu-vac-60s')
     yield from exsitu_swaxs_Das_2026_1(t=60, y_off=150)
+
+
+def get_scan_md(tender=False):
+    """
+    """
+
+    # Metadata
+    e = energy.position.energy / 1000
+    #temp = str(np.round(float(temp_degC), 1)).zfill(5)
+    wa = waxs.arc.position + 0.001
+    wa = str(np.round(float(wa), 1)).zfill(4)
+    sdd = pil2m_pos.z.position / 1000
+
+    md_fmt = ("_{energy}keV_wa{wa}_sdd{sdd}m")
+
+    if tender:
+        scan_md = md_fmt.format(
+            energy = "%.5f" % e ,
+            wa = wa,
+            sdd = "%.1f" % sdd,
+        )
+    else:
+        scan_md = md_fmt.format(
+            energy = "%.2f" % e ,
+            wa = wa,
+            sdd = "%.1f" % sdd,
+        )
+    return scan_md
+
+def get_more_md(tender=True, bpm=True):
+    """"""
+
+    more_md = f'{get_scan_md(tender=tender)}'
+
+    if bpm:
+        xbpm = xbpm2.sumX.get()
+        xbpm = str(np.round(float(xbpm), 3)).zfill(5)
+        more_md = f'{more_md}_xbpm{xbpm}'
+
+    return more_md
+
+def sample_id(user_name='test',sample_name='test'):
+
+    sample_name = f'{user_name}_{sample_name}'.translate(
+                {ord(c): "_" for c in r"!@#$%^&*{}:/<>?\|`~+ =,"})
+
+    RE.md["sample_name"] = sample_name
+
+
+def calib_scan(t=1):
+    project_set('CeO2_01')
+    name = 'CeO2_01_calib_01'
+    waxs_arc = [ 0, 15, 17.5, 20, 22.5, 25]
+
+    yield from det_exposure_time(t, t)
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+    
+    for wa in waxs_arc:
+        yield from bps.mv(waxs, wa)
+        dets = [pil900KW] if waxs.arc.position < 14.3 else [pil900KW, pil2M]
+        dets.append(xbpm3.sumX)
+        eplased = time.time() - tstamp
+
+        sample_name = f'{name}_{get_scan_md()}_t{eplased:.0f}_{get_positions()}'
+        sample_id(user_name='SD', sample_name=sample_name)
+        print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+        yield from bp.count(
+                        dets, 20
+                    )
+
+
+        
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+def operando_mapping_Das_2026_3(t=1, waxs_only=False, repeats=0):
+    """
+    WAXS or SAXS/WAXS at once, 300x300, 121(y) x 13(x)
+    1h scan
+    """
+
+    project_set('BG')
+
+    # Sample name and coordinates
+    
+    name = 'BG_QAPPT_Kapton_wa18p5_03'
+    z =    2500.0
+    y =    3500.0
+    x =    -1800.0
+    
+    
+
+    if waxs_only:
+        waxs_arc = [ 18.5 ]
+    else:
+        waxs_arc = [ 0, 18.5 ]
+    
+    yield from det_exposure_time(t, t)
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+
+    for r in range(repeats + 1):
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 14.3 else [pil900KW, pil2M]
+            
+            # Get xbpm3
+            dets.append(xbpm3.sumX)
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+            )
+            
+            eplased = time.time() - tstamp
+
+            sample_name = f'{name}_run{r}_{get_scan_md()}_t{eplased:.0f}_{get_positions()}'
+            sample_id(user_name='SD', sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                
+            if 'bgk' not in name:
+                yield from bp.rel_grid_scan(
+                    dets, piezo.y, -500, 500, 5, piezo.x, -500, 500, 3, 0
+                )
+            else:
+                yield from bp.rel_grid_scan(
+                    dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 3, 0
+                )
+
+        
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+
+def operando_mapping_time_delay_Das_2026_3(t=1, waxs_only=False, repeats=0, point_delay=0):
+    """
+    WAXS or SAXS/WAXS at once, 300x300, 121(y) x 13(x)
+    1h scan
+    """
+
+    project_set('PEM_03')
+
+    # Sample name and coordinates
+    
+    name = 'PEM_03_1V0_02_O2'
+    z =    2300.0
+    y =    1030.0
+    x =    6600.0
+    
+    
+
+    if waxs_only:
+        waxs_arc = [ 20 ]
+    else:
+        waxs_arc = [ 0, 20 ]
+    
+    yield from det_exposure_time(t, t)
+
+    def delayed_step(detectors, step, pos_cache):
+        yield from bps.one_nd_step(detectors, step, pos_cache)
+
+        if point_delay > 0:
+            yield from bps.sleep(point_delay)
+
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+
+    for r in range(repeats + 1):
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 14.3 else [pil900KW, pil2M]
+            
+            # Get xbpm3
+            dets.append(xbpm3.sumX)
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+            )
+            
+            eplased = time.time() - tstamp
+
+            sample_name = f'{name}_run{r}_{get_scan_md()}_t{eplased:.0f}_{get_positions()}'
+            sample_id(user_name='SD', sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                
+            if 'bgk' not in name:
+                yield from bp.rel_scan(
+                    dets, piezo.x, -1180, 1180, 60,
+                    per_step=delayed_step
+                )
+            else:
+                yield from bp.rel_grid_scan(
+                    dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 3, 0
+                )
+
+        
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+def operando_mapping_time_delay_shuttclose_Das_2026_3(t=1, waxs_only=False, repeats=0, point_delay=0):
+    """
+    WAXS or SAXS/WAXS at once, 300x300, 121(y) x 13(x)
+    1h scan
+    """
+
+    project_set('PEM_03')
+
+    # Sample name and coordinates
+    
+    name = 'PEM_03_0V2_01_O2'
+    z =    2300.0
+    y =    1000.0
+    x =    6600.0
+    
+    
+
+    if waxs_only:
+        waxs_arc = [ 20 ]
+    else:
+        waxs_arc = [ 0, 20 ]
+    
+    yield from det_exposure_time(t, t)
+
+    def delayed_step(detectors, step, pos_cache):
+        yield from bps.one_nd_step(detectors, step, pos_cache)
+
+        yield from shopen()
+
+        yield from bps.trigger_and_read(
+            list(detectors) +list(step.keys())
+        )
+
+        yield from shclose()
+
+        if point_delay > 0:
+            yield from bps.sleep(point_delay)
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+
+    for r in range(repeats + 1):
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 14.3 else [pil900KW, pil2M]
+            
+            # Get xbpm3
+            dets.append(xbpm3.sumX)
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+            )
+            
+            eplased = time.time() - tstamp
+
+            sample_name = f'{name}_run{r}_{get_scan_md()}_t{eplased:.0f}_{get_positions()}'
+            sample_id(user_name='SD', sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                
+            if 'bgk' not in name:
+                yield from bp.rel_scan(
+                    dets, piezo.x, -1180, 1180, 60,
+                    per_step=delayed_step
+                )
+            else:
+                yield from bp.rel_grid_scan(
+                    dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 3, 0
+                )
+
+        
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+def operando_voltage_dependence_Das_2026(t=1, waxs_only=False, repeats=0, point_delay=0):
+    """
+    WAXS or SAXS/WAXS at once, 300x300, 121(y) x 13(x)
+    1h scan
+    """
+
+    project_set('PEM_04')
+
+    # Sample name and coordinates
+    
+    name = 'PEM_04_0V2_N2_down3_cy2'
+    z =    1500.0
+    y =    2515.0
+    x =    550.0
+    
+    
+
+    if waxs_only:
+        waxs_arc = [ 20 ]
+    else:
+        waxs_arc = [ 0, 20 ]
+    
+    yield from det_exposure_time(t, t)
+
+    def delayed_step(detectors, step, pos_cache):
+        yield from bps.one_nd_step(detectors, step, pos_cache)
+
+        if point_delay > 0:
+            yield from bps.sleep(point_delay)
+
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+
+    for r in range(repeats + 1):
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 14.3 else [pil900KW, pil2M]
+            
+            # Get xbpm3
+            dets.append(xbpm3.sumX)
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+            )
+            
+            eplased = time.time() - tstamp
+
+            sample_name = f'{name}_run{r}_{get_scan_md()}_t{eplased:.0f}_{get_positions()}'
+            sample_id(user_name='SD', sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                
+            if 'bgk' not in name:
+                yield from bp.rel_scan(
+                    dets, piezo.x, -1180, 1180, 5,
+                    per_step=delayed_step
+                )
+            else:
+                yield from bp.rel_grid_scan(
+                    dets, piezo.y, -100, 100, 11,  piezo.x, -100, 100, 3, 0
+                )
+
+        
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+def operando_mapping_time_delay_Das_2026_3(t=1, waxs_only=False, repeats=0, point_delay=0):
+    """
+    WAXS or SAXS/WAXS at once, 300x300, 121(y) x 13(x)
+    1h scan
+    """
+
+    project_set('CuCO2RR')
+
+    # Sample name and coordinates
+    
+    name = 'CuCO2RR_exsitu_mapping_01'
+    z =    3500.0
+    y =    3300.0
+    x =    900.0
+    
+    
+
+    if waxs_only:
+        waxs_arc = [ 20 ]
+    else:
+        waxs_arc = [ 18.5 ]
+    
+    yield from det_exposure_time(t, t)
+
+    def delayed_step(detectors, step, pos_cache):
+        yield from bps.one_nd_step(detectors, step, pos_cache)
+
+        if point_delay > 0:
+            yield from bps.sleep(point_delay)
+
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+
+    for r in range(repeats + 1):
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 14.3 else [pil900KW, pil2M]
+            
+            # Get xbpm3
+            dets.append(xbpm3.sumX)
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+            )
+            
+            eplased = time.time() - tstamp
+
+            sample_name = f'{name}_run{r}_{get_scan_md()}_t{eplased:.0f}_{get_positions()}'
+            sample_id(user_name='SD', sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                
+            if 'bgk' not in name:
+                yield from bp.rel_scan(
+                    dets, piezo.x, -1180, 1180, 60,
+                    per_step=delayed_step
+                )
+            else:
+                yield from bp.rel_grid_scan(
+                    dets, piezo.y, -250, 250, 22,  piezo.x, -1000, 1000, 83, 0
+                )
+
+        
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+def single_shot_waxs_sweep(t=1, waxs_only=False, repeats=0, point_delay=0):
+    """
+    WAXS or SAXS/WAXS at once, 300x300, 121(y) x 13(x)
+    1h scan
+    """
+
+    project_set('CuCO2RR_01')
+
+    # Sample name and coordinates
+    
+    name = 'CuCO2RR_exsitu_test_06_0.5'
+    z =    3500.0
+    y =    3500.0
+    x =    50.0
+    
+    
+
+    if waxs_only:
+        waxs_arc = [ 20 ]
+    else:
+        waxs_arc = [0, 15, 20, 25, 30 ]
+    
+    yield from det_exposure_time(t, t)
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+
+    for r in range(repeats + 1):
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 14.3 else [pil900KW, pil2M]
+            
+            # Get xbpm3
+            dets.append(xbpm3.sumX)
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+            )
+            
+            eplased = time.time() - tstamp
+
+            sample_name = f'{name}_run{r}_{get_scan_md()}_t{eplased:.0f}_{get_positions()}'
+            sample_id(user_name='SD', sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+
+            yield from bp.count(dets, 1)
+        
+    sample_id(user_name='test', sample_name='test')
+    det_exposure_time(0.5, 0.5)
+
+def operando_mapping(t=1, waxs_only=False, repeats=0, point_delay=0):
+    """
+    WAXS or SAXS/WAXS at once, 300x300, 121(y) x 13(x)
+    1h scan
+    """
+
+    project_set('CuCO2RR_02')
+
+    # Sample name and coordinates
+    
+    name = 'CuCO2RR_CO2_N2_-2V5_Re'
+    z =    3550.0
+    y =    4381.0
+    x =   -2000.0
+    
+    
+
+    if waxs_only:
+        waxs_arc = [ 20 ]
+    else:
+        waxs_arc = [ 18.5 ]
+    
+    yield from det_exposure_time(0.5, t)
+
+    def delayed_step(detectors, step, pos_cache):
+        yield from bps.one_nd_step(detectors, step, pos_cache)
+
+        if point_delay > 0:
+            yield from bps.sleep(point_delay)
+
+
+    try:
+        tstamp = RE.md['tstamp']
+    except:
+        tstamp = time.time()
+        RE.md['tstamp'] = tstamp
+
+    for r in range(repeats + 1):
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+            dets = [pil900KW] if waxs.arc.position < 14.3 else [pil900KW, pil2M]
+            
+            # Get xbpm3
+            dets.append(xbpm3.sumX)
+
+            yield from bps.mv(
+                piezo.x, x,
+                piezo.y, y,
+                piezo.z, z,
+            )
+            
+            eplased = time.time() - tstamp
+
+            sample_name = f'{name}_run{r}_{get_scan_md()}_t{eplased:.0f}_{get_positions()}'
+            sample_id(user_name='SD', sample_name=sample_name)
+            print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                
+            yield from bp.rel_grid_scan(
+                dets, piezo.y, -250, -125 , 10,  piezo.x, -500, 500, 15, 0
+            )
