@@ -1,0 +1,21 @@
+{
+  "full_runs": 72,
+  "full_events": 6166,
+  "per_sample_minutes": 94.8194552719593,
+  "eight_samples_hours": 12.788794189062383,
+  "observed_complete_sample_minutes": [
+    94.97685841321945,
+    94.95404189825058,
+    94.42905006408691,
+    95.43528144756952,
+    95.09578046798705,
+    95.01946477095287,
+    92.5400961915652
+  ],
+  "routine_gap_medians_s": {
+    "arc": 67.9372866153717,
+    "edge": 0.7938358783721924,
+    "sample": 75.1886500120163
+  },
+  "calibration": "1 s exposure, 2 s energy settle; same five lists and 0/20 arcs"
+}
