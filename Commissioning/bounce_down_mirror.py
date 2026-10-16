@@ -74,9 +74,9 @@ def get_bdm_pos():
     """
     Get the current position of the piezo-driven mirror (PDM).
     """
-    x = bdm.x.get()
-    y = bdm.y.get()
-    th = bdm.th.get()
+    x = bdm.x.position
+    y = bdm.y.position
+    th = bdm.th.position
     print(f"PDM Position - X: {x}, Y: {y}, Theta: {th}")
     return x, y, th
 

@@ -1,0 +1,31 @@
+{
+  "uid": "f733330d-1a46-490d-a8f5-17897e20514c",
+  "scan_id": 1170758,
+  "start_time": 1792083805.1572697,
+  "shape": [
+    19,
+    21
+  ],
+  "motors": [
+    "ssa_hg",
+    "piezo_x"
+  ],
+  "exposure_s": 0.5,
+  "exit_status": "success",
+  "attenuators": {
+    "foils": {
+      "att1_7": {
+        "material": "Sn_60um",
+        "thickness": "4x"
+      }
+    },
+    "attenuation_factor": 538.2708608060085,
+    "transmission": 0.0018578007334496926,
+    "energy_eV": 16150.003059161116,
+    "description": "att1_7: 4x Sn 60um (240um Sn)"
+  },
+  "units": {
+    "ssa_hg": "mm",
+    "piezo_x": "um"
+  }
+}
