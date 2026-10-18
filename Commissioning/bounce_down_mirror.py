@@ -4,21 +4,25 @@ pil2M.stats2.total.kind = 'hinted'
 pil2M.stats3.kind = 'hinted'
 pil2M.stats3.total.kind = 'hinted'
 
-# pil2M.beam_offset_y_mm.set(190.404+2*0.172)
-pil2M.beam_offset_y_mm.set(190.404+5*0.172)
+pil2M.stats4.kind = 'hinted'
+pil2M.stats4.total.kind = 'hinted'
+
+# pil2M.beam_offset_x_mm.set(pil2M.beam_offset_x_mm.get()+2*0.172)
+# pil2M.beam_offset_y_mm.set(pil2M.beam_offset_y_mm.get()+5*0.172)
 #RE(smi.setDirectBeamROI())
 
 
-def run_xrr_bdm_saxs(start_angle, stop_angle, num_steps, det=pil2M, atten=None, bdm_sample_distance=183):
+def run_xrr_bdm_saxs(start_angle, stop_angle, num_steps, bdm_th_origin, det=pil2M, sample_z_offset_mm=183-25, energy_keV=8):
     """
     Perform XRR scan by bouncing down the mirror from start_angle to stop_angle.
     """
     angles = np.linspace(start_angle, stop_angle, num_steps)
-    ai0 = bdm.th.get()
-    det_exposure_time(1, 1)
+    ai0 = bdm_th_origin
+    yield from det_exposure_time(1, 1)
     s = Signal(name='target_file_name', value='')
     incident_angle = Signal(name='incident_angle', value=ai0)
     yield from smi.modeAlignment()
+    # pil2M.hint_stats([1,2,3,4],corrected=True)
     @bpp.stage_decorator([det])
     @bpp.run_decorator(md={'file_name' :'{target_file_name}', 'scan_name': 'XRR_bounce_down'})
     def inner():
@@ -26,17 +30,57 @@ def run_xrr_bdm_saxs(start_angle, stop_angle, num_steps, det=pil2M, atten=None, 
             yield from bps.mv(bdm.th, ai0 + angle)
             yield from smi.setReflectedBeamROI(total_angle=-angle, 
                                                technique="gisaxs",
-                                               sample_z_offset_mm=bdm_sample_distance)
+                                               size=[9, 9], # default size [48, 8]
+                                               sample_z_offset_mm=sample_z_offset_mm,
+                                               avoid_gaps=True)
+
+            yield from smi.setReflectedBeamROI(total_angle=-angle, 
+                                               technique="gisaxs",
+                                               roi=pil2M.roi4,
+                                               size=[9*3, 9],
+                                               sample_z_offset_mm=sample_z_offset_mm,
+                                               avoid_gaps=True)
+            
             sample_name = f'XRR_bounce_down_{angle:.3f}deg{get_scan_md()}'
             #print(f"\n\t=== Sample: {sample_name} ===\n")
             s.put(sample_name)
             incident_angle.put(angle)
             #if atten:
-            #    yield from bps.mv(attenuator, atten)
+            atten = atten_lookup_table(bdm_angle=angle, energy_keV=energy_keV)
+            yield from bps.mv(attenuation, atten)
             yield from bps.sleep(1)  # Allow time for the piezo to settle
-            yield from bps.trigger_and_read([det] + [s,incident_angle])
+            yield from bps.trigger_and_read([det] + [attenuation, s,incident_angle])
         yield from bps.mv(bdm.th, ai0)
     return (yield from inner())
+
+
+
+
+def atten_lookup_table(bdm_angle, energy_keV=16):
+    """
+    Return the appropriate attenuator setting for a given X-ray energy.
+    """
+    if energy_keV == 16:
+        if bdm_angle < 0.3:
+            return 1e6
+        elif bdm_angle < 0.5:
+            return 1e5
+        elif bdm_angle < 0.6:
+            return 1e4
+        else:
+            return 1e3
+    elif energy_keV == 8:
+        if bdm_angle < 0.35:
+            return 1e6
+        elif bdm_angle < 0.5:
+            return 2e5
+        elif bdm_angle < 0.6:
+            return 1e5
+        else:
+            return 1e4
+    else:
+        return 1e6
+
 
 
 def run_xrr_bdm_waxs(start_angle, stop_angle, num_steps, det=pil900KW, atten=None):
@@ -45,7 +89,7 @@ def run_xrr_bdm_waxs(start_angle, stop_angle, num_steps, det=pil900KW, atten=Non
     """
     angles = np.linspace(start_angle, stop_angle, num_steps)
     ai0 = bdm.th.get()
-    det_exposure_time(1, 1)
+    yield from det_exposure_time(1, 1)
     s = Signal(name='target_file_name', value='')
     incident_angle = Signal(name='incident_angle', value=ai0)
     yield from smi.modeAlignment(technique = "giwaxs")
@@ -58,6 +102,9 @@ def run_xrr_bdm_waxs(start_angle, stop_angle, num_steps, det=pil900KW, atten=Non
                                                technique="giwaxs",
                                                roi=pil900KW.roi1,
                                                sample_z_offset_mm=190)
+
+
+            
             sample_name = f'XRR_bounce_down_{angle:.3f}deg{get_scan_md()}'
             #print(f"\n\t=== Sample: {sample_name} ===\n")
             s.put(sample_name)
@@ -92,12 +139,12 @@ def get_piezo_pos():
 
 
 
-def check_bdm_refection(angle, bdm_th_origin, det=pil2M, sample_z_offset_mm=183):
+def check_bdm_refection(angle, bdm_th_origin, det=pil2M, sample_z_offset_mm=183, avoid_gaps=False):
     '''check the reflection on the detector at a bdm angle
     TODO: currently only for SAXS; need to adjust for WAXS
     '''
 
-    det_exposure_time(0.3, 0.3)
+    yield from det_exposure_time(0.3, 0.3)
 
     yield from smi.modeAlignment(technique="gisaxs")
     
@@ -106,12 +153,25 @@ def check_bdm_refection(angle, bdm_th_origin, det=pil2M, sample_z_offset_mm=183)
     print(f'current at bdm_angle = {angle} deg')
 
     # Set reflected ROI for beam bending down
-    yield from smi.setReflectedBeamROI(total_angle=-angle, technique="gisaxs",sample_z_offset_mm=sample_z_offset_mm)
+    yield from smi.setReflectedBeamROI(total_angle=-angle, 
+                                       technique="gisaxs",
+                                       sample_z_offset_mm=sample_z_offset_mm,
+                                       size=[9, 9],
+                                       avoid_gaps=avoid_gaps)
+    
+    yield from smi.setReflectedBeamROI(total_angle=-angle, 
+                                       technique="gisaxs",
+                                       sample_z_offset_mm=sample_z_offset_mm,
+                                       roi=pil2M.roi4,
+                                       size=[9*3, 9],
+                                       avoid_gaps=avoid_gaps)
 
     yield from count([det]) # count direct beam # exposure time is 0.3s
 
 
-def move_bdm_sample(alpha, piezo_y_origin, bdm_th_origin, bdm_sample_distance=183):
+def move_bdm_sample(alpha, piezo_y_origin, bdm_th_origin, bdm_sample_distance=186.4, bdm_to_saxs_offset=183-65+40):
+    '''bdm_to_saxs offset varies on nominal SAXS det distance 
+        (e.g., 183-65+40 mm for 1.65m; )'''
     y_offset = np.tan(np.deg2rad(2*alpha)) * bdm_sample_distance * 1000  # in um
     new_y = piezo_y_origin - y_offset
     new_th = bdm_th_origin + alpha
@@ -119,14 +179,16 @@ def move_bdm_sample(alpha, piezo_y_origin, bdm_th_origin, bdm_sample_distance=18
     print(f"Moved sample to Y: {new_y}, Theta: {new_th}")
     yield from bps.mv(bdm.th, new_th, piezo.y, new_y)
     
-
-    saxs_sdd_offset = 183 - bdm_sample_distance # from bdm reflectivity and 185mm is good
+    # total distance offset for BDM to SAXS detector = 183-65 mm # from bdm reflectivity and 183-65 mm is good at 9.3m
+    # bdm_to_saxs = 183-65 # total distance from BDM to SAXS detector 
+    saxs_sdd_offset = bdm_to_saxs_offset - bdm_sample_distance
     print(f'saxs_sdd_offset: {saxs_sdd_offset}mm')
 
     print('Setting direct beam from bdm using ROI2')
     yield from smi.setReflectedBeamROI(total_angle=-alpha, 
                                         technique="gisaxs",
                                         sample_z_offset_mm=saxs_sdd_offset+bdm_sample_distance,
+                                        size=[48, 8*2],
                                         roi=pil2M.roi2)
 
     print('Setting reflected beam from sample using ROI3')
@@ -153,19 +215,20 @@ def scan_knife_edge(rang=200, point=41, der=True, roi = 2):
     """
     yield from bp.rel_scan([pil2M], piezo.y, -rang, rang, point)
     if roi == 1:
-        ps(der=der, suffix='_stats1_total', plot=True)
+        pf(der=der, suffix='_stats1_total', plot=True)
     elif roi == 2:
-        ps(der=der, suffix='_stats2_total', plot=True)
+        pf(der=der, suffix='_stats2_total', plot=True)
     else:
         print('using the default roi')
-        ps(der=der, plot=True)
-    print(f'The peak center is {ps.cen:.1f}')
-    yield from bps.mv(piezo.y, ps.cen)
-    return ps.cen
+        pf(der=der, plot=True)
+    print(f'The peak center is {pf.cen:.1f}')
+    yield from bps.mv(piezo.y, pf.cen)
+    return pf.cen
 
 
-# angles=[0, 0.05, 0.1, 0.16, 0.2, 0.25, 0.3, 0.36, 0.4]
-def scan_bdm_angle_sh_knife_edge(angles, piezo_y_origin, bdm_y_origin, bdm_th_origin, bdm_sample_distance=183):
+angles=[0, 0.05, 0.1, 0.16, 0.2, 0.25, 0.3, 0.36, 0.48] # 1.65m
+# angles=[0, 0.05, 0.1, 0.16, 0.2, 0.25, 0.3, 0.36, 0.48]
+def scan_bdm_angle_sh_knife_edge(angles, piezo_y_origin, bdm_y_origin, bdm_th_origin, bdm_sample_distance=184):
     '''at different bdm angle, scan the sample height using a knife edge'''
     sh_cen_list = []
     for angle in angles:
@@ -200,7 +263,7 @@ def run_xrr_bdm_xpos(xpos=[2.5, -5.5]):
 
 
 
-def check_gisaxs_refection_without_bdm(angle, piezo_th_origin, det=pil2M):
+def check_gisaxs_refection_without_bdm(angle, piezo_th_origin, det=pil2M,sample_z_offset_mm=-28.4,avoid_gaps=False):
     '''check the reflection on the detector at a piezo angle
     TODO: currently only for SAXS; need to adjust for WAXS
     '''
@@ -214,13 +277,44 @@ def check_gisaxs_refection_without_bdm(angle, piezo_th_origin, det=pil2M):
     print(f'current at piezo th_angle = {angle} deg')
 
     # Set reflected ROI for beam bending down
-    yield from smi.setReflectedBeamROI(total_angle=angle, technique="gisaxs")
+    # yield from smi.setReflectedBeamROI(total_angle=angle, technique="gisaxs")
+    yield from smi.setReflectedBeamROI(total_angle=-angle, 
+                                    technique="gisaxs",
+                                    sample_z_offset_mm=sample_z_offset_mm,
+                                    size=[9, 9],
+                                    avoid_gaps=avoid_gaps)
+
+    yield from count([det]) # count direct beam # exposure time is 0.3s
+
+
+def check_gisaxs_refection_without_bdm_huber(angle, stage_th_origin, det=pil2M,sample_z_offset_mm=-28.4,avoid_gaps=False):
+    '''check the reflection on the detector at a piezo angle
+    TODO: currently only for SAXS; need to adjust for WAXS
+    '''
+
+    yield from det_exposure_time(0.3, 0.3)
+
+    yield from smi.modeAlignment(technique="gisaxs")
+    
+    # move to theta 0 + value
+    yield from bps.mv(stage.th, stage_th_origin + angle)
+    print(f'current at stage th_angle = {angle} deg')
+
+    # Set reflected ROI for beam bending down
+    # yield from smi.setReflectedBeamROI(total_angle=angle, technique="gisaxs")
+    yield from smi.setReflectedBeamROI(total_angle=angle, 
+                                    technique="gisaxs",
+                                    sample_z_offset_mm=sample_z_offset_mm,
+                                    size=[9, 9],
+                                    avoid_gaps=avoid_gaps)
 
     yield from count([det]) # count direct beam # exposure time is 0.3s
 
 
 
-def check_liquid_refection_with_bdm(bdm_angle, piezo_y_origin, bdm_th_origin, bdm_sample_distance=183, det=pil2M):
+
+def check_liquid_refection_with_bdm(bdm_angle, piezo_y_origin, bdm_th_origin, det=pil2M, 
+                                    bdm_sample_distance=186.4, bdm_to_saxs_offset=186.4-10, avoid_gaps=False):
     '''check the reflection on the detector at bdm angle
     TODO: currently only for SAXS; need to adjust for WAXS
     '''
@@ -228,7 +322,26 @@ def check_liquid_refection_with_bdm(bdm_angle, piezo_y_origin, bdm_th_origin, bd
     yield from move_bdm_sample(alpha=bdm_angle,
                                piezo_y_origin=piezo_y_origin,
                                bdm_th_origin=bdm_th_origin,
-                               bdm_sample_distance=bdm_sample_distance)
+                               bdm_sample_distance=bdm_sample_distance,
+                               bdm_to_saxs_offset=bdm_to_saxs_offset)
+
+
+
+    saxs_sdd_offset = bdm_to_saxs_offset - bdm_sample_distance
+    yield from smi.setReflectedBeamROI(total_angle=bdm_angle, 
+                                        technique="gisaxs",
+                                        size=[9, 9], # default size [48, 8]
+                                        sample_z_offset_mm=-bdm_sample_distance+saxs_sdd_offset,
+                                        roi=pil2M.roi1,
+                                        avoid_gaps=avoid_gaps)
+
+
+    yield from smi.setReflectedBeamROI(total_angle=bdm_angle, 
+                                        technique="gisaxs",
+                                        sample_z_offset_mm=-bdm_sample_distance+saxs_sdd_offset,
+                                        size=[9*3, 9],
+                                        roi=pil2M.roi4,
+                                        avoid_gaps=avoid_gaps)
 
     
     print(f'current at bdm angle = {bdm_angle} deg')
@@ -237,7 +350,7 @@ def check_liquid_refection_with_bdm(bdm_angle, piezo_y_origin, bdm_th_origin, bd
     yield from count([det]) # count direct beam # exposure time is 0.3s
 
 # alpha_list=[0.04, 0.06, 0.08, 0.1, 0.13, 0.16, 0.2]
-def scan_y_reflected_beam_from_sample(alpha_list, piezo_y_origin, bdm_th_origin, bdm_sample_distance=183):
+def scan_y_reflected_beam_from_sample(alpha_list, piezo_y_origin, bdm_th_origin, bdm_sample_distance=186.4):
     '''Scan reflected beam from sample by varying the BDM angle and adjusting sample position accordingly.'''
 
     Y_original = []
@@ -304,7 +417,11 @@ def scan_th_reflected_beam_from_sample(alpha_list, piezo_y_origin, bdm_th_origin
     # return Y_original,Y_peak_cen
 
 
-def xrr_scan_liquid_using_bounced_beam(start_angle,stop_angle,num_steps, piezo_y_origin, bdm_th_origin, bdm_sample_distance=183, det=pil2M):
+def xrr_scan_liquid_using_bounced_beam(start_angle,stop_angle,num_steps, piezo_y_origin, bdm_th_origin, 
+                                       bdm_sample_distance=186.4, 
+                                       bdm_to_saxs_offset=186.4-40,
+                                       energy_keV=8,
+                                       det=pil2M):
 
     """
     Perform XRR scan from a liquid sample using the bounced beam.
@@ -312,7 +429,7 @@ def xrr_scan_liquid_using_bounced_beam(start_angle,stop_angle,num_steps, piezo_y
     The data is at ROI3
     """
     angles = np.linspace(start_angle, stop_angle, num_steps)
-    det_exposure_time(1, 1)
+    yield from det_exposure_time(1, 1)
     s = Signal(name='target_file_name', value='')
     incident_angle = Signal(name='incident_angle', value=start_angle)
     # yield from smi.modeAlignment()
@@ -320,27 +437,83 @@ def xrr_scan_liquid_using_bounced_beam(start_angle,stop_angle,num_steps, piezo_y
     @bpp.run_decorator(md={'file_name' :'{target_file_name}', 'scan_name': 'XRR_bounce_down'})
     def inner():
         for angle in angles:
-            yield from move_bdm_sample(angle, piezo_y_origin, bdm_th_origin, bdm_sample_distance)
-            saxs_sdd_offset = 183 - bdm_sample_distance # from bdm reflectivity and 185mm is good
+            yield from move_bdm_sample(angle, piezo_y_origin, bdm_th_origin, bdm_sample_distance=bdm_sample_distance, 
+                                       bdm_to_saxs_offset=bdm_to_saxs_offset)
+
+            saxs_sdd_offset = bdm_to_saxs_offset - bdm_sample_distance
             yield from smi.setReflectedBeamROI(total_angle=angle, 
                                                 technique="gisaxs",
-                                                size=[48, 8*3],
+                                                size=[9, 9], # default size [48, 8]
                                                 sample_z_offset_mm=-bdm_sample_distance+saxs_sdd_offset,
-                                                roi=pil2M.roi3)
+                                                roi=pil2M.roi1,
+                                                avoid_gaps=True)
 
-            yield from att_selection_8keV(angle*2)
+
+            yield from smi.setReflectedBeamROI(total_angle=angle, 
+                                                technique="gisaxs",
+                                                sample_z_offset_mm=-bdm_sample_distance+saxs_sdd_offset,
+                                                size=[9*3, 9],
+                                                roi=pil2M.roi4)
+
 
             sample_name = f'XRR_bounced_{angle:.3f}deg{get_scan_md()}'
             #print(f"\n\t=== Sample: {sample_name} ===\n")
             s.put(sample_name)
             incident_angle.put(angle)
-            #if atten:
-            #    yield from bps.mv(attenuator, atten)
+            try:
+                atten = atten_lookup_table_directbeam(sth=angle*2, energy_keV=energy_keV)
+                yield from bps.mv(attenuation, atten)
+            except:
+                print(f"Failed to set attenuator for angle {angle} and energy {energy_keV}")
+                yield from att_selection_8keV(angle*2)
             yield from bps.sleep(1)  # Allow time for the piezo to settle
-            yield from bps.trigger_and_read([det] + [s,incident_angle])
+            yield from bps.trigger_and_read([det] + [attenuation, s,incident_angle])
 
     return (yield from inner())
 
+
+
+# def xrr_scan_liquid_using_bounced_beam_huber(start_angle,stop_angle,num_steps, piezo_y_origin, bdm_th_origin, bdm_sample_distance=186.4, det=pil2M):
+
+#     """
+#     Perform XRR scan from a liquid sample using the bounced beam.
+#     Both liquid sample and BDM need to go to origin before the run
+#     The data is at ROI1
+#     """
+#     angles = np.linspace(start_angle, stop_angle, num_steps)
+#     yield from det_exposure_time(1, 1)
+#     s = Signal(name='target_file_name', value='')
+#     incident_angle = Signal(name='incident_angle', value=start_angle)
+#     # yield from smi.modeAlignment()
+#     @bpp.stage_decorator([det])
+#     @bpp.run_decorator(md={'file_name' :'{target_file_name}', 'scan_name': 'XRR_bounce_down'})
+#     def inner():
+#         for angle in angles:
+#             yield from move_bdm_sample(angle, piezo_y_origin, bdm_th_origin, bdm_sample_distance)
+#             saxs_sdd_offset = 183 - bdm_sample_distance # from bdm reflectivity and 185mm is good
+#             yield from smi.setReflectedBeamROI(total_angle=angle, 
+#                                                 technique="gisaxs",
+#                                                 size=[48, 8*3],
+#                                                 sample_z_offset_mm=-bdm_sample_distance+saxs_sdd_offset,
+#                                                 roi=pil2M.roi1)
+            
+
+#             sample_name = f'XRR_bounced_{angle:.3f}deg{get_scan_md()}'
+#             #print(f"\n\t=== Sample: {sample_name} ===\n")
+#             s.put(sample_name)
+#             incident_angle.put(angle)
+
+#             try:
+#                 atten = atten_lookup_table_directbeam(sth=angle*2, energy_keV=energy_keV)
+#                 yield from bps.mv(attenuation, atten)
+#             except:
+#                 print(f"Failed to set attenuator for angle {angle} and energy {energy_keV}")
+#                 yield from att_selection_8keV(angle*2)
+#             yield from bps.sleep(1)  # Allow time for the piezo to settle
+#             yield from bps.trigger_and_read([det] + [attenuation, s,incident_angle])
+
+
+#     return (yield from inner())
 
 # alpha_list=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8]
 def scan_reflected_beam_from_sample_without_bdm(alpha_list, piezo_th_origin):
@@ -377,7 +550,7 @@ def scan_reflected_beam_from_sample_without_bdm(alpha_list, piezo_th_origin):
 
 
 
-def run_xrr_solid_substrate_using_direct_beam(start_angle,stop_angle,num_steps, piezo_th_origin,det=pil2M):
+def run_xrr_solid_substrate_using_direct_beam(start_angle,stop_angle,num_steps,stage_th_origin, energy_keV=8, det=pil2M,sample_z_offset_mm=-10):
 
     """
     Perform XRR scan from a solid substrate sample using the direct beam without bdm.
@@ -385,7 +558,7 @@ def run_xrr_solid_substrate_using_direct_beam(start_angle,stop_angle,num_steps, 
     The data is at ROI1
     """
     angles = np.linspace(start_angle, stop_angle, num_steps)
-    det_exposure_time(1, 1)
+    yield from det_exposure_time(1, 1)
     s = Signal(name='target_file_name', value='')
     incident_angle = Signal(name='incident_angle', value=start_angle)
     # yield from smi.modeAlignment()
@@ -393,19 +566,80 @@ def run_xrr_solid_substrate_using_direct_beam(start_angle,stop_angle,num_steps, 
     @bpp.run_decorator(md={'file_name' :'{target_file_name}', 'scan_name': 'Si substrate'})
     def inner():
         for angle in angles:
-            yield from bps.mv(piezo.th, piezo_th_origin + peizo_th_correction(angle))
-            yield from smi.setReflectedBeamROI(total_angle=angle, technique="gisaxs", size=[48, 12])
-            yield from att_selection_8keV(angle)
+            yield from bps.mv(stage.th, stage_th_origin + angle)
+            # yield from smi.setReflectedBeamROI(total_angle=angle, technique="gisaxs", size=[48, 12])
+
+            yield from smi.setReflectedBeamROI(total_angle=angle, 
+                                               technique="gisaxs",
+                                               size=[9, 9], # default size [48, 8]
+                                               sample_z_offset_mm=sample_z_offset_mm,
+                                               avoid_gaps=True)
+
+            yield from smi.setReflectedBeamROI(total_angle=angle, 
+                                               technique="gisaxs",
+                                               roi=pil2M.roi4,
+                                               size=[9*3, 9],
+                                               sample_z_offset_mm=sample_z_offset_mm,
+                                               avoid_gaps=True)
+            
             sample_name = f'XRR_directbeam_{angle:.3f}deg{get_scan_md()}'
+ 
             #print(f"\n\t=== Sample: {sample_name} ===\n")
             s.put(sample_name)
             incident_angle.put(angle)
             #if atten:
-            #    yield from bps.mv(attenuator, atten)
+            try:
+                atten = atten_lookup_table_directbeam(sth=angle, energy_keV=energy_keV)
+                yield from bps.mv(attenuation, atten)
+            except:
+                print(f"Failed to set attenuator for angle {angle} and energy {energy_keV}")
+                yield from att_selection_8keV(angle)
             yield from bps.sleep(1)  # Allow time for the piezo to settle
-            yield from bps.trigger_and_read([det] + [s,incident_angle])
+            yield from bps.trigger_and_read([det] + [attenuation, s,incident_angle])
+        yield from bps.mv(stage.th, stage_th_origin)
 
     return (yield from inner())
+
+
+
+ 
+def atten_lookup_table_directbeam(sth, energy_keV=8):
+    """
+    Return the appropriate attenuator setting for a given X-ray energy.
+    """
+    # if energy_keV == 16:
+    #     if sth < 0.3:
+    #         return 1e6
+    #     elif sth < 0.5:
+    #         return 1e5
+    #     elif sth < 0.6:
+    #         return 1e4
+    #     else:
+    #         return 1e3
+    if energy_keV == 8:
+        if sth < 0.25:
+            return 2e6
+        elif sth < 0.4:
+            return 1e6
+        elif sth < 0.5:
+            return 2e5
+        elif sth < 0.6:
+            return 1e5
+        elif sth < 0.75:
+            return 2e4
+        elif sth < 1:
+            return 1e3
+        elif sth < 1.3:
+            return 2e2
+        elif sth < 1.6:
+            return 8e1
+        elif sth < 2.5:
+            return 2.5
+        else:
+            return 1
+    else:
+        return 1e6
+
 
 
 
@@ -472,7 +706,7 @@ def att_selection_8keV(angle):
     0.55-0.9    x2, x1      att2_2, att2_1
     0.9-1.1     x2          att2_2
     1.1-1.28    x1          att2_1
-    1.28-2      NA          NA
+    1.28-3      NA          NA
 
     """
     if angle < 0:
@@ -493,7 +727,7 @@ def att_selection_8keV(angle):
     elif angle < 1.28:
         att_in = [att2_1]
         att_out = [att2_2, att2_3]
-    elif angle < 2:
+    elif angle < 3:
         att_in = []
         att_out = [att2_1, att2_2, att2_3]
     else:
@@ -570,6 +804,76 @@ def alignment_gisaxs_using_bdm_bonced_beam(angle=0.1, alpha_bdm=0.05, bdm_sample
     bec._calc_derivative_and_stats = False
 
 
+
+
+### energy scan
+
+from smi_plans import ListStore, resolve_list
+
+lists = ListStore.from_redis()
+# ens = resolve_list('Sulfur .5 80pts', kind="energy", store=lists)
+
+# sample_name = 'IL01_C12mimNTf2'
+# # alpha_c = 0.538 at 2.48keV 
+# # bdm_angle = 0.188 # 70%
+# bdm_angle = 0.228 # 85%
+# # bdm_angle = 0.269 # 100%
+# # bdm_angle = 0.323 # 120%
+# # bdm_angle = 0.538 # 200%
+
+
+sample_name = 'IL02_C8mimNTf2'
+# alpha_c = 0.550 at 2.48keV 
+bdm_angle = 0.192 # 70%
+# bdm_angle = 0.234 # 85%
+# bdm_angle = 0.275 # 100%
+# bdm_angle = 0.330 # 120%
+# bdm_angle = 0.550 # 200%
+
+
+bdm_angles =  [0.192, 0.234, 0.330, 0.550]
+piezo_x_pos = [     0, -800, -1600, -2400]
+
+def sample_energy_scan_vary_alpha(bdm_angles, piezo_x_pos, sample_name, bdm_th_origin, piezo_y_origin, bdm_sample_distance=186.4):
+    '''at different bdm angles, scan the energy
+    change to a fresh spots for each scan'''
+
+    for i, bdm_angle in enumerate(bdm_angles):
+        piezo_x = piezo_x_pos[i]
+        yield from mv(piezo.x, piezo_x)
+        yield from bps.sleep(2)
+        yield from sample_energy_scan(sample_name, bdm_angle, bdm_th_origin, piezo_y_origin, bdm_sample_distance)
+
+
+
+
+
+def sample_energy_scan(sample_name, bdm_angle, bdm_th_origin, piezo_y_origin, bdm_sample_distance=186.4):
+    '''run the energy scan for an aligned sample'''
+
+    lists = ListStore.from_redis()
+    ens = resolve_list('Sulfur .5 80pts', kind="energy", store=lists)
+
+    px_pos = piezo.x.position
+    sy_pos = stage.y.position
+    print(f'currnet sample positions: Piezo_x = {px_pos:.1f}, Stage_y = {sy_pos:.4f}')
+
+    yield from move_bdm_sample(bdm_angle,piezo_y_origin=piezo_y_origin, bdm_th_origin=bdm_th_origin, bdm_sample_distance=bdm_sample_distance)
+    yield from bps.sleep(2)
+    sample_id(user_name='HZ', sample_name=f'{sample_name}_alpha{bdm_angle:.3f}x2_x{px_pos/1000:.1f}_RhStripe_Sulfur_EnergyScan')
+    print(f'Start the energy scan at alpha = {bdm_angle}...')
+    yield from bp.list_scan([pil900KW],energy,ens)
+
+    print('Lower stage.y to collect background.')
+    yield from mv(stage.y, sy_pos - 5)
+
+    sample_id(user_name='HZ', sample_name=f'{sample_name}_alpha{bdm_angle:.3f}x2_x{px_pos/1000:.1f}_RhStripe_Sulfur_EnergyScan_BDMbackground')
+    print(f'Start the energy scan at alpha = {bdm_angle}: background measurement...')
+    yield from bp.list_scan([pil900KW],energy,ens)
+
+    yield from mv(stage.y, sy_pos)
+    print('The stage.y has been restored.')
+    
 
 
 
