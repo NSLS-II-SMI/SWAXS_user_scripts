@@ -1,0 +1,192 @@
+{
+  "uid": "a65154be-2e64-439c-8962-36a987545da4",
+  "start": {
+    "uid": "a65154be-2e64-439c-8962-36a987545da4",
+    "time": 1792154349.0920017,
+    "data_session": "pass-321164",
+    "beamline_name": "SMI",
+    "beamline_attenuators": {
+      "foils": {
+        "att1_7": {
+          "material": "Sn_60um",
+          "thickness": "4x"
+        }
+      },
+      "attenuation_factor": 644841.3219978893,
+      "transmission": 1.5507691053385583e-06,
+      "energy_eV": 12300.44440055421,
+      "description": "att1_7: 4x Sn 60um (240um Sn)"
+    },
+    "versions": {
+      "ophyd": "1.11.2",
+      "bluesky": "1.15.0",
+      "ophyd_async": "0.13.7",
+      "event_model": "1.24.0"
+    },
+    "SAF_number": 319376,
+    "start_datetime": "2026-10-15T09:10:38.440756",
+    "sample_name": "crl_focus_h2_z0_{energy_energy:.2f}eV_wa{waxs_arc:04.1f}_sdd{pil2M_motor_z:.1f}mm",
+    "scan_id": 1170769,
+    "facility": "NSLS-II",
+    "beamline_sample_environment": "in-vacuum",
+    "proposal": {
+      "proposal_id": "321164",
+      "title": "Commissioning of new SWAXS equipment and beamline startup at SMI with DSSI",
+      "type": "Beamline Commissioning (beamline staff only)",
+      "pi_name": "Eliot Gann"
+    },
+    "tiled_access_tags": [
+      "pass-321164"
+    ],
+    "cycle": "commissioning",
+    "project_name": "microfocusOct26",
+    "username": "egann",
+    "plan_type": "generator",
+    "plan_name": "grid_scan",
+    "detectors": [
+      "pil2M",
+      "attenuation",
+      "pil2M_energy_read",
+      "pil2M_threshold_read",
+      "pil2M_gain"
+    ],
+    "motors": [
+      "energy",
+      "piezo_x"
+    ],
+    "num_points": 1281,
+    "num_intervals": 1280,
+    "hints": {
+      "gridding": "rectilinear",
+      "dimensions": [
+        [
+          [
+            "energy_energy"
+          ],
+          "primary"
+        ],
+        [
+          [
+            "piezo_x"
+          ],
+          "primary"
+        ]
+      ]
+    },
+    "shape": [
+      21,
+      61
+    ],
+    "extents": [
+      [
+        11300,
+        13300
+      ],
+      [
+        -14727.961832061068,
+        -14607.961832061068
+      ]
+    ],
+    "snaking": [
+      false,
+      false
+    ],
+    "plan_pattern": "outer_product",
+    "plan_pattern_module": "bluesky.plan_patterns",
+    "scan_name": "crl_energy_focus_commissioning",
+    "crl_holders": [
+      2
+    ],
+    "crl_z_mm": 0.0,
+    "crl_x_mm": -8.5766,
+    "crl_y_mm": -9.75,
+    "crl_in_positions_mm": {
+      "2": -1.1801
+    },
+    "model_focus_eV": 12300.440707325744,
+    "coarse_edge_center_um": -14667.961832061068,
+    "coarse_edge_nominal_um": -14705.0,
+    "pilatus_sensitivity_energy_eV": 12300.440707325744,
+    "pilatus_sensitivity_policy": "fixed_at_holder_model_focus",
+    "model_geometry": "sample 1600 mm at Z=0; SSA 10.5 m upstream",
+    "attenuation_foil": "1_7",
+    "attenuation_min_factor": 1500.0,
+    "attenuation_policy": "single_foil_sized_at_window_bright_end",
+    "reference_scan_id": 1170759,
+    "harmonic_lock": {
+      "harmonic": 9,
+      "start_eV": 11300.0,
+      "stop_eV": 13300.0,
+      "gap_margin_um": 0.0
+    }
+  },
+  "stop": {
+    "uid": "aba2c16a-7f8a-4207-bbb9-e2dca8f03887",
+    "time": 1792156073.709161,
+    "run_start": "a65154be-2e64-439c-8962-36a987545da4",
+    "exit_status": "success",
+    "reason": "",
+    "num_events": {
+      "baseline": 2,
+      "primary": 1281
+    }
+  },
+  "config": {
+    "pil2M": {
+      "pil2M_cam_acquire_time": [
+        0.5
+      ],
+      "pil2M_cam_num_exposures": [
+        1
+      ],
+      "pil2M_cam_num_images": [
+        1
+      ]
+    },
+    "energy": {
+      "energy_target_harmonic": [
+        21
+      ],
+      "energy_locked_harmonic": [
+        9
+      ]
+    },
+    "attenuation": {
+      "attenuation_select_mode": [
+        "closest"
+      ]
+    }
+  },
+  "primary_fields": [
+    "time",
+    "pil2M_stats1_total",
+    "pil2M_stats2_total",
+    "pil2M_stats3_total",
+    "pil2M_stats4_total",
+    "pil2M_stats5_total",
+    "pil2M_motor_x",
+    "pil2M_motor_x_user_setpoint",
+    "pil2M_motor_y",
+    "pil2M_motor_y_user_setpoint",
+    "pil2M_motor_z",
+    "pil2M_motor_z_user_setpoint",
+    "attenuation_attenuation_factor",
+    "attenuation_transmission",
+    "attenuation_energy_eV",
+    "attenuation_description",
+    "attenuation_inserted",
+    "energy_energy",
+    "energy_energy_setpoint",
+    "energy_bragg",
+    "energy_ivugap",
+    "energy_harmonic",
+    "piezo_x",
+    "piezo_x_user_setpoint",
+    "waxs_arc",
+    "pil900KW_motors_arc_user_setpoint",
+    "waxs_bsx",
+    "pil900KW_motors_bs_x_user_setpoint",
+    "waxs_bsy",
+    "pil900KW_motors_bs_y_user_setpoint"
+  ]
+}

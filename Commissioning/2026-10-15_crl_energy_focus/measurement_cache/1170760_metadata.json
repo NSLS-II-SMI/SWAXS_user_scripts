@@ -1,0 +1,426 @@
+{
+  "uid": "b51ac3e6-48d1-438c-a12e-8916741da27c",
+  "start": {
+    "uid": "b51ac3e6-48d1-438c-a12e-8916741da27c",
+    "time": 1792093588.5758078,
+    "data_session": "pass-321164",
+    "beamline_name": "SMI",
+    "beamline_attenuators": {
+      "foils": {
+        "att2_1": {
+          "material": "Mo_20um",
+          "thickness": "1x"
+        }
+      },
+      "attenuation_factor": 581.3738604380034,
+      "transmission": 0.0017200635736298953,
+      "energy_eV": 6150.220353662872,
+      "description": "att2_1: 1x Mo 20um (20um Mo)"
+    },
+    "versions": {
+      "ophyd": "1.11.2",
+      "bluesky": "1.15.0",
+      "ophyd_async": "0.13.7",
+      "event_model": "1.24.0"
+    },
+    "SAF_number": 319376,
+    "start_datetime": "2026-10-15T09:10:38.440756",
+    "sample_name": "crl_coarse_edge_h5_z0_{energy_energy:.2f}eV_wa{waxs_arc:04.1f}_sdd{pil2M_motor_z:.1f}mm",
+    "scan_id": 1170760,
+    "facility": "NSLS-II",
+    "beamline_sample_environment": "in-vacuum",
+    "proposal": {
+      "proposal_id": "321164",
+      "title": "Commissioning of new SWAXS equipment and beamline startup at SMI with DSSI",
+      "type": "Beamline Commissioning (beamline staff only)",
+      "pi_name": "Eliot Gann"
+    },
+    "tiled_access_tags": [
+      "pass-321164"
+    ],
+    "cycle": "commissioning",
+    "project_name": "microfocusOct26",
+    "username": "egann",
+    "plan_type": "generator",
+    "plan_name": "scan",
+    "detectors": [
+      "pil2M",
+      "attenuation"
+    ],
+    "motors": [
+      "piezo_x"
+    ],
+    "num_points": 81,
+    "num_intervals": 80,
+    "hints": {
+      "dimensions": [
+        [
+          [
+            "piezo_x"
+          ],
+          "primary"
+        ]
+      ]
+    },
+    "plan_pattern": "inner_product",
+    "plan_pattern_module": "bluesky.plan_patterns",
+    "scan_name": "crl_energy_focus_coarse",
+    "crl_holders": [
+      5
+    ],
+    "crl_z_mm": 0.0,
+    "crl_x_mm": -12.667,
+    "crl_y_mm": -9.82,
+    "crl_in_positions_mm": {
+      "5": -0.6993
+    },
+    "coarse_energy_eV": 6150.220353662872,
+    "coarse_nominal_center_um": -14705.0,
+    "reference_scan_id": 1170759
+  },
+  "stop": {
+    "uid": "7763064d-cef2-4d2d-a2a5-555d2d37c985",
+    "time": 1792093688.9045527,
+    "run_start": "b51ac3e6-48d1-438c-a12e-8916741da27c",
+    "exit_status": "success",
+    "reason": "",
+    "num_events": {
+      "baseline": 2,
+      "primary": 81
+    }
+  },
+  "config": {
+    "pil2M": {
+      "pil2M_cam_acquire_period": [
+        0.501
+      ],
+      "pil2M_cam_acquire_time": [
+        0.5
+      ],
+      "pil2M_cam_image_mode": [
+        1
+      ],
+      "pil2M_cam_manufacturer": [
+        "Dectris"
+      ],
+      "pil2M_cam_model": [
+        "Pilatus"
+      ],
+      "pil2M_cam_num_exposures": [
+        1
+      ],
+      "pil2M_cam_num_images": [
+        1
+      ],
+      "pil2M_cam_trigger_mode": [
+        0
+      ],
+      "pil2M_cam_file_number": [
+        1
+      ],
+      "pil2M_stats1_bgd_width": [
+        1
+      ],
+      "pil2M_stats1_centroid_threshold": [
+        1.0
+      ],
+      "pil2M_stats1_compute_centroid": [
+        "No"
+      ],
+      "pil2M_stats1_compute_histogram": [
+        "No"
+      ],
+      "pil2M_stats1_compute_profiles": [
+        "No"
+      ],
+      "pil2M_stats1_compute_statistics": [
+        "Yes"
+      ],
+      "pil2M_stats1_hist_max": [
+        255.0
+      ],
+      "pil2M_stats1_hist_min": [
+        0.0
+      ],
+      "pil2M_stats1_hist_size": [
+        256
+      ],
+      "pil2M_stats1_ts_num_points": [
+        2048
+      ],
+      "pil2M_stats2_bgd_width": [
+        1
+      ],
+      "pil2M_stats2_centroid_threshold": [
+        1.0
+      ],
+      "pil2M_stats2_compute_centroid": [
+        "No"
+      ],
+      "pil2M_stats2_compute_histogram": [
+        "No"
+      ],
+      "pil2M_stats2_compute_profiles": [
+        "No"
+      ],
+      "pil2M_stats2_compute_statistics": [
+        "Yes"
+      ],
+      "pil2M_stats2_hist_max": [
+        255.0
+      ],
+      "pil2M_stats2_hist_min": [
+        0.0
+      ],
+      "pil2M_stats2_hist_size": [
+        256
+      ],
+      "pil2M_stats2_ts_num_points": [
+        2048
+      ],
+      "pil2M_stats3_bgd_width": [
+        1
+      ],
+      "pil2M_stats3_centroid_threshold": [
+        1.0
+      ],
+      "pil2M_stats3_compute_centroid": [
+        "Yes"
+      ],
+      "pil2M_stats3_compute_histogram": [
+        "No"
+      ],
+      "pil2M_stats3_compute_profiles": [
+        "No"
+      ],
+      "pil2M_stats3_compute_statistics": [
+        "Yes"
+      ],
+      "pil2M_stats3_hist_max": [
+        255.0
+      ],
+      "pil2M_stats3_hist_min": [
+        0.0
+      ],
+      "pil2M_stats3_hist_size": [
+        256
+      ],
+      "pil2M_stats3_ts_num_points": [
+        2048
+      ],
+      "pil2M_stats4_bgd_width": [
+        1
+      ],
+      "pil2M_stats4_centroid_threshold": [
+        1.0
+      ],
+      "pil2M_stats4_compute_centroid": [
+        "No"
+      ],
+      "pil2M_stats4_compute_histogram": [
+        "No"
+      ],
+      "pil2M_stats4_compute_profiles": [
+        "No"
+      ],
+      "pil2M_stats4_compute_statistics": [
+        "Yes"
+      ],
+      "pil2M_stats4_hist_max": [
+        255.0
+      ],
+      "pil2M_stats4_hist_min": [
+        0.0
+      ],
+      "pil2M_stats4_hist_size": [
+        256
+      ],
+      "pil2M_stats4_ts_num_points": [
+        2048
+      ],
+      "pil2M_stats5_bgd_width": [
+        1
+      ],
+      "pil2M_stats5_centroid_threshold": [
+        1.0
+      ],
+      "pil2M_stats5_compute_centroid": [
+        "No"
+      ],
+      "pil2M_stats5_compute_histogram": [
+        "No"
+      ],
+      "pil2M_stats5_compute_profiles": [
+        "Yes"
+      ],
+      "pil2M_stats5_compute_statistics": [
+        "Yes"
+      ],
+      "pil2M_stats5_hist_max": [
+        255.0
+      ],
+      "pil2M_stats5_hist_min": [
+        0.0
+      ],
+      "pil2M_stats5_hist_size": [
+        256
+      ],
+      "pil2M_stats5_ts_num_points": [
+        2048
+      ],
+      "pil2M_motor_x_user_setpoint": [
+        -0.001
+      ],
+      "pil2M_motor_y_user_setpoint": [
+        0.0
+      ],
+      "pil2M_beamstop_x_rod_user_offset": [
+        -194.253365
+      ],
+      "pil2M_beamstop_x_rod_user_offset_dir": [
+        0
+      ],
+      "pil2M_beamstop_x_rod_velocity": [
+        0.0
+      ],
+      "pil2M_beamstop_x_rod_acceleration": [
+        0.2
+      ],
+      "pil2M_beamstop_x_rod_motor_egu": [
+        "mm"
+      ],
+      "pil2M_beamstop_y_rod_user_offset": [
+        0.0
+      ],
+      "pil2M_beamstop_y_rod_user_offset_dir": [
+        0
+      ],
+      "pil2M_beamstop_y_rod_velocity": [
+        0.0
+      ],
+      "pil2M_beamstop_y_rod_acceleration": [
+        0.2
+      ],
+      "pil2M_beamstop_y_rod_motor_egu": [
+        "mm"
+      ],
+      "pil2M_beamstop_x_pin_user_offset": [
+        0.0
+      ],
+      "pil2M_beamstop_x_pin_user_offset_dir": [
+        0
+      ],
+      "pil2M_beamstop_x_pin_velocity": [
+        0.0
+      ],
+      "pil2M_beamstop_x_pin_acceleration": [
+        0.2
+      ],
+      "pil2M_beamstop_x_pin_motor_egu": [
+        "mm"
+      ],
+      "pil2M_beamstop_y_pin_user_offset": [
+        7.0
+      ],
+      "pil2M_beamstop_y_pin_user_offset_dir": [
+        0
+      ],
+      "pil2M_beamstop_y_pin_velocity": [
+        0.0
+      ],
+      "pil2M_beamstop_y_pin_acceleration": [
+        0.2
+      ],
+      "pil2M_beamstop_y_pin_motor_egu": [
+        "mm"
+      ],
+      "pil2M_beam_center_x_px": [
+        743.1497249696328
+      ],
+      "pil2M_beam_center_y_px": [
+        1105.7552681106702
+      ],
+      "pil2M_active_beamstop": [
+        "rod_removed"
+      ]
+    },
+    "energy": {
+      "energy_bragg_user_offset": [
+        1.423
+      ],
+      "energy_bragg_user_offset_dir": [
+        0
+      ],
+      "energy_bragg_velocity": [
+        5.0
+      ],
+      "energy_bragg_acceleration": [
+        0.5
+      ],
+      "energy_bragg_motor_egu": [
+        "deg"
+      ],
+      "energy_enableivu": [
+        1
+      ],
+      "energy_enabledcmgap": [
+        1
+      ],
+      "energy_target_harmonic": [
+        21
+      ],
+      "energy_locked_harmonic": [
+        0
+      ]
+    },
+    "attenuation": {
+      "attenuation_requested_factor": [
+        538.2708608060085
+      ],
+      "attenuation_within_tolerance": [
+        1
+      ],
+      "attenuation_max_foils": [
+        4
+      ],
+      "attenuation_tolerance": [
+        0.1
+      ],
+      "attenuation_select_mode": [
+        "atleast"
+      ]
+    }
+  },
+  "primary_fields": [
+    "time",
+    "pil2M_stats1_total",
+    "pil2M_stats2_total",
+    "pil2M_stats3_total",
+    "pil2M_stats4_total",
+    "pil2M_stats5_total",
+    "pil2M_motor_x",
+    "pil2M_motor_x_user_setpoint",
+    "pil2M_motor_y",
+    "pil2M_motor_y_user_setpoint",
+    "pil2M_motor_z",
+    "pil2M_motor_z_user_setpoint",
+    "attenuation_attenuation_factor",
+    "attenuation_transmission",
+    "attenuation_energy_eV",
+    "attenuation_description",
+    "attenuation_inserted",
+    "piezo_x",
+    "piezo_x_user_setpoint",
+    "energy_energy",
+    "energy_energy_setpoint",
+    "energy_bragg",
+    "energy_ivugap",
+    "energy_harmonic",
+    "waxs_arc",
+    "pil900KW_motors_arc_user_setpoint",
+    "waxs_bsx",
+    "pil900KW_motors_bs_x_user_setpoint",
+    "waxs_bsy",
+    "pil900KW_motors_bs_y_user_setpoint"
+  ]
+}

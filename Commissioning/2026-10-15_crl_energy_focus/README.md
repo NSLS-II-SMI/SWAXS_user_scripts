@@ -1,5 +1,22 @@
 # CRL energy-focus commissioning — 15 October 2026
 
+## Combined measurement report — 16 October
+
+Next experiment: [attenuator microfocus comparison](ATTENUATOR_MICROFOCUS_TEST.md),
+with reference-bracketed filter exchanges, matched-thickness controls and
+energy-specific qualification criteria.
+
+**[Illustrated eight-page PDF](CRL_measurement_report_2026-10-16.pdf)** — focus curves,
+all-energy edge heatmaps, selected raw counts and derivatives, and geometry interpretation.
+Rebuild offline with `python make_measurement_pdf.py` from this folder
+(requires NumPy, pandas and Matplotlib; available in the workstation Python).
+
+See [the measurement report](MEASUREMENT_REPORT.md) and
+[interactive raw-edge/focus plots](measurement_report.html) for scans 1170759,
+1170763, 1170765 and 1170769, with partial attempts and geometry comparisons.
+The report uses actual recorded settings and coverage; the proposed-acquisition
+notes below describe intent and should not substitute for the measurement record.
+
 ## Scan 1170759 analysis
 
 Open [the interactive Bokeh report](scan_1170759_crl_focus.html).
