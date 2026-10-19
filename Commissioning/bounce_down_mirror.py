@@ -824,7 +824,7 @@ lists = ListStore.from_redis()
 
 sample_name = 'IL02_C8mimNTf2'
 # alpha_c = 0.550 at 2.48keV 
-bdm_angle = 0.192 # 70%
+# bdm_angle = 0.192 # 70%
 # bdm_angle = 0.234 # 85%
 # bdm_angle = 0.275 # 100%
 # bdm_angle = 0.330 # 120%
