@@ -321,6 +321,16 @@ def test_hzheng_flow(ns):
     assert len(data) == per_arc * len(gi['arcs'])
     assert all(s['sample_name'].startswith(ns['YZ']['user'] + '_') for s in data)
     assert sum('pil2M' in s['user_hints']['detectors'] for s in data) == per_arc
+    assert_saxs_at_top_arc(data, gi['arcs'])
+
+
+def assert_saxs_at_top_arc(data, arcs):
+    """saxs='max': 900KW at every arc, the 2M only with the highest arc."""
+    for s in data:
+        h = s['user_hints']
+        assert 'pil900KW' in h['detectors']
+        assert ('pil2M' in h['detectors']) == (h['waxs_arc_deg'] == max(arcs))
+    assert {s['user_hints']['waxs_arc_deg'] for s in data} == set(arcs)
 
 
 def test_hzheng_trans_flow(ns):
@@ -339,6 +349,7 @@ def test_hzheng_trans_flow(ns):
     assert all('deg' not in s['sample_name'] and s['geometry'] == 'transmission' for s in data)
     assert all(s['holder'] == 'transmission bar' for s in data)
     assert all(s['user_hints']['positions']['th'] == 0 for s in data)
+    assert_saxs_at_top_arc(data, trans['arcs'])
     ns['RE'](ns['run_trans_samples']('Empty', t=5))
     new = starts(ns)[len(data):]
     assert {s['user_hints']['sample'] for s in new} == {'Empty'}

@@ -28,7 +28,8 @@ Run sheet
      preview(run_gi(**GI))           # dry run: file names + count, nothing moves
      RE(run_gi(**GI))
      one sample first:   RE(run_gi(select(SAMPLES, 1), angles=(0.15,), arcs=(0,)))
-     longer GISAXS only: RE(run_gi(angles=(0.15,), arcs=(20,), t=5, waxs_det=False))
+     GI: GIWAXS at arcs 0, 20, 40; GISAXS (2M) only with the 40 frames (saxs='max')
+     longer GISAXS only: RE(run_gi(angles=(0.15,), arcs=(40,), t=5, waxs_det=False))
 5) Transmission SAXS/WAXS.  The GI bar cannot be measured in transmission (the films lie flat),
    so after the GI runs re-mount the films on the transmission bar (beam along the film normal;
    0.5 mm Si passes ~45 % at 16.1 keV).  In vacuum: vent / pump as in README "Vacuum chamber".
@@ -37,7 +38,8 @@ Run sheet
    TSAMPLES / run_trans_samples here:
      show_samples(TSAMPLES); mov_sam(1, TSAMPLES); RE(snap())
      preview(run_trans_samples())    # dry run: file names + count (no _<ai>deg in the names)
-     RE(run_trans_samples())         # all of TSAMPLES with TRANS
+     RE(run_trans_samples())         # all of TSAMPLES with TRANS: WAXS at 0, 20, 40, SAXS at 40
+     longer SAXS only:   RE(run_trans_samples(arcs=(40,), t=5, waxs_det=False))
      RE(run_trans_samples(1, 'Empty', t=5))         # a few, longer exposure
 
 
@@ -74,7 +76,9 @@ SAMPLES = make_samples(NAMES, {k: (X_POS[k], Y0) for k in NAMES})
 
 GI = dict(
     angles=(0.10, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6 ),   # incident angles (deg)
-    arcs=(0, 20, 40 ),                # WAXS arc; the 2M (GISAXS) is read at 20
+    arcs=(0, 20, 40 ),                # GIWAXS (900KW) at every arc
+    saxs='max',                  # GISAXS (2M) with the highest arc only (40); 'all': every arc
+                                 # >= 16 deg; False: no GISAXS
     t=1,                         # exposure (s)
     x_offsets=(-1000,0, 1000 ),              # e.g. (-1000, 0, 1000) for 3 spots per film
 )
@@ -88,7 +92,8 @@ TSAMPLES = make_samples({k: T_NAMES[k] for k in T_POS}, T_POS, th=0)   # th 0: b
 
 TRANS = dict(
     t=1,                         # exposure (s)
-    arcs=(0, 20, 40),            # WAXS arcs; the 2M (SAXS) is read at the largest
+    arcs=(0, 20, 40),            # WAXS (900KW) at every arc
+    saxs='max',                  # SAXS (2M) with the highest arc only (40); 'all' / False as in GI
     offsets=((0, 0),),           # e.g. ((-500, 0), (0, 0), (500, 0)) for 3 spots per film (x, y um)
     md={'holder': 'transmission bar'},
 )
