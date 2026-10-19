@@ -79,19 +79,19 @@ else:
     )
 
     # EDIT: sample names ([A-Za-z0-9-], use '_' only between fields) and piezo x (um) of each film
-    NAMES = {1: 'S1', 2: 'S2'}
-    X_POS = {1: -40000, 2: -20000}
-    Y0 = 7000          # piezo y (um) near the film surface; alignment scans +-800 um around it
+    NAMES = {1: 'KUN1', 2: 'KUN3', 3: 'KUN5', 4: 'KUN7' , 5: 'KUN9', 6: 'K2q', 7: 'd1q', 8: 'B1' }
+    X_POS = {1: -56000, 2: -44400, 3: -31400, 4: -15400, 5: -2400, 6: 11600, 7: 27600, 8: 42600}
+    Y0 = 9000          # piezo y (um) near the film surface; alignment scans +-800 um around it
     POS = {k: (X_POS[k], Y0) for k in NAMES}
 
 SAMPLES = make_samples(NAMES, POS)
 
 GI = dict(
-    angles=(  0.06,    0.08,   0.10,  0.12,  0.15,  0.20,  ),
+    angles=(  0.06,  0.07,   0.08, 0.09,   0.10, 0.11,  0.12, 0.13, 0.14, 0.15, 0.18,  0.20,  ),
     arcs=(0, 20  ),     # GIWAXS (900KW) at every arc
     saxs='max',         # GISAXS (2M) with the highest arc only; 'all': every arc >= 16 deg; False: none
     t=1,
-    x_offsets=(0,),
+    x_offsets=( -1000, -500, 0, 500, 1000 ),
 )
 
 
