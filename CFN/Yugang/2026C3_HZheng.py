@@ -46,7 +46,15 @@ Run sheet
 Data saved:
 /nsls2/auto-storage/smi/proposals/2026-3/pass-321337/projects     
 
-project_set('QYu')
+project_set('QYu') 
+run 8 samples using gix
+
+
+project_set('HZheng')
+run 8 samples using gix
+
+save beamstop
+pil2M.save_beamstop()
 
      
 """
@@ -58,43 +66,75 @@ project_set('QYu')
 #         'saxs_sdd_m': 5},
 # )
 
-YZ.update(
-    user='QYu',
-    experiment='QYu_GI_RT',
-    md={'beam': '16.1 keV, low divergence', 'environment': 'vacuum, RT', 
-        'holder': 'Al GI bar', 'saxs_sdd_m': 5},
-)
+if False:
+     YZ.update(
+     user='QYu',
+     experiment='QYu_GI_RT',
+     md={'beam': '16.1 keV, low divergence', 'environment': 'vacuum, RT', 
+          'holder': 'Al GI bar', 'saxs_sdd_m': 5},
+     )
 
-# EDIT: sample names ([A-Za-z0-9-], use '_' only between fields) and piezo x (um) of each film
-NAMES = {1: 'SR_2025S1', 2: 'SR_2025S2', 3: 'SR_2025S3', 4: 'SR_2025S4', 5: 'JL6', 6: 'JL7',
-         7: 'JL8', 8: 'JL5', }
-X_POS = {1: -55400, 2: -40000, 3: -26000, 4: -14000, 5: -1000,
-         6: 15000, 7: 29000, 8: 40000,  }
-Y0 = 7000          # piezo y (um) near the film surface; alignment scans +-800 um around it
+     # EDIT: sample names ([A-Za-z0-9-], use '_' only between fields) and piezo x (um) of each film
+     NAMES = {1: 'SR_2025S1', 2: 'SR_2025S2', 3: 'SR_2025S3', 4: 'SR_2025S4', 5: 'JL6', 6: 'JL7',
+          7: 'JL8', 8: 'JL5', }
+     X_POS = {1: -55400, 2: -40000, 3: -26000, 4: -14000, 5: -1000,
+          6: 15000, 7: 29000, 8: 40000,  }
+     Y0 = 7000          # piezo y (um) near the film surface; alignment scans +-800 um around it
 
-SAMPLES = make_samples(NAMES, {k: (X_POS[k], Y0) for k in NAMES})
+     SAMPLES = make_samples(NAMES, {k: (X_POS[k], Y0) for k in NAMES})
 
-GI = dict(
-    angles=(0.10, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6 ),   # incident angles (deg)
-    arcs=(0, 20, 40 ),                # GIWAXS (900KW) at every arc
-    saxs='max',                  # GISAXS (2M) with the highest arc only (40); 'all': every arc
-                                 # >= 16 deg; False: no GISAXS
-    t=1,                         # exposure (s)
-    x_offsets=(-1000,0, 1000 ),              # e.g. (-1000, 0, 1000) for 3 spots per film
-)
+     GI = dict(
+     angles=(0.10, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6 ),   # incident angles (deg)
+     arcs=(0, 20, 40 ),                # GIWAXS (900KW) at every arc
+     saxs='max',                  # GISAXS (2M) with the highest arc only (40); 'all': every arc
+                                   # >= 16 deg; False: no GISAXS
+     t=1,                         # exposure (s)
+     x_offsets=(-1000,0, 1000 ),              # e.g. (-1000, 0, 1000) for 3 spots per film
+     )
+
+if True:
+     YZ.update(
+     user='HZ',
+     experiment='HZ_RT',
+     md={'beam': '16.1 keV, low divergence', 'environment': 'in air, RT', 
+          'holder': 'Trans holder', 'saxs_sdd_m': 5},
+     )
+
+     # EDIT: sample names ([A-Za-z0-9-], use '_' only between fields) and piezo x (um) of each film
+     #NAMES = {1: 'AgBH', }
+     #NAMES = {1: 'S3_Pd',   2: 'S1_Pd', 3: 'S5_Pd', 4: 'S7_Pd',     }
+     # NAMES = {1: 'S2_Pd_500',   2: 'S4_Pd_500', 3: 'S8_Pd_500', 4: 'S6_Pd_500',     }
+     NAMES = {1: 'S2_Pd_1000',   2: 'S4_Pd_1000', 3: 'S8_Pd_1000', 4: 'S6_Pd_1000',     }
+     # NAMES = {1: 'S3_Pd_500',   2: 'S1_Pd_500', 3: 'S5_Pd_500', 4: 'S7_Pd_500',     }
+     # NAMES = {1: 'S2_Pd',   2: 'S4_Pd', 3: 'S8_Pd', 4: 'S6_Pd',     }
+
 
 # EDIT (step 5): transmission bar -- name and piezo (x, y) in um of each film; only the keys in
 # T_POS are measured.  Same names as GI by default; add backgrounds, e.g. 9: 'Empty', 10: 'Si-bare'
 T_NAMES = dict(NAMES)
-T_POS = {}          # e.g. {1: (-50000, 2000), 2: (-40000, 2000), 9: (30000, 2000)}
+#T_POS = { 1: [ -36000, 2500 ]    }          # e.g. {1: (-50000, 2000), 2: (-40000, 2000), 9: (30000, 2000)}
+#T_POS = { 1: [ -37600, 3900 ] , 2: [ -37600, -5095 ], 3: [ 11300, -2495 ] , 4 : [ 10600, 8500 ]   }  Pd samples (1-4)
+T_POS = { 1: [ -39300, -4534 ] , 2: [ -40900, 5065 ], 3: [ 1100, 7800 ] , 4 : [ 800, -2800 ]   }
+
 
 TSAMPLES = make_samples({k: T_NAMES[k] for k in T_POS}, T_POS, th=0)   # th 0: beam along the normal
+
+# TRANS = dict(
+#     t=1,                         # exposure (s)
+#     arcs=(0, 20, 40),            # WAXS (900KW) at every arc
+#     saxs='max',                  # SAXS (2M) with the highest arc only (40); 'all' / False as in GI
+#     offsets=((0, 0),),           # e.g. ((-500, 0), (0, 0), (500, 0)) for 3 spots per film (x, y um)
+#     md={'holder': 'transmission bar'},
+# )
 
 TRANS = dict(
     t=1,                         # exposure (s)
     arcs=(0, 20, 40),            # WAXS (900KW) at every arc
     saxs='max',                  # SAXS (2M) with the highest arc only (40); 'all' / False as in GI
-    offsets=((0, 0),),           # e.g. ((-500, 0), (0, 0), (500, 0)) for 3 spots per film (x, y um)
+    offsets=( ( ( -1000,-1000), ( -1000,0), ( -1000,1000), 
+                (0, -1000),     (0, 0),      (0,1000), 
+                ( 1000,-1000), ( 1000,0),   (1000,1000),                
+                 ) ),           # e.g. ((-500, 0), (0, 0), (500, 0)) for 3 spots per film (x, y um)
     md={'holder': 'transmission bar'},
 )
 
