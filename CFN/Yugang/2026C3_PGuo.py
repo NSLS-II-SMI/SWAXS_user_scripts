@@ -46,8 +46,8 @@ POS = {1: (-3000, 0), 2: (3000, 0)}
 SAMPLES = make_samples(NAMES, POS)
 
 GI = dict(
-    angles=(0.10, 0.15, 0.20),
-    arcs=(0, 20),
+    angles=(  0.06,    0.08,   0.10,  0.12,  0.15,  0.20,  ),
+    arcs=(0, 20  ),
     t=1,
     x_offsets=(0,),
 )
