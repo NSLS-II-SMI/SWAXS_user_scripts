@@ -356,15 +356,77 @@ def test_hzheng_trans_flow(ns):
     assert all(s['sample_name'].endswith('_expt5s') for s in new)
 
 
+def load_pguo(ns, linkam):
+    """load() of 2026C3_PGuo.py with its LINKAM switch set."""
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '2026C3_PGuo.py')
+    with open(path) as f:
+        src, n = re.subn(r'^LINKAM = \w+', f'LINKAM = {linkam}', f.read(), count=1, flags=re.M)
+    assert n == 1
+    exec(compile(src, path, 'exec'), ns)
+
+
+def pguo_per_T(ns):
+    gi = ns['GI']                                      # edited at the beamline: count from the script
+    return len(ns['SAMPLES']) * len(gi['angles']) * len(gi['arcs']) * len(gi['x_offsets'])
+
+
 def test_pguo_flow(ns):
-    load(ns, '2026C3_PGuo.py')
+    load_pguo(ns, True)
+    assert ns['YZ']['experiment'] == 'PGuo_Linkam_GI'
     ns['align_gi_samples']()
     tseries = dict(ns['TSERIES'], settle=0)
     ns['RE'](ns['run_gi_temperatures']([25, -150], **tseries, **ns['GI']))
-    names = [s['sample_name'] for s in starts(ns) if 'user_hints' in s]
-    assert len(names) == 2 * 2 * 3 * 2
-    assert sum('_T-150.0C_' in n for n in names) == 12
+    data = [s for s in starts(ns) if 'user_hints' in s]
+    names = [s['sample_name'] for s in data]
+    assert len(names) == 2 * pguo_per_T(ns)
+    assert sum('_T-150.0C_' in n for n in names) == pguo_per_T(ns)
+    assert_saxs_at_top_arc(data, ns['GI']['arcs'])
     assert ns['LThermal'].temperature_setpoint.get() == 25          # end_T
+
+
+def test_pguo_rt_flow(ns, tmp_path):
+    load_pguo(ns, False)
+    assert ns['YZ']['experiment'] == 'PGuo_GI_RT'
+    ns['LThermal'] = None                              # any Linkam access would raise
+    ns['align_gi_samples']()
+    assert (tmp_path / 'alignment_PGuo_GI_RT_latest.json').exists()
+    ns['RE'](ns['run_gi_rt']())
+    data = [s for s in starts(ns) if 'user_hints' in s]
+    assert len(data) == pguo_per_T(ns)
+    assert all(s['sample_name'].startswith('PGuo_') and '_T' not in s['sample_name'] for s in data)
+    assert all(s['holder'] == 'Al GI bar' and 'temperature_C' not in s['user_hints'] for s in data)
+    assert_saxs_at_top_arc(data, ns['GI']['arcs'])
+    ns['RE'](ns['run_gi_rt'](ns['SAMPLES'][0]['key'], arcs=(0, 20, 40), t=5))
+    new = [s for s in starts(ns) if 'user_hints' in s][len(data):]
+    assert {s['user_hints']['sample'] for s in new} == {ns['SAMPLES'][0]['name']}
+    assert all(s['sample_name'].endswith('_expt5s') for s in new)
+    assert_saxs_at_top_arc(new, (0, 20, 40))
+
+
+def test_pguo_manual_T(ns, tmp_path):
+    load_pguo(ns, True)
+    lk, sim = ns['LThermal'], ns['_sim']
+    ns['align_gi_samples']()                                         # RT
+    lk.temperature_setpoint.put(-100.0)                              # set by hand on the controller
+    lk.lag.put(0.3)
+    n_align = sim.align_calls
+    assert ns['preview'](ns['run_gi_at_T']()) == pguo_per_T(ns)      # dry run
+    assert sim.align_calls == n_align                                # nothing aligned
+    assert not any('user_hints' in s for s in starts(ns))            # nothing measured
+    ns['RE'](ns['run_gi_at_T']())
+    assert sim.align_calls == n_align + len(ns['SAMPLES'])           # re-aligned at the new T
+    per_T = tmp_path / 'alignment_PGuo_Linkam_GI_T-100C_latest.json'
+    latest = tmp_path / 'alignment_PGuo_Linkam_GI_latest.json'
+    assert json.loads(per_T.read_text()) == json.loads(latest.read_text())   # next T starts here
+    data = [s for s in starts(ns) if 'user_hints' in s]
+    assert len(data) == pguo_per_T(ns)
+    assert all('_T-99.7C_' in s['sample_name'] for s in data)
+    assert_saxs_at_top_arc(data, ns['GI']['arcs'])
+    assert lk.temperature_setpoint.get() == -100.0 and lk.cmd.get() == 0    # Linkam only read
+    ns['RE'](ns['run_gi_at_T'](realign=False, t=5))
+    assert sim.align_calls == n_align + len(ns['SAMPLES'])
+    new = [s for s in starts(ns) if 'user_hints' in s][len(data):]
+    assert len(new) == pguo_per_T(ns) and all(s['sample_name'].endswith('_expt5s') for s in new)
 
 
 def test_tsaxs384_flow(ns, tmp_path):
@@ -401,10 +463,10 @@ def test_jmayer_flow(ns):
 
 
 def test_preview_is_a_dry_run(ns, tmp_path):
-    load(ns, '2026C3_PGuo.py')
+    load_pguo(ns, True)
     x_before = ns['piezo'].x.position
     n = ns['preview'](ns['run_gi_temperatures']([25, -150], realign=True, **ns['GI']))
-    assert n == 2 * 2 * 3 * 2                                      # same exposures as the real run
+    assert n == 2 * pguo_per_T(ns)                                 # same exposures as the real run
     assert starts(ns) == [] and ns['piezo'].x.position == x_before   # nothing ran or moved
     assert ns['LThermal'].temperature_setpoint.get() == 25.0
     assert ns['_sim'].align_calls == 0
