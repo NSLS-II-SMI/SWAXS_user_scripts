@@ -1,5 +1,6 @@
 """
-2026C3_HZheng.py -- Mon 2026-10-19 AM: H. Zheng group, GISAXS + GIWAXS at room temperature.
+2026C3_HZheng.py -- Mon 2026-10-19 AM: H. Zheng group, GISAXS + GIWAXS at room temperature,
+then transmission SAXS/WAXS of the same films.
 
 Standard Al GI bar on the piezo stage, in air; 16.1 keV low-divergence beam; SAXS 2M at 5 m;
 ~10 samples.  GIWAXS at arc 0 and 20 deg, GISAXS (2M) together with the arc-20 frames.
@@ -28,6 +29,16 @@ Run sheet
      RE(run_gi(**GI))
      one sample first:   RE(run_gi(select(SAMPLES, 1), angles=(0.15,), arcs=(0,)))
      longer GISAXS only: RE(run_gi(angles=(0.15,), arcs=(20,), t=5, waxs_det=False))
+5) Transmission SAXS/WAXS.  The GI bar cannot be measured in transmission (the films lie flat),
+   so after the GI runs re-mount the films on the transmission bar (beam along the film normal;
+   0.5 mm Si passes ~45 % at 16.1 keV).  In vacuum: vent / pump as in README "Vacuum chamber".
+   Find each film's center with the camera, edit T_NAMES / T_POS below (add an empty spot and
+   a bare substrate as backgrounds), re-run this file.  SAMPLES stays the GI bar, so use
+   TSAMPLES / run_trans_samples here:
+     show_samples(TSAMPLES); mov_sam(1, TSAMPLES); RE(snap())
+     preview(run_trans_samples())    # dry run: file names + count (no _<ai>deg in the names)
+     RE(run_trans_samples())         # all of TSAMPLES with TRANS
+     RE(run_trans_samples(1, 'Empty', t=5))         # a few, longer exposure
 
 
 Data saved:
@@ -68,4 +79,29 @@ GI = dict(
     x_offsets=(-1000,0, 1000 ),              # e.g. (-1000, 0, 1000) for 3 spots per film
 )
 
+# EDIT (step 5): transmission bar -- name and piezo (x, y) in um of each film; only the keys in
+# T_POS are measured.  Same names as GI by default; add backgrounds, e.g. 9: 'Empty', 10: 'Si-bare'
+T_NAMES = dict(NAMES)
+T_POS = {}          # e.g. {1: (-50000, 2000), 2: (-40000, 2000), 9: (30000, 2000)}
+
+TSAMPLES = make_samples({k: T_NAMES[k] for k in T_POS}, T_POS, th=0)   # th 0: beam along the normal
+
+TRANS = dict(
+    t=1,                         # exposure (s)
+    arcs=(0, 20, 40),            # WAXS arcs; the 2M (SAXS) is read at the largest
+    offsets=((0, 0),),           # e.g. ((-500, 0), (0, 0), (500, 0)) for 3 spots per film (x, y um)
+    md={'holder': 'transmission bar'},
+)
+
+
+def run_trans_samples(*which, **kw):
+    """Plan: run_trans of TSAMPLES (or the given keys / names of it) with TRANS; kw override TRANS."""
+    if not TSAMPLES:
+        raise ValueError('no transmission samples: fill T_POS and re-run this file')
+    return run_trans(select(TSAMPLES, *which) if which else TSAMPLES, **dict(TRANS, **kw))
+
+
 show_samples()
+if TSAMPLES:
+    print('transmission (TSAMPLES):')
+    show_samples(TSAMPLES)

@@ -7,7 +7,7 @@ holds that experiment's sample table, settings and run sheet. Old beamtime scrip
 | File | What |
 |---|---|
 | `YZhang_SMI_Base.py` | Base: samples, file names and metadata; transmission, GI, Linkam, in-situ/EC and multi-cell-holder plans |
-| `2026C3_HZheng.py` | Mon 10-19 AM: H. Zheng, GISAXS + GIWAXS, RT, Al bar, air, piezo |
+| `2026C3_HZheng.py` | Mon 10-19 AM: H. Zheng, GISAXS + GIWAXS, RT, Al bar, air, piezo; then transmission SAXS/WAXS of the films (`run_trans_samples`) |
 | `2026C3_PGuo.py` | Mon 10-19 PM: P. Guo, GIWAXS vs T, Linkam + LN2, vacuum, piezo |
 | `2026C3_TSAXS384.py` | Tue 10-20: RT TSAXS/TWAXS, 384-cell holder, 3–4 bars, Huber + piezo |
 | `2026C3_JMayer.py` | Wed 10-21: J. Mayer (Yale), in-situ electrochemistry, GIWAXS or transmission |

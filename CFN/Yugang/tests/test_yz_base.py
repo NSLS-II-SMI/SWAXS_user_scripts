@@ -316,9 +316,33 @@ def test_hzheng_flow(ns):
     ns['RE'](ns['run_gi'](**ns['GI']))                 # latest saved alignment
     st = starts(ns)
     data = [s for s in st if 'user_hints' in s]
-    assert len(data) == 10 * 3 * 2
-    assert all(s['sample_name'].startswith('HZheng_S') for s in data)
-    assert sum('pil2M' in s['user_hints']['detectors'] for s in data) == 30
+    gi = ns['GI']                                      # edited at the beamline: count from the script
+    per_arc = len(ns['SAMPLES']) * len(gi['angles']) * len(gi['x_offsets'])
+    assert len(data) == per_arc * len(gi['arcs'])
+    assert all(s['sample_name'].startswith(ns['YZ']['user'] + '_') for s in data)
+    assert sum('pil2M' in s['user_hints']['detectors'] for s in data) == per_arc
+
+
+def test_hzheng_trans_flow(ns):
+    load(ns, '2026C3_HZheng.py')
+    ns['TSAMPLES'] = []
+    with pytest.raises(ValueError, match='T_POS'):
+        ns['run_trans_samples']()
+    pos = {1: (-50000, 2000), 2: (-40000, 2000), 9: (30000, 2000)}
+    names = {**ns['T_NAMES'], 9: 'Empty'}
+    ns['TSAMPLES'] = ns['make_samples']({k: names[k] for k in pos}, pos, th=0)
+    ns['RE'](ns['bps'].mv(ns['piezo'].th, 0.4))        # left at an aligned th by the GI runs
+    ns['RE'](ns['run_trans_samples']())
+    data = starts(ns)
+    trans = ns['TRANS']
+    assert len(data) == 3 * len(trans['arcs']) * len(trans['offsets'])
+    assert all('deg' not in s['sample_name'] and s['geometry'] == 'transmission' for s in data)
+    assert all(s['holder'] == 'transmission bar' for s in data)
+    assert all(s['user_hints']['positions']['th'] == 0 for s in data)
+    ns['RE'](ns['run_trans_samples']('Empty', t=5))
+    new = starts(ns)[len(data):]
+    assert {s['user_hints']['sample'] for s in new} == {'Empty'}
+    assert all(s['sample_name'].endswith('_expt5s') for s in new)
 
 
 def test_pguo_flow(ns):
