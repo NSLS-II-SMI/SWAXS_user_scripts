@@ -9,6 +9,7 @@ import os
 import re
 import sys
 
+import numpy as np
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -506,6 +507,57 @@ def test_tsaxs384_holder55(ns):
     ns['LIM55']['y'] = (-20000, s11['y'] + 800)                    # 11's cross reaches y + 900
     with pytest.raises(ValueError, match='out of travel'):
         ns['run_holder_55after'](11)
+
+
+def test_tsaxs384_cliu_plate(ns):
+    load(ns, '2026C3_TSAXS384.py')
+    assert ns['PLATE_CLIU'] == []                                  # CAL_CLIU empty: not mapped yet
+    with pytest.raises(ValueError, match='not calibrated'):
+        ns['run_cliu_box1']()
+    th = np.radians(0.5)                                           # rows tilted 0.5 deg
+
+    def phys(w):                                                   # A1 at X -52, V 12 mm; P up (V down)
+        r, c = ns['_well'](w)
+        u, v = 4.5 * c, -4.5 * r
+        return -52 + u * np.cos(th) - v * np.sin(th), 12 + u * np.sin(th) + v * np.cos(th)
+    cal = {}
+    for w, (sx, sy) in {'A1': (-6, 12), 'A24': (6, 12), 'P1': (-6, -28), 'P24': (6, -28)}.items():
+        X, V = phys(w)
+        cal[w] = (sx, sy, round(X * 1000 - sx * 1000), round(12300 + (V - sy) * 1000))
+    P = ns['PLATE_CLIU'] = ns['cliu_box1_samples'](cal)
+    wells = [s['well'] for s in P]
+    assert len(P) == 81 + 2 and not set(ns['CLIU_SKIP']) & set(wells)
+    m18 = ns['select'](P, 'M18')[0]
+    assert m18['name'] == 'Sample000311_B006_CuOH2_Powder' and m18['sample_id'] == 'Sample000311'
+    assert ns['select'](P, 'A1')[0]['role'] == 'blank'
+    for s in P:                                                    # every well where it is
+        X, V = phys(s['well'])
+        assert abs(ns['_X55'](s) / 1000 - X) < 0.002 and abs(s['sy'] + (s['y'] - 12300) / 1000 - V) < 0.002
+    x_lo, x_hi = ns['LIM55']['x']
+    y_lo, y_hi = ns['LIM55']['y']
+    assert all(x_lo <= s['x'] - 600 and s['x'] + 600 <= x_hi for s in P)
+    assert all(y_lo <= s['y'] - 600 and s['y'] + 600 <= y_hi for s in P)
+    rows = {}
+    for s in P:
+        rows.setdefault(s['plate_row'], []).append(s)
+    assert ''.join(rows) == 'ACEGIKMP' and all(len({s['sy'] for s in r}) == 1 for r in rows.values())
+    assert [rows['A'][0]['well'], rows['A'][-1]['well'], rows['C'][0]['well']] == ['A1', 'A24', 'C24']
+    assert len({s['sx'] for s in P}) == 2                          # two Huber sx blocks
+    assert ns['preview'](ns['run_cliu_box1']()) == 83 * 9 * 3
+
+    msgs = []
+    ns['RE'].msg_hook = msgs.append
+    ns['RE'](ns['run_cliu_box1']('A1', 'A24', 'C2', 'C24'))
+    sets = lambda m_obj: [m.args[0] for m in msgs if m.command == 'set' and m.obj is m_obj]
+    assert sets(ns['stage'].y) == [rows['A'][0]['sy'], rows['C'][0]['sy']]
+    assert sets(ns['stage'].x) == [ns['select'](P, 'A1')[0]['sx'], ns['select'](P, 'A24')[0]['sx'],
+                                   ns['select'](P, 'C2')[0]['sx']]
+    data = starts(ns)
+    assert len(data) == 4 * 9 * 3 and len(ns['ova_cam'].written) == 4
+    order = list(dict.fromkeys(s['user_hints']['sample_info']['key'] for s in data))
+    assert order == ['A1', 'A24', 'C24', 'C2']
+    assert_saxs_at_top_arc(data, (0, 20, 40))
+    assert ns['preview'](ns['run_cliu_box1'](rows='P')) == (8 + 1) * 9 * 3     # CeO2 + P24 blank
 
 
 def test_jmayer_flow(ns):
