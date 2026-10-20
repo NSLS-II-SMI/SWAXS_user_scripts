@@ -41,6 +41,92 @@ YZ.update(
 
 # EDIT after calibration: Huber position of each bar (mm) and its cell grid on the piezo (um).
 # None = not calibrated yet (bar skipped).
+
+'''
+notes:
+huber limit: y [ -30, 20 ]
+pz limit: y [ -20000, 20000 ]
+
+
+
+red sharpen red marker: 
+huber: x, y, 0. 11
+pz: x -7600, y 12300
+
+
+
+bottom most visiable sample: (sample 35 , see the image) 
+huber: x, y, 0. 7
+pz: x -7600, y 12300
+
+second bottom, on top of bottom most visible sample (left one, sample 36 ): 
+huber: x, y, 0. 2.4
+pz: x -12800, y 12300
+
+second bottom, on top of bottom most visible sample (right one, sample 29): 
+huber: x, y, 0. 2.4
+pz: x -2300, y 12300
+
+
+
+third bottom, on top of bottom most visible sample  (sample 30): 
+huber: x, y, 0. -2.2
+pz: x -6700, y 12300
+
+
+fourth bottom, on top of bottom most visible sample (left one, sample 31): 
+huber: x, y, 0. -8
+pz: x -11100, y 12300
+
+fourth bottom, on top of bottom most visible sample (right one, sample 23): 
+huber: x, y, 0. -7
+pz: x -1400, y 12300
+
+
+fifth bottom, on top of bottom most visible sample  (sample 24): 
+huber: x, y, 0. -12.6
+pz: x -5400, y 12300
+
+
+
+sixth bottom, on top of bottom most visible sample (left one, sample 25): 
+huber: x, y, 0. -18
+pz: x -9300, y 12300
+
+sixth bottom, on top of bottom most visible sample (right one, sample 16): 
+huber: x, y, 0. -17.8
+pz: x 200, y 12300
+
+
+seventh bottom, on top of bottom most visible sample (sample 17): 
+huber: x, y, 0. -23.2
+pz: x -4400, y 12300
+
+
+
+eighth bottom, on top of bottom most visible sample (left one, sample 18): 
+huber: x, y, 0. -27.4
+pz: x -8300, y 12300
+
+eighth bottom, on top of bottom most visible sample (right one, sample 8): 
+huber: x, y, 0. -27.4
+pz: x 1500, y 12300
+
+
+ninth bottom, on top of bottom most visible sample (sample 9): 
+huber: x, y, 0. -30
+pz: x -2500, y 10500
+
+tenth bottom, the last one (top row) sample 10: 
+huber: x, y, 0. -30
+pz: x -7600, y 4700
+
+
+
+'''
+
+
+
 BARS = {
     'B1': dict(base={'sx': None, 'sy': None}, rows='ABCD', cols=24,
                first=None, last_in_row=None, first_in_last_row=None),
