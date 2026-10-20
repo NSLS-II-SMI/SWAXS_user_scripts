@@ -42,11 +42,19 @@ U1) Positions: MEASURED55 = spots centered by hand on the on-axis camera; every 
       show_samples(HOLDER55)
 U2) Check the spots furthest from the measured ones before the long run (1, 11, 20, 41, 53, 55):
       mov_sam(55, HOLDER55); RE(ova_snap('test'))
-    off-center: center it by hand, here('sy', 'x', 'y') -> MEASURED55, re-run this file (refits).
+    off-center: center it by hand, here('sy', 'x', 'y') -> MEASURED55, re-run this file (refits);
+    for a spot at a shifted Huber sx (see U3) here('sy', 'x', 'y', 'sx').
+    Once: the sign of Huber sx vs piezo x (SXDIR55), on a spot you can see:
+      mov_sam(49, HOLDER55); RE(bps.mvr(stage.x, 0.5, piezo.x, -500))
+      spot stays centered: SXDIR55 = 1; it moved ~1 mm: SXDIR55 = -1, re-run this file
+      RE(bps.mvr(stage.x, -0.5, piezo.x, 500))
 U3) Measure row by row: the Huber heats up (and stops) when it moves a lot, so it moves once per
     row -- the spots of a row share one sy and the piezo y takes the spot-to-spot height.  The piezo
     y only travels -15000..12400 um (LIM55), so each row's sy is raised until its crosses fit below
-    12400 (then mov_sam shows a different sy / y split of the same spot than MEASURED55).  Bottom
+    12400 (then mov_sam shows a different sy / y split of the same spot than MEASURED55).  The piezo
+    x only travels -47000..47000 um: spots whose cross does not fit (the far left 52 .. 55) are
+    measured with the Huber sx shifted by whole mm, so a row is split there, each part with all arcs
+    (the Huber sx moves a few times only).  Bottom
     row first, S1 -> S55, then S54 -> S2, S3 -> S52, ...; the blank carbon_paper_after_reaction
     (BLANKS55) goes with the row of S5.  Per row all arcs 0, 20, 40 (SAXS at 40); per spot a
     13-point cross (x -900..900 then y -900..900, 300 um steps) and one on-axis camera image:
@@ -55,6 +63,11 @@ U3) Measure row by row: the Huber heats up (and stops) when it moves a lot, so i
       RE(run_holder_55after(35, 36, 'carbon_paper_after_reaction'))   # a few (red labels / names)
       RE(run_holder_55after(arcs=(40,), ova=False))   # e.g. redo one arc
     The on-axis camera must be acquiring; images -> YZ['ova_dir'], one logbook row each.
+    After an error: within a row the arcs are the outer loop (all spots at 0, then 20, then 40), so
+    finish the row with the spots / arcs missing, then the next rows, e.g.
+      RE(run_holder_55after(55, arcs=(0,)))
+      RE(run_holder_55after(rows=(0,), arcs=(20, 40), ova=False))
+      RE(run_holder_55after(rows=range(1, 10)))
 """
 
 YZ.update(
@@ -243,7 +256,8 @@ PIX55 = {
 }
 
 # EDIT: spots centered by hand on the on-axis camera, spot: (Huber sy mm, piezo x um, piezo y um),
-# Huber sx = SX55.  Used as they are; all other spots come from the affine fit through them.
+# Huber sx = SX55, or (sy, x, y, sx) at another Huber sx.  Used as they are; all other spots come
+# from the affine fit through them.
 MEASURED55 = {
     35: (7, -7600, 12300), 36: (2.4, -12800, 12300), 29: (2.4, -2300, 12300),
     30: (-2.2, -6700, 12300), 31: (-8, -11100, 12300), 23: (-7, -1400, 12300),
@@ -263,8 +277,10 @@ BLANKS55 = {
 }
 SX55 = 0.0                  # Huber sx (mm) for the whole array
 PY0 = 12300                 # piezo y (um) while the Huber sy can do the vertical
-LIM55 = {'sy': (-30, 20), 'y': (-15000, 12400)}    # travel (Huber mm, piezo um), with the motors' own
-MARGIN55 = 100              # piezo y (um) kept from its travel when choosing a row's Huber sy
+LIM55 = {'sy': (-30, 20), 'x': (-47000, 47000), 'y': (-15000, 12400)}   # travel (Huber mm, piezo um),
+                                                                        # with the motors' own
+MARGIN55 = 100              # piezo x, y (um) kept from their travel when choosing the Huber sx, sy
+SXDIR55 = 1                 # +1: Huber sx +1 mm moves a spot as piezo x +1000 um (check, U2); -1: opposite
 
 CROSS55 = tuple((d, 0) for d in (-900, -600, -300, 0, 300, 600, 900)) + \
           tuple((0, d) for d in (-900, -600, -300, 300, 600, 900))  # 13 spots (piezo x, y um)
@@ -290,7 +306,7 @@ def holder55_positions(measured=None):
     """
     measured = MEASURED55 if measured is None else measured
     keys = sorted(measured)
-    S = np.array([[measured[n][1] / 1000, measured[n][0] + (measured[n][2] - PY0) / 1000] for n in keys])
+    S = np.array([_xv55(*measured[n]) for n in keys])
     dots = [i for i, n in enumerate(keys) if KR55[n - 1][0] != KR55[n - 1][1]]   # not the bottom row
     A = np.array([[*PIX55[keys[i]], 1.0] for i in dots])
     coef = np.linalg.lstsq(A, S[dots], rcond=None)[0]
@@ -315,12 +331,25 @@ def holder55_positions(measured=None):
     return {n: dict(x=float(X) * 1000, v=float(V), source=source[n]) for n, (X, V) in xv.items()}
 
 
+def _xv55(sy, x, y, sx=None):
+    """(X, V) in mm of a hand-centered position: X = piezo x at Huber sx = SX55, V = height."""
+    sx = SX55 if sx is None else sx
+    return (x + SXDIR55 * (sx - SX55) * 1000) / 1000, sy + (y - PY0) / 1000
+
+
+def _X55(s):
+    """Piezo x (um) of a HOLDER55 spot as if at Huber sx = SX55 (comparable between spots)."""
+    return s['x'] + SXDIR55 * (s['sx'] - SX55) * 1000
+
+
 def holder55_samples():
     """
     The 55 spots and BLANKS55, row by row of the array (row = Ag level, bottom row first) in a
     serpentine: S1 -> S55, S54 -> S2, S3 -> S52, ...  The spots of a row share one Huber sy and the
     piezo y takes the spot-to-spot height, so the Huber moves once per row.  sy is the row mean,
-    shifted as little as needed to keep the piezo y of every cross (CROSS55) inside its travel.
+    shifted as little as needed to keep the piezo y of every cross (CROSS55) inside its travel.  Spots
+    whose cross does not fit the piezo x travel get the Huber sx shifted by whole mm (one shift for
+    all of them on each side) and the piezo x shifted back.
     """
     spots = []
     for n, p in holder55_positions().items():
@@ -332,6 +361,13 @@ def holder55_samples():
     for name, (sy, x, y, row) in BLANKS55.items():
         spots.append(dict(key=name, name=clean_name(name), x=float(x), v=sy + (y - PY0) / 1000,
                           array_row=row, role='blank', position='measured'))
+    x_lo, x_hi = _travel('x')
+    dx_lo, dx_hi = min(dx for dx, _ in CROSS55), max(dx for dx, _ in CROSS55)
+    left = lambda X: X + dx_lo < x_lo + MARGIN55
+    right = lambda X: X + dx_hi > x_hi - MARGIN55
+    xs = [s['x'] for s in spots]
+    shift_l = np.ceil(max(x_lo + MARGIN55 - dx_lo - min(xs), 0) / 1000)     # mm, piezo x + shift
+    shift_r = np.ceil(max(max(xs) + dx_hi - x_hi + MARGIN55, 0) / 1000)     # mm, piezo x - shift
     samples = []
     for row in sorted({s['array_row'] for s in spots}):
         cells = sorted((s for s in spots if s['array_row'] == row), key=lambda s: s['x'],
@@ -342,8 +378,9 @@ def holder55_samples():
         sy_hi = min(vs) + (PY0 + min(dy for _, dy in CROSS55) - y_lo - MARGIN55) / 1000
         sy = round(min(max(np.mean(vs), sy_lo, _travel('sy')[0]), sy_hi, _travel('sy')[1]), 2)
         for s in cells:
-            v = s.pop('v')
-            s.update(sx=SX55, sy=sy, x=round(s['x']), y=round(PY0 + (v - sy) * 1000))
+            v, X = s.pop('v'), s['x']
+            d = shift_l if left(X) else -shift_r if right(X) else 0
+            s.update(sx=float(SX55 - SXDIR55 * d), sy=sy, x=round(X + d * 1000), y=round(PY0 + (v - sy) * 1000))
             samples.append(s)
     check_samples(samples)
     return samples
@@ -379,15 +416,20 @@ def _ova_first_arc(sample, i_arc):
         yield from ova_snap(sample)
 
 
-def run_holder_55after(*which, ova=True, **kw):
+def run_holder_55after(*which, rows=None, ova=True, **kw):
     """
     Plan: transmission SAXS/WAXS of the B001 array after screening (the 55 spots and BLANKS55, or the
-    given red labels / names), row by row in the order of HOLDER55: the Huber moves once per row, then
-    every arc of TRANS55 over the row -- a 13-point cross (CROSS55) per spot, WAXS at every arc with
-    SAXS at the highest, and (ova=True) one on-axis camera image per spot on the row's first arc.
-    Each row starts at the end, and at the arc, where the previous one stopped.  kw override TRANS55.
+    given red labels / names, or the array rows given, 0 = bottom), row by row in the order of
+    HOLDER55: the Huber moves once per row (and where the Huber sx changes within it), then every arc
+    of TRANS55 over the row -- a 13-point cross (CROSS55) per spot, WAXS at every arc with SAXS at the
+    highest, and (ova=True) one on-axis camera image per spot on the first arc.  Each row starts at
+    the end, and at the arc, where the previous one stopped.  kw override TRANS55.
     """
     samples = select(HOLDER55, *which) if which else HOLDER55
+    if rows is not None:
+        samples = [s for s in samples if s['array_row'] in rows]
+        if not samples:
+            raise ValueError(f'no spots in rows {rows}')
     opts = dict(TRANS55, **kw)
     check_arcs(opts['arcs'])
     check_holder55(samples, opts['offsets'])
@@ -401,21 +443,34 @@ def _rows55(samples, ova, opts):
         rows.setdefault(s['array_row'], []).append(s)
     saxs_arcs = _saxs_arcs(arcs, opts.get('saxs', 'max'))
     n_arcs = sum(1 for a in arcs if _dets(a, saxs_arcs, opts.get('waxs_det', True)))
-    _announce(f'run_holder_55after, {len(rows)} rows (one Huber move each)',
+    n_parts = sum(len(_parts55(row)) for row in rows.values())
+    _announce(f'run_holder_55after, {len(rows)} rows, {n_parts} Huber positions',
               n_arcs * len(samples) * len(opts['offsets']), opts.get('t', 1))
-    last_x = last_arc = None
+    last_X = last_arc = None
     for row in rows.values():
-        if last_x is not None and abs(row[-1]['x'] - last_x) < abs(row[0]['x'] - last_x):
+        if last_X is not None and abs(_X55(row[-1]) - last_X) < abs(_X55(row[0]) - last_X):
             row = row[::-1]
-        if last_arc is not None and abs(arcs[-1] - last_arc) < abs(arcs[0] - last_arc):
-            arcs = arcs[::-1]
-        for a in ('sx', 'sy'):
-            if abs((yield from bps.rd(AXES[a])) - row[0][a]) > 1e-3:
-                yield from bps.mv(AXES[a], row[0][a])
-        piezo_only = [{k: v for k, v in s.items() if k not in ('sx', 'sy')} for s in row]
-        yield from run_trans(piezo_only, arcs=arcs, at_sample=_ova_first_arc if ova else None, **opts)
-        last_x = yield from bps.rd(AXES['x'])
-        last_arc = yield from bps.rd(_arc_rb())
+        for part in _parts55(row):
+            if last_arc is not None and abs(arcs[-1] - last_arc) < abs(arcs[0] - last_arc):
+                arcs = arcs[::-1]
+            for a in ('sx', 'sy'):
+                if abs((yield from bps.rd(AXES[a])) - part[0][a]) > 1e-3:
+                    yield from bps.mv(AXES[a], part[0][a])
+            piezo_only = [{k: v for k, v in s.items() if k not in ('sx', 'sy')} for s in part]
+            yield from run_trans(piezo_only, arcs=arcs, at_sample=_ova_first_arc if ova else None, **opts)
+            last_arc = yield from bps.rd(_arc_rb())
+        last_X = _X55({'x': (yield from bps.rd(AXES['x'])), 'sx': (yield from bps.rd(AXES['sx']))})
+
+
+def _parts55(row):
+    """The row split where the Huber sx changes."""
+    parts = []
+    for s in row:
+        if parts and parts[-1][-1]['sx'] == s['sx']:
+            parts[-1].append(s)
+        else:
+            parts.append([s])
+    return parts
 
 
 HOLDER55 = holder55_samples()
@@ -423,3 +478,6 @@ _xs, _ys = [s['x'] for s in HOLDER55], [s['y'] for s in HOLDER55]
 print(f'HOLDER55: {len(HOLDER55)} spots in {len({s["array_row"] for s in HOLDER55})} rows, Huber sy per '
       f'row {", ".join(f"{sy:g}" for sy in dict.fromkeys(s["sy"] for s in HOLDER55))} mm; '
       f'piezo x {min(_xs) - 900:.0f}..{max(_xs) + 900:.0f} um, y {min(_ys) - 900:.0f}..{max(_ys) + 900:.0f} um')
+for _sx in sorted({s['sx'] for s in HOLDER55} - {SX55}):
+    print(f'  Huber sx {_sx:g} mm (not {SX55:g}) for spots '
+          f'{", ".join(str(s["key"]) for s in HOLDER55 if s["sx"] == _sx)} -- SXDIR55 = {SXDIR55} checked?')

@@ -455,7 +455,7 @@ def test_tsaxs384_holder55(ns):
     height = lambda sy, y: sy + (y - PY0) / 1000                   # Huber sy + piezo y, mm
     for n, (sy, x, y) in ns['MEASURED55'].items():                 # measured spots stay where measured
         s = ns['select'](H, n)[0]
-        assert s['x'] == x and s['position'] == 'measured'
+        assert ns['_X55'](s) == x and s['position'] == 'measured'
         assert abs(height(s['sy'], s['y']) - height(sy, y)) < 1e-3
     rows = {}
     for s in H:
@@ -468,8 +468,13 @@ def test_tsaxs384_holder55(ns):
     assert all(ns['LIM55']['sy'][0] <= s['sy'] <= ns['LIM55']['sy'][1] for s in H)
     y_lo, y_hi = ns['LIM55']['y']
     assert all(y_lo <= s['y'] - 900 and s['y'] + 900 <= y_hi for s in H)   # crosses in piezo y travel
+    x_lo, x_hi = ns['LIM55']['x']
+    assert all(x_lo <= s['x'] - 900 and s['x'] + 900 <= x_hi for s in H)   # and piezo x travel
+    shifted = [s['key'] for s in H if s['sx'] != ns['SX55']]
+    assert shifted == [53, 55, 54, 52]                             # far left: Huber sx shifted
     assert rows[0][0]['sy'] > max(ns['MEASURED55'][n][0] for n in (1, 28))   # Huber up, piezo y down
     assert ns['preview'](ns['run_holder_55after']()) == 56 * 13 * 3
+    assert ns['preview'](ns['run_holder_55after'](rows=range(1, 10))) == (56 - 10) * 13 * 3
     assert ova.written == [] and starts(ns) == []                  # the dry run wrote nothing
 
     msgs = []
@@ -477,12 +482,14 @@ def test_tsaxs384_holder55(ns):
     ns['RE'](ns['run_holder_55after'](1, 11, 54, 2, blank))       # rows 0, 1 and 4
     huber = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].y]
     assert huber == [rows[0][0]['sy'], rows[1][0]['sy'], rows[4][0]['sy']]   # once per row
+    huber_x = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].x]
+    assert huber_x == [ns['select'](H, 54)[0]['sx'], ns['SX55']]   # for 54, back for the blank
     data = starts(ns)
     assert len(data) == 5 * 13 * 3
     order = list(dict.fromkeys(s['user_hints']['sample_info']['key'] for s in data))
     assert order == [1, 11, 2, 54, blank]                          # row 1 starts nearest row 0's end
     arcs = [s['user_hints']['waxs_arc_deg'] for s in data]
-    assert arcs[0] == 0 and arcs[2 * 13 * 3] == 40 and arcs[4 * 13 * 3] == 0   # arcs alternate per row
+    assert [arcs[i * 13 * 3] for i in (0, 2, 3, 4)] == [0, 40, 0, 40]   # arcs alternate per Huber position
     assert len(ova.written) == 5 and blank in ova.written[-1]
     assert all(w.startswith(ns['YZ']['ova_dir']) and w.endswith('_OVA') for w in ova.written)
     assert_saxs_at_top_arc(data, (0, 20, 40))
