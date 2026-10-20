@@ -449,27 +449,53 @@ def test_tsaxs384_flow(ns, tmp_path):
 
 def test_tsaxs384_holder55(ns):
     load(ns, '2026C3_TSAXS384.py')
-    H, ova = ns['HOLDER55'], ns['ova_cam']
-    assert len(H) == 55 and len({s['name'] for s in H}) == 55
-    for n, (sy, x, y) in ns['MEASURED55'].items():                 # measured spots used as measured
+    H, ova, PY0 = ns['HOLDER55'], ns['ova_cam'], ns['PY0']
+    blank = 'carbon_paper_after_reaction'
+    assert len(H) == 56 and len({s['name'] for s in H}) == 56
+    height = lambda sy, y: sy + (y - PY0) / 1000                   # Huber sy + piezo y, mm
+    for n, (sy, x, y) in ns['MEASURED55'].items():                 # measured spots stay where measured
         s = ns['select'](H, n)[0]
-        assert (s['sy'], s['x'], s['y'], s['position']) == (sy, x, y, 'measured')
+        assert s['x'] == x and s['position'] == 'measured'
+        assert abs(height(s['sy'], s['y']) - height(sy, y)) < 1e-3
+    rows = {}
+    for s in H:
+        rows.setdefault(s['array_row'], []).append(s)
+    assert all(len({s['sy'] for s in r}) == 1 for r in rows.values())   # one Huber sy per row
+    assert [s['key'] for s in rows[0]] == [1, 11, 20, 28, 35, 41, 46, 50, 53, 55]
+    assert [s['key'] for s in rows[1]] == [54, 51, 47, 42, 36, 29, 21, 12, 2]
+    assert (rows[2][0]['key'], rows[2][-1]['key']) == (3, 52)
+    assert [s['key'] for s in rows[4]][:2] == [blank, 5]
     assert all(ns['LIM55']['sy'][0] <= s['sy'] <= ns['LIM55']['sy'][1] for s in H)
-    assert ns['preview'](ns['run_holder_55after']()) == 55 * 13 * 3
+    assert ns['preview'](ns['run_holder_55after']()) == 56 * 13 * 3
     assert ova.written == [] and starts(ns) == []                  # the dry run wrote nothing
-    ns['RE'](ns['run_holder_55after'](35, 36))
+
+    msgs = []
+    ns['RE'].msg_hook = msgs.append
+    ns['RE'](ns['run_holder_55after'](1, 11, 54, 2, blank))       # rows 0, 1 and 4
+    huber = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].y]
+    assert huber == [rows[0][0]['sy'], rows[1][0]['sy'], rows[4][0]['sy']]   # once per row
     data = starts(ns)
-    assert len(data) == 2 * 13 * 3
-    assert [w.split('/')[-1].split('_')[1] for w in ova.written] == ['Sample000035', 'Sample000036']
+    assert len(data) == 5 * 13 * 3
+    order = list(dict.fromkeys(s['user_hints']['sample_info']['key'] for s in data))
+    assert order == [1, 11, 2, 54, blank]                          # row 1 starts nearest row 0's end
+    arcs = [s['user_hints']['waxs_arc_deg'] for s in data]
+    assert arcs[0] == 0 and arcs[2 * 13 * 3] == 40 and arcs[4 * 13 * 3] == 0   # arcs alternate per row
+    assert len(ova.written) == 5 and blank in ova.written[-1]
     assert all(w.startswith(ns['YZ']['ova_dir']) and w.endswith('_OVA') for w in ova.written)
     assert_saxs_at_top_arc(data, (0, 20, 40))
-    cross = [(s['user_hints']['positions']['x'] + 7600, s['user_hints']['positions']['y'] - 12300)
-             for s in data if s['user_hints']['sample_info']['key'] == 35
+    s11 = ns['select'](H, 11)[0]
+    cross = [(s['user_hints']['positions']['x'] - s11['x'], s['user_hints']['positions']['y'] - s11['y'])
+             for s in data if s['user_hints']['sample_info']['key'] == 11
              and s['user_hints']['waxs_arc_deg'] == 0]
     assert cross == list(ns['CROSS55'])
-    ns['LIM55']['y'] = (-20000, 13000)                             # 35's cross reaches y = 13200
+    del ns['_docs'][:]
+    ns['RE'](ns['run_holder_55after'](arcs=(40,), offsets=((0, 0),), ova=False))   # whole array, fast
+    order = [s['user_hints']['sample_info']['key'] for s in starts(ns)]
+    assert order == [s['key'] for s in H]                          # S1 -> S55, S54 -> S2, S3 -> S52, ...
+    assert order[9:11] == [55, 54] and order[18:20] == [2, 3]
+    ns['LIM55']['y'] = (-20000, s11['y'] + 800)                    # 11's cross reaches y + 900
     with pytest.raises(ValueError, match='out of travel'):
-        ns['run_holder_55after'](35)
+        ns['run_holder_55after'](11)
 
 
 def test_jmayer_flow(ns):

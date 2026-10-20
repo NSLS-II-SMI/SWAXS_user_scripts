@@ -43,11 +43,14 @@ U1) Positions: MEASURED55 = spots centered by hand on the on-axis camera; every 
 U2) Check the spots furthest from the measured ones before the long run (1, 11, 20, 41, 53, 55):
       mov_sam(55, HOLDER55); RE(ova_snap('test'))
     off-center: center it by hand, here('sy', 'x', 'y') -> MEASURED55, re-run this file (refits).
-U3) Measure: per spot a 13-point cross (x -900..900 then y -900..900, 300 um steps), WAXS at
-    arcs 0, 20, 40 with SAXS at 40, one on-axis camera image at the center (first arc):
-      preview(run_holder_55after())      # 55 x 13 x 3 = 2145 exposures
+U3) Measure row by row: the Huber heats up (and stops) when it moves a lot, so it moves once per
+    row -- the spots of a row share one sy and the piezo y takes the spot-to-spot height.  Bottom
+    row first, S1 -> S55, then S54 -> S2, S3 -> S52, ...; the blank carbon_paper_after_reaction
+    (BLANKS55) goes with the row of S5.  Per row all arcs 0, 20, 40 (SAXS at 40); per spot a
+    13-point cross (x -900..900 then y -900..900, 300 um steps) and one on-axis camera image:
+      preview(run_holder_55after())      # 56 x 13 x 3 = 2184 exposures
       RE(run_holder_55after())
-      RE(run_holder_55after(35, 36))     # a few spots (red labels)
+      RE(run_holder_55after(35, 36, 'carbon_paper_after_reaction'))   # a few (red labels / names)
       RE(run_holder_55after(arcs=(40,), ova=False))   # e.g. redo one arc
     The on-axis camera must be acquiring; images -> YZ['ova_dir'], one logbook row each.
 """
@@ -251,6 +254,11 @@ MEASURED55 = {
     2: (3.363, 26318, 12300), 28: (8, 1470, 12300),
     1: (8.4, 30576, 12300),     # sy 8.4 given as "S2" (read as S1: S2 + one row step = 8.48); x predicted
 }
+# EDIT: bare carbon paper as blanks (the paper diffracts), measured with the array row given;
+# name: (Huber sy mm, piezo x um, piezo y um, row = 0 bottom (Ag 0) .. 9 top (spot 10))
+BLANKS55 = {
+    'carbon_paper_after_reaction': (-11.47, 26006, 12300, 4),     # right of spot 5 (row 5, 15 .. 45)
+}
 SX55 = 0.0                  # Huber sx (mm) for the whole array
 PY0 = 12300                 # piezo y (um) while the Huber sy can do the vertical
 LIM55 = {'sy': (-30, 20), 'y': (-20000, 20000)}    # travel (Huber mm, piezo um), with the motors' own
@@ -270,8 +278,7 @@ TRANS55 = dict(
 
 def holder55_positions(measured=None):
     """
-    {spot: {'sx', 'sy', 'x', 'y', 'source'}} in the stage plane (horizontal x, vertical
-    sy + (y - PY0)):
+    {spot: {'x': piezo x um, 'v': height sy + (y - PY0) / 1000 mm, 'source'}}:
       'measured'  as in MEASURED55
       'photo'     from its blue dot, by an affine fit marked-image pixel -> stage through the measured
       'lattice'   bottom row (Ag = 0, the Au-Cu edge): these spots are faint on the photo and their
@@ -302,33 +309,35 @@ def holder55_positions(measured=None):
             near = [xv[spot[k, k + 1]] - step[1]] if k < 9 else []
             near += [xv[spot[k - 1, k]] + step[0]] if k > 0 else []
             xv[n], source[n] = np.mean(near, axis=0), 'lattice'
-    out = {}
-    for n, (X, V) in xv.items():
-        if source[n] == 'measured':
-            sy, x, y = measured[n]
-        else:
-            sy = min(max(V, LIM55['sy'][0]), LIM55['sy'][1])      # the piezo y takes the rest
-            x, y = X * 1000, PY0 + (V - sy) * 1000
-        out[n] = dict(sx=SX55, sy=round(float(sy), 3), x=round(float(x)), y=round(float(y)),
-                      source=source[n])
-    return out
+    return {n: dict(x=float(X) * 1000, v=float(V), source=source[n]) for n, (X, V) in xv.items()}
 
 
 def holder55_samples():
-    """The 55 spots, ordered row by row of the array (constant Ag, nearly constant sy) in a serpentine."""
-    pos = holder55_positions()
-
-    def order(n):
+    """
+    The 55 spots and BLANKS55, row by row of the array (row = Ag level, bottom row first) in a
+    serpentine: S1 -> S55, S54 -> S2, S3 -> S52, ...  The spots of a row share one Huber sy (the row
+    mean, within LIM55) and the piezo y takes the spot-to-spot height, so the Huber moves once per row.
+    """
+    spots = []
+    for n, p in holder55_positions().items():
         k, r = KR55[n - 1]
-        return r - k, pos[n]['x'] * (-1) ** (r - k)
-
-    spots = sorted(pos, key=order)
-    samples = make_samples({n: f'{PYCLEAR55[n - 1]}_{STATE55}' for n in spots},
-                           {n: {a: pos[n][a] for a in ('sx', 'sy', 'x', 'y')} for n in spots})
-    for s in samples:
-        k, r = KR55[s['key'] - 1]
-        s.update(sample_id=PYCLEAR55[s['key'] - 1].split('_')[0], target_id=1 + 14 * k + r,
-                 pipetmax_col=k, pipetmax_row=r, position=pos[s['key']]['source'])
+        spots.append(dict(key=n, name=clean_name(f'{PYCLEAR55[n - 1]}_{STATE55}'), x=p['x'], v=p['v'],
+                          array_row=r - k, sample_id=PYCLEAR55[n - 1].split('_')[0],
+                          target_id=1 + 14 * k + r, pipetmax_col=k, pipetmax_row=r,
+                          position=p['source']))
+    for name, (sy, x, y, row) in BLANKS55.items():
+        spots.append(dict(key=name, name=clean_name(name), x=float(x), v=sy + (y - PY0) / 1000,
+                          array_row=row, role='blank', position='measured'))
+    samples = []
+    for row in sorted({s['array_row'] for s in spots}):
+        cells = sorted((s for s in spots if s['array_row'] == row), key=lambda s: s['x'],
+                       reverse=row % 2 == 0)
+        sy = round(min(max(np.mean([s['v'] for s in cells]), LIM55['sy'][0]), LIM55['sy'][1]), 2)
+        for s in cells:
+            v = s.pop('v')
+            s.update(sx=SX55, sy=sy, x=round(s['x']), y=round(PY0 + (v - sy) * 1000))
+            samples.append(s)
+    check_samples(samples)
     return samples
 
 
@@ -364,19 +373,45 @@ def _ova_first_arc(sample, i_arc):
 
 def run_holder_55after(*which, ova=True, **kw):
     """
-    Plan: transmission SAXS/WAXS of the 55 spots of the B001 array after screening (or the given red
-    labels / names): a 13-point cross (CROSS55) per spot, WAXS at every arc of TRANS55 with SAXS at the
-    highest, and (ova=True) one on-axis camera image per spot at its center on the first arc.
-    kw override TRANS55.
+    Plan: transmission SAXS/WAXS of the B001 array after screening (the 55 spots and BLANKS55, or the
+    given red labels / names), row by row in the order of HOLDER55: the Huber moves once per row, then
+    every arc of TRANS55 over the row -- a 13-point cross (CROSS55) per spot, WAXS at every arc with
+    SAXS at the highest, and (ova=True) one on-axis camera image per spot on the row's first arc.
+    Each row starts at the end, and at the arc, where the previous one stopped.  kw override TRANS55.
     """
     samples = select(HOLDER55, *which) if which else HOLDER55
     opts = dict(TRANS55, **kw)
+    check_arcs(opts['arcs'])
     check_holder55(samples, opts['offsets'])
-    return run_trans(samples, at_sample=_ova_first_arc if ova else None, **opts)
+    return _rows55(samples, ova, opts)
+
+
+def _rows55(samples, ova, opts):
+    arcs = list(opts.pop('arcs'))
+    rows = {}
+    for s in samples:
+        rows.setdefault(s['array_row'], []).append(s)
+    saxs_arcs = _saxs_arcs(arcs, opts.get('saxs', 'max'))
+    n_arcs = sum(1 for a in arcs if _dets(a, saxs_arcs, opts.get('waxs_det', True)))
+    _announce(f'run_holder_55after, {len(rows)} rows (one Huber move each)',
+              n_arcs * len(samples) * len(opts['offsets']), opts.get('t', 1))
+    last_x = last_arc = None
+    for row in rows.values():
+        if last_x is not None and abs(row[-1]['x'] - last_x) < abs(row[0]['x'] - last_x):
+            row = row[::-1]
+        if last_arc is not None and abs(arcs[-1] - last_arc) < abs(arcs[0] - last_arc):
+            arcs = arcs[::-1]
+        for a in ('sx', 'sy'):
+            if abs((yield from bps.rd(AXES[a])) - row[0][a]) > 1e-3:
+                yield from bps.mv(AXES[a], row[0][a])
+        piezo_only = [{k: v for k, v in s.items() if k not in ('sx', 'sy')} for s in row]
+        yield from run_trans(piezo_only, arcs=arcs, at_sample=_ova_first_arc if ova else None, **opts)
+        last_x = yield from bps.rd(AXES['x'])
+        last_arc = yield from bps.rd(_arc_rb())
 
 
 HOLDER55 = holder55_samples()
 _xs, _ys = [s['x'] for s in HOLDER55], [s['y'] for s in HOLDER55]
-print(f'HOLDER55: {len(HOLDER55)} spots; piezo x {min(_xs) - 900:.0f}..{max(_xs) + 900:.0f} um, '
-      f'piezo y {min(_ys) - 900:.0f}..{max(_ys) + 900:.0f} um, '
-      f'Huber sy {min(s["sy"] for s in HOLDER55):g}..{max(s["sy"] for s in HOLDER55):g} mm')
+print(f'HOLDER55: {len(HOLDER55)} spots in {len({s["array_row"] for s in HOLDER55})} rows, Huber sy per '
+      f'row {", ".join(f"{sy:g}" for sy in dict.fromkeys(s["sy"] for s in HOLDER55))} mm; '
+      f'piezo x {min(_xs) - 900:.0f}..{max(_xs) + 900:.0f} um, y {min(_ys) - 900:.0f}..{max(_ys) + 900:.0f} um')
