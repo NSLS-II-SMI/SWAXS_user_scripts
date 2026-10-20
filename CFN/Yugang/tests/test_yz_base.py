@@ -466,6 +466,9 @@ def test_tsaxs384_holder55(ns):
     assert (rows[2][0]['key'], rows[2][-1]['key']) == (3, 52)
     assert [s['key'] for s in rows[4]][:2] == [blank, 5]
     assert all(ns['LIM55']['sy'][0] <= s['sy'] <= ns['LIM55']['sy'][1] for s in H)
+    y_lo, y_hi = ns['LIM55']['y']
+    assert all(y_lo <= s['y'] - 900 and s['y'] + 900 <= y_hi for s in H)   # crosses in piezo y travel
+    assert rows[0][0]['sy'] > max(ns['MEASURED55'][n][0] for n in (1, 28))   # Huber up, piezo y down
     assert ns['preview'](ns['run_holder_55after']()) == 56 * 13 * 3
     assert ova.written == [] and starts(ns) == []                  # the dry run wrote nothing
 

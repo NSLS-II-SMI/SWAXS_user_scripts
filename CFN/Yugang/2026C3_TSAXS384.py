@@ -44,7 +44,9 @@ U2) Check the spots furthest from the measured ones before the long run (1, 11, 
       mov_sam(55, HOLDER55); RE(ova_snap('test'))
     off-center: center it by hand, here('sy', 'x', 'y') -> MEASURED55, re-run this file (refits).
 U3) Measure row by row: the Huber heats up (and stops) when it moves a lot, so it moves once per
-    row -- the spots of a row share one sy and the piezo y takes the spot-to-spot height.  Bottom
+    row -- the spots of a row share one sy and the piezo y takes the spot-to-spot height.  The piezo
+    y only travels -15000..12400 um (LIM55), so each row's sy is raised until its crosses fit below
+    12400 (then mov_sam shows a different sy / y split of the same spot than MEASURED55).  Bottom
     row first, S1 -> S55, then S54 -> S2, S3 -> S52, ...; the blank carbon_paper_after_reaction
     (BLANKS55) goes with the row of S5.  Per row all arcs 0, 20, 40 (SAXS at 40); per spot a
     13-point cross (x -900..900 then y -900..900, 300 um steps) and one on-axis camera image:
@@ -261,7 +263,8 @@ BLANKS55 = {
 }
 SX55 = 0.0                  # Huber sx (mm) for the whole array
 PY0 = 12300                 # piezo y (um) while the Huber sy can do the vertical
-LIM55 = {'sy': (-30, 20), 'y': (-20000, 20000)}    # travel (Huber mm, piezo um), with the motors' own
+LIM55 = {'sy': (-30, 20), 'y': (-15000, 12400)}    # travel (Huber mm, piezo um), with the motors' own
+MARGIN55 = 100              # piezo y (um) kept from its travel when choosing a row's Huber sy
 
 CROSS55 = tuple((d, 0) for d in (-900, -600, -300, 0, 300, 600, 900)) + \
           tuple((0, d) for d in (-900, -600, -300, 300, 600, 900))  # 13 spots (piezo x, y um)
@@ -315,8 +318,9 @@ def holder55_positions(measured=None):
 def holder55_samples():
     """
     The 55 spots and BLANKS55, row by row of the array (row = Ag level, bottom row first) in a
-    serpentine: S1 -> S55, S54 -> S2, S3 -> S52, ...  The spots of a row share one Huber sy (the row
-    mean, within LIM55) and the piezo y takes the spot-to-spot height, so the Huber moves once per row.
+    serpentine: S1 -> S55, S54 -> S2, S3 -> S52, ...  The spots of a row share one Huber sy and the
+    piezo y takes the spot-to-spot height, so the Huber moves once per row.  sy is the row mean,
+    shifted as little as needed to keep the piezo y of every cross (CROSS55) inside its travel.
     """
     spots = []
     for n, p in holder55_positions().items():
@@ -332,7 +336,11 @@ def holder55_samples():
     for row in sorted({s['array_row'] for s in spots}):
         cells = sorted((s for s in spots if s['array_row'] == row), key=lambda s: s['x'],
                        reverse=row % 2 == 0)
-        sy = round(min(max(np.mean([s['v'] for s in cells]), LIM55['sy'][0]), LIM55['sy'][1]), 2)
+        vs = [s['v'] for s in cells]
+        y_lo, y_hi = _travel('y')
+        sy_lo = max(vs) + (PY0 + max(dy for _, dy in CROSS55) - y_hi + MARGIN55) / 1000
+        sy_hi = min(vs) + (PY0 + min(dy for _, dy in CROSS55) - y_lo - MARGIN55) / 1000
+        sy = round(min(max(np.mean(vs), sy_lo, _travel('sy')[0]), sy_hi, _travel('sy')[1]), 2)
         for s in cells:
             v = s.pop('v')
             s.update(sx=SX55, sy=sy, x=round(s['x']), y=round(PY0 + (v - sy) * 1000))
