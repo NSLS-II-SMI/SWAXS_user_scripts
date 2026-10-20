@@ -4,7 +4,8 @@ Simulated SMI namespace for offline tests of the CFN/Yugang scripts (no EPICS, n
 The devices only mimic what YZhang_SMI_Base.py touches: piezo / stage (Huber) axes,
 pil2M / pil900KW with the 2M beamstop state, the WAXS arc with its temporary 0-or->=14.5 deg
 restriction, a Linkam whose temperature follows the setpoint (plus an adjustable lag), the GI
-alignment plans (which can be told to fail at chosen piezo x positions) and smi.modeMeasurement.
+alignment plans (which can be told to fail at chosen piezo x positions), smi.modeMeasurement and
+the on-axis camera's JPEG plugin (it records the files it would write).
 """
 import os
 import types
@@ -85,6 +86,27 @@ class Linkam(Device):
     temperature_current = Cpt(FollowSignal, value=25.0)
 
 
+class WriteFileSignal(Signal):
+    """JPEG1:WriteFile: writing 1 'saves' <FilePath><FileName> into the camera's `written` list."""
+    def put(self, value, **kwargs):
+        super().put(value, **kwargs)
+        if value:
+            p = self.parent
+            p.written.append(p.file_path.get() + p.file_name.get())
+
+
+class OVACam(Device):
+    enable = Cpt(Signal, value=0)
+    file_path = Cpt(Signal, value='')
+    file_name = Cpt(Signal, value='')
+    write_file = Cpt(WriteFileSignal, value=0)
+    path_exists = Cpt(Signal, value=1)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.written = []
+
+
 class Energy(Device):
     energy = Cpt(SynAxis, value=16100.0)
 
@@ -144,6 +166,7 @@ def make_namespace(log_dir):
         piezo=piezo, stage=stage, pil2M=pil2M, pil900KW=pil900KW, waxs=waxs,
         pil2m_pos=DetPos(name='pil2M_motor'), energy=Energy(name='energy'),
         LThermal=LThermal, attenuation=attenuation, moxa_ch2=moxa_ch2,
+        ova_cam=OVACam(name='ova_cam'),
         det_exposure_time=det_exposure_time, alignment_gisaxs=alignment_gisaxs,
         alignement_gisaxs_hex=alignement_gisaxs_hex,
         smi=types.SimpleNamespace(modeMeasurement=modeMeasurement),

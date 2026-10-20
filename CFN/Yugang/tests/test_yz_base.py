@@ -447,6 +447,31 @@ def test_tsaxs384_flow(ns, tmp_path):
     assert (last['sx'], last['sy'], last['x'], last['y']) == (-20.0, 5.0, -51750, -6750)
 
 
+def test_tsaxs384_holder55(ns):
+    load(ns, '2026C3_TSAXS384.py')
+    H, ova = ns['HOLDER55'], ns['ova_cam']
+    assert len(H) == 55 and len({s['name'] for s in H}) == 55
+    for n, (sy, x, y) in ns['MEASURED55'].items():                 # measured spots used as measured
+        s = ns['select'](H, n)[0]
+        assert (s['sy'], s['x'], s['y'], s['position']) == (sy, x, y, 'measured')
+    assert all(ns['LIM55']['sy'][0] <= s['sy'] <= ns['LIM55']['sy'][1] for s in H)
+    assert ns['preview'](ns['run_holder_55after']()) == 55 * 13 * 3
+    assert ova.written == [] and starts(ns) == []                  # the dry run wrote nothing
+    ns['RE'](ns['run_holder_55after'](35, 36))
+    data = starts(ns)
+    assert len(data) == 2 * 13 * 3
+    assert [w.split('/')[-1].split('_')[1] for w in ova.written] == ['Sample000035', 'Sample000036']
+    assert all(w.startswith(ns['YZ']['ova_dir']) and w.endswith('_OVA') for w in ova.written)
+    assert_saxs_at_top_arc(data, (0, 20, 40))
+    cross = [(s['user_hints']['positions']['x'] + 7600, s['user_hints']['positions']['y'] - 12300)
+             for s in data if s['user_hints']['sample_info']['key'] == 35
+             and s['user_hints']['waxs_arc_deg'] == 0]
+    assert cross == list(ns['CROSS55'])
+    ns['LIM55']['y'] = (-20000, 13000)                             # 35's cross reaches y = 13200
+    with pytest.raises(ValueError, match='out of travel'):
+        ns['run_holder_55after'](35)
+
+
 def test_jmayer_flow(ns):
     load(ns, '2026C3_JMayer.py')
     ns['align_gi_samples'](stage=ns['STAGE'])

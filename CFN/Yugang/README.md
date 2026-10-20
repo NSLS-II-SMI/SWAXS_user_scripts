@@ -9,7 +9,7 @@ holds that experiment's sample table, settings and run sheet. Old beamtime scrip
 | `YZhang_SMI_Base.py` | Base: samples, file names and metadata; transmission, GI, Linkam, in-situ/EC and multi-cell-holder plans |
 | `2026C3_HZheng.py` | Mon 10-19 AM: H. Zheng, GISAXS + GIWAXS, RT, Al bar, air, piezo; then transmission SAXS/WAXS of the films (`run_trans_samples`) |
 | `2026C3_PGuo.py` | Mon 10-19 PM: P. Guo, vacuum, piezo: GIWAXS + GISAXS at RT on the Al bar without the Linkam (`LINKAM = False`, `run_gi_rt`), GIWAXS vs T on the Linkam + LN2, one sample (`LINKAM = True`; T set by hand: `run_gi_at_T`) |
-| `2026C3_TSAXS384.py` | Tue 10-20: RT TSAXS/TWAXS, 384-cell holder, 3–4 bars, Huber + piezo |
+| `2026C3_TSAXS384.py` | Tue 10-20: RT TSAXS/TWAXS, 384-cell holder, 3–4 bars, Huber + piezo; UPenn B001 Au–Ag–Cu array after screening, 55 spots × 13-point cross + on-axis images (`run_holder_55after`) |
 | `2026C3_JMayer.py` | Wed 10-21: J. Mayer (Yale), in-situ electrochemistry, GIWAXS or transmission |
 | `tests/` | Offline simulation tests (no beamline needed) |
 | `archive/` | 2024 – 2026C1 scripts and the old base |
@@ -60,6 +60,10 @@ multi-cell bars from a 3-point calibration. `select(SAMPLES, 1, 'S7')` picks a s
 - Anything that takes data is a plan, run with `RE(...)`: `run_gi`, `run_trans`,
   `run_gi_temperatures`, `run_series`, `run_ec`, `measure_saxs/waxs/wsaxs`, `snap`,
   `linkam_goto`.
+- `RE(ova_snap('name'))` saves the on-axis camera image (the JPEG plugin of the SAM camera, as
+  the old `save_ova`) to `YZ['ova_dir']` (default `<proposal>/projects/<project>/user_data/OVA`),
+  named `<user>_<sample>_x.._y.._sx.._sy.._OVA_NNN.jpg`, with a logbook row. The camera must be
+  acquiring. `run_trans(..., at_sample=...)` runs such a plan at each sample's center.
 - Console helpers call `RE` themselves: `align_gi_samples`, `mov_sam`, `movx`, `movy`,
   `here`, `preflight`.
 

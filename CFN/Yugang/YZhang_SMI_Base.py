@@ -38,7 +38,7 @@ import numpy as np
 import bluesky.plans as bp
 import bluesky.plan_stubs as bps
 from bluesky.utils import RequestAbort, RequestStop
-from ophyd import Signal
+from ophyd import Component as Cpt, Device, EpicsSignal, EpicsSignalRO, Signal
 from ophyd.status import Status
 
 
@@ -55,6 +55,7 @@ YZ = dict(
     beamstop_guard=True,        # refuse to expose in alignment mode (2M beamstop removed)
     energy_keV=16.1,            # expected energy, checked by preflight()
     log_dir=None,               # alignment json + logbook csv; None = proposal folder or ~/yz_smi_logs
+    ova_dir=None,               # on-axis camera JPEGs; None = <proposal>/projects/<project>/user_data/OVA
 )
 
 AXES = {
@@ -365,7 +366,7 @@ def _announce(what, n_exp, t, overhead=3.0):
 # Transmission SAXS/WAXS
 ###############################################################################################
 def run_trans(samples=None, t=1, arcs=(0, 20), saxs='max', waxs_det=True,
-              offsets=((0, 0),), offset_axes=('x', 'y'), extra=None, md=None):
+              offsets=((0, 0),), offset_axes=('x', 'y'), extra=None, md=None, at_sample=None):
     """
     Plan: transmission SAXS/WAXS of every sample.
 
@@ -373,6 +374,8 @@ def run_trans(samples=None, t=1, arcs=(0, 20), saxs='max', waxs_det=True,
     saxs      'max': read the 2M only at the largest arc >= YZ['saxs_min_arc'];
               'all': at every clear arc; False: never
     offsets   relative spots per sample on offset_axes, e.g. ((0, -200), (0, 0), (0, 200))
+    at_sample plan factory at_sample(sample, i_arc), run at each sample's center before its
+              spots, e.g. an on-axis camera image on the first arc (i_arc == 0)
     Samples are visited in serpentine order (reversed on every other arc).
     """
     samples = _samples(samples)
@@ -388,6 +391,8 @@ def run_trans(samples=None, t=1, arcs=(0, 20), saxs='max', waxs_det=True,
         yield from bps.mv(waxs, arc)
         for s in (samples if i_arc % 2 == 0 else samples[::-1]):
             yield from move_to(s)
+            if at_sample:
+                yield from at_sample(s, i_arc)
             base = {a: s.get(a, ref[a]) for a in offset_axes}
             for off in offsets:
                 if len(offsets) > 1 or any(off):     # (0, 0) after another spot must move back
@@ -421,6 +426,57 @@ def snap(t=0.5, dets=None, name='test'):
     """Plan: quick look exposure ('test' names are skipped by the analysis filters)."""
     dets = dets or [pil900KW, pil2M]
     yield from expose(name, dets, t)
+
+
+###############################################################################################
+# On-axis camera (OVA) images: the JPEG plugin of the SAM camera, as the old save_ova / setup_ova
+###############################################################################################
+class _OVACam(Device):
+    enable = Cpt(EpicsSignal, 'EnableCallbacks')
+    file_path = Cpt(EpicsSignal, 'FilePath', string=True)
+    file_name = Cpt(EpicsSignal, 'FileName', string=True)
+    write_file = Cpt(EpicsSignal, 'WriteFile', put_complete=True)
+    path_exists = Cpt(EpicsSignalRO, 'FilePathExists_RBV')
+
+
+if 'ova_cam' not in globals():                  # the simulation tests bring their own
+    ova_cam = _OVACam('XF:12IDC-BI{Cam:SAM}JPEG1:', name='ova_cam')
+
+
+def ova_dir():
+    """Folder of the on-axis camera JPEGs: YZ['ova_dir'], else <proposal>/projects/<project>/user_data/OVA."""
+    d = YZ['ova_dir']
+    if not d:
+        md = RE.md
+        d = (f'/nsls2/data/smi/proposals/{md.get("cycle")}/{md.get("data_session")}/projects/'
+             f'{md.get("project_name") or "default"}/user_data/OVA')
+    return d.rstrip('/') + '/'
+
+
+def ova_snap(sample='test', settle=1.0):
+    """
+    Plan: save the on-axis camera image of `sample` at the current position as
+    <ova_dir()><user>_<sample>_x.._y.._sx.._sy.._OVA_NNN.jpg, with a logbook row (detectors 'OVA').
+    The camera must be acquiring: the plugin saves its latest frame, so wait `settle` s after a move.
+    """
+    s = sample if isinstance(sample, dict) else {'name': clean_name(sample)}
+    pos = {}
+    for a, m in AXES.items():
+        pos[a] = float((yield from bps.rd(m)))
+    name = '_'.join(([YZ['user']] if YZ['user'] else []) + [
+        s['name'], f'x{pos["x"]:.2f}', f'y{pos["y"]:.2f}', f'sx{pos["sx"]:.3f}', f'sy{pos["sy"]:.3f}',
+        'OVA'])
+    path = ova_dir()
+    if settle:
+        yield from bps.sleep(settle)
+    yield from _put(ova_cam.enable, 1)
+    yield from _put(ova_cam.file_path, path)
+    if not (yield from bps.rd(ova_cam.path_exists)):
+        print(f'WARNING: the camera IOC does not see {path} -- set YZ["ova_dir"]')
+    yield from _put(ova_cam.file_name, name)
+    yield from _put(ova_cam.write_file, 1, timeout=30)
+    print(f'OVA image -> {path}{name}_NNN.jpg')
+    _logbook(name, dict(sample=s['name'], detectors=['OVA'], positions=pos), uid='')
 
 
 ###############################################################################################
@@ -1097,7 +1153,7 @@ def _previewing():
 def yz_help():
     print(__doc__)
     print('Plans (use RE(...)):  run_trans, run_gi, run_gi_temperatures, run_series, run_ec,\n'
-          '   align_gi, linkam_goto, linkam_off, measure_saxs/waxs/wsaxs, snap, expose\n'
+          '   align_gi, linkam_goto, linkam_off, measure_saxs/waxs/wsaxs, snap, ova_snap, expose\n'
           'Console:  preview(plan) = dry run;  make_samples, show_samples, select,\n'
           '   align_gi_samples, load_alignment,\n'
           '   mark_aligned, mov_sam, movx, movy, here, preflight, series_start, ec_start,\n'
