@@ -36,8 +36,9 @@ Huber sy + piezo x/y).  Spot n = red label n on
 pyCLEAR/data/Received/2026-10-12_AuAgCu-array/B001_AuAgCu55_AfterScreening_OpticalImage_mark_position.png
 = pyCLEAR Sample0000nn (PIPETMAX target-ID order); names Sample0000nn_B001_<composition>_AfterScreening.
 U1) Positions: MEASURED55 = spots centered by hand on the on-axis camera; every other spot is mapped
-    from its blue dot on the marked image (PIX55) by an affine fit through the measured ones
-    (printed when this file runs; spot 20 has no visible spot, its pixel is a lattice estimate).
+    from its blue dot on the marked image (PIX55) by an affine fit through the measured ones, except
+    the faint bottom row (Au-Cu edge), placed one lattice step from its neighbours in the next row
+    (printed when this file runs; show_samples(HOLDER55) lists them).
       show_samples(HOLDER55)
 U2) Check the spots furthest from the measured ones before the long run (1, 11, 20, 41, 53, 55):
       mov_sam(55, HOLDER55); RE(ova_snap('test'))
@@ -244,6 +245,11 @@ MEASURED55 = {
     24: (-12.6, -5400, 12300), 25: (-18, -9300, 12300), 16: (-17.8, 200, 12300),
     17: (-23.2, -4400, 12300), 18: (-27.4, -8300, 12300), 8: (-27.4, 1500, 12300),
     9: (-30, -2500, 10500), 10: (-30, -7600, 4700),
+    # checked with mov_sam(n, HOLDER55) on 10-20: sy corrected, x as it was
+    7: (-22.87, 6313, 12300), 49: (-9.15, -41263, 12300), 3: (-1.08, 22734, 12300),
+    54: (-0.55, -52269, 12300),
+    2: (3.363, 26318, 12300), 28: (8, 1470, 12300),
+    1: (8.4, 30576, 12300),     # sy 8.4 given as "S2" (read as S1: S2 + one row step = 8.48); x predicted
 }
 SX55 = 0.0                  # Huber sx (mm) for the whole array
 PY0 = 12300                 # piezo y (um) while the Huber sy can do the vertical
@@ -263,27 +269,48 @@ TRANS55 = dict(
 
 
 def holder55_positions(measured=None):
-    """{spot: {'sx', 'sy', 'x', 'y', 'source'}}: measured spots as measured, the others from an affine
-    fit (marked-image pixel -> horizontal x, vertical sy + (y - PY0)) through the measured ones."""
+    """
+    {spot: {'sx', 'sy', 'x', 'y', 'source'}} in the stage plane (horizontal x, vertical
+    sy + (y - PY0)):
+      'measured'  as in MEASURED55
+      'photo'     from its blue dot, by an affine fit marked-image pixel -> stage through the measured
+      'lattice'   bottom row (Ag = 0, the Au-Cu edge): these spots are faint on the photo and their
+                  dots are guesses (28's was 1.4 mm off), so one lattice step (fitted through the
+                  measured spots) from its neighbours in the next row
+    """
     measured = MEASURED55 if measured is None else measured
     keys = sorted(measured)
-    A = np.array([[*PIX55[n], 1.0] for n in keys])
     S = np.array([[measured[n][1] / 1000, measured[n][0] + (measured[n][2] - PY0) / 1000] for n in keys])
-    coef = np.linalg.lstsq(A, S, rcond=None)[0]
-    res = np.linalg.norm(S - A @ coef, axis=1)
-    print(f'holder55: fit through {len(keys)} measured spots, residual rms {np.sqrt(np.mean(res ** 2)):.2f}'
-          f' mm, max {res.max():.2f} mm (spot {keys[res.argmax()]})')
-    out = {}
+    dots = [i for i, n in enumerate(keys) if KR55[n - 1][0] != KR55[n - 1][1]]   # not the bottom row
+    A = np.array([[*PIX55[keys[i]], 1.0] for i in dots])
+    coef = np.linalg.lstsq(A, S[dots], rcond=None)[0]
+    res = np.linalg.norm(S[dots] - A @ coef, axis=1)
+    step = np.linalg.lstsq(np.array([[*KR55[n - 1], 1.0] for n in keys]), S, rcond=None)[0][:2]
+    print(f'holder55: photo fit through {len(dots)} measured spots, residual rms '
+          f'{np.sqrt(np.mean(res ** 2)):.2f} mm, max {res.max():.2f} mm (spot {keys[dots[res.argmax()]]}); '
+          f'lattice step column {np.linalg.norm(step[0]):.2f} mm, row {np.linalg.norm(step[1]):.2f} mm')
+    spot = {kr: i + 1 for i, kr in enumerate(KR55)}
+    xv, source = {}, {}
     for n in range(1, 56):
         if n in measured:
-            sy, x, y = measured[n]
-            source = 'measured'
+            xv[n], source[n] = S[keys.index(n)], 'measured'
         else:
-            X, V = np.array([*PIX55[n], 1.0]) @ coef
+            xv[n], source[n] = np.array([*PIX55[n], 1.0]) @ coef, 'photo'
+    for n in range(1, 56):
+        k, r = KR55[n - 1]
+        if r == k and n not in measured:
+            near = [xv[spot[k, k + 1]] - step[1]] if k < 9 else []
+            near += [xv[spot[k - 1, k]] + step[0]] if k > 0 else []
+            xv[n], source[n] = np.mean(near, axis=0), 'lattice'
+    out = {}
+    for n, (X, V) in xv.items():
+        if source[n] == 'measured':
+            sy, x, y = measured[n]
+        else:
             sy = min(max(V, LIM55['sy'][0]), LIM55['sy'][1])      # the piezo y takes the rest
             x, y = X * 1000, PY0 + (V - sy) * 1000
-            source = 'fit'
-        out[n] = dict(sx=SX55, sy=round(float(sy), 3), x=round(float(x)), y=round(float(y)), source=source)
+        out[n] = dict(sx=SX55, sy=round(float(sy), 3), x=round(float(x)), y=round(float(y)),
+                      source=source[n])
     return out
 
 
