@@ -71,23 +71,29 @@ U3) Measure row by row: the Huber heats up (and stops) when it moves a lot, so i
 
 ORNL (C. Liu) powders, Box 1 (after the 55): a Corning 384-well plate, glass bottom, Kapton over the
 wells, rows A (bottom on the photo) .. P, columns 1 .. 24.  Wells and names in CLIU_BOX1 (pyCLEAR
-Sample000226-319, B005 Cu-M / B006 / B007), named <sample>_Powder; photo + sheet in
+Sample000226-319, B005 Cu-M / B006 / B007), named CL_<sample>_Powder; photo + sheet in
 pyCLEAR/data/Received/2026-10-15_CLiu-ORNL.  81 powders: M6-M14 (B006, bad grey powder) are
 skipped (CLIU_SKIP), 87 Cu(OH)2 is in M18; blanks: the empty wells A1 and P24 (CLIU_BLANKS).
-C1) Load the plate.  Center four corner wells with the on-axis camera, each
-      here('sx', 'sy', 'x', 'y')  -> CAL_CLIU['A1'], ['A24'], ['P1'], ['P24']
-    re-run this file: it prints the fitted pitch (should be 4.50 mm) and the plan.
-C2) Check a few wells far from the corners:
-      show_samples(PLATE_CLIU); mov_sam('I12', PLATE_CLIU); RE(ova_snap('test'))
-    off-center: add the centered well to CAL_CLIU (more wells refine the fit), re-run this file.
-C3) Row by row as the 55 (A1 -> A24, C24 -> C2, ...): one Huber sy per row, the columns in two
-    blocks at two Huber sx (the plate is wider than the piezo x travel), per well a 9-point cross
-    (CROSS_CLIU: x -600..600 then y -600..600, 300 um steps), arcs 0, 20, 40 (SAXS at 40) and one
-    on-axis camera image:
-      preview(run_cliu_box1())                 # 83 x 9 x 3 = 2241 exposures
+The Huber y motor overheats: huber_y_mv moves it in <= 5 mm steps and, above 48 C (XF:12ID:m65.VAL),
+waits until it is below 45 C.  Row N is the top in reach, so row P comes after pushing the plate down.
+C1) Corners A1, A24, N1, N24 centered by hand -> CAL_CLIU (done 10-20); re-running this file prints the
+    fitted pitch (4.5 mm) and the plan.  The whole plate at Huber sx = SX_CLIU (-3): the piezo x runs
+    from -56000 (A1 - 500) to 48300 (A24 + 500) -- check both ends, and a well far from the corners:
+      mov_sam('A24', PLATE_CLIU); movx(500); movx(-500)
+      mov_sam('A1', PLATE_CLIU); movx(-500); movx(500)
+      mov_sam('G12', PLATE_CLIU); RE(ova_snap('test'))
+    A failed end: change SX_CLIU (-0.5 mm moves both ends +500 um) and LIM_CLIU, re-run this file.
+C2) Rows M .. A (74 wells): one WAXS arc at a time over all wells, 5 spots per well (CROSS_CLIU: x
+    -500, 0, 500, then y -500, 500), SAXS at 40, one camera image per well.  The Huber x moves once (to
+    SX_CLIU), the Huber y holds 3 heights (rows M-K-I, G-E-C, A; the piezo y takes the rows within),
+    visited from the top down and in reverse at the next arc:
+      preview(run_cliu_box1())                 # 74 x 5 x 3 = 1110 exposures
       RE(run_cliu_box1())
-      RE(run_cliu_box1('M18', 'A1'))           # a few wells
-      RE(run_cliu_box1(rows='KMP'))            # some rows
+      RE(run_cliu_box1('M18', 'A1'))           # a few wells;  rows='KM': some rows
+      RE(run_cliu_box1(arcs=(20, 40)))         # e.g. after an error during the arc-20 pass
+C3) Row P: push the plate down, center P1 and P24 -> CAL_CLIU_P, re-run this file:
+      preview(run_cliu_box1_P())               # 9 x 5 x 3 = 135 exposures, the Huber y stays put
+      RE(run_cliu_box1_P())
 """
 
 YZ.update(
@@ -179,6 +185,35 @@ pz: x -2500, y 10500
 tenth bottom, the last one (top row) sample 10: 
 huber: x, y, 0. -30
 pz: x -7600, y 4700
+
+
+
+
+CLiu Box
+bottom, left (A1)
+hub: x, y, -2, 10.8
+pz: x, y, -56500, 12300 
+
+bottom, Right (A24)
+hub: x, y, -2, 10.8
+pz: x, y, 46800, 10800
+
+
+N24:
+hub: x, y, -2, -30
+pz: x, y, 45800, -7034
+
+N1:
+hub: x, y, -2, -30
+pz: x, y, -57303, -5634
+
+
+
+
+
+
+
+
 
 
 
@@ -411,9 +446,9 @@ def _row_sy(vs, offsets=CROSS55):
     return round(min(max(np.mean(vs), sy_lo, _travel('sy')[0]), sy_hi, _travel('sy')[1]), 2)
 
 
-def _travel(axis):
-    """(low, high) of an axis: LIM55 and the motor's own soft limits, where set."""
-    lo, hi = LIM55.get(axis, (-np.inf, np.inf))
+def _travel(axis, lim=None):
+    """(low, high) of an axis: lim (default LIM55) and the motor's own soft limits, where set."""
+    lo, hi = (LIM55 if lim is None else lim).get(axis, (-np.inf, np.inf))
     try:
         mlo, mhi = AXES[axis].limits
         if mlo < mhi:
@@ -423,13 +458,13 @@ def _travel(axis):
     return lo, hi
 
 
-def check_holder55(samples=None, offsets=CROSS55):
-    """Raise (before anything moves) if a spot of a cross is out of travel."""
+def check_holder55(samples=None, offsets=CROSS55, lim=None):
+    """Raise (before anything moves) if a spot of a cross is out of travel (lim, default LIM55)."""
     bad = []
     for s in (HOLDER55 if samples is None else samples):
         for dx, dy in offsets:
             for a, v in (('sx', s['sx']), ('sy', s['sy']), ('x', s['x'] + dx), ('y', s['y'] + dy)):
-                lo, hi = _travel(a)
+                lo, hi = _travel(a, lim)
                 if not lo <= v <= hi:
                     bad.append(f"{s['key']} {a}={v:g} not in [{lo:g}, {hi:g}]")
     if bad:
@@ -481,9 +516,7 @@ def _rows55(samples, ova, opts, label='run_holder_55after', row_key='array_row')
         for part in _parts55(row):
             if last_arc is not None and abs(arcs[-1] - last_arc) < abs(arcs[0] - last_arc):
                 arcs = arcs[::-1]
-            for a in ('sx', 'sy'):
-                if abs((yield from bps.rd(AXES[a])) - part[0][a]) > 1e-3:
-                    yield from bps.mv(AXES[a], part[0][a])
+            yield from _huber_to(part[0])
             piezo_only = [{k: v for k, v in s.items() if k not in ('sx', 'sy')} for s in part]
             yield from run_trans(piezo_only, arcs=arcs, at_sample=_ova_first_arc if ova else None, **opts)
             last_arc = yield from bps.rd(_arc_rb())
@@ -567,26 +600,72 @@ CLIU_BOX1 = {
 }
 CLIU_SKIP = ('M6', 'M8', 'M10', 'M12', 'M14')   # B006 "bad sample: grey powder" (C. Liu, 2026-10-20)
 CLIU_BLANKS = {'A1': 'EmptyWell_A1', 'P24': 'EmptyWell_P24'}  # glass + Kapton, in rows measured anyway
+CLIU_PREFIX = 'CL'                  # sample names CL_<pyCLEAR name>_Powder
 CLIU_FORM = 'Powder'                # name suffix: the Box 2 suspensions share the Sample IDs
+CLIU_LATER = 'P'                    # rows out of reach (top reachable: N) -> after pushing the plate down
 
-# EDIT after the 55 run: wells centered by hand on the on-axis camera, well: (Huber sx mm, Huber sy
-# mm, piezo x um, piezo y um) = here('sx', 'sy', 'x', 'y').  The four corners A1, A24, P1, P24 (any
-# 3+ wells that span the plate work; more refine the fit).
-CAL_CLIU = {
-    # 'A1': (sx, sy, x, y), 'A24': (sx, sy, x, y), 'P1': (sx, sy, x, y), 'P24': (sx, sy, x, y),
+# Wells centered by hand on the on-axis camera, well: (Huber sx mm, Huber sy mm, piezo x um, piezo y um)
+# = here('sx', 'sy', 'x', 'y').  Any 3+ wells that span the plate; more refine the fit.
+CAL_CLIU = {                        # 2026-10-20 evening, corners (N: the top row in reach)
+    'A1': (-2, 10.8, -56500, 12300), 'A24': (-2, 10.8, 46800, 10800),
+    'N1': (-2, -30, -57303, -5634), 'N24': (-2, -30, 45800, -7034),
+}
+# EDIT after pushing the plate down: P1 and P24 centered by hand, here('sx', 'sy', 'x', 'y')
+CAL_CLIU_P = {
+    # 'P1': (sx, sy, x, y), 'P24': (sx, sy, x, y),
 }
 
-CROSS_CLIU = tuple((d, 0) for d in (-600, -300, 0, 300, 600)) + \
-             tuple((0, d) for d in (-600, -300, 300, 600))     # 9 spots per well (piezo x, y um)
+SX_CLIU = -3.0                      # Huber sx (mm) for the whole plate: columns 1 .. 24 on the piezo x
+LIM_CLIU = dict(LIM55, x=(-57300, 48500))   # piezo x for the plate (um): -57303 reached (N1); at sx -3
+                                            # column 24 needs up to 48300 (A24 + 500) -- check, C1
+CROSS_CLIU = ((-500, 0), (0, 0), (500, 0), (0, -500), (0, 500))   # 5 spots per well (piezo x, y um)
 
 TRANS_CLIU = dict(
     t=1,                    # exposure (s)
-    arcs=(0, 20, 40),       # WAXS at every arc; SAXS (2M) with the highest
+    arcs=(0, 20, 40),       # one arc at a time over all wells; SAXS (2M) with the highest
     saxs='max',
     offsets=CROSS_CLIU,
     md={'holder': 'ORNL Box 1, Corning 384-well plate, glass bottom, Kapton (Huber + piezo)',
         'batch': 'B005_CuM_81, B006_CuAg_6, B007_CeFeNi_8', 'form': 'powder'},
 )
+
+# Huber y motor temperature: the Huber y never starts a move above HUBER_T_MAX
+HUBER_T_MAX = 48.0          # degC
+HUBER_T_OK = 45.0           # degC: when too hot, wait until it is back below this
+HUBER_T_WAIT = 60           # s between readings while waiting
+HUBER_Y_STEP = 5.0          # mm: longer Huber y moves go in steps, the temperature read before each
+if 'huber_y_T' not in globals():
+    huber_y_T = EpicsSignalRO('XF:12ID:m65.VAL', name='huber_y_T')
+
+
+def huber_y_mv(target):
+    """
+    Plan: Huber sy to target in steps of at most HUBER_Y_STEP mm.  Before every step the motor
+    temperature (huber_y_T) is read; above HUBER_T_MAX the Huber waits, reading every HUBER_T_WAIT s,
+    until it is below HUBER_T_OK.  (A move is not stopped half way: the RunEngine would abort the run.)
+    """
+    here = yield from bps.rd(AXES['sy'])
+    n = int(np.ceil(abs(target - here) / HUBER_Y_STEP - 1e-9))
+    for k in range(1, n + 1):
+        T = yield from bps.rd(huber_y_T)
+        if T > HUBER_T_MAX:
+            print(f'Huber y motor {T:.1f} C > {HUBER_T_MAX:g} C: waiting until below {HUBER_T_OK:g} C')
+            while T > HUBER_T_OK and not _LOG.get('preview'):   # a dry run does not wait
+                yield from bps.sleep(HUBER_T_WAIT)
+                T = yield from bps.rd(huber_y_T)
+                print(f'  Huber y motor {T:.1f} C')
+        yield from bps.mv(AXES['sy'], target if k == n else here + (target - here) * k / n)
+    if n:
+        T = yield from bps.rd(huber_y_T)
+        print(f'Huber sy -> {target:g} mm (motor {T:.1f} C)')
+
+
+def _huber_to(s):
+    """Plan: Huber sx, sy of a sample (sy through huber_y_mv)."""
+    if abs((yield from bps.rd(AXES['sx'])) - s['sx']) > 1e-3:
+        yield from bps.mv(AXES['sx'], s['sx'])
+    if abs((yield from bps.rd(AXES['sy'])) - s['sy']) > 1e-3:
+        yield from huber_y_mv(s['sy'])
 
 
 def _well(w):
@@ -598,113 +677,217 @@ def plate_positions(wells, cal):
     """
     {well: (X, V) mm} of a 384-well plate on the Huber + piezo (X = piezo x at Huber sx = SX55, V =
     height as in holder55_positions), from the wells centered by hand, cal {well: (sx, sy, x, y)}:
-    bilinear in (row, column) through 4+ wells (exact through four corners), affine through 3.
+    bilinear in (row, column) through 4+ wells (exact through four corners), affine through 3,
+    linear along the row through 2 wells of one row (then only that row).
     """
     keys = list(cal)
     rc = np.array([_well(w) for w in keys], float)
     S = np.array([_xv55(sy, x, y, sx) for sx, sy, x, y in (cal[w] for w in keys)])
+    one_row = len({r for r, _ in rc}) == 1
+    if one_row and {_well(w)[0] for w in wells} != {rc[0, 0]}:
+        raise ValueError(f'calibration {keys} is one row: only its wells can be mapped')
 
     def design(rc):
-        cols = [np.ones(len(rc)), rc[:, 0], rc[:, 1]]
-        return np.column_stack(cols + [rc[:, 0] * rc[:, 1]] if len(keys) >= 4 else cols)
+        cols = [np.ones(len(rc)), rc[:, 1]] if one_row else [np.ones(len(rc)), rc[:, 0], rc[:, 1]]
+        return np.column_stack(cols + [rc[:, 0] * rc[:, 1]] if len(keys) >= 4 and not one_row else cols)
 
     coef, _, rank, _ = np.linalg.lstsq(design(rc), S, rcond=None)
     if rank < design(rc).shape[1]:
         print(f'plate: wells {keys} do not span the plate -- use corners')
     res = np.linalg.norm(S - design(rc) @ coef, axis=1)
-    mid = design(np.array([[7.5, 11.5]]))
-    step_r = ((design(np.array([[8.5, 11.5]])) - mid) @ coef)[0]       # mm per row, per column
-    step_c = ((design(np.array([[7.5, 12.5]])) - mid) @ coef)[0]
-    pitch = np.linalg.norm(step_r), np.linalg.norm(step_c)
-    print(f'plate: fit through {len(keys)} wells (residual max {res.max():.2f} mm); pitch row '
-          f'{pitch[0]:.2f} mm, column {pitch[1]:.2f} mm; rows tilted '
+    r0 = rc[0, 0] if one_row else 7.5
+    mid = design(np.array([[r0, 11.5]]))
+    step_c = ((design(np.array([[r0, 12.5]])) - mid) @ coef)[0]     # mm per column (and per row)
+    pitch = [np.linalg.norm(step_c)]
+    if not one_row:
+        pitch.insert(0, np.linalg.norm(((design(np.array([[8.5, 11.5]])) - mid) @ coef)[0]))
+    print(f'plate: fit through {len(keys)} wells (residual max {res.max():.2f} mm); pitch '
+          f'{" (row), ".join(f"{p:.2f}" for p in pitch)} (column) mm; rows tilted '
           f'{np.degrees(np.arctan2(step_c[1], abs(step_c[0]))):.2f} deg')
     if max(abs(p - PLATE_PITCH) for p in pitch) > 0.1 * PLATE_PITCH:
         print(f'WARNING: pitch is not {PLATE_PITCH} mm -- check the wells in the calibration')
     return {w: tuple(design(np.array([_well(w)], float))[0] @ coef) for w in wells}
 
 
-def plate_samples(names, cal, offsets, extra=None):
+def plate_samples(names, cal, offsets, extra=None, start_sy=None, sx=None, lim=None):
     """
-    The wells names {well: sample name} of a 384-well plate, mapped by plate_positions, row by row
-    from row A in a serpentine (A1 -> A24, C24 -> C1, ...).  One Huber sy per row (_row_sy); the
-    columns are split into as few blocks as fit the piezo x travel, each at one Huber sx (the one
-    nearest SX55, in whole mm), so the Huber moves about twice per row.  extra: {well: metadata}.
+    The wells names {well: sample name} of a 384-well plate (plate_positions), ordered for few Huber
+    moves.  Huber y: the rows, from the top, in as few bands as the piezo y travel covers -- one Huber
+    sy per band, the piezo y takes the rows within it; each band's sy is the one nearest the previous
+    band's (the first: nearest start_sy, default the calibration's sy nearest the top row).  Huber x:
+    the columns in as few blocks as the piezo x travel covers, each at one Huber sx (in whole mm from
+    the calibration's sx), or all at Huber sx = sx.  Order: band by band from the top, the blocks of a
+    band in a serpentine (the Huber sx moves once per band), the wells of a block row by row in a
+    serpentine.  extra: {well: metadata}; lim: travel table (default LIM55).
     """
     extra = extra or {}
     pos = plate_positions(list(names), cal)
-    x_lo, x_hi = _travel('x')
+    x_lo, x_hi = _travel('x', lim)
+    y_lo, y_hi = _travel('y', lim)
+    sy_min, sy_max = _travel('sy', lim)
     dx_lo, dx_hi = min(dx for dx, _ in offsets), max(dx for dx, _ in offsets)
+    dy_lo, dy_hi = min(dy for _, dy in offsets), max(dy for _, dy in offsets)
     x_min, x_max = x_lo + MARGIN55 - dx_lo, x_hi - MARGIN55 - dx_hi      # um, for the well centers
+    y_min, y_max = y_lo + MARGIN55 - dy_lo, y_hi - MARGIN55 - dy_hi
+    # Huber sx: column blocks
+    sx0 = float(np.median([c[0] for c in cal.values()]))
+    x0 = {w: pos[w][0] * 1000 - SXDIR55 * (sx0 - SX55) * 1000 for w in names}  # piezo x at sx0
     cols = sorted({_well(w)[1] for w in names})
-    col_X = {c: np.mean([pos[w][0] for w in names if _well(w)[1] == c]) * 1000 for c in cols}
-    span = max(col_X.values()) - min(col_X.values())
+    col_x = {c: np.mean([x0[w] for w in names if _well(w)[1] == c]) for c in cols}
+    span = max(col_x.values()) - min(col_x.values())
     n_blocks = max(1, int(np.ceil(span / (x_max - x_min - 3000))))      # 3 mm for tilt and rounding
-    edges = np.linspace(min(col_X.values()), max(col_X.values()), n_blocks + 1)[1:-1]
-    block = {c: int(np.searchsorted(edges, col_X[c])) for c in cols}
-    sx = {}
+    edges = np.linspace(min(col_x.values()), max(col_x.values()), n_blocks + 1)[1:-1]
+    block = {w: int(np.searchsorted(edges, col_x[_well(w)[1]])) for w in names}
+    hx_of = {}
     for b in set(block.values()):
-        X = [pos[w][0] * 1000 for w in names if block[_well(w)[1]] == b]
-        d_lo, d_hi = (max(X) - x_max) / 1000, (min(X) - x_min) / 1000     # mm the piezo x gives back
-        sx[b] = float(SX55 + SXDIR55 * (np.ceil(d_lo) if d_lo > 0 else np.floor(d_hi) if d_hi < 0 else 0))
-    samples = []
-    for i, r in enumerate(sorted({_well(w)[0] for w in names})):
-        wells = sorted((w for w in names if _well(w)[0] == r), key=lambda w: _well(w)[1],
-                       reverse=i % 2 == 1)
-        sy = _row_sy([pos[w][1] for w in wells], offsets)
-        for w in wells:
-            (X, V), hx = pos[w], sx[block[_well(w)[1]]]
-            samples.append(dict(key=w, name=clean_name(names[w]), well=w, plate_row=PLATE_ROWS[r],
-                                plate_col=_well(w)[1] + 1, sx=hx, sy=sy,
-                                x=round(X * 1000 - SXDIR55 * (hx - SX55) * 1000),
-                                y=round(PY0 + (V - sy) * 1000), **extra.get(w, {})))
+        x = [x0[w] for w in names if block[w] == b]
+        d_lo, d_hi = (max(x) - x_max) / 1000, (min(x) - x_min) / 1000      # mm the piezo x gives back
+        hx_of[b] = float(sx0 + SXDIR55 * (np.ceil(d_lo) if d_lo > 0 else np.floor(d_hi) if d_hi < 0 else 0))
+    if sx is not None:
+        block, hx_of = {w: 0 for w in names}, {0: float(sx)}
+    # Huber sy: row bands from the top; sy window of a band: every piezo y in [y_min, y_max]
+    window = lambda vs: (max(max(vs) - (y_max - PY0) / 1000, sy_min), min(min(vs) - (y_min - PY0) / 1000, sy_max))
+    rows = sorted({_well(w)[0] for w in names}, reverse=True)
+    bands = []
+    for r in rows:
+        vs = [pos[w][1] for w in names if _well(w)[0] in (bands[-1] if bands else []) + [r]]
+        lo, hi = window(vs)
+        if bands and hi - lo >= 0.02:
+            bands[-1].append(r)
+        else:
+            bands.append([r])
+    if start_sy is None:
+        top = max(cal, key=lambda w: (-abs(_well(w)[0] - rows[0]), _well(w)[1]))
+        start_sy = cal[top][1]
+    samples, prev = [], start_sy
+    blocks = sorted(hx_of)
+    for i, band in enumerate(bands):
+        lo, hi = window([pos[w][1] for w in names if _well(w)[0] in band])
+        sy = float(np.ceil(lo * 100) / 100 if prev < lo else np.floor(hi * 100) / 100 if prev > hi else prev)
+        prev = sy
+        for j, b in enumerate(blocks if i % 2 == 0 else blocks[::-1]):
+            hx = hx_of[b]
+            for k, r in enumerate(band):
+                wells = sorted((w for w in names if _well(w)[0] == r and block[w] == b),
+                               key=lambda w: _well(w)[1], reverse=(i + j + k) % 2 == 1)
+                for w in wells:
+                    X, V = pos[w]
+                    samples.append(dict(key=w, name=clean_name(names[w]), well=w, plate_row=PLATE_ROWS[r],
+                                        plate_col=_well(w)[1] + 1, sx=hx, sy=sy,
+                                        x=round(X * 1000 - SXDIR55 * (hx - SX55) * 1000),
+                                        y=round(PY0 + (V - sy) * 1000), **extra.get(w, {})))
     check_samples(samples)
     return samples
 
 
+def _cliu_names(wells):
+    """({well: CL_<name>_Powder or blank name}, {well: metadata}) of the Box 1 wells given."""
+    names, extra = {}, {}
+    for w in wells:
+        if w in CLIU_BLANKS:
+            names[w] = f'{CLIU_PREFIX}_{CLIU_BLANKS[w]}'
+            extra[w] = dict(role='blank', form='empty well', box='box1')
+        else:
+            n = CLIU_BOX1[w]
+            names[w] = f'{CLIU_PREFIX}_{n}_{CLIU_FORM}'
+            extra[w] = dict(sample_id=n.split('_')[0], batch=n.split('_')[1], form='powder', box='box1')
+    return names, extra
+
+
 def cliu_box1_samples(cal=None):
-    """CLIU_BOX1 (without CLIU_SKIP) and CLIU_BLANKS, mapped through CAL_CLIU ([] before it)."""
+    """Box 1 wells (CLIU_BOX1 without CLIU_SKIP, + CLIU_BLANKS) except the CLIU_LATER rows, mapped
+    through CAL_CLIU ([] before it is filled)."""
     cal = CAL_CLIU if cal is None else cal
     if len(cal) < 3:
         print('CLiu Box 1: not calibrated yet (CAL_CLIU needs 3+ wells, best the four corners)')
         return []
-    names, extra = {}, {}
-    for w, n in CLIU_BOX1.items():
-        if w not in CLIU_SKIP:
-            names[w] = f'{n}_{CLIU_FORM}'
-            extra[w] = dict(sample_id=n.split('_')[0], batch=n.split('_')[1], form='powder',
-                            box='box1')
-    for w, n in CLIU_BLANKS.items():
-        names[w] = n
-        extra[w] = dict(role='blank', form='empty well', box='box1')
-    return plate_samples(names, cal, TRANS_CLIU['offsets'], extra)
+    wells = [w for w in (*CLIU_BOX1, *CLIU_BLANKS) if w not in CLIU_SKIP and w[0] not in CLIU_LATER]
+    names, extra = _cliu_names(wells)
+    return plate_samples(names, cal, TRANS_CLIU['offsets'], extra, sx=SX_CLIU, lim=LIM_CLIU)
 
 
-def run_cliu_box1(*which, rows=None, ova=True, **kw):
+def cliu_box1_p_samples(cal=None):
+    """Box 1 row P (CLIU_LATER) after pushing the plate down, mapped through CAL_CLIU_P (P1, P24)."""
+    cal = CAL_CLIU_P if cal is None else cal
+    if len(cal) < 2:
+        print('CLiu Box 1 row P: not calibrated yet (CAL_CLIU_P: P1 and P24 after the push)')
+        return []
+    wells = [w for w in (*CLIU_BOX1, *CLIU_BLANKS) if w not in CLIU_SKIP and w[0] in CLIU_LATER]
+    names, extra = _cliu_names(wells)
+    return plate_samples(names, cal, TRANS_CLIU['offsets'], extra, sx=SX_CLIU, lim=LIM_CLIU)
+
+
+def _by_arc(samples, ova, opts, label):
     """
-    Plan: transmission SAXS/WAXS of the ORNL powders in Box 1 (PLATE_CLIU, or the given wells /
-    names, or the plate rows given, e.g. rows='AC'), row by row as run_holder_55after: a 9-point
-    cross (CROSS_CLIU) per well, WAXS at every arc of TRANS_CLIU with SAXS at the highest, and
-    (ova=True) one on-axis camera image per well.  kw override TRANS_CLIU.
+    Plan: one WAXS arc at a time over all the samples (the arc moves len(arcs) - 1 times), visiting
+    the Huber positions (sx, sy) in the order of samples and, at the next arc, in the reverse order,
+    so the Huber does not move between arcs.  Huber y through huber_y_mv.  ova: one on-axis camera
+    image per sample on the first arc.
     """
-    if not PLATE_CLIU:
-        raise ValueError('CLiu Box 1 not calibrated: fill CAL_CLIU and re-run this file')
-    samples = select(PLATE_CLIU, *which) if which else PLATE_CLIU
+    arcs = list(opts.pop('arcs'))
+    saxs_arcs = _saxs_arcs(arcs, opts.pop('saxs', 'max'))
+    stops = []
+    for s in samples:
+        if stops and (stops[-1][0]['sx'], stops[-1][0]['sy']) == (s['sx'], s['sy']):
+            stops[-1].append(s)
+        else:
+            stops.append([s])
+    n_arcs = sum(1 for a in arcs if _dets(a, saxs_arcs, opts.get('waxs_det', True)))
+    _announce(f'{label}: arcs {arcs} one at a time, {len(stops)} Huber positions per arc',
+              n_arcs * len(samples) * len(opts['offsets']), opts.get('t', 1))
+    for i, arc in enumerate(arcs):
+        for stop in (stops if i % 2 == 0 else [st[::-1] for st in stops[::-1]]):
+            yield from _huber_to(stop[0])
+            piezo_only = [{k: v for k, v in s.items() if k not in ('sx', 'sy')} for s in stop]
+            yield from run_trans(piezo_only, arcs=[arc], saxs='all' if arc in saxs_arcs else False,
+                                 at_sample=_ova_first_arc if ova and i == 0 else None, **opts)
+
+
+def _run_plate(plate, which, rows, ova, kw, label):
+    samples = select(plate, *which) if which else plate
     if rows is not None:
         samples = [s for s in samples if s['plate_row'] in rows]
         if not samples:
             raise ValueError(f'no wells in rows {rows}')
     opts = dict(TRANS_CLIU, **kw)
     check_arcs(opts['arcs'])
-    check_holder55(samples, opts['offsets'])
-    return _rows55(samples, ova, opts, label='run_cliu_box1', row_key='plate_row')
+    check_holder55(samples, opts['offsets'], LIM_CLIU)
+    return _by_arc(samples, ova, opts, label)
+
+
+def run_cliu_box1(*which, rows=None, ova=True, **kw):
+    """
+    Plan: transmission SAXS/WAXS of the ORNL powders in Box 1 (PLATE_CLIU: rows A .. M, or the given
+    wells / names, or rows, e.g. rows='KM'): one WAXS arc at a time over all wells (TRANS_CLIU arcs,
+    SAXS with the highest), 5 spots per well (CROSS_CLIU), one on-axis camera image per well
+    on the first arc; Huber positions in the order of PLATE_CLIU (from the top row), reversed at the
+    next arc.  kw override TRANS_CLIU.
+    """
+    if not PLATE_CLIU:
+        raise ValueError('CLiu Box 1 not calibrated: fill CAL_CLIU and re-run this file')
+    return _run_plate(PLATE_CLIU, which, rows, ova, kw, 'run_cliu_box1')
+
+
+def run_cliu_box1_P(*which, ova=True, **kw):
+    """Plan: as run_cliu_box1, for row P after pushing the plate down (PLATE_CLIU_P, CAL_CLIU_P)."""
+    if not PLATE_CLIU_P:
+        raise ValueError('row P not calibrated: fill CAL_CLIU_P (P1, P24) after the push, re-run this file')
+    return _run_plate(PLATE_CLIU_P, which, None, ova, kw, 'run_cliu_box1_P')
+
+
+def _plate_summary(label, plate):
+    off = TRANS_CLIU['offsets']
+    xs = [s['x'] + dx for s in plate for dx, _ in off]
+    ys = [s['y'] + dy for s in plate for _, dy in off]
+    stops = list(dict.fromkeys((s['sx'], s['sy']) for s in plate))
+    print(f'{label}: {len(plate)} wells in rows {"".join(dict.fromkeys(s["plate_row"] for s in plate))}; '
+          f'Huber (sx, sy) {", ".join(f"({a:g}, {b:g})" for a, b in stops)} mm; '
+          f'piezo x {min(xs):.0f}..{max(xs):.0f} um, y {min(ys):.0f}..{max(ys):.0f} um (crosses included)')
 
 
 PLATE_CLIU = cliu_box1_samples()
 if PLATE_CLIU:
-    _xs, _ys = [s['x'] for s in PLATE_CLIU], [s['y'] for s in PLATE_CLIU]
-    print(f'PLATE_CLIU: {len(PLATE_CLIU)} wells in rows '
-          f'{"".join(dict.fromkeys(s["plate_row"] for s in PLATE_CLIU))} (skipped {", ".join(CLIU_SKIP)}); '
-          f'Huber sy per row {", ".join(f"{sy:g}" for sy in dict.fromkeys(s["sy"] for s in PLATE_CLIU))} mm, '
-          f'sx {", ".join(f"{sx:g}" for sx in sorted({s["sx"] for s in PLATE_CLIU}))} mm; '
-          f'piezo x {min(_xs) - 600:.0f}..{max(_xs) + 600:.0f} um, y {min(_ys) - 600:.0f}..{max(_ys) + 600:.0f} um')
+    _plate_summary('PLATE_CLIU', PLATE_CLIU)
+PLATE_CLIU_P = cliu_box1_p_samples()
+if PLATE_CLIU_P:
+    _plate_summary('PLATE_CLIU_P', PLATE_CLIU_P)

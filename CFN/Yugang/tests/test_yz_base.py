@@ -482,7 +482,9 @@ def test_tsaxs384_holder55(ns):
     ns['RE'].msg_hook = msgs.append
     ns['RE'](ns['run_holder_55after'](1, 11, 54, 2, blank))       # rows 0, 1 and 4
     huber = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].y]
-    assert huber == [rows[0][0]['sy'], rows[1][0]['sy'], rows[4][0]['sy']]   # once per row
+    row_sy = [rows[0][0]['sy'], rows[1][0]['sy'], rows[4][0]['sy']]
+    assert [h for h in huber if h in row_sy] == row_sy                    # once per row
+    assert all(abs(b - a) <= ns['HUBER_Y_STEP'] + 1e-9 for a, b in zip([0.0] + huber, huber))   # steps
     huber_x = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].x]
     assert huber_x == [ns['select'](H, 54)[0]['sx'], ns['SX55']]   # for 54, back for the blank
     data = starts(ns)
@@ -511,53 +513,75 @@ def test_tsaxs384_holder55(ns):
 
 def test_tsaxs384_cliu_plate(ns):
     load(ns, '2026C3_TSAXS384.py')
-    assert ns['PLATE_CLIU'] == []                                  # CAL_CLIU empty: not mapped yet
-    with pytest.raises(ValueError, match='not calibrated'):
-        ns['run_cliu_box1']()
-    th = np.radians(0.5)                                           # rows tilted 0.5 deg
-
-    def phys(w):                                                   # A1 at X -52, V 12 mm; P up (V down)
-        r, c = ns['_well'](w)
-        u, v = 4.5 * c, -4.5 * r
-        return -52 + u * np.cos(th) - v * np.sin(th), 12 + u * np.sin(th) + v * np.cos(th)
-    cal = {}
-    for w, (sx, sy) in {'A1': (-6, 12), 'A24': (6, 12), 'P1': (-6, -28), 'P24': (6, -28)}.items():
-        X, V = phys(w)
-        cal[w] = (sx, sy, round(X * 1000 - sx * 1000), round(12300 + (V - sy) * 1000))
-    P = ns['PLATE_CLIU'] = ns['cliu_box1_samples'](cal)
+    P, cal = ns['PLATE_CLIU'], ns['CAL_CLIU']                      # the corners measured 10-20
     wells = [s['well'] for s in P]
-    assert len(P) == 81 + 2 and not set(ns['CLIU_SKIP']) & set(wells)
-    m18 = ns['select'](P, 'M18')[0]
-    assert m18['name'] == 'Sample000311_B006_CuOH2_Powder' and m18['sample_id'] == 'Sample000311'
-    assert ns['select'](P, 'A1')[0]['role'] == 'blank'
-    for s in P:                                                    # every well where it is
-        X, V = phys(s['well'])
-        assert abs(ns['_X55'](s) / 1000 - X) < 0.002 and abs(s['sy'] + (s['y'] - 12300) / 1000 - V) < 0.002
-    x_lo, x_hi = ns['LIM55']['x']
-    y_lo, y_hi = ns['LIM55']['y']
-    assert all(x_lo <= s['x'] - 600 and s['x'] + 600 <= x_hi for s in P)
-    assert all(y_lo <= s['y'] - 600 and s['y'] + 600 <= y_hi for s in P)
-    rows = {}
-    for s in P:
-        rows.setdefault(s['plate_row'], []).append(s)
-    assert ''.join(rows) == 'ACEGIKMP' and all(len({s['sy'] for s in r}) == 1 for r in rows.values())
-    assert [rows['A'][0]['well'], rows['A'][-1]['well'], rows['C'][0]['well']] == ['A1', 'A24', 'C24']
-    assert len({s['sx'] for s in P}) == 2                          # two Huber sx blocks
-    assert ns['preview'](ns['run_cliu_box1']()) == 83 * 9 * 3
+    assert len(P) == 73 + 1 and len(set(wells)) == len(P)          # rows A .. M + the A1 blank
+    assert not set(ns['CLIU_SKIP']) & set(wells) and not [w for w in wells if w[0] == 'P']
+    assert all(s['name'].startswith('CL_') for s in P)
+    assert ns['select'](P, 'M18')[0]['name'] == 'CL_Sample000311_B006_CuOH2_Powder'
+    a1 = ns['select'](P, 'A1')[0]                                  # a corner stays where measured
+    sx, sy, x, y = cal['A1']
+    assert abs(ns['_X55'](a1) - (x + sx * 1000)) < 1 and abs(a1['sy'] + (a1['y'] - 12300) / 1000 - sy) < 1e-3
+    x_lo, x_hi = ns['LIM_CLIU']['x']
+    y_lo, y_hi = ns['LIM_CLIU']['y']
+    assert ns['CROSS_CLIU'] == ((-500, 0), (0, 0), (500, 0), (0, -500), (0, 500))
+    assert all(x_lo <= s['x'] - 500 and s['x'] + 500 <= x_hi for s in P)
+    assert all(y_lo <= s['y'] - 500 and s['y'] + 500 <= y_hi for s in P)
+    stops = list(dict.fromkeys((s['sx'], s['sy']) for s in P))
+    assert len(stops) == 3 and {a for a, _ in stops} == {-3.0}      # 3 Huber y bands, one Huber x
+    assert ns['select'](P, 'A1')[0]['x'] - 500 >= x_lo and ns['select'](P, 'A24')[0]['x'] + 500 <= x_hi
+    assert P[0]['plate_row'] == 'M' and P[-1]['plate_row'] == 'A'  # from the top (N) down
+    assert all(ns['LIM55']['sy'][0] <= b <= ns['LIM55']['sy'][1] for _, b in stops)
+    assert ns['preview'](ns['run_cliu_box1']()) == 74 * 5 * 3
 
     msgs = []
     ns['RE'].msg_hook = msgs.append
-    ns['RE'](ns['run_cliu_box1']('A1', 'A24', 'C2', 'C24'))
-    sets = lambda m_obj: [m.args[0] for m in msgs if m.command == 'set' and m.obj is m_obj]
-    assert sets(ns['stage'].y) == [rows['A'][0]['sy'], rows['C'][0]['sy']]
-    assert sets(ns['stage'].x) == [ns['select'](P, 'A1')[0]['sx'], ns['select'](P, 'A24')[0]['sx'],
-                                   ns['select'](P, 'C2')[0]['sx']]
+    ns['RE'](ns['run_cliu_box1']('M2', 'K14', 'C2', 'A24'))       # one well at 4 Huber positions
     data = starts(ns)
-    assert len(data) == 4 * 9 * 3 and len(ns['ova_cam'].written) == 4
-    order = list(dict.fromkeys(s['user_hints']['sample_info']['key'] for s in data))
-    assert order == ['A1', 'A24', 'C24', 'C2']
+    arcs = [d['user_hints']['waxs_arc_deg'] for d in data]
+    assert arcs == sorted(arcs) and len(data) == 4 * 5 * 3         # one arc at a time over all wells
+    keys = [d['user_hints']['sample_info']['key'] for d in data]
+    assert list(dict.fromkeys(keys[:20])) == ['M2', 'K14', 'C2', 'A24']
+    assert list(dict.fromkeys(keys[20:40])) == ['A24', 'C2', 'K14', 'M2']   # next arc: reversed
+    huber_x = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].x]
+    assert huber_x == [-3.0]                                       # the Huber x moves once
+    assert len(ns['ova_cam'].written) == 4                         # camera on the first arc only
     assert_saxs_at_top_arc(data, (0, 20, 40))
-    assert ns['preview'](ns['run_cliu_box1'](rows='P')) == (8 + 1) * 9 * 3     # CeO2 + P24 blank
+    huber_y = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].y]
+    band = [s['sy'] for s in ns['select'](P, 'M2', 'C2', 'A24')]
+    assert [h for h in huber_y if h in band] == [band[0], band[1], band[2], band[1], band[0], band[1], band[2]]
+    assert all(abs(b - a) <= ns['HUBER_Y_STEP'] + 1e-9 for a, b in zip([0.0] + huber_y, huber_y))
+
+    assert ns['PLATE_CLIU_P'] == []                                # row P: after pushing the plate down
+    with pytest.raises(ValueError, match='row P not calibrated'):
+        ns['run_cliu_box1_P']()
+    ns['CAL_CLIU_P'].update({'P1': (-2, -20, -57000, 0), 'P24': (-2, -20, 46000, -1400)})
+    PP = ns['PLATE_CLIU_P'] = ns['cliu_box1_p_samples']()
+    assert [s['well'] for s in PP] == ['P1', 'P3', 'P8', 'P10', 'P12', 'P14', 'P16', 'P20', 'P24']
+    assert {s['sy'] for s in PP} == {-20} and {s['sx'] for s in PP} == {-3.0}   # Huber y stays put
+    assert PP[0]['name'].startswith('CL_')
+    assert all(x_lo <= s['x'] - 500 and s['x'] + 500 <= x_hi for s in PP)
+    assert ns['preview'](ns['run_cliu_box1_P']()) == 9 * 5 * 3
+
+
+def test_huber_y_waits_while_hot(ns):
+    load(ns, '2026C3_TSAXS384.py')
+    readings = iter([50.0, 47.0, 44.0] + [40.0] * 50)              # hot, then cooling
+
+    class Thermo(ns['Signal']):
+        def get(self, **kw):
+            return next(readings)
+    ns['huber_y_T'] = Thermo(name='huber_y_T')
+    ns['HUBER_T_WAIT'] = 0.01
+    msgs = []
+    ns['RE'].msg_hook = msgs.append
+    ns['RE'](ns['huber_y_mv'](-12.0))                              # from 0: 3 steps of 4 mm
+    sets = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].y]
+    assert sets == [-4.0, -8.0, -12.0]
+    first_set = next(i for i, m in enumerate(msgs) if m.command == 'set')
+    assert sum(m.command == 'sleep' for m in msgs[:first_set]) == 2    # waited 50 -> 47 -> 44 C
+    ns['huber_y_T'] = ns['Signal'](value=60.0, name='huber_y_T')  # hot: a dry run must not wait
+    assert ns['preview'](ns['huber_y_mv'](0.0)) == 0
 
 
 def test_jmayer_flow(ns):
