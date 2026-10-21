@@ -50,7 +50,7 @@ U2) Check the spots furthest from the measured ones before the long run (1, 11, 
       RE(bps.mvr(stage.x, -0.5, piezo.x, 500))
 U3) Measure row by row: the Huber heats up (and stops) when it moves a lot, so it moves once per
     row -- the spots of a row share one sy and the piezo y takes the spot-to-spot height.  The piezo
-    y only travels -15000..12400 um (LIM55), so each row's sy is raised until its crosses fit below
+    y only travels -9310..12400 um (LIM55), so each row's sy is raised until its crosses fit below
     12400 (then mov_sam shows a different sy / y split of the same spot than MEASURED55).  The piezo
     x only travels -47000..47000 um: spots whose cross does not fit (the far left 52 .. 55) are
     measured with the Huber sx shifted by whole mm, so a row is split there, each part with all arcs
@@ -378,7 +378,7 @@ BLANKS55 = {
 }
 SX55 = 0.0                  # Huber sx (mm) for the whole array
 PY0 = 12300                 # piezo y (um) while the Huber sy can do the vertical
-LIM55 = {'sy': (-30, 20), 'x': (-47000, 47000), 'y': (-15000, 12400)}   # travel (Huber mm, piezo um),
+LIM55 = {'sy': (-30, 20), 'x': (-47000, 47000), 'y': (-9310, 12400)}    # travel (Huber mm, piezo um),
                                                                         # with the motors' own
 MARGIN55 = 100              # piezo x, y (um) kept from their travel when choosing the Huber sx, sy
 SXDIR55 = 1                 # +1: Huber sx +1 mm moves a spot as piezo x +1000 um (check, U2); -1: opposite
