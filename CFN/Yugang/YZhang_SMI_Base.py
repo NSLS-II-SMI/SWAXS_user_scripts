@@ -862,8 +862,12 @@ def run_series(samples=None, aligned=None, duration=600, interval=0, max_cycles=
         samples = _aligned_samples(samples, aligned, skip_failed)
         if not samples:
             raise ValueError('no aligned sample to measure')
-    if YZ_SERIES['t0'] is None:
-        series_start('(auto: run_series start)')
+    ser = dict(YZ_SERIES) if _previewing() else YZ_SERIES   # a dry run leaves clock and counter
+    if ser['t0'] is None:
+        if ser is YZ_SERIES:
+            series_start('(auto: run_series start)')
+        else:
+            ser['t0'] = time.time()
     dets = [pil900KW] if waxs_det else []
     if saxs and arc >= YZ['saxs_min_arc']:
         dets.append(pil2M)
@@ -871,7 +875,7 @@ def run_series(samples=None, aligned=None, duration=600, interval=0, max_cycles=
         raise ValueError('no detector: waxs_det=False and the 2M is shadowed at this arc')
     n_ang = len(angles) if angles is not None else 1
     print(f'run_series: {len(samples)} samples x {n_ang} angles per cycle, every '
-          f'{interval or "back-to-back"} s for {duration} s; t0 = {_iso(YZ_SERIES["t0"])}')
+          f'{interval or "back-to-back"} s for {duration} s; t0 = {_iso(ser["t0"])}')
 
     def one_pass(dets_now, spot, angle_list):
         for s in samples:
@@ -885,12 +889,12 @@ def run_series(samples=None, aligned=None, duration=600, interval=0, max_cycles=
             for ai in angle_list:
                 if ai is not None:
                     yield from bps.mv(AXES[gi['th']], a['th'] + ai)
-                elapsed = time.time() - YZ_SERIES['t0']
+                elapsed = time.time() - ser['t0']
                 E_now = E
                 if callable(E):                      # potential schedule f(elapsed) -> V
                     E_now = float(E(elapsed))
                     yield from bps.mv(ec_potential_setpoint, E_now)
-                yield from expose(s, dets_now, t, ai=ai, idx=YZ_SERIES['cycle'], elapsed=elapsed,
+                yield from expose(s, dets_now, t, ai=ai, idx=ser['cycle'], elapsed=elapsed,
                                   T=T, E=E_now, readings=readings, extra=extra, md=md)
 
     angle_list = list(angles) if angles is not None else [None]
@@ -903,19 +907,19 @@ def run_series(samples=None, aligned=None, duration=600, interval=0, max_cycles=
     yield from bps.mv(waxs, arc)
     while time.time() - t_start < duration and (max_cycles is None or n < max_cycles):
         t_cycle = time.time()
-        spot = spots[YZ_SERIES['cycle'] % len(spots)]
+        spot = spots[ser['cycle'] % len(spots)]
         yield from one_pass(dets, spot, angle_list)
-        if swaxs_every and YZ_SERIES['cycle'] % swaxs_every == 0:
+        if swaxs_every and ser['cycle'] % swaxs_every == 0:
             yield from bps.mv(waxs, swaxs_arc)
             yield from one_pass([pil900KW, pil2M], spot, angle_list[:1])
             yield from bps.mv(waxs, arc)
-        YZ_SERIES['cycle'] += 1
+        ser['cycle'] += 1
         n += 1
         wait = interval - (time.time() - t_cycle)
         if wait > 0:
             if time.time() - t_start + wait >= duration:
                 break                                # the next cycle would start after the end
-            print(f'cycle {YZ_SERIES["cycle"] - 1} done, next in {wait:.0f} s')
+            print(f'cycle {ser["cycle"] - 1} done, next in {wait:.0f} s')
             yield from bps.sleep(wait)
 
 
