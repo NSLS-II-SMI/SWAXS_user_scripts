@@ -511,6 +511,56 @@ def test_tsaxs384_holder55(ns):
         ns['run_holder_55after'](11)
 
 
+def test_tsaxs384_holder55_before(ns):
+    load(ns, '2026C3_TSAXS384.py')
+    assert ns['HOLDER55B'] == []                                   # nothing measured yet
+    with pytest.raises(ValueError, match='not calibrated'):
+        ns['run_holder_55before']()
+    PIX, PY0 = ns['PIX55B'], ns['PY0']
+    c, s_ = np.cos(np.radians(1)), np.sin(np.radians(1))
+    stage = lambda px, py: (0.0875 * (c * (px - 600) - s_ * (py - 600)),   # pixel -> (X, V) mm
+                            0.0875 * (s_ * (px - 600) + c * (py - 600)))
+
+    def stage_pos(n):                                              # centered by hand: (sy, x, y)
+        X, V = stage(*PIX[n])
+        return (round(V - 2, 3), X * 1000, PY0 + 2000)
+    ns['MEASURED55B'].update({n: stage_pos(n) for n in (1, 10)})
+    assert ns['holder55b_samples']() == []                         # 2 spots: not yet
+    ns['MEASURED55B'][5] = stage_pos(5)                            # 1, 5, 10: one PIPETMAX column
+    with pytest.raises(ValueError, match='>= 3 spots far apart'):
+        ns['holder55b_samples']()
+    ns['MEASURED55B'].clear()
+    ns['MEASURED55B'].update({n: stage_pos(n) for n in (1, 10, 55, 33)})
+    ns['BLANKS55B']['carbon_paper_as_prepared'] = (-5, 0, PY0, 4)
+    H = ns['HOLDER55B'] = ns['holder55b_samples']()
+    assert len(H) == 56 and len({s['name'] for s in H}) == 56
+    assert ns['select'](H, 33)[0]['name'] == 'Sample000033_B001_Au1Ag6Cu3_AsPrepared'
+    for s in H:
+        if s['key'] in PIX:                                        # every spot from the photo
+            X, V = stage(*PIX[s['key']])
+            assert abs(ns['_X55'](s) - X * 1000) < 1 and abs(s['sy'] + (s['y'] - PY0) / 1000 - V) < 1e-3
+            assert s['position'] == ('measured' if s['key'] in ns['MEASURED55B'] else 'photo')
+    assert all(len({s['sy'] for s in H if s['array_row'] == r}) == 1 for r in range(10))
+    ns['check_holder55'](H)                                        # crosses within travel
+    assert ns['preview'](ns['run_holder_55before']()) == 56 * 13 * 3
+    assert ns['preview'](ns['run_holder_55before'](by_arc=False)) == 56 * 13 * 3
+
+    msgs = []
+    ns['RE'].msg_hook = msgs.append
+    ns['RE'](ns['run_holder_55before'](1, 10, 55))                 # rows 0 (1, 55) and 9 (10)
+    data = starts(ns)
+    arcs = [d['user_hints']['waxs_arc_deg'] for d in data]
+    assert arcs == sorted(arcs) and len(data) == 3 * 13 * 3        # one arc at a time
+    keys = [d['user_hints']['sample_info']['key'] for d in data]
+    assert list(dict.fromkeys(keys[:39])) == [1, 55, 10]
+    assert list(dict.fromkeys(keys[39:78])) == [10, 55, 1]         # next arc: reversed
+    assert len(ns['ova_cam'].written) == 3                         # camera on the first arc only
+    assert_saxs_at_top_arc(data, (0, 20, 40))
+    huber_y = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].y]
+    row_sy = [ns['select'](H, n)[0]['sy'] for n in (1, 10)]
+    assert [h for h in huber_y if h in row_sy] == [row_sy[0], row_sy[1], row_sy[0], row_sy[1]]
+
+
 def test_tsaxs384_cliu_plate(ns):
     load(ns, '2026C3_TSAXS384.py')
     P, cal = ns['PLATE_CLIU'], ns['CAL_CLIU']                      # the corners measured 10-20

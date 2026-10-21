@@ -95,6 +95,25 @@ C2) Rows M .. A (74 wells): one WAXS arc at a time over all wells, 3 spots per w
 C3) Row P: push the plate down, center P1 and P24 -> CAL_CLIU_P, re-run this file:
       preview(run_cliu_box1_P())               # 9 x 3 x 3 = 81 exposures, the Huber y stays put
       RE(run_cliu_box1_P())
+
+UPenn B001 Au-Ag-Cu array, as prepared (the square piece, untested; after Box 1).  The same 55 spots
+and pyCLEAR samples as the piece after screening, named Sample0000nn_B001_<composition>_AsPrepared.
+Spot n = red label n on
+pyCLEAR/data/Received/2026-10-12_AuAgCu-array/B001_AuAgCu55_asprepared_OpticalImage_mark_position.png
+(PIX55B: the circle centres; all 55 are visible, so every spot not measured comes from the photo fit).
+B1) Mount; center >= 3 spots far apart on the on-axis camera (1, 10, 55; a 4th, e.g. 33, gives the
+    fit residual), here('sy', 'x', 'y') -> MEASURED55B (here('sy', 'x', 'y', 'sx') at another Huber
+    sx); a bare carbon-paper spot -> BLANKS55B with the array row it goes with; re-run this file
+    (prints the fit and the plan), then check spots far from the measured ones:
+      mov_sam(41, HOLDER55B); RE(ova_snap('test'))
+    off-center: center it, add it to MEASURED55B, re-run this file (refits).  Spots past the piezo x
+    travel get the Huber sx shifted (printed; SXDIR55 as for the piece after screening).
+B2) As the piece after screening (13-point cross, arcs 0, 20, 40, SAXS at 40, one camera image per
+    spot), but one WAXS arc at a time over all spots (by_arc=False: row by row, as U3):
+      preview(run_holder_55before())             # 55 x 13 x 3 = 2145 exposures, + 39 per blank
+      RE(run_holder_55before())
+      RE(run_holder_55before(33, 'carbon_paper_as_prepared'))   # a few (red labels / names)
+      RE(run_holder_55before(arcs=(20, 40)))     # e.g. after an error during the arc-20 pass
 """
 
 YZ.update(
@@ -351,24 +370,31 @@ TRANS55 = dict(
 )
 
 
-def holder55_positions(measured=None):
+def holder55_positions(measured=None, pix=None, lattice_bottom=True, label='holder55'):
     """
     {spot: {'x': piezo x um, 'v': height sy + (y - PY0) / 1000 mm, 'source'}}:
-      'measured'  as in MEASURED55
-      'photo'     from its blue dot, by an affine fit marked-image pixel -> stage through the measured
-      'lattice'   bottom row (Ag = 0, the Au-Cu edge): these spots are faint on the photo and their
-                  dots are guesses (28's was 1.4 mm off), so one lattice step (fitted through the
-                  measured spots) from its neighbours in the next row
+      'measured'  as in measured (default MEASURED55)
+      'photo'     from its pixel on the marked image (pix, default PIX55), by an affine fit
+                  marked-image pixel -> stage through the measured
+      'lattice'   (lattice_bottom) bottom row (Ag = 0, the Au-Cu edge): these spots are faint on the
+                  photo and their dots are guesses (28's was 1.4 mm off), so one lattice step (fitted
+                  through the measured spots) from its neighbours in the next row
     """
     measured = MEASURED55 if measured is None else measured
+    pix = PIX55 if pix is None else pix
     keys = sorted(measured)
     S = np.array([_xv55(*measured[n]) for n in keys])
-    dots = [i for i, n in enumerate(keys) if KR55[n - 1][0] != KR55[n - 1][1]]   # not the bottom row
-    A = np.array([[*PIX55[keys[i]], 1.0] for i in dots])
+    dots = [i for i, n in enumerate(keys)
+            if not lattice_bottom or KR55[n - 1][0] != KR55[n - 1][1]]       # not the bottom row
+    A = np.array([[*pix[keys[i]], 1.0] for i in dots])
+    sv = np.linalg.svd(A[:, :2] - A[:, :2].mean(axis=0), compute_uv=False)
+    if len(dots) < 3 or sv[1] < 0.1 * sv[0]:
+        raise ValueError(f'{label}: center >= 3 spots far apart, not in a line '
+                         f'(have {[keys[i] for i in dots]})')
     coef = np.linalg.lstsq(A, S[dots], rcond=None)[0]
     res = np.linalg.norm(S[dots] - A @ coef, axis=1)
     step = np.linalg.lstsq(np.array([[*KR55[n - 1], 1.0] for n in keys]), S, rcond=None)[0][:2]
-    print(f'holder55: photo fit through {len(dots)} measured spots, residual rms '
+    print(f'{label}: photo fit through {len(dots)} measured spots, residual rms '
           f'{np.sqrt(np.mean(res ** 2)):.2f} mm, max {res.max():.2f} mm (spot {keys[dots[res.argmax()]]}); '
           f'lattice step column {np.linalg.norm(step[0]):.2f} mm, row {np.linalg.norm(step[1]):.2f} mm')
     spot = {kr: i + 1 for i, kr in enumerate(KR55)}
@@ -377,10 +403,10 @@ def holder55_positions(measured=None):
         if n in measured:
             xv[n], source[n] = S[keys.index(n)], 'measured'
         else:
-            xv[n], source[n] = np.array([*PIX55[n], 1.0]) @ coef, 'photo'
+            xv[n], source[n] = np.array([*pix[n], 1.0]) @ coef, 'photo'
     for n in range(1, 56):
         k, r = KR55[n - 1]
-        if r == k and n not in measured:
+        if lattice_bottom and r == k and n not in measured:
             near = [xv[spot[k, k + 1]] - step[1]] if k < 9 else []
             near += [xv[spot[k - 1, k]] + step[0]] if k > 0 else []
             xv[n], source[n] = np.mean(near, axis=0), 'lattice'
@@ -398,27 +424,30 @@ def _X55(s):
     return s['x'] + SXDIR55 * (s['sx'] - SX55) * 1000
 
 
-def holder55_samples():
+def holder55_samples(measured=None, pix=None, blanks=None, state=STATE55, offsets=CROSS55,
+                     lattice_bottom=True, label='holder55'):
     """
-    The 55 spots and BLANKS55, row by row of the array (row = Ag level, bottom row first) in a
-    serpentine: S1 -> S55, S54 -> S2, S3 -> S52, ...  The spots of a row share one Huber sy and the
-    piezo y takes the spot-to-spot height, so the Huber moves once per row.  sy is the row mean,
-    shifted as little as needed to keep the piezo y of every cross (CROSS55) inside its travel.  Spots
-    whose cross does not fit the piezo x travel get the Huber sx shifted by whole mm (one shift for
-    all of them on each side) and the piezo x shifted back.
+    The 55 spots and the blanks (default MEASURED55, PIX55, BLANKS55: the piece after screening), row
+    by row of the array (row = Ag level, bottom row first) in a serpentine: S1 -> S55, S54 -> S2,
+    S3 -> S52, ...  The spots of a row share one Huber sy and the piezo y takes the spot-to-spot
+    height, so the Huber moves once per row.  sy is the row mean, shifted as little as needed to keep
+    the piezo y of every cross (offsets) inside its travel.  Spots whose cross does not fit the piezo
+    x travel get the Huber sx shifted by whole mm (one shift for all of them on each side) and the
+    piezo x shifted back.
     """
+    blanks = BLANKS55 if blanks is None else blanks
     spots = []
-    for n, p in holder55_positions().items():
+    for n, p in holder55_positions(measured, pix, lattice_bottom, label).items():
         k, r = KR55[n - 1]
-        spots.append(dict(key=n, name=clean_name(f'{PYCLEAR55[n - 1]}_{STATE55}'), x=p['x'], v=p['v'],
+        spots.append(dict(key=n, name=clean_name(f'{PYCLEAR55[n - 1]}_{state}'), x=p['x'], v=p['v'],
                           array_row=r - k, sample_id=PYCLEAR55[n - 1].split('_')[0],
                           target_id=1 + 14 * k + r, pipetmax_col=k, pipetmax_row=r,
                           position=p['source']))
-    for name, (sy, x, y, row) in BLANKS55.items():
+    for name, (sy, x, y, row) in blanks.items():
         spots.append(dict(key=name, name=clean_name(name), x=float(x), v=sy + (y - PY0) / 1000,
                           array_row=row, role='blank', position='measured'))
     x_lo, x_hi = _travel('x')
-    dx_lo, dx_hi = min(dx for dx, _ in CROSS55), max(dx for dx, _ in CROSS55)
+    dx_lo, dx_hi = min(dx for dx, _ in offsets), max(dx for dx, _ in offsets)
     left = lambda X: X + dx_lo < x_lo + MARGIN55
     right = lambda X: X + dx_hi > x_hi - MARGIN55
     xs = [s['x'] for s in spots]
@@ -428,7 +457,7 @@ def holder55_samples():
     for row in sorted({s['array_row'] for s in spots}):
         cells = sorted((s for s in spots if s['array_row'] == row), key=lambda s: s['x'],
                        reverse=row % 2 == 0)
-        sy = _row_sy([s['v'] for s in cells])
+        sy = _row_sy([s['v'] for s in cells], offsets)
         for s in cells:
             v, X = s.pop('v'), s['x']
             d = shift_l if left(X) else -shift_r if right(X) else 0
@@ -486,15 +515,21 @@ def run_holder_55after(*which, rows=None, ova=True, **kw):
     highest, and (ova=True) one on-axis camera image per spot on the first arc.  Each row starts at
     the end, and at the arc, where the previous one stopped.  kw override TRANS55.
     """
-    samples = select(HOLDER55, *which) if which else HOLDER55
-    if rows is not None:
-        samples = [s for s in samples if s['array_row'] in rows]
-        if not samples:
-            raise ValueError(f'no spots in rows {rows}')
+    samples = _select55(HOLDER55, which, rows)
     opts = dict(TRANS55, **kw)
     check_arcs(opts['arcs'])
     check_holder55(samples, opts['offsets'])
     return _rows55(samples, ova, opts)
+
+
+def _select55(holder, which, rows):
+    """The spots of holder given by red label / name (which) and array row (rows), or all."""
+    samples = select(holder, *which) if which else holder
+    if rows is not None:
+        samples = [s for s in samples if s['array_row'] in rows]
+        if not samples:
+            raise ValueError(f'no spots in rows {rows}')
+    return samples
 
 
 def _rows55(samples, ova, opts, label='run_holder_55after', row_key='array_row'):
@@ -535,14 +570,19 @@ def _parts55(row):
     return parts
 
 
+def _holder55_summary(label, H, offsets=CROSS55):
+    xs = [s['x'] + dx for s in H for dx, _ in offsets]
+    ys = [s['y'] + dy for s in H for _, dy in offsets]
+    print(f'{label}: {len(H)} spots in {len({s["array_row"] for s in H})} rows, Huber sy per '
+          f'row {", ".join(f"{sy:g}" for sy in dict.fromkeys(s["sy"] for s in H))} mm; '
+          f'piezo x {min(xs):.0f}..{max(xs):.0f} um, y {min(ys):.0f}..{max(ys):.0f} um (crosses included)')
+    for sx in sorted({s['sx'] for s in H} - {SX55}):
+        print(f'  Huber sx {sx:g} mm (not {SX55:g}) for spots '
+              f'{", ".join(str(s["key"]) for s in H if s["sx"] == sx)} -- SXDIR55 = {SXDIR55} checked?')
+
+
 HOLDER55 = holder55_samples()
-_xs, _ys = [s['x'] for s in HOLDER55], [s['y'] for s in HOLDER55]
-print(f'HOLDER55: {len(HOLDER55)} spots in {len({s["array_row"] for s in HOLDER55})} rows, Huber sy per '
-      f'row {", ".join(f"{sy:g}" for sy in dict.fromkeys(s["sy"] for s in HOLDER55))} mm; '
-      f'piezo x {min(_xs) - 900:.0f}..{max(_xs) + 900:.0f} um, y {min(_ys) - 900:.0f}..{max(_ys) + 900:.0f} um')
-for _sx in sorted({s['sx'] for s in HOLDER55} - {SX55}):
-    print(f'  Huber sx {_sx:g} mm (not {SX55:g}) for spots '
-          f'{", ".join(str(s["key"]) for s in HOLDER55 if s["sx"] == _sx)} -- SXDIR55 = {SXDIR55} checked?')
+_holder55_summary('HOLDER55', HOLDER55)
 
 
 ###############################################################################################
@@ -892,3 +932,78 @@ if PLATE_CLIU:
 PLATE_CLIU_P = cliu_box1_p_samples()
 if PLATE_CLIU_P:
     _plate_summary('PLATE_CLIU_P', PLATE_CLIU_P)
+
+
+###############################################################################################
+# UPenn B001 Au-Ag-Cu array, the as-prepared (untested) piece: the square cutout
+###############################################################################################
+# The same 55 spots / pyCLEAR samples as the piece after screening (PYCLEAR55, KR55, the runners
+# above); every spot is visible on this piece, so all of them are placed from the photo.
+STATE55B = 'AsPrepared'             # name suffix: Sample0000nn_B001_<composition>_AsPrepared
+
+# Centre (pixel x, y) of the red circle around each spot on
+# B001_AuAgCu55_asprepared_OpticalImage_mark_position.png (1086 x 1448)
+PIX55B = {
+    1: (1028, 740), 2: (980, 689), 3: (929, 638), 4: (882, 588), 5: (830, 538),
+    6: (779, 492), 7: (733, 448), 8: (684, 396), 9: (641, 350), 10: (593, 305),
+    11: (929, 746), 12: (880, 691), 13: (827, 640), 14: (779, 589), 15: (729, 541),
+    16: (679, 492), 17: (638, 447), 18: (587, 403), 19: (546, 353), 20: (833, 752),
+    21: (779, 696), 22: (725, 643), 23: (674, 592), 24: (626, 544), 25: (585, 500),
+    26: (537, 450), 27: (494, 403), 28: (728, 753), 29: (674, 698), 30: (623, 647),
+    31: (573, 599), 32: (525, 549), 33: (483, 500), 34: (433, 450), 35: (619, 754),
+    36: (565, 701), 37: (514, 653), 38: (462, 603), 39: (424, 550), 40: (381, 502),
+    41: (502, 753), 42: (457, 702), 43: (408, 655), 44: (361, 603), 45: (323, 549),
+    46: (396, 754), 47: (349, 704), 48: (306, 655), 49: (263, 605), 50: (297, 757),
+    51: (251, 706), 52: (203, 657), 53: (193, 759), 54: (148, 706), 55: (85, 758),
+}
+
+# EDIT: spots centered by hand on the on-axis camera, spot: (Huber sy mm, piezo x um, piezo y um),
+# Huber sx = SX55, or (sy, x, y, sx) at another Huber sx.  >= 3 spots far apart and not in a line
+# (1, 10, 55; a 4th, e.g. 33, shows the fit residual).  Used as they are; all other spots come from
+# the affine fit through them.
+MEASURED55B = {
+}
+# EDIT: bare carbon paper of this piece as the blank, measured with the array row given;
+# name: (Huber sy mm, piezo x um, piezo y um, row = 0 bottom (Ag 0) .. 9 top (spot 10))
+BLANKS55B = {
+    # 'carbon_paper_as_prepared': (sy, x, y, 4),
+}
+
+TRANS55B = dict(TRANS55, md=dict(TRANS55['md'], holder='UPenn B001 Au-Ag-Cu array (Huber + piezo)',
+                                 piece='as prepared (untested)'))
+
+
+def holder55b_samples():
+    """HOLDER55 of the as-prepared piece (MEASURED55B, PIX55B, BLANKS55B); [] until 3 spots are measured."""
+    if len(MEASURED55B) < 3:
+        print('HOLDER55B (B001 as prepared): not calibrated yet -- center >= 3 spots -> MEASURED55B')
+        return []
+    return holder55_samples(MEASURED55B, PIX55B, BLANKS55B, STATE55B, TRANS55B['offsets'],
+                            lattice_bottom=False, label='HOLDER55B')
+
+
+def run_holder_55before(*which, rows=None, ova=True, by_arc=True, **kw):
+    """
+    Plan: transmission SAXS/WAXS of the as-prepared B001 piece (HOLDER55B: the 55 spots and
+    BLANKS55B, or the given red labels / names, or the array rows given, 0 = bottom), as the piece
+    after screening (TRANS55B: a 13-point cross per spot, WAXS at every arc with SAXS at the highest,
+    ova=True: one on-axis camera image per spot on the first arc).  by_arc=True: one WAXS arc at a
+    time over all spots, the Huber positions (one per row, more where the Huber sx shifts) in the
+    order of HOLDER55B and reversed at the next arc; by_arc=False: row by row with every arc per row,
+    as run_holder_55after (the Huber moves a third as often).  kw override TRANS55B.
+    """
+    if not HOLDER55B:
+        raise ValueError('B001 as-prepared piece not calibrated: fill MEASURED55B (>= 3 spots), '
+                         're-run this file')
+    samples = _select55(HOLDER55B, which, rows)
+    opts = dict(TRANS55B, **kw)
+    check_arcs(opts['arcs'])
+    check_holder55(samples, opts['offsets'])
+    if by_arc:
+        return _by_arc(samples, ova, opts, 'run_holder_55before')
+    return _rows55(samples, ova, opts, 'run_holder_55before')
+
+
+HOLDER55B = holder55b_samples()
+if HOLDER55B:
+    _holder55_summary('HOLDER55B', HOLDER55B, TRANS55B['offsets'])
