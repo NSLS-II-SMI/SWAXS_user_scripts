@@ -130,9 +130,13 @@ D2) Rows B .. L as Box 1 (3 spots per well, arcs 0, 20, 40, SAXS at 40, one came
       preview(run_cliu_box2())                 # 65 x 3 x 3 = 585 exposures
       RE(run_cliu_box2())
       RE(run_cliu_box2('D24'))                 # e.g. AgBH first
-D3) Rows N, P: push the box down, center N1, N24, P1, P24 -> CAL_CLIU2_PUSHED, re-run this file:
+D3) Rows N, P: push the box down, center N1, N24, P1, P24 -> CAL_CLIU2_PUSHED (done 10-21), re-run:
       preview(run_cliu_box2_pushed())          # 21 x 3 x 3 = 189 exposures
       RE(run_cliu_box2_pushed())
+D4) Re-run of all of Box 2 after a beam error (10-21): CLIU2_RUN = 'run2' ends every name (and
+    run_batch Box2_run2): RE(run_cliu_box2_pushed()) now, then push the box back up, check a corner
+    (mov_sam('B2', PLATE_CLIU2); RE(ova_snap('test'))) -- moved: new corners -> CAL_CLIU2, re-run
+    this file -- and RE(run_cliu_box2()).
 
 W. Liu Au nanoparticles, Box 3 (solutions, 384-well plate): S6 .. S55 in H8-17, G8-17, F8-17,
 E8-17, C8-17, named WL_Au_S6 ..; references WL_SiO2_H7, _F7, _C7, _D11 and WL_Water_G7, _E7.  Photo
@@ -1145,6 +1149,8 @@ CLIU_BOX2 = {
     'P20': 'Sample000305_B005_Ag10',
 }
 CLIU2_FORM = 'Suspension'           # name suffix: CL_<pyCLEAR name>_Suspension
+CLIU2_RUN = 'run2'                  # EDIT: run tag at the end of every Box 2 name ('' none): run2 = all
+                                    # wells again after a beam error (10-21), N, P first, then B .. L
 # added on the plate at CFN (names as given, no CL_ prefix): well: (name, metadata)
 CLIU2_ADDED = {
     'D24': ('AgBH', dict(role='calibrant', form='powder')),
@@ -1170,11 +1176,12 @@ SX_CLIU2 = None             # Huber sx (mm) for the whole plate; None: from CAL_
 
 TRANS_CLIU2 = dict(TRANS_CLIU, md={
     'holder': 'ORNL Box 2, Corning 384-well plate, Kapton over the wells (Huber + piezo)',
-    'batch': 'B005_CuM_81', 'form': 'suspension'})
+    'batch': 'B005_CuM_81', 'form': 'suspension', 'run_batch': f'Box2_{CLIU2_RUN or "run1"}'})
 
 
 def _cliu2_names(wells):
-    """({well: CL_<name>_Suspension, added or blank name}, {well: metadata}) of the Box 2 wells given."""
+    """({well: CL_<name>_Suspension, added or blank name, + _<CLIU2_RUN>}, {well: metadata}) of the Box 2
+    wells given."""
     names, extra = {}, {}
     for w in wells:
         if w in CLIU2_BLANKS:
@@ -1187,6 +1194,9 @@ def _cliu2_names(wells):
             n = CLIU_BOX2[w]
             names[w] = f'{CLIU_PREFIX}_{n}_{CLIU2_FORM}'
             extra[w] = dict(sample_id=n.split('_')[0], batch=n.split('_')[1], form='suspension', box='box2')
+        if CLIU2_RUN:
+            names[w] = f'{names[w]}_{CLIU2_RUN}'
+            extra[w]['run'] = CLIU2_RUN
     return names, extra
 
 

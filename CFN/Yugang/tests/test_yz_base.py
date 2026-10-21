@@ -635,8 +635,9 @@ def test_tsaxs384_cliu_box2(ns):
     assert len(ns['CLIU_BOX2']) == 81 and len(P) == 86 - 21 and len(set(wells)) == len(P)
     assert not [w for w in wells if w[0] in 'NP']                  # rows N, P: after the push
     name = {s['well']: s['name'] for s in P}
-    assert name['B2'] == 'CL_Sample000225_B005_Cu10_Suspension' and name['B24'] == 'CL_EmptyWell_B24'
-    assert (name['D24'], name['F23'], name['F24']) == ('AgBH', 'GL_52C', 'MH_5_61_A')
+    assert name['B2'] == 'CL_Sample000225_B005_Cu10_Suspension_run2' and name['B24'] == 'CL_EmptyWell_B24_run2'
+    assert (name['D24'], name['F23'], name['F24']) == ('AgBH_run2', 'GL_52C_run2', 'MH_5_61_A_run2')
+    assert ns['TRANS_CLIU2']['md']['run_batch'] == 'Box2_run2'      # re-run after a beam error (10-21)
     assert ns['select'](P, 'D24')[0]['role'] == 'calibrant'
     for w, (sx, sy, x, y) in ns['CAL_CLIU2'].items():              # a corner stays where measured
         if w in name:
