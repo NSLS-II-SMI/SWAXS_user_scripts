@@ -540,25 +540,27 @@ def test_tsaxs384_holder55_before(ns):
             X, V = stage(*PIX[s['key']])
             assert abs(ns['_X55'](s) - X * 1000) < 1 and abs(s['sy'] + (s['y'] - PY0) / 1000 - V) < 1e-3
             assert s['position'] == ('measured' if s['key'] in ns['MEASURED55B'] else 'photo')
-    assert all(len({s['sy'] for s in H if s['array_row'] == r}) == 1 for r in range(10))
+    bands = list(dict.fromkeys(s['sy'] for s in H))
+    assert len(bands) == 2                                         # 2 Huber sy for 10 rows (as Box 1)
+    assert [s['array_row'] for s in H] == sorted((s['array_row'] for s in H), reverse=True)  # from the top
+    assert H[0]['key'] == 10 and {s['sx'] for s in H} == {ns['SX55']}
     ns['check_holder55'](H)                                        # crosses within travel
     assert ns['preview'](ns['run_holder_55before']()) == 56 * 13 * 3
-    assert ns['preview'](ns['run_holder_55before'](by_arc=False)) == 56 * 13 * 3
 
     msgs = []
     ns['RE'].msg_hook = msgs.append
-    ns['RE'](ns['run_holder_55before'](1, 10, 55))                 # rows 0 (1, 55) and 9 (10)
+    ns['RE'](ns['run_holder_55before'](1, 10, 55))                 # rows 9 (10) and 0 (1, 55)
     data = starts(ns)
     arcs = [d['user_hints']['waxs_arc_deg'] for d in data]
     assert arcs == sorted(arcs) and len(data) == 3 * 13 * 3        # one arc at a time
     keys = [d['user_hints']['sample_info']['key'] for d in data]
-    assert list(dict.fromkeys(keys[:39])) == [1, 55, 10]
-    assert list(dict.fromkeys(keys[39:78])) == [10, 55, 1]         # next arc: reversed
+    order = [s['key'] for s in H if s['key'] in (1, 10, 55)]
+    assert order[0] == 10 and list(dict.fromkeys(keys[:39])) == order
+    assert list(dict.fromkeys(keys[39:78])) == order[::-1]         # next arc: reversed
     assert len(ns['ova_cam'].written) == 3                         # camera on the first arc only
     assert_saxs_at_top_arc(data, (0, 20, 40))
     huber_y = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].y]
-    row_sy = [ns['select'](H, n)[0]['sy'] for n in (1, 10)]
-    assert [h for h in huber_y if h in row_sy] == [row_sy[0], row_sy[1], row_sy[0], row_sy[1]]
+    assert [h for h in huber_y if h in bands] == bands + bands[::-1][1:] + bands[1:]
 
 
 def test_tsaxs384_cliu_plate(ns):
@@ -602,17 +604,60 @@ def test_tsaxs384_cliu_plate(ns):
     assert [h for h in huber_y if h in band] == [band[0], band[1], band[2], band[1], band[0], band[1], band[2]]
     assert all(abs(b - a) <= ns['HUBER_Y_STEP'] + 1e-9 for a, b in zip([0.0] + huber_y, huber_y))
 
-    assert ns['PLATE_CLIU_P'] == []                                # row P: after pushing the plate down
-    with pytest.raises(ValueError, match='row P not calibrated'):
-        ns['run_cliu_box1_P']()
-    ns['CAL_CLIU_P'].update({'P1': (-2, -20, -57000, 0), 'P24': (-2, -20, 46000, -1400)})
-    PP = ns['PLATE_CLIU_P'] = ns['cliu_box1_p_samples']()
+    PP = ns['PLATE_CLIU_P']                                        # row P, after pushing the plate down
     assert [s['well'] for s in PP] == ['P1', 'P3', 'P8', 'P10', 'P12', 'P14', 'P16', 'P20', 'P24']
-    assert {s['sy'] for s in PP} == {-20} and {s['sx'] for s in PP} == {-2.5}   # Huber y stays put
+    assert {s['sy'] for s in PP} == {-30} and {s['sx'] for s in PP} == {-2.5}   # the Huber stays put
+    for w, (sx, sy, x, y) in ns['CAL_CLIU_P'].items():             # the centered wells as measured
+        assert ns['select'](PP, w)[0]['x'] == x and ns['select'](PP, w)[0]['y'] == y
     assert PP[0]['name'].startswith('CL_')
     assert all(x_lo <= s['x'] <= x_hi for s in PP)
     assert ns['preview'](ns['run_cliu_box1_P']()) == 9 * 3 * 3
 
+
+
+def test_tsaxs384_cliu_box2(ns):
+    load(ns, '2026C3_TSAXS384.py')
+    assert ns['PLATE_CLIU2'] == [] and ns['PLATE_CLIU2_PUSHED'] == []
+    with pytest.raises(ValueError, match='not calibrated'):
+        ns['run_cliu_box2']()
+    ns['CAL_CLIU2'].update(ns['CAL_CLIU'])                         # placed as Box 1: row P out of reach
+    P = ns['PLATE_CLIU2'] = ns['cliu_box2_samples']()
+    wells = [s['well'] for s in P]
+    assert len(ns['CLIU_BOX2']) == 81 and len(P) == 86 - 11 and len(set(wells)) == len(P)
+    assert not [w for w in wells if w[0] == 'P']                   # P2 .. P20 and P24 left out
+    name = {s['well']: s['name'] for s in P}
+    assert name['B2'] == 'CL_Sample000225_B005_Cu10_Suspension' and name['B24'] == 'CL_EmptyWell_B24'
+    assert (name['D24'], name['F23'], name['F24']) == ('AgBH', 'GL_52C', 'MH_5_61_A')
+    assert ns['select'](P, 'D24')[0]['role'] == 'calibrant'
+    stops = list(dict.fromkeys((s['sx'], s['sy']) for s in P))
+    assert len({a for a, _ in stops}) == 1 and len(stops) <= 3     # one Huber x, a few Huber y
+    assert P[0]['plate_row'] == 'N' and P[-1]['plate_row'] == 'B'  # from the top
+    ns['check_holder55'](P, ns['CROSS_CLIU'], ns['LIM_CLIU'])
+    assert ns['preview'](ns['run_cliu_box2']()) == 75 * 3 * 3
+
+    ns['CAL_CLIU2_PUSHED'].update({'P1': (-2, -20, -57000, 0), 'P24': (-2, -20, 46000, -1400)})
+    PP = ns['PLATE_CLIU2_PUSHED'] = ns['cliu_box2_pushed_samples']()
+    assert sorted(s['well'] for s in PP) == sorted([f'P{c}' for c in range(2, 21, 2)] + ['P24'])
+    assert {s['sy'] for s in PP} == {-20}
+    assert ns['preview'](ns['run_cliu_box2_pushed']()) == 11 * 3 * 3
+
+
+def test_tsaxs384_wliu_box3(ns):
+    load(ns, '2026C3_TSAXS384.py')
+    assert ns['PLATE_WLIU'] == []
+    with pytest.raises(ValueError, match='not calibrated'):
+        ns['run_wliu_box3']()
+    ns['CAL_WLIU'].update(ns['CAL_CLIU'])
+    P = ns['PLATE_WLIU'] = ns['wliu_box3_samples']()
+    name = {s['well']: s['name'] for s in P}
+    assert len(P) == 50 + 6 and len(set(name.values())) == 56
+    assert (name['H8'], name['H17'], name['G8'], name['E17'], name['C17']) == \
+        ('WL_Au_S6', 'WL_Au_S15', 'WL_Au_S16', 'WL_Au_S45', 'WL_Au_S55')
+    assert name['D11'] == 'WL_SiO2_D11' and ns['select'](P, 'G7')[0]['role'] == 'blank'
+    assert len({(s['sx'], s['sy']) for s in P}) == 1               # rows C .. H: one Huber position
+    assert ns['preview'](ns['run_wliu_box3']()) == 56 * 3 * 3
+    ns['RE'](ns['run_wliu_box3']('H8', 'C17', arcs=(20,)))
+    assert [d['user_hints']['sample_info']['key'] for d in starts(ns)][::3] == ['H8', 'C17']
 
 def test_huber_y_waits_while_hot(ns):
     load(ns, '2026C3_TSAXS384.py')
