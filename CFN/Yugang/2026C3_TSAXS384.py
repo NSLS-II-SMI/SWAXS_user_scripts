@@ -121,16 +121,18 @@ box-2 wells, rows B .. P), named CL_<pyCLEAR name>_Suspension, + AgBH (D24), GL_
 MH_5_61_A (F24) (DNA-assembled nanoparticle superlattices); blanks: the empty wells B24 and P24
 (CLIU2_BLANKS -- check they are empty).  Photo:
 pyCLEAR/data/Received/2026-10-15_CLiu-ORNL/B005_CuM_81_Box2_solution_OpticalImage_mark_position.jpg
-D1) Center the four corners (A1, A24, P1, P24, or the top row in reach) -> CAL_CLIU2, re-run this
-    file: it prints the fit, the Huber sx (SX_CLIU2 = None: chosen from the corners) and the plan --
-    wells out of reach are listed and left out.  Check the piezo x ends and a middle well:
+D1) Corners A1, A24, M1, M24 centered by hand -> CAL_CLIU2 (done 10-21); rows N, P (CLIU2_LATER) come
+    after pushing the box down.  Re-running this file prints the fit, the Huber sx (SX_CLIU2 = None:
+    chosen from the corners) and the plan -- wells out of reach are listed and left out.  Check the
+    piezo x ends and a middle well:
       mov_sam('B2', PLATE_CLIU2); mov_sam('F24', PLATE_CLIU2); mov_sam('H12', PLATE_CLIU2)
-D2) As Box 1 (3 spots per well, arcs 0, 20, 40, SAXS at 40, one camera image per well):
-      preview(run_cliu_box2())                 # 86 x 3 x 3 = 774 exposures
+D2) Rows B .. L as Box 1 (3 spots per well, arcs 0, 20, 40, SAXS at 40, one camera image per well):
+      preview(run_cliu_box2())                 # 65 x 3 x 3 = 585 exposures
       RE(run_cliu_box2())
       RE(run_cliu_box2('D24'))                 # e.g. AgBH first
-D3) Only if wells were left out: push the plate down, center 2+ of them -> CAL_CLIU2_PUSHED, re-run:
-      preview(run_cliu_box2_pushed()); RE(run_cliu_box2_pushed())
+D3) Rows N, P: push the box down, center N1, N24, P1, P24 -> CAL_CLIU2_PUSHED, re-run this file:
+      preview(run_cliu_box2_pushed())          # 21 x 3 x 3 = 189 exposures
+      RE(run_cliu_box2_pushed())
 
 W. Liu Au nanoparticles, Box 3 (solutions, 384-well plate): S6 .. S55 in H8-17, G8-17, F8-17,
 E8-17, C8-17, named WL_Au_S6 ..; references WL_SiO2_H7, _F7, _C7, _D11 and WL_Water_G7, _E7.  Photo
@@ -1153,11 +1155,13 @@ CLIU2_BLANKS = {'B24': 'EmptyWell_B24', 'P24': 'EmptyWell_P24'}   # EDIT: empty 
                                                                    # measured anyway
 # EDIT: four corners centered by hand, here('sx', 'sy', 'x', 'y'): A1, A24, P1, P24 (or the top row
 # in reach, e.g. N1, N24)
-CAL_CLIU2 = {
-    # 'A1': (sx, sy, x, y), 'A24': (sx, sy, x, y), 'P1': (sx, sy, x, y), 'P24': (sx, sy, x, y),
+CAL_CLIU2 = {                       # 2026-10-21, corners (rows N, P after pushing the box down)
+    'A1': (-1.5, 13.2, -56303, 12300), 'A24': (-1.5, 13.2, 47020, 11500),
+    'M1': (-1.5, -30, -56903, 1700), 'M24': (-1.5, -30, 46400, 800),
 }
-# EDIT only if wells are out of reach with CAL_CLIU2 (printed): push the plate down, center 2+ of
-# them (2 wells of one row: that row only), here('sx', 'sy', 'x', 'y')
+CLIU2_LATER = 'NP'                  # rows measured after pushing the box down (CAL_CLIU2_PUSHED)
+# EDIT after pushing the box down: wells of rows N, P centered by hand, here('sx', 'sy', 'x', 'y'),
+# best N1, N24, P1, P24 (2 wells of one row: that row only).  Also takes any well out of reach above.
 CAL_CLIU2_PUSHED = {
 }
 SX_CLIU2 = None             # Huber sx (mm) for the whole plate; None: from CAL_CLIU2, in whole mm (printed)
@@ -1185,20 +1189,22 @@ def _cliu2_names(wells):
 
 
 def cliu_box2_samples(cal=None):
-    """Box 2 wells (CLIU_BOX2, CLIU2_ADDED, CLIU2_BLANKS) mapped through CAL_CLIU2 and ordered as Box 1
-    (plate_samples); wells out of reach are left out (printed).  [] before CAL_CLIU2 is filled."""
+    """Box 2 wells (CLIU_BOX2, CLIU2_ADDED, CLIU2_BLANKS) except the CLIU2_LATER rows, mapped through
+    CAL_CLIU2 and ordered as Box 1 (plate_samples); wells out of reach are left out (printed).  []
+    before CAL_CLIU2 is filled."""
     cal = CAL_CLIU2 if cal is None else cal
     if len(cal) < 3:
         print('CLiu Box 2: not calibrated yet (CAL_CLIU2 needs 3+ wells, best the four corners)')
         return []
-    names, extra = _cliu2_names([*CLIU_BOX2, *CLIU2_ADDED, *CLIU2_BLANKS])
+    names, extra = _cliu2_names([w for w in (*CLIU_BOX2, *CLIU2_ADDED, *CLIU2_BLANKS)
+                                 if w[0] not in CLIU2_LATER])
     return plate_samples(names, cal, TRANS_CLIU2['offsets'], extra, sx=SX_CLIU2, lim=LIM_CLIU,
                          label='CLiu Box 2')
 
 
 def cliu_box2_pushed_samples(cal=None, done=None):
-    """The Box 2 wells PLATE_CLIU2 (done) leaves out, after pushing the plate down, mapped through
-    CAL_CLIU2_PUSHED (2 wells of one row: that row only)."""
+    """The Box 2 wells PLATE_CLIU2 (done) leaves out (the CLIU2_LATER rows, any out of reach), after
+    pushing the plate down, mapped through CAL_CLIU2_PUSHED (2 wells of one row: that row only)."""
     cal = CAL_CLIU2_PUSHED if cal is None else cal
     done = PLATE_CLIU2 if done is None else done
     if len(cal) < 2 or not done:
