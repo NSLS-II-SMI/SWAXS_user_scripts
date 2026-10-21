@@ -515,7 +515,8 @@ def test_tsaxs384_holder55_before(ns):
     load(ns, '2026C3_TSAXS384.py')
     H, PY0 = ns['HOLDER55B'], ns['PY0']                            # as centered on 10-20: 10, 31, 1, 55
     assert len(H) == 55 and {s['sx'] for s in H} == {-2.5}         # the Huber x stays where measured
-    assert len({s['sy'] for s in H}) == 2 and H[0]['key'] == 10    # 2 Huber y, from the top
+    assert len({s['sy'] for s in H}) == 3 and H[0]['key'] == 10    # 3 Huber y, from the top
+    assert min(s['y'] for s in H) - 900 >= ns['LIM55']['y'][0] == -9310   # piezo y floor (10-20)
     for n, (sy, x, y, sx) in ns['MEASURED55B'].items():
         s = ns['select'](H, n)[0]
         assert s['x'] == x and abs(s['sy'] + (s['y'] - PY0) / 1000 - (sy + (y - PY0) / 1000)) < 1e-3
@@ -571,7 +572,8 @@ def test_tsaxs384_holder55_before(ns):
     assert len(ns['ova_cam'].written) == 3                         # camera on the first arc only
     assert_saxs_at_top_arc(data, (0, 20, 40))
     huber_y = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].y]
-    assert [h for h in huber_y if h in bands] == bands + bands[::-1][1:] + bands[1:]
+    b10, b1 = (ns['select'](H, n)[0]['sy'] for n in (10, 1))      # top and bottom band
+    assert [h for h in huber_y if h in bands] == [b10, b1, b10, b1]
 
 
 def test_tsaxs384_cliu_plate(ns):
@@ -665,7 +667,7 @@ def test_tsaxs384_wliu_box3(ns):
     assert (name['H8'], name['H17'], name['G8'], name['E17'], name['C17']) == \
         ('WL_Au_S6', 'WL_Au_S15', 'WL_Au_S16', 'WL_Au_S45', 'WL_Au_S55')
     assert name['D11'] == 'WL_SiO2_D11' and ns['select'](P, 'G7')[0]['role'] == 'blank'
-    assert len({(s['sx'], s['sy']) for s in P}) == 1               # rows C .. H: one Huber position
+    assert len({(s['sx'], s['sy']) for s in P}) == 2               # rows C .. H: 2 Huber y, one x
     assert ns['preview'](ns['run_wliu_box3']()) == 56 * 3 * 3
     ns['RE'](ns['run_wliu_box3']('H8', 'C17', arcs=(20,)))
     assert [d['user_hints']['sample_info']['key'] for d in starts(ns)][::3] == ['H8', 'C17']
