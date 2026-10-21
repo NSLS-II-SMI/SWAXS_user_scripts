@@ -1161,9 +1161,11 @@ CLIU2_BLANKS = {'B24': 'EmptyWell_B24', 'P24': 'EmptyWell_P24'}   # EDIT: empty 
                                                                    # measured anyway
 # EDIT: four corners centered by hand, here('sx', 'sy', 'x', 'y'): A1, A24, P1, P24 (or the top row
 # in reach, e.g. N1, N24)
-CAL_CLIU2 = {                       # 2026-10-21, corners (rows N, P after pushing the box down)
-    'A1': (-1.5, 13.2, -56303, 12300), 'A24': (-1.5, 13.2, 47020, 11500),
-    'M1': (-1.5, -30, -56903, 1700), 'M24': (-1.5, -30, 46400, 800),
+CAL_CLIU2 = {                       # 2026-10-21, corners after pushing the box back up (run2)
+    'A1': (-2, 13.2, -55000, 12500), 'A24': (-2, 13.2, 48400, 11300),
+    'M1': (-2, -30, -55380, 1900), 'M24': (-2, -30, 47800, 600),
+    # first placement (run1): A1 (-1.5, 13.2, -56303, 12300), A24 (-1.5, 13.2, 47020, 11500),
+    #                         M1 (-1.5, -30, -56903, 1700), M24 (-1.5, -30, 46400, 800)
 }
 CLIU2_LATER = 'NP'                  # rows measured after pushing the box down (CAL_CLIU2_PUSHED)
 # EDIT after pushing the box down: wells of rows N, P centered by hand, here('sx', 'sy', 'x', 'y'),

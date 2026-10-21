@@ -630,7 +630,7 @@ def test_tsaxs384_cliu_plate(ns):
 
 def test_tsaxs384_cliu_box2(ns):
     load(ns, '2026C3_TSAXS384.py')
-    P = ns['PLATE_CLIU2']                                          # corners A1, A24, M1, M24 (10-21)
+    P = ns['PLATE_CLIU2']                                          # corners A1, A24, M1, M24 (10-21, run2)
     wells = [s['well'] for s in P]
     assert len(ns['CLIU_BOX2']) == 81 and len(P) == 86 - 21 and len(set(wells)) == len(P)
     assert not [w for w in wells if w[0] in 'NP']                  # rows N, P: after the push
@@ -644,7 +644,7 @@ def test_tsaxs384_cliu_box2(ns):
             s = ns['select'](P, w)[0]
             assert abs(s['x'] - x) <= 1 and abs(s['sy'] + (s['y'] - 12300) / 1000 - (sy + (y - 12300) / 1000)) < 1e-3
     stops = list(dict.fromkeys((s['sx'], s['sy']) for s in P))
-    assert {a for a, _ in stops} == {-1.5} and len(stops) == 2     # Huber x as measured, 2 Huber y
+    assert {a for a, _ in stops} == {-2} and len(stops) == 2       # Huber x as measured, 2 Huber y
     assert P[0]['plate_row'] == 'L' and P[-1]['plate_row'] == 'B'  # from the top
     ns['check_holder55'](P, ns['CROSS_CLIU'], ns['LIM_CLIU'])
     assert ns['preview'](ns['run_cliu_box2']()) == 65 * 3 * 3
