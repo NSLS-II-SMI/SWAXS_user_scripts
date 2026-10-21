@@ -127,7 +127,7 @@ def make_namespace(log_dir):
     moxa_ch2 = Signal(name='moxa_out_ch2_read', value=0.25)
 
     sim = types.SimpleNamespace(fail_x=set(), exposures=[], align_calls=0, pause_in_align=False,
-                                height_scans=[])
+                                scans=[], th0=0.5, roi_angle=0.16)
 
     def det_exposure_time(exp_t, meas_t=1, period_delay=0.001):
         sim.exposures.append(exp_t)
@@ -163,21 +163,35 @@ def make_namespace(log_dir):
     def set_roi(*args, **kwargs):
         yield from bps.null()
 
+    def set_reflected_roi(total_angle=0.16, technique='gisaxs', **kwargs):
+        sim.roi_angle = total_angle
+        yield from bps.null()
+
+    # sample surface: half cut y = 150 + x/1000 on the direct beam (fails at sim.fail_x), and
+    # 0.5 more on the reflected beam; th0 = sim.th0, the reflection peaks at th0 + ROI angle
     def align_gisaxs_height(rang=0.3, point=31, der=False):
-        """Half cut at y = 150 + x/1000 (fails at sim.fail_x), whatever th is."""
         x = yield from bps.rd(piezo.x)
         th = yield from bps.rd(piezo.th)
-        sim.height_scans.append(('direct', round(th, 4)))
+        sim.scans.append(('y direct', round(th, 4)))
         if round(x, 3) in sim.fail_x:
             yield from bps.mv(piezo.y, 1e4)              # a failed fit can leave y anywhere
             raise RuntimeError('fit failed (sim)')
         yield from bps.mv(piezo.y, 150.0 + x * 1e-3)
 
     def align_gisaxs_height_rb(rang=0.3, point=31, der=False):
+        x = yield from bps.rd(piezo.x)
         th = yield from bps.rd(piezo.th)
-        sim.height_scans.append(('reflected', round(th, 4)))
-        y = yield from bps.rd(piezo.y)
-        yield from bps.mv(piezo.y, y + 1.0)
+        sim.scans.append(('y reflected', round(th, 4)))
+        yield from bps.mv(piezo.y, 150.5 + x * 1e-3)
+
+    def align_gisaxs_th(rang=0.3, point=31):
+        th = yield from bps.rd(piezo.th)
+        sim.scans.append(('th', round(th, 4)))
+        peak = sim.th0 + sim.roi_angle
+        if abs(th - peak) > rang:                        # the reflection is outside the scan
+            yield from bps.mv(piezo.th, th + rang)
+            raise RuntimeError('no peak in the scan (sim)')
+        yield from bps.mv(piezo.th, peak)
 
     RE = RunEngine({})
     RE.md.update(cycle='2026-3', data_session='pass-000000', project_name='sim')
@@ -194,8 +208,9 @@ def make_namespace(log_dir):
         det_exposure_time=det_exposure_time, alignment_gisaxs=alignment_gisaxs,
         alignement_gisaxs_hex=alignement_gisaxs_hex,
         align_gisaxs_height=align_gisaxs_height, align_gisaxs_height_rb=align_gisaxs_height_rb,
+        align_gisaxs_th=align_gisaxs_th,
         smi=types.SimpleNamespace(modeMeasurement=modeMeasurement, modeAlignment=modeAlignment,
-                                  setDirectBeamROI=set_roi, setReflectedBeamROI=set_roi),
+                                  setDirectBeamROI=set_roi, setReflectedBeamROI=set_reflected_roi),
         bec=types.SimpleNamespace(_calc_derivative_and_stats=False),
         _sim=sim, _docs=docs,
     )

@@ -712,24 +712,41 @@ def test_jmayer_flow(ns):
     assert st[0]['user_hints']['sample_info']['electrode'] == 'NiOx'
     with pytest.raises(ValueError, match='add_electrolyte'):
         RE(ns['run_insitu']())
-    th, sim = ns['piezo'].th, ns['_sim']
+    th, y, sim = ns['piezo'].th, ns['piezo'].y, ns['_sim']
     al = ns['align_height'](th=0.52)                              # theta by hand: only y is scanned
     assert (al['NiOx-1_exsitu']['th'], al['NiOx-1_exsitu']['y']) == (0.52, 150.0)
-    assert sim.height_scans == [('direct', 0.52)] and th.position == 0.52
+    assert sim.scans == [('y direct', 0.52)] and th.position == 0.52
     assert ns['pil2M'].active_beamstop.get() == 'rod' and ns['attenuation'].get() == 1
-    ns['align_height'](reflect=0.15)                              # + reflected beam at th + 0.15
-    assert sim.height_scans[1:] == [('direct', 0.52), ('reflected', 0.67)] and th.position == 0.52
-    assert ns['load_alignment']()['NiOx-1_exsitu']['y'] == 151.0
     sim.fail_x.add(0.0)
-    RE(ns['bps'].mv(ns['piezo'].y, 140.0))
+    RE(ns['bps'].mv(y, 140.0))
     ns['align_height']()                                          # fails: y back, alignment kept
-    assert ns['piezo'].y.position == 140.0 and ns['pil2M'].active_beamstop.get() == 'rod'
-    assert ns['load_alignment']()['NiOx-1_exsitu']['y'] == 151.0
+    assert y.position == 140.0 and ns['pil2M'].active_beamstop.get() == 'rod'
+    assert ns['load_alignment']()['NiOx-1_exsitu']['y'] == 150.0
     sim.fail_x.clear()
+
+    sim.scans.clear()                                             # reflected beam only
+    RE(ns['bps'].mv(th, 0.58, y, 145.0))                          # reflection found by hand
+    al = ns['align_cell_ref'](reflect=0.15)
+    assert sim.scans == [('th', 0.58), ('y reflected', 0.65), ('th', 0.65)]   # no direct beam
+    assert sim.roi_angle == 0.15
+    a = al['NiOx-1_exsitu']
+    assert (round(a['th'], 4), a['y'], a['angle']) == (0.5, 150.5, 0.15)      # th0 = th - 0.15
+    assert round(th.position, 4) == 0.5 and ns['attenuation'].get() == 1
+    sim.scans.clear()
+    RE(ns['bps'].mv(th, 0.9, y, 145.0))                           # reflection not in the th scan
+    ns['align_cell_ref']()
+    assert (th.position, y.position) == (0.9, 145.0)              # back where it was set by hand
+    assert ns['pil2M'].active_beamstop.get() == 'rod'
+    assert round(ns['load_alignment']()['NiOx-1_exsitu']['th'], 4) == 0.5
+    sim.scans.clear()
+    ns['align_cell_ref'](th=0.66, th_scan=False)                  # y on the reflection, th as set
+    assert sim.scans == [('y reflected', 0.66)]
+    assert round(ns['load_alignment']()['NiOx-1_exsitu']['th'], 4) == 0.51
+    ns['align_cell_ref'](th=0.6)
     ns['_docs'].clear()
-    RE(ns['run_cell'](angles=(0.1,)))                             # measures at the hand-set th
+    RE(ns['run_cell'](angles=(0.1,)))                             # measures at th0 + 0.1
     pos = data()[0]['user_hints']['positions']
-    assert (round(pos['th'], 4), pos['y']) == (0.62, 151.0)
+    assert (round(pos['th'], 4), pos['y']) == (0.6, 150.5)
 
     ns['add_electrolyte'](electrolyte='KOH')
     al = ns['align_cell']()                                       # in situ: its own alignment
