@@ -167,6 +167,7 @@ def make_namespace(log_dir):
         pil2m_pos=DetPos(name='pil2M_motor'), energy=Energy(name='energy'),
         LThermal=LThermal, attenuation=attenuation, moxa_ch2=moxa_ch2,
         ova_cam=OVACam(name='ova_cam'),
+        huber_y_T=Signal(value=30.0, name='huber_y_T'),     # Huber y motor temperature (degC)
         det_exposure_time=det_exposure_time, alignment_gisaxs=alignment_gisaxs,
         alignement_gisaxs_hex=alignement_gisaxs_hex,
         smi=types.SimpleNamespace(modeMeasurement=modeMeasurement),
