@@ -23,11 +23,16 @@ Run sheet
      new_sample('S1', electrode='...')   # Huber + piezo to CELL; files JMayer_S1_exsitu_...
      snap_swaxs()                        # quick look (see Quick tests)
      align_cell()                        # GI alignment (piezo y/th), saved to json
-       if it fails: align by hand, then mark_aligned(1)
+     or theta by hand (sample on PEEK/rubber): set th so the surface is parallel to the beam
+     (incident angle 0), then
+       align_height()                    # piezo y half cut at that th; saves th + y
+       align_height(th=0.52)             # the same, moving th to 0.52 first
+       align_height(reflect=0.15)        # + y refined on the reflected beam at th + 0.15
+     all by hand: mark_aligned(1) saves the current th and y
      preview(run_cell()); RE(run_cell()) # GI angles 0.10/0.15/0.20 at arc 20
 2) Electrolyte in (in situ, open circuit):
      add_electrolyte(electrolyte='...')  # same sample, files JMayer_S1_insitu_...
-     align_cell()                        # starts from the ex-situ alignment
+     align_cell()                        # starts from the ex-situ alignment (or align_height())
      RE(run_cell())                      # OCV reference, no _E token
 3) Potential (by hand on the potentiostat):
      ec_start('CA -0.5 V')               # when their sequence starts: t = 0
@@ -130,6 +135,63 @@ def align_cell(angle=0.15):
     RE(align_gi(SAMPLES, angle=angle, stage='piezo', result=ALIGNED, holder=_holder(), start=start))
     show_alignment({s['name']: ALIGNED[s['name']]})
     return ALIGNED
+
+
+def align_height(th=None, reflect=None, rang=800, point=21):
+    """
+    Console: height-only GI alignment of the sample in the cell, with theta aligned by hand
+    (th = surface parallel to the beam, incident angle 0; th=None: the piezo th as it is).
+    Scans piezo y +-rang um around its current value on the direct beam and goes to the half
+    cut (the first scan of alignment_gisaxs); reflect=0.15 then refines y on the reflected beam
+    at th + 0.15 deg.  Theta is never scanned.  Saves th and the new y as the alignment of the
+    sample, used by run_cell / run_insitu.  A failed scan puts y back and saves nothing.
+    """
+    global ALIGNED
+    s = _cell()
+    ALIGNED = _saved_alignment()
+    RE(_align_height(s, ALIGNED, th, reflect, rang, point))
+    if s['name'] in ALIGNED:
+        show_alignment({s['name']: ALIGNED[s['name']]})
+    return ALIGNED
+
+
+def _align_height(s, result, th, reflect, rang, point):
+    yield from move_to(s, skip=('y', 'th'))             # x, z of the cell; y and th as set by hand
+    if th is not None:
+        yield from bps.mv(piezo.th, th)
+    th0 = yield from bps.rd(piezo.th)
+    y_start = yield from bps.rd(piezo.y)
+    print(f'\n##### height alignment of {s["name"]} at th = {th0:.4f} (by hand) #####')
+    try:
+        bec._calc_derivative_and_stats = True
+        yield from det_exposure_time(0.3, 0.3)
+        yield from smi.modeAlignment(technique='gisaxs')
+        yield from smi.setDirectBeamROI()
+        yield from align_gisaxs_height(rang, point, der=True)
+        if reflect:
+            yield from bps.mv(piezo.th, th0 + reflect)
+            yield from smi.setReflectedBeamROI(total_angle=reflect, technique='gisaxs')
+            yield from align_gisaxs_height_rb(150, 16)
+            yield from bps.mv(piezo.th, th0)
+        yield from smi.modeMeasurement()
+        bec._calc_derivative_and_stats = False
+    except (RequestAbort, RequestStop):
+        print('height alignment interrupted: restoring the measurement mode')
+        yield from _restore_measurement_mode()
+        yield from bps.mv(piezo.th, th0)
+        raise
+    except Exception as ex:
+        print(f'!!! height alignment FAILED for {s["name"]}: {type(ex).__name__}: {ex}; '
+              f'y back to {y_start:.3f}, saved alignment unchanged')
+        yield from _restore_measurement_mode()
+        yield from bps.mv(piezo.y, y_start, piezo.th, th0)
+        return
+    y0 = yield from bps.rd(piezo.y)
+    result[s['name']] = dict(th=float(th0), y=float(y0), ok=True, stage='piezo', angle=reflect,
+                             time=_iso(), error='', method='height only, th by hand',
+                             holder=_holder())
+    print(f'{s["name"]}: th={th0:.4f} (by hand)  y={y0:.3f} (was {y_start:.3f})')
+    save_alignment(result, _holder())
 
 
 def run_cell(**kw):

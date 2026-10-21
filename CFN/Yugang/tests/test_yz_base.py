@@ -712,6 +712,24 @@ def test_jmayer_flow(ns):
     assert st[0]['user_hints']['sample_info']['electrode'] == 'NiOx'
     with pytest.raises(ValueError, match='add_electrolyte'):
         RE(ns['run_insitu']())
+    th, sim = ns['piezo'].th, ns['_sim']
+    al = ns['align_height'](th=0.52)                              # theta by hand: only y is scanned
+    assert (al['NiOx-1_exsitu']['th'], al['NiOx-1_exsitu']['y']) == (0.52, 150.0)
+    assert sim.height_scans == [('direct', 0.52)] and th.position == 0.52
+    assert ns['pil2M'].active_beamstop.get() == 'rod' and ns['attenuation'].get() == 1
+    ns['align_height'](reflect=0.15)                              # + reflected beam at th + 0.15
+    assert sim.height_scans[1:] == [('direct', 0.52), ('reflected', 0.67)] and th.position == 0.52
+    assert ns['load_alignment']()['NiOx-1_exsitu']['y'] == 151.0
+    sim.fail_x.add(0.0)
+    RE(ns['bps'].mv(ns['piezo'].y, 140.0))
+    ns['align_height']()                                          # fails: y back, alignment kept
+    assert ns['piezo'].y.position == 140.0 and ns['pil2M'].active_beamstop.get() == 'rod'
+    assert ns['load_alignment']()['NiOx-1_exsitu']['y'] == 151.0
+    sim.fail_x.clear()
+    ns['_docs'].clear()
+    RE(ns['run_cell'](angles=(0.1,)))                             # measures at the hand-set th
+    pos = data()[0]['user_hints']['positions']
+    assert (round(pos['th'], 4), pos['y']) == (0.62, 151.0)
 
     ns['add_electrolyte'](electrolyte='KOH')
     al = ns['align_cell']()                                       # in situ: its own alignment
@@ -747,7 +765,7 @@ def test_jmayer_flow(ns):
     st = data()
     assert [s['user_hints']['detectors'] for s in st] == [['pil2M'], ['pil900KW'], ['pil900KW', 'pil2M']]
     assert [s['user_hints']['waxs_arc_deg'] for s in st] == [20, 0, 20]
-    assert st[1]['sample_name'].startswith('JMayer_S2-check_x0.00_y-400.00_z-8400.00_')
+    assert st[1]['sample_name'].startswith(f"JMayer_S2-check_x0.00_y{cell['y']:.2f}_z{cell['z']:.2f}_")
     ns['add_electrolyte']()
     assert ns['preview'](ns['run_insitu'](aligned={'S2_insitu': dict(th=0.3, y=1.0, ok=True)})) == 2
     assert (ns['YZ_SERIES']['t0'], ns['YZ_SERIES']['cycle']) == (None, 0)   # dry run: no clock
