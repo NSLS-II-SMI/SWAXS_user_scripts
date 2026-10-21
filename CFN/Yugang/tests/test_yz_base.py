@@ -513,10 +513,21 @@ def test_tsaxs384_holder55(ns):
 
 def test_tsaxs384_holder55_before(ns):
     load(ns, '2026C3_TSAXS384.py')
-    assert ns['HOLDER55B'] == []                                   # nothing measured yet
+    H, PY0 = ns['HOLDER55B'], ns['PY0']                            # as centered on 10-20: 10, 31, 1, 55
+    assert len(H) == 55 and {s['sx'] for s in H} == {-2.5}         # the Huber x stays where measured
+    assert len({s['sy'] for s in H}) == 2 and H[0]['key'] == 10    # 2 Huber y, from the top
+    for n, (sy, x, y, sx) in ns['MEASURED55B'].items():
+        s = ns['select'](H, n)[0]
+        assert s['x'] == x and abs(s['sy'] + (s['y'] - PY0) / 1000 - (sy + (y - PY0) / 1000)) < 1e-3
+    ns['check_holder55'](H, ns['CROSS55'], ns['LIM55B'])
+    assert ns['preview'](ns['run_holder_55before']()) == 55 * 13 * 3
+
+    ns['MEASURED55B'].clear()
+    ns['HOLDER55B'] = ns['holder55b_samples']()
+    assert ns['HOLDER55B'] == []                                   # nothing measured
     with pytest.raises(ValueError, match='not calibrated'):
         ns['run_holder_55before']()
-    PIX, PY0 = ns['PIX55B'], ns['PY0']
+    PIX = ns['PIX55B']
     c, s_ = np.cos(np.radians(1)), np.sin(np.radians(1))
     stage = lambda px, py: (0.0875 * (c * (px - 600) - s_ * (py - 600)),   # pixel -> (X, V) mm
                             0.0875 * (s_ * (px - 600) + c * (py - 600)))

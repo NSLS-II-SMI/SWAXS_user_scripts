@@ -451,7 +451,8 @@ def _X55(s):
 
 
 def holder55_samples(measured=None, pix=None, blanks=None, state=STATE55, offsets=CROSS55,
-                     lattice_bottom=True, label='holder55', bands=False, start_sy=None):
+                     lattice_bottom=True, label='holder55', bands=False, start_sy=None, sx0=None,
+                     lim=None):
     """
     The 55 spots and the blanks (default MEASURED55, PIX55, BLANKS55: the piece after screening), row
     by row of the array (row = Ag level, bottom row first) in a serpentine: S1 -> S55, S54 -> S2,
@@ -460,9 +461,12 @@ def holder55_samples(measured=None, pix=None, blanks=None, state=STATE55, offset
     the piezo y of every cross (offsets) inside its travel.  Spots whose cross does not fit the piezo
     x travel get the Huber sx shifted by whole mm (one shift for all of them on each side) and the
     piezo x shifted back.  bands=True: as the 384-well plates instead (band_order: the rows from the
-    top in as few Huber sy bands as the piezo y covers, the first nearest start_sy).
+    top in as few Huber sy bands as the piezo y covers, the first nearest start_sy).  sx0: the Huber
+    sx of the piece (default SX55; the blanks are measured there too); lim: travel (default LIM55).
     """
     blanks = BLANKS55 if blanks is None else blanks
+    sx0 = SX55 if sx0 is None else sx0
+    dX = SXDIR55 * (sx0 - SX55) * 1000          # um: piezo x at Huber sx0 = X - dX
     spots = []
     for n, p in holder55_positions(measured, pix, lattice_bottom, label).items():
         k, r = KR55[n - 1]
@@ -471,9 +475,11 @@ def holder55_samples(measured=None, pix=None, blanks=None, state=STATE55, offset
                           target_id=1 + 14 * k + r, pipetmax_col=k, pipetmax_row=r,
                           position=p['source']))
     for name, (sy, x, y, row) in blanks.items():
-        spots.append(dict(key=name, name=clean_name(name), x=float(x), v=sy + (y - PY0) / 1000,
+        spots.append(dict(key=name, name=clean_name(name), x=float(x) + dX, v=sy + (y - PY0) / 1000,
                           array_row=row, role='blank', position='measured'))
-    x_lo, x_hi = _travel('x')
+    for s in spots:
+        s['x'] -= dX                            # piezo x at Huber sx0
+    x_lo, x_hi = _travel('x', lim)
     dx_lo, dx_hi = min(dx for dx, _ in offsets), max(dx for dx, _ in offsets)
     left = lambda X: X + dx_lo < x_lo + MARGIN55
     right = lambda X: X + dx_hi > x_hi - MARGIN55
@@ -484,8 +490,8 @@ def holder55_samples(measured=None, pix=None, blanks=None, state=STATE55, offset
         for s in spots:
             X = s['x']
             d = shift_l if left(X) else -shift_r if right(X) else 0
-            s.update(sx=float(SX55 - SXDIR55 * d), x=round(X + d * 1000))
-        samples = band_order(spots, offsets, lambda s: s['array_row'], _X55, None, start_sy)
+            s.update(sx=float(sx0 - SXDIR55 * d), x=round(X + d * 1000))
+        samples = band_order(spots, offsets, lambda s: s['array_row'], _X55, lim, start_sy)
         check_samples(samples)
         return samples
     samples = []
@@ -496,7 +502,7 @@ def holder55_samples(measured=None, pix=None, blanks=None, state=STATE55, offset
         for s in cells:
             v, X = s.pop('v'), s['x']
             d = shift_l if left(X) else -shift_r if right(X) else 0
-            s.update(sx=float(SX55 - SXDIR55 * d), sy=sy, x=round(X + d * 1000), y=round(PY0 + (v - sy) * 1000))
+            s.update(sx=float(sx0 - SXDIR55 * d), sy=sy, x=round(X + d * 1000), y=round(PY0 + (v - sy) * 1000))
             samples.append(s)
     check_samples(samples)
     return samples
@@ -605,14 +611,14 @@ def _parts55(row):
     return parts
 
 
-def _holder55_summary(label, H, offsets=CROSS55):
+def _holder55_summary(label, H, offsets=CROSS55, sx0=SX55):
     xs = [s['x'] + dx for s in H for dx, _ in offsets]
     ys = [s['y'] + dy for s in H for _, dy in offsets]
     print(f'{label}: {len(H)} spots in {len({s["array_row"] for s in H})} rows, Huber sy per '
           f'row {", ".join(f"{sy:g}" for sy in dict.fromkeys(s["sy"] for s in H))} mm; '
           f'piezo x {min(xs):.0f}..{max(xs):.0f} um, y {min(ys):.0f}..{max(ys):.0f} um (crosses included)')
-    for sx in sorted({s['sx'] for s in H} - {SX55}):
-        print(f'  Huber sx {sx:g} mm (not {SX55:g}) for spots '
+    for sx in sorted({s['sx'] for s in H} - {sx0}):
+        print(f'  Huber sx {sx:g} mm (not {sx0:g}) for spots '
               f'{", ".join(str(s["key"]) for s in H if s["sx"] == sx)} -- SXDIR55 = {SXDIR55} checked?')
 
 
@@ -1025,13 +1031,18 @@ PIX55B = {
 # Huber sx = SX55, or (sy, x, y, sx) at another Huber sx.  >= 3 spots far apart and not in a line
 # (1, 10, 55; a 4th, e.g. 33, shows the fit residual).  Used as they are; all other spots come from
 # the affine fit through them.
-MEASURED55B = {
+MEASURED55B = {                     # 2026-10-20 night, all at Huber sx -2.5
+    10: (-30, 1100, -6914, -2.5), 31: (0, -1100, -7114, -2.5), 1: (0, 41800, 4914, -2.5),
+    55: (0, -48600, 9500, -2.5),
 }
 # EDIT: bare carbon paper of this piece as the blank, measured with the array row given;
 # name: (Huber sy mm, piezo x um, piezo y um, row = 0 bottom (Ag 0) .. 9 top (spot 10))
 BLANKS55B = {
     # 'carbon_paper_as_prepared': (sy, x, y, 4),
 }
+
+SX55B = None                # Huber sx (mm) for the whole piece; None: that of the spots measured
+LIM55B = LIM_CLIU           # travel: the piezo x as reached on the CLiu plate (-57300 .. 47500 um)
 
 TRANS55B = dict(TRANS55, md=dict(TRANS55['md'], holder='UPenn B001 Au-Ag-Cu array (Huber + piezo)',
                                  piece='as prepared (untested)'))
@@ -1048,9 +1059,11 @@ def holder55b_samples():
         print('HOLDER55B (B001 as prepared): not calibrated yet -- center >= 3 spots -> MEASURED55B')
         return []
     top = max(MEASURED55B, key=lambda n: KR55[n - 1][1] - KR55[n - 1][0])
+    sx0 = SX55B if SX55B is not None else float(np.median([m[3] if len(m) > 3 else SX55
+                                                            for m in MEASURED55B.values()]))
     return holder55_samples(MEASURED55B, PIX55B, BLANKS55B, STATE55B, TRANS55B['offsets'],
                             lattice_bottom=False, label='HOLDER55B', bands=True,
-                            start_sy=MEASURED55B[top][0])
+                            start_sy=MEASURED55B[top][0], sx0=sx0, lim=LIM55B)
 
 
 def run_holder_55before(*which, rows=None, ova=True, **kw):
@@ -1068,13 +1081,13 @@ def run_holder_55before(*which, rows=None, ova=True, **kw):
     samples = _select55(HOLDER55B, which, rows)
     opts = dict(TRANS55B, **kw)
     check_arcs(opts['arcs'])
-    check_holder55(samples, opts['offsets'])
+    check_holder55(samples, opts['offsets'], LIM55B)
     return _by_arc(samples, ova, opts, 'run_holder_55before')
 
 
 HOLDER55B = holder55b_samples()
 if HOLDER55B:
-    _holder55_summary('HOLDER55B', HOLDER55B, TRANS55B['offsets'])
+    _holder55_summary('HOLDER55B', HOLDER55B, TRANS55B['offsets'], HOLDER55B[0]['sx'])
 
 
 ###############################################################################################
