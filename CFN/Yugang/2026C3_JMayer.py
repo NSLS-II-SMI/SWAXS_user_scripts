@@ -55,7 +55,7 @@ YZ.update(
 )
 
 # Cell position, 2026-10-21: Huber sx/sy (mm), piezo x/y/z (um); y is the alignment start
-CELL = dict(sx=-2.4, sy=10.0, x=0.0, y=-400.0, z=-8400.0)
+CELL = dict(sx=-2.4, sy=8.0, x=0.0, y=2000.0, z=-6100.0)
 
 GI = dict(
     angles=(0.10, 0.15, 0.20),   # incident angles (deg) above the aligned th
