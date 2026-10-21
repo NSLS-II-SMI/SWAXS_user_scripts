@@ -1034,6 +1034,9 @@ PIX55B = {
 MEASURED55B = {                     # 2026-10-20 night, all at Huber sx -2.5
     10: (-30, 1100, -6914, -2.5), 31: (0, -1100, -7114, -2.5), 1: (0, 41800, 4914, -2.5),
     55: (0, -48600, 9500, -2.5),
+    # checked with mov_sam(n, HOLDER55B), the Huber as set, piezo re-centered ("40 at -8537" read as 41)
+    28: (-1.9, 12619, 7743, -2.5), 41: (-1.9, -8537, 9213, -2.5),
+    40: (-23.17, -20364, 6163, -2.5), 5: (-23.17, 23780, 9200, -2.5),
 }
 # EDIT: bare carbon paper of this piece as the blank, measured with the array row given;
 # name: (Huber sy mm, piezo x um, piezo y um, row = 0 bottom (Ag 0) .. 9 top (spot 10))
