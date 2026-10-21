@@ -127,7 +127,7 @@ def make_namespace(log_dir):
     moxa_ch2 = Signal(name='moxa_out_ch2_read', value=0.25)
 
     sim = types.SimpleNamespace(fail_x=set(), exposures=[], align_calls=0, pause_in_align=False,
-                                scans=[], th0=0.5, roi_angle=0.16)
+                                scans=[], th0=0.5, roi_angle=0.16, modes=[])
 
     def det_exposure_time(exp_t, meas_t=1, period_delay=0.001):
         sim.exposures.append(exp_t)
@@ -155,9 +155,11 @@ def make_namespace(log_dir):
         yield from _fake_align(stage.x, stage.y, stage.th)
 
     def modeMeasurement():
+        sim.modes.append('measurement')
         yield from bps.mv(pil2M.active_beamstop, 'rod', attenuation, 1)
 
     def modeAlignment(technique='gisaxs'):
+        sim.modes.append('alignment')
         yield from bps.mv(attenuation, 1e6, pil2M.active_beamstop, 'rod_removed')
 
     def set_roi(*args, **kwargs):
@@ -184,9 +186,9 @@ def make_namespace(log_dir):
         sim.scans.append(('y reflected', round(th, 4)))
         yield from bps.mv(piezo.y, 150.5 + x * 1e-3)
 
-    def align_gisaxs_th(rang=0.3, point=31):
+    def align_gisaxs_th(rang=0.3, point=31, max_retries=3):
         th = yield from bps.rd(piezo.th)
-        sim.scans.append(('th', round(th, 4)))
+        sim.scans.append(('th', round(th, 4)) if rang <= 0.2 else ('th search', round(th, 4), rang, point))
         peak = sim.th0 + sim.roi_angle
         if abs(th - peak) > rang:                        # the reflection is outside the scan
             yield from bps.mv(piezo.th, th + rang)

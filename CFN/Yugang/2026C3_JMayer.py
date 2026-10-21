@@ -19,18 +19,20 @@ Run sheet
      %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/YZhang_SMI_Base.py
      %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C3_JMayer.py
      preflight()
+   after closing the hutch: RE(shopen()); before opening it: RE(shclose())
 1) Sample in the dry cell (ex situ):
      new_sample('S1', electrode='...')   # Huber + piezo to CELL; files JMayer_S1_exsitu_...
      snap_swaxs()                        # quick look (see Quick tests)
-     align_cell()                        # automatic GI alignment (piezo y/th), saved to json
-     sample on PEEK/rubber -- reflected beam only: move py and pth by hand until the reflected
-     beam is on the 2M at about 0.15 deg incidence, then
-       align_cell_ref(reflect=0.15)      # th scan, y scan, fine th scan on the reflection;
-                                         # saves th0 = th - 0.15 and y
-       align_cell_ref(th_scan=False)     # y scan on the reflection only, th as set
-     theta by hand at incident angle 0, height on the direct beam: align_height()
+     sample on PEEK/rubber (2026-10-21): py roughly at the half cut (microscope), th within
+     ~1 deg of the reflection, then all in one alignment mode, saved:
+       do_align_using_ref_beam(ref=0.15, th_range=1, point=51)
+         = direct-beam half cut (y), reflected-beam ROI for 0.15 deg, th scan +-1 deg (51 pts)
+           to the reflection, th / y / fine th on the reflection, th0 = th - 0.15, measurement
+           mode, figures closed;  height=False skips the direct-beam half cut
+     reflection already centred by hand: align_cell_ref(reflect=0.15)  (th / y / fine th only)
+     automatic (flat, rigid sample): align_cell();  direct-beam height only: align_height()
      all by hand: mark_aligned(1) saves the current th (incident angle 0) and y
-     preview(run_cell()); RE(run_cell()) # GI angles 0.10/0.15/0.20 at arc 20
+     preview(run_cell()); RE(run_cell()) # all GI angles at arc 20
 2) Electrolyte in (in situ, open circuit):
      add_electrolyte(electrolyte='...')  # same sample, files JMayer_S1_insitu_...
      align_cell()                        # starts from the ex-situ alignment (or align_cell_ref())
@@ -61,10 +63,10 @@ YZ.update(
 )
 
 # Cell position, 2026-10-21: Huber sx/sy (mm), piezo x/y/z (um); y is the alignment start
-CELL = dict(sx=-2.4, sy=8.0, x=0.0, y=2000.0, z=-6100.0)
+CELL = dict(sx=-2.4, sy=8.0, x=0.0, y=2068.0, z=-6100.0)
 
 GI = dict(
-    angles=(0.10, 0.15, 0.20),   # incident angles (deg) above the aligned th
+    angles=( 0.08, 0.10, 0.12, 0.15, 0.18,  0.20, 0.3, 0.5 ),   # incident angles (deg) above the aligned th
     arcs=(20,),                  # 2M (GISAXS) + 900KW (GIWAXS) in one exposure
     t=1,
     x_offsets=(0,),              # extra piezo x spots (um)
@@ -138,6 +140,35 @@ def align_cell(angle=0.15):
     return ALIGNED
 
 
+def do_align_using_ref_beam(ref=0.15, th_range=1, point=51, height=True, th=None,
+                            close_plots=True):
+    """
+    Console: GI alignment of the sample in the cell on the reflected beam, all in one alignment
+    mode (the manual procedure of 2026-10-21).  Start with py roughly at the half cut (optical
+    microscope) and th within ~th_range of the reflection; th=0.6 moves th there first.
+      height=True: piezo y half cut on the direct beam at that th (as align_height)
+      reflected-beam ROI for incident angle `ref`; th scan +-th_range deg, `point` points, to
+      the reflection (one more scan centred on the edge if the peak is at it)
+      th +-0.2, y +-150 um, fine th +-0.1 on the reflection (as align_cell_ref)
+    Saves th0 = th - ref and y (used by run_cell / run_insitu), measurement mode, closes the
+    figures.  A failed scan puts y and th back and saves nothing.
+    """
+    def scans(th_start):
+        if height:
+            yield from smi.setDirectBeamROI()
+            yield from align_gisaxs_height(800, 21, der=True)
+        yield from smi.setReflectedBeamROI(total_angle=ref, technique='gisaxs')
+        yield from align_gisaxs_th(th_range, point, max_retries=1)
+        return (yield from _ref_beam_scans(ref))
+
+    out = _align_by(scans, th, f'reflected beam at {ref} deg, th search +-{th_range} deg', ref)
+    import sys
+    plt = sys.modules.get('matplotlib.pyplot')                  # not loaded: no figures to close
+    if close_plots and plt:
+        plt.close('all')
+    return out
+
+
 def align_cell_ref(reflect=0.15, th=None, th_scan=True):
     """
     Console: GI alignment of the sample in the cell on the REFLECTED beam only (no direct-beam
@@ -150,15 +181,20 @@ def align_cell_ref(reflect=0.15, th=None, th_scan=True):
     """
     def scans(th_start):
         yield from smi.setReflectedBeamROI(total_angle=reflect, technique='gisaxs')
-        if th_scan:
-            yield from align_gisaxs_th(0.2, 21)
-        yield from align_gisaxs_height_rb(150, 16)
-        if th_scan:
-            yield from align_gisaxs_th(0.1, 31)
-        th_ref = yield from bps.rd(piezo.th)
-        return th_ref - reflect
+        return (yield from _ref_beam_scans(reflect, th_scan))
 
     return _align_by(scans, th, f'reflected beam at {reflect} deg', reflect)
+
+
+def _ref_beam_scans(ref, th_scan=True):
+    """Plan: th, y and fine th on the reflected beam (ROI already set) -> th0 = th - ref."""
+    if th_scan:
+        yield from align_gisaxs_th(0.2, 31)
+    yield from align_gisaxs_height_rb(150, 16)
+    if th_scan:
+        yield from align_gisaxs_th(0.1, 31)
+    th_ref = yield from bps.rd(piezo.th)
+    return th_ref - ref
 
 
 def align_height(th=None, rang=800, point=21):

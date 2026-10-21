@@ -705,9 +705,9 @@ def test_jmayer_flow(ns):
     ns['align_cell']()
     RE(ns['run_cell']())                                          # ex situ: 3 angles at arc 20
     st = data()
-    assert [s['user_hints']['incident_angle_deg'] for s in st] == [0.10, 0.15, 0.20]
+    assert [s['user_hints']['incident_angle_deg'] for s in st] == list(ns['GI']['angles'])
     assert all(s['user_hints']['detectors'] == ['pil900KW', 'pil2M'] for s in st)
-    assert st[0]['sample_name'].startswith('JMayer_NiOx-1_exsitu_0.1000deg_x0.00_')
+    assert st[0]['sample_name'].startswith(f"JMayer_NiOx-1_exsitu_{ns['GI']['angles'][0]:.4f}deg_x0.00_")
     assert all('_E' not in s['sample_name'] for s in st)
     assert st[0]['user_hints']['sample_info']['electrode'] == 'NiOx'
     with pytest.raises(ValueError, match='add_electrolyte'):
@@ -742,6 +742,19 @@ def test_jmayer_flow(ns):
     ns['align_cell_ref'](th=0.66, th_scan=False)                  # y on the reflection, th as set
     assert sim.scans == [('y reflected', 0.66)]
     assert round(ns['load_alignment']()['NiOx-1_exsitu']['th'], 4) == 0.51
+    sim.scans.clear(), sim.modes.clear()                          # the manual procedure in one call
+    RE(ns['bps'].mv(th, 0.0, y, 145.0))                           # th 0.65 from the reflection
+    al = ns['do_align_using_ref_beam'](ref=0.15, th_range=1, point=51)
+    assert sim.scans == [('y direct', 0.0), ('th search', 0.0, 1, 51), ('th', 0.65),
+                         ('y reflected', 0.65), ('th', 0.65)]
+    assert sim.modes == ['alignment', 'measurement']              # one alignment mode, not two
+    a = al['NiOx-1_exsitu']
+    assert (round(a['th'], 4), a['y'], round(th.position, 4)) == (0.5, 150.5, 0.5)
+    sim.scans.clear(), sim.modes.clear()
+    RE(ns['bps'].mv(th, 2.0, y, 145.0))                           # reflection outside +-1 deg
+    ns['do_align_using_ref_beam'](height=False)
+    assert sim.scans == [('th search', 2.0, 1, 51)] and (th.position, y.position) == (2.0, 145.0)
+    assert sim.modes == ['alignment', 'measurement'] and ns['attenuation'].get() == 1
     ns['align_cell_ref'](th=0.6)
     ns['_docs'].clear()
     RE(ns['run_cell'](angles=(0.1,)))                             # measures at th0 + 0.1
