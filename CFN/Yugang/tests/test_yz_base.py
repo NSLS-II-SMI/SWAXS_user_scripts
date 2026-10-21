@@ -658,11 +658,12 @@ def test_tsaxs384_cliu_box2(ns):
 
 def test_tsaxs384_wliu_box3(ns):
     load(ns, '2026C3_TSAXS384.py')
-    assert ns['PLATE_WLIU'] == []
-    with pytest.raises(ValueError, match='not calibrated'):
-        ns['run_wliu_box3']()
-    ns['CAL_WLIU'].update(ns['CAL_CLIU'])
-    P = ns['PLATE_WLIU'] = ns['wliu_box3_samples']()
+    P = ns['PLATE_WLIU']                                           # corners C7, C17, H7, H17 (10-21)
+    for w, (sx, sy, x, y) in ns['CAL_WLIU'].items():               # the corners stay where measured
+        s = ns['select'](P, w)[0]
+        assert abs(s['x'] - x) <= 1 and abs(s['sy'] + (s['y'] - 12300) / 1000 - (sy + (y - 12300) / 1000)) < 1e-3
+    assert {s['sx'] for s in P} == {-2} and P[0]['plate_row'] == 'H'
+    ns['check_holder55'](P, ns['CROSS_CLIU'], ns['LIM_CLIU'])
     name = {s['well']: s['name'] for s in P}
     assert len(P) == 50 + 6 and len(set(name.values())) == 56
     assert (name['H8'], name['H17'], name['G8'], name['E17'], name['C17']) == \

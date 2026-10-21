@@ -1273,8 +1273,9 @@ WLIU_FIRST = {'H': 6, 'G': 16, 'F': 26, 'E': 36, 'C': 46}      # row: its sample
 WLIU_BOX3 = {f'{r}{8 + i}': f'S{n + i}' for r, n in WLIU_FIRST.items() for i in range(10)}
 WLIU_REFS = {'H7': 'SiO2', 'G7': 'Water', 'F7': 'SiO2', 'E7': 'Water', 'D11': 'SiO2', 'C7': 'SiO2'}
 # EDIT: four corners centered by hand, here('sx', 'sy', 'x', 'y'): e.g. A1, A24, P1, P24
-CAL_WLIU = {
-    # 'A1': (sx, sy, x, y), 'A24': (sx, sy, x, y), 'P1': (sx, sy, x, y), 'P24': (sx, sy, x, y),
+CAL_WLIU = {                        # 2026-10-21, the corners of the wells used (C7 .. H17)
+    'C7': (-2, 10.8, -28062, 2900), 'C17': (-2, 10.8, 16637, 2100),
+    'H7': (-2, -4, -28862, -4500), 'H17': (-2, -4, 16437, -5500),
 }
 SX_WLIU = None              # Huber sx (mm); None: from CAL_WLIU, in whole mm (printed)
 
