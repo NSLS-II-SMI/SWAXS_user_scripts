@@ -77,22 +77,23 @@ skipped (CLIU_SKIP), 87 Cu(OH)2 is in M18; blanks: the empty wells A1 and P24 (C
 The Huber y motor overheats: huber_y_mv moves it in <= 5 mm steps and, above 48 C (XF:12ID:m65.VAL),
 waits until it is below 45 C.  Row N is the top in reach, so row P comes after pushing the plate down.
 C1) Corners A1, A24, N1, N24 centered by hand -> CAL_CLIU (done 10-20); re-running this file prints the
-    fitted pitch (4.5 mm) and the plan.  The whole plate at Huber sx = SX_CLIU (-3): the piezo x runs
-    from -56000 (A1 - 500) to 48300 (A24 + 500) -- check both ends, and a well far from the corners:
-      mov_sam('A24', PLATE_CLIU); movx(500); movx(-500)
-      mov_sam('A1', PLATE_CLIU); movx(-500); movx(500)
+    fitted pitch (4.5 mm) and the plan.  The whole plate at Huber sx = SX_CLIU (-2.5; -3 hit the piezo
+    x limit on column 24): the piezo x runs from -56000 (A1) to 47300 (A24) -- check both ends, and a
+    well far from the corners:
+      mov_sam('A24', PLATE_CLIU)
+      mov_sam('A1', PLATE_CLIU)
       mov_sam('G12', PLATE_CLIU); RE(ova_snap('test'))
     A failed end: change SX_CLIU (-0.5 mm moves both ends +500 um) and LIM_CLIU, re-run this file.
-C2) Rows M .. A (74 wells): one WAXS arc at a time over all wells, 5 spots per well (CROSS_CLIU: x
-    -500, 0, 500, then y -500, 500), SAXS at 40, one camera image per well.  The Huber x moves once (to
+C2) Rows M .. A (74 wells): one WAXS arc at a time over all wells, 3 spots per well (CROSS_CLIU: the
+    centre, then y -500, 500), SAXS at 40, one camera image per well.  The Huber x moves once (to
     SX_CLIU), the Huber y holds 3 heights (rows M-K-I, G-E-C, A; the piezo y takes the rows within),
     visited from the top down and in reverse at the next arc:
-      preview(run_cliu_box1())                 # 74 x 5 x 3 = 1110 exposures
+      preview(run_cliu_box1())                 # 74 x 3 x 3 = 666 exposures
       RE(run_cliu_box1())
       RE(run_cliu_box1('M18', 'A1'))           # a few wells;  rows='KM': some rows
       RE(run_cliu_box1(arcs=(20, 40)))         # e.g. after an error during the arc-20 pass
 C3) Row P: push the plate down, center P1 and P24 -> CAL_CLIU_P, re-run this file:
-      preview(run_cliu_box1_P())               # 9 x 5 x 3 = 135 exposures, the Huber y stays put
+      preview(run_cliu_box1_P())               # 9 x 3 x 3 = 81 exposures, the Huber y stays put
       RE(run_cliu_box1_P())
 """
 
@@ -615,10 +616,10 @@ CAL_CLIU_P = {
     # 'P1': (sx, sy, x, y), 'P24': (sx, sy, x, y),
 }
 
-SX_CLIU = -3.0                      # Huber sx (mm) for the whole plate: columns 1 .. 24 on the piezo x
-LIM_CLIU = dict(LIM55, x=(-57300, 48500))   # piezo x for the plate (um): -57303 reached (N1); at sx -3
-                                            # column 24 needs up to 48300 (A24 + 500) -- check, C1
-CROSS_CLIU = ((-500, 0), (0, 0), (500, 0), (0, -500), (0, 500))   # 5 spots per well (piezo x, y um)
+SX_CLIU = -2.5                      # Huber sx (mm) for the whole plate: columns 1 .. 24 on the piezo x
+LIM_CLIU = dict(LIM55, x=(-57300, 47500))   # piezo x for the plate (um): -57303 reached (N1); at sx -3
+                                            # column 24 hit the limit; at sx -2.5 it needs up to 47300 (A24)
+CROSS_CLIU = ((0, 0), (0, -500), (0, 500))  # 3 spots per well (piezo x, y um): centre, then y -500, 500
 
 TRANS_CLIU = dict(
     t=1,                    # exposure (s)
@@ -859,7 +860,7 @@ def run_cliu_box1(*which, rows=None, ova=True, **kw):
     """
     Plan: transmission SAXS/WAXS of the ORNL powders in Box 1 (PLATE_CLIU: rows A .. M, or the given
     wells / names, or rows, e.g. rows='KM'): one WAXS arc at a time over all wells (TRANS_CLIU arcs,
-    SAXS with the highest), 5 spots per well (CROSS_CLIU), one on-axis camera image per well
+    SAXS with the highest), 3 spots per well (CROSS_CLIU), one on-axis camera image per well
     on the first arc; Huber positions in the order of PLATE_CLIU (from the top row), reversed at the
     next arc.  kw override TRANS_CLIU.
     """

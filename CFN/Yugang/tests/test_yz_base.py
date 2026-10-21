@@ -524,27 +524,27 @@ def test_tsaxs384_cliu_plate(ns):
     assert abs(ns['_X55'](a1) - (x + sx * 1000)) < 1 and abs(a1['sy'] + (a1['y'] - 12300) / 1000 - sy) < 1e-3
     x_lo, x_hi = ns['LIM_CLIU']['x']
     y_lo, y_hi = ns['LIM_CLIU']['y']
-    assert ns['CROSS_CLIU'] == ((-500, 0), (0, 0), (500, 0), (0, -500), (0, 500))
-    assert all(x_lo <= s['x'] - 500 and s['x'] + 500 <= x_hi for s in P)
+    assert ns['CROSS_CLIU'] == ((0, 0), (0, -500), (0, 500))           # centre, then y -500, 500
+    assert all(x_lo <= s['x'] <= x_hi for s in P)
     assert all(y_lo <= s['y'] - 500 and s['y'] + 500 <= y_hi for s in P)
     stops = list(dict.fromkeys((s['sx'], s['sy']) for s in P))
-    assert len(stops) == 3 and {a for a, _ in stops} == {-3.0}      # 3 Huber y bands, one Huber x
-    assert ns['select'](P, 'A1')[0]['x'] - 500 >= x_lo and ns['select'](P, 'A24')[0]['x'] + 500 <= x_hi
+    assert len(stops) == 3 and {a for a, _ in stops} == {-2.5}      # 3 Huber y bands, one Huber x
+    assert ns['select'](P, 'A1')[0]['x'] == -56000 and ns['select'](P, 'A24')[0]['x'] == 47300
     assert P[0]['plate_row'] == 'M' and P[-1]['plate_row'] == 'A'  # from the top (N) down
     assert all(ns['LIM55']['sy'][0] <= b <= ns['LIM55']['sy'][1] for _, b in stops)
-    assert ns['preview'](ns['run_cliu_box1']()) == 74 * 5 * 3
+    assert ns['preview'](ns['run_cliu_box1']()) == 74 * 3 * 3
 
     msgs = []
     ns['RE'].msg_hook = msgs.append
     ns['RE'](ns['run_cliu_box1']('M2', 'K14', 'C2', 'A24'))       # one well at 4 Huber positions
     data = starts(ns)
     arcs = [d['user_hints']['waxs_arc_deg'] for d in data]
-    assert arcs == sorted(arcs) and len(data) == 4 * 5 * 3         # one arc at a time over all wells
+    assert arcs == sorted(arcs) and len(data) == 4 * 3 * 3         # one arc at a time over all wells
     keys = [d['user_hints']['sample_info']['key'] for d in data]
-    assert list(dict.fromkeys(keys[:20])) == ['M2', 'K14', 'C2', 'A24']
-    assert list(dict.fromkeys(keys[20:40])) == ['A24', 'C2', 'K14', 'M2']   # next arc: reversed
+    assert list(dict.fromkeys(keys[:12])) == ['M2', 'K14', 'C2', 'A24']
+    assert list(dict.fromkeys(keys[12:24])) == ['A24', 'C2', 'K14', 'M2']   # next arc: reversed
     huber_x = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].x]
-    assert huber_x == [-3.0]                                       # the Huber x moves once
+    assert huber_x == [-2.5]                                       # the Huber x moves once
     assert len(ns['ova_cam'].written) == 4                         # camera on the first arc only
     assert_saxs_at_top_arc(data, (0, 20, 40))
     huber_y = [m.args[0] for m in msgs if m.command == 'set' and m.obj is ns['stage'].y]
@@ -558,10 +558,10 @@ def test_tsaxs384_cliu_plate(ns):
     ns['CAL_CLIU_P'].update({'P1': (-2, -20, -57000, 0), 'P24': (-2, -20, 46000, -1400)})
     PP = ns['PLATE_CLIU_P'] = ns['cliu_box1_p_samples']()
     assert [s['well'] for s in PP] == ['P1', 'P3', 'P8', 'P10', 'P12', 'P14', 'P16', 'P20', 'P24']
-    assert {s['sy'] for s in PP} == {-20} and {s['sx'] for s in PP} == {-3.0}   # Huber y stays put
+    assert {s['sy'] for s in PP} == {-20} and {s['sx'] for s in PP} == {-2.5}   # Huber y stays put
     assert PP[0]['name'].startswith('CL_')
-    assert all(x_lo <= s['x'] - 500 and s['x'] + 500 <= x_hi for s in PP)
-    assert ns['preview'](ns['run_cliu_box1_P']()) == 9 * 5 * 3
+    assert all(x_lo <= s['x'] <= x_hi for s in PP)
+    assert ns['preview'](ns['run_cliu_box1_P']()) == 9 * 3 * 3
 
 
 def test_huber_y_waits_while_hot(ns):
