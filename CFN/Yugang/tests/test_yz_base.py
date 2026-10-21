@@ -647,14 +647,10 @@ def test_tsaxs384_cliu_box2(ns):
     assert P[0]['plate_row'] == 'L' and P[-1]['plate_row'] == 'B'  # from the top
     ns['check_holder55'](P, ns['CROSS_CLIU'], ns['LIM_CLIU'])
     assert ns['preview'](ns['run_cliu_box2']()) == 65 * 3 * 3
-    assert ns['PLATE_CLIU2_PUSHED'] == []
-    with pytest.raises(ValueError, match='not calibrated'):
-        ns['run_cliu_box2_pushed']()
-
-    ns['CAL_CLIU2_PUSHED'].update({'N1': (-1.5, -25, -56900, 0), 'N24': (-1.5, -25, 46400, -800),
-                                   'P1': (-1.5, -25, -56950, -9000), 'P24': (-1.5, -25, 46350, -9800)})
-    PP = ns['PLATE_CLIU2_PUSHED'] = ns['cliu_box2_pushed_samples']()
+    PP = ns['PLATE_CLIU2_PUSHED']                                  # rows N, P after the push (10-21)
     assert sorted(s['well'] for s in PP) == sorted([f'{r}{c}' for r in 'NP' for c in range(2, 21, 2)] + ['P24'])
+    assert {(s['sx'], s['sy']) for s in PP} == {(-2, -30)}         # one Huber position
+    assert ns['select'](PP, 'P24')[0]['x'] == 48200                # the blank, where centered
     ns['check_holder55'](PP, ns['CROSS_CLIU'], ns['LIM_CLIU'])
     assert ns['preview'](ns['run_cliu_box2_pushed']()) == 21 * 3 * 3
 

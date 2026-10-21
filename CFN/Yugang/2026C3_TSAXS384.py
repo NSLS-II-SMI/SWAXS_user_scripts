@@ -700,8 +700,8 @@ CAL_CLIU_P = {                      # 2026-10-20 night, after pushing the plate 
 }
 
 SX_CLIU = -2.5                      # Huber sx (mm) for the whole plate: columns 1 .. 24 on the piezo x
-LIM_CLIU = dict(LIM55, x=(-57300, 47500))   # piezo x for the plate (um): -57303 reached (N1); at sx -3
-                                            # column 24 hit the limit; at sx -2.5 it needs up to 47300 (A24)
+LIM_CLIU = dict(LIM55, x=(-57300, 48500))   # piezo x for the plates (um): -57303 reached (Box 1 N1), 48400
+                                            # (Box 2 N24, 10-21); at sx -3 Box 1 column 24 hit the limit
 CROSS_CLIU = ((0, 0), (0, -500), (0, 500))  # 3 spots per well (piezo x, y um): centre, then y -500, 500
 
 TRANS_CLIU = dict(
@@ -1162,7 +1162,9 @@ CAL_CLIU2 = {                       # 2026-10-21, corners (rows N, P after pushi
 CLIU2_LATER = 'NP'                  # rows measured after pushing the box down (CAL_CLIU2_PUSHED)
 # EDIT after pushing the box down: wells of rows N, P centered by hand, here('sx', 'sy', 'x', 'y'),
 # best N1, N24, P1, P24 (2 wells of one row: that row only).  Also takes any well out of reach above.
-CAL_CLIU2_PUSHED = {
+CAL_CLIU2_PUSHED = {                # 2026-10-21, after pushing the box down
+    'N1': (-2, -30, -55208, 4465), 'N24': (-2, -30, 48400, 3065),
+    'P1': (-2, -30, -55208, -4735), 'P24': (-2, -30, 48200, -5935),
 }
 SX_CLIU2 = None             # Huber sx (mm) for the whole plate; None: from CAL_CLIU2, in whole mm (printed)
 
