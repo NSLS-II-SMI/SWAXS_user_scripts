@@ -696,17 +696,63 @@ def test_huber_y_waits_while_hot(ns):
 
 def test_jmayer_flow(ns):
     load(ns, '2026C3_JMayer.py')
-    ns['align_gi_samples'](stage=ns['STAGE'])
-    ns['EC']['schedule'] = [(0, None), (0.05, -0.2)]
+    RE, data = ns['RE'], lambda: [s for s in starts(ns) if 'user_hints' in s]
+    with pytest.raises(ValueError, match='new_sample'):
+        RE(ns['run_cell']())
+    ns['new_sample']('NiOx 1', electrode='NiOx')                  # dry cell, moves to CELL
+    cell = ns['CELL']
+    assert [ns['AXES'][a].position for a in cell] == list(cell.values())
+    ns['align_cell']()
+    RE(ns['run_cell']())                                          # ex situ: 3 angles at arc 20
+    st = data()
+    assert [s['user_hints']['incident_angle_deg'] for s in st] == [0.10, 0.15, 0.20]
+    assert all(s['user_hints']['detectors'] == ['pil900KW', 'pil2M'] for s in st)
+    assert st[0]['sample_name'].startswith('JMayer_NiOx-1_exsitu_0.1000deg_x0.00_')
+    assert all('_E' not in s['sample_name'] for s in st)
+    assert st[0]['user_hints']['sample_info']['electrode'] == 'NiOx'
+    with pytest.raises(ValueError, match='add_electrolyte'):
+        RE(ns['run_insitu']())
+
+    ns['add_electrolyte'](electrolyte='KOH')
+    al = ns['align_cell']()                                       # in situ: its own alignment
+    assert {'NiOx-1_exsitu', 'NiOx-1_insitu'} <= set(al)
+    ns['_docs'].clear()
+    RE(ns['run_cell'](angles=(0.15,)))                            # OCV: no _E
+    assert data()[0]['sample_name'].startswith('JMayer_NiOx-1_insitu_0.1500deg_x')
+    assert '_E' not in data()[0]['sample_name']
     ns['ec_start']('sim')
-    series = dict(ns['SERIES'], interval=0, max_cycles=3, duration=60)
-    ns['RE'](ns['run_ec'](**series))
-    names = [s['sample_name'] for s in starts(ns) if 'user_hints' in s]
-    assert len(names) == 3 + 1                                       # + one SWAXS frame (cycle 0)
-    assert names[0].startswith('JMayer_Cell1_0.1500deg_0000_')
-    assert '_E' not in names[0] and '_E-0.200V_' in names[-1]
-    ns['RE'](ns['run_ec'](**dict(ns['SERIES_TRANS'], interval=0, max_cycles=1, duration=60)))
-    assert 'deg' not in starts(ns)[-1]['sample_name']
+    ns['ec_set_potential'](-0.5)
+    assert ns['preview'](ns['run_insitu']()) == 2                 # 2 cycles, counter untouched
+    ns['_docs'].clear()
+    RE(ns['run_insitu'](interval=0, max_cycles=3))
+    st = data()
+    assert [s['user_hints']['frame_index'] for s in st] == [0, 1, 2]
+    assert [s['user_hints']['positions']['x'] for s in st] == [-200, 0, 200]
+    assert all(s['user_hints']['detectors'] == ['pil900KW', 'pil2M'] for s in st)
+    assert all(re.search(r'_insitu_0\.1500deg_000\d_\d+\.\ds_x.*_E-0\.500V_expt1s$', s['sample_name'])
+               for s in st)
+    ns['_docs'].clear()
+    RE(ns['run_cell'](angles=(0.15,)))                            # all angles at the potential
+    assert '_E-0.500V_' in data()[0]['sample_name']
+
+    RE(ns['bps'].mv(ns['stage'].y, 0.0))                          # Huber off the cell: refuse
+    with pytest.raises(RuntimeError, match='goto_cell'):
+        RE(ns['run_insitu'](max_cycles=1))
+    ns['_docs'].clear()
+    ns['new_sample']('S2')                                        # resets clock and potential
+    assert ns['YZ_SERIES']['t0'] is None and ns['EC']['potential'] is None
+    ns['snap_saxs']()
+    ns['snap_waxs']('S2 check', arc=0)
+    ns['snap_swaxs'](t=2, arc=20)
+    st = data()
+    assert [s['user_hints']['detectors'] for s in st] == [['pil2M'], ['pil900KW'], ['pil900KW', 'pil2M']]
+    assert [s['user_hints']['waxs_arc_deg'] for s in st] == [20, 0, 20]
+    assert st[1]['sample_name'].startswith('JMayer_S2-check_x0.00_y-400.00_z-8400.00_')
+    ns['add_electrolyte']()
+    assert ns['preview'](ns['run_insitu'](aligned={'S2_insitu': dict(th=0.3, y=1.0, ok=True)})) == 2
+    assert (ns['YZ_SERIES']['t0'], ns['YZ_SERIES']['cycle']) == (None, 0)   # dry run: no clock
+    load(ns, '2026C3_JMayer.py')                                  # re-running keeps the sample
+    assert ns['SAMPLES'][0]['name'] == 'S2_insitu'
 
 
 def test_preview_is_a_dry_run(ns, tmp_path):
@@ -719,8 +765,9 @@ def test_preview_is_a_dry_run(ns, tmp_path):
     assert ns['_sim'].align_calls == 0
     assert not list(tmp_path.glob('logbook_*')) and not list(tmp_path.glob('alignment_*'))
     load(ns, '2026C3_JMayer.py')
+    ns['new_sample']('Cell1', move=False)
     ns['ec_start']()
-    assert ns['preview'](ns['run_ec'](aligned={'Cell1': dict(th=0.3, y=1.0, ok=True)},
-                                      **ns['SERIES'])) == 2 + 1    # 2 cycles + SWAXS frame
+    assert ns['preview'](ns['run_ec'](aligned={'Cell1_exsitu': dict(th=0.3, y=1.0, ok=True)},
+                                      **ns['SERIES'])) == 2        # 2 cycles
     with pytest.raises(ValueError, match='not allowed'):
         ns['preview'](ns['run_trans'](arcs=(0, 10)))

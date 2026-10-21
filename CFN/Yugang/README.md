@@ -10,7 +10,7 @@ holds that experiment's sample table, settings and run sheet. Old beamtime scrip
 | `2026C3_HZheng.py` | Mon 10-19 AM: H. Zheng, GISAXS + GIWAXS, RT, Al bar, air, piezo; then transmission SAXS/WAXS of the films (`run_trans_samples`) |
 | `2026C3_PGuo.py` | Mon 10-19 PM: P. Guo, vacuum, piezo: GIWAXS + GISAXS at RT on the Al bar without the Linkam (`LINKAM = False`, `run_gi_rt`), GIWAXS vs T on the Linkam + LN2, one sample (`LINKAM = True`; T set by hand: `run_gi_at_T`) |
 | `2026C3_TSAXS384.py` | Tue 10-20: RT TSAXS/TWAXS, 384-cell holder, 3–4 bars, Huber + piezo; UPenn B001 Au–Ag–Cu array after screening, 55 spots × 13-point cross + on-axis images (`run_holder_55after`); ORNL C. Liu powders, Box 1 384-well plate mapped from 4 corner wells (`run_cliu_box1`, one arc at a time, Huber y temperature guard; row P after pushing the plate down: `run_cliu_box1_P`); the as-prepared B001 piece, mapped from its photo through ≥ 3 centred spots (`run_holder_55before`); ORNL Box 2 suspensions + AgBH and two DNA superlattices (`run_cliu_box2`); W. Liu Au NP solutions, Box 3 (`run_wliu_box3`) — all plates and the as-prepared piece ordered for few Huber moves, one arc at a time |
-| `2026C3_JMayer.py` | Wed 10-21: J. Mayer (Yale), in-situ electrochemistry, GIWAXS or transmission |
+| `2026C3_JMayer.py` | Wed 10-21: J. Mayer (Yale), EC cell, one sample at a time: ex situ, then in-situ GISAXS + GIWAXS at arc 20 (`run_cell`, `run_insitu`); quick tests `snap_saxs/waxs/swaxs` |
 | `tests/` | Offline simulation tests (no beamline needed) |
 | `archive/` | 2024 – 2026C1 scripts and the old base |
 
@@ -109,7 +109,7 @@ accept:
 HZheng_S1_0.1500deg_x45000.00_y12.34_z0.00_expt1s_16100.00eV_wa20.0_sdd5000.0mm_id...
 PGuo_S2_0.1000deg_x3000.00_y5.10_z0.00_T-150.0C_expt1s_...
 CFN_Water_B2-A02_x-47250.00_y-6750.00_z0.00_expt1s_...
-JMayer_Cell1_0.1500deg_0012_360.0s_x200.00_y0.00_z0.00_E-0.500V_expt2s_...
+JMayer_S1_insitu_0.1500deg_0012_360.0s_x200.00_y-400.00_z-8400.00_E-0.500V_expt1s_...
 ```
 
 - **Groups.** SAXS groups on the text before `_x`, and GI on the text before `_<ai>deg`.
@@ -117,7 +117,7 @@ JMayer_Cell1_0.1500deg_0012_360.0s_x200.00_y0.00_z0.00_E-0.500V_expt2s_...
 - **Positions.** `x`/`y`/`z` are the piezo positions in µm (`YZ['name_xyz']`). Huber
   positions are in the metadata and the baseline. When the Huber does the spot moves (GI on
   `stage='huber'`), set `YZ['name_xyz'] = ('sx', 'sy', 'sz')` (mm) so that spots get
-  different names; `2026C3_JMayer.py` does this when `STAGE = 'huber'`.
+  different names.
 - **Sample names.** `clean_name` keeps sample names to `[A-Za-z0-9-]`, with `_` between
   fields. It rewrites anything a parser would misread: `PS_xylene` → `PS-xylene`,
   `film_th5nm` → `film-th5nm`, `1.5mM` → `1p5mM`, `S1+2` → `S1-2`. Names containing
