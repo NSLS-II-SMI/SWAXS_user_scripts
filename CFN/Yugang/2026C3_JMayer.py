@@ -1,4 +1,42 @@
 """
+RE(shopen())
+
+
+#ex-situ 
+
+%run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C3_JMayer.py
+new_sample('FTO_5mm', electrode='')
+#set the SAM Theta to 0 
+do_align_using_ref_beam(ref=0.1, th_range=2.5, point=128)
+mark_aligned(1)
+RE(run_cell())
+
+
+## add eletrolyte
+add_electrolyte(electrolyte='Fake')
+do_align_using_ref_beam(ref=0.1, th_range=2.5, point=128)
+mark_aligned(1)
+RE(run_cell())
+
+# Apply Voltage
+ec_start('start_apply_Vol')
+ec_set_potential(0.5)   
+RE(run_insitu())
+
+ec_set_potential(0.4)   
+RE(run_insitu())
+
+RE(shclose())
+
+
+# Control + C to pause, RE.stop() to stop the current run
+# RE.abort() to abort the current run
+
+
+
+
+
+
 2026C3_JMayer.py -- Wed 2026-10-21: J. Mayer group (Yale), in-situ electrochemistry, GISAXS.
 
 Their EC cell, one sample at a time, on the piezo (Huber parked at CELL).  GISAXS on the 2M with
@@ -63,7 +101,7 @@ YZ.update(
 )
 
 # Cell position, 2026-10-21: Huber sx/sy (mm), piezo x/y/z (um); y is the alignment start
-CELL = dict(sx=-2.4, sy=8.0, x=0.0, y=2068.0, z=-6100.0)
+CELL = dict(sx=-5, sy=8.0, x=0.0, y=2068.0, z=-2000.0)
 
 GI = dict(
     angles=( 0.08, 0.10, 0.12, 0.15, 0.18,  0.20, 0.3, 0.5 ),   # incident angles (deg) above the aligned th
@@ -78,7 +116,7 @@ SERIES = dict(
     arc=20, saxs=True,           # 2M + 900KW in every frame
     t=1,
     interval=30,                 # cycle start-to-start (s); 0 = as fast as possible
-    duration=4 * 3600,           # s per run_insitu call; Ctrl-C, RE.stop() ends it earlier
+    duration= 60 * 5,           # s per run_insitu call; Ctrl-C, RE.stop() ends it earlier
     spots=(-200, 0, 200),        # piezo x offsets (um): a fresh spot every cycle
     stage='piezo',
 )
