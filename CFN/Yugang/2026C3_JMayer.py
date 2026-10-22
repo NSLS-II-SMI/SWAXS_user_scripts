@@ -112,7 +112,7 @@ GI = dict(
 )
 
 SERIES = dict(
-    angles=(0.1,),              # incident angle(s) per cycle
+    angles=(0.1),              # incident angle(s) per cycle
     arc=20, saxs=True,           # 2M + 900KW in every frame
     t=1,
     interval=30,                 # cycle start-to-start (s); 0 = as fast as possible
