@@ -1,4 +1,36 @@
 """
+1) load sample
+2) RE(pump_waxs())    #close the chamber and do pump chamber
+3) RE(restartWAXS())  #start the waxs after doing pump
+4) RE(shopen())       #open the beamline photon shutter
+5) collect data
+6)  RE(shclose())     #close the shutter
+7)  RE(vent_waxs())  #vent the chamber
+
+
+
+
+
+
+
+NOTES:
+
+huber
+X: -3.3
+T -12.6
+Z: -15
+
+sample_id(user_name='test', sample_name=f'test')
+collect_twsaxs('AgBH', t=1, arcs=(0, 20, 40))
+data saved in: /nsls2/users/yuzhang/smi_proposals_link/2026-3/pass-321244/projects/Murray/user_data
+
+
+
+
+
+
+
+
 2026C3_Murray.py -- Murray group (proposal 321244): transmission SAXS + WAXS.
 
 A) Linkam (LN2) on the Huber -- the piezo is not used -- one sample at a time, about
