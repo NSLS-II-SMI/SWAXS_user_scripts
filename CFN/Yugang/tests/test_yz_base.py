@@ -852,12 +852,23 @@ def test_murray_linkam_flow(ns, capsys, monkeypatch):
     moved = []                                                    # every motor any plan commands
     RE.msg_hook = lambda msg: moved.append(msg.obj.name) if msg.command == 'set' else None
     ns['LINKAM_POS'].update(sx=12.5, sy=3.0)                      # as edited at the beamline
-    ns['new_sample']('PbS 22B', note='film')                      # Huber there, resets the clock
+    ns['POS_XY_LIST'] = ns['snake_xy'](3, 2, 0.2, 0.1)            # 6 spots
+    ns['LK_SPOT']['next'] = 4                                     # left over from another sample
+    ns['new_sample']('PbS 22B', note='film')                      # Huber there, resets clock + spots
     assert [huber.x.position, huber.y.position] == [12.5, 3.0]
+    assert ns['LK_SPOT']['next'] == 0
+
+    def at_spots(st, idx):                                        # frames on these POS_XY_LIST spots
+        dxy = [ns['POS_XY_LIST'][i] for i in idx]
+        assert [s['user_hints']['sample_info']['spot'] for s in st] == idx
+        assert [s['user_hints']['positions']['sx'] for s in st] == pytest.approx([12.5 + x for x, _ in dxy])
+        assert [s['user_hints']['positions']['sy'] for s in st] == pytest.approx([3.0 + y for _, y in dxy])
+        assert all(huber_tokens(s) in s['sample_name'] for s in st)
+        return True
 
     RE(ns['measure_T']())                                         # RT; the Linkam is only read
     st, meas = data(), ns['MEASURE']
-    assert len(st) == len(meas['offsets']) * len(meas['arcs'])
+    assert len(st) == meas['n_spots'] * len(meas['arcs']) and at_spots(st, [0])
     assert all(s['sample_name'].startswith('Murray_PbS-22B_x') for s in st)
     assert all(huber_tokens(s) in s['sample_name'] for s in st)  # _x/_y/_z = Huber sx/sy/sz
     assert all(s['sample_name'].endswith(f"_T25.0C_expt{meas['t']:g}s") for s in st)
@@ -888,16 +899,16 @@ def test_murray_linkam_flow(ns, capsys, monkeypatch):
     ns['_docs'].clear()
     RE(ns['measure_T'](t=2))
     assert data() and all('_T-47.0C_expt2s' in s['sample_name'] for s in data())
+    assert at_spots(data(), [1])
     lk.lag.put(0.0)
 
     ns['series_start']('-50 C')                                   # time track at -50 C
     ns['_docs'].clear()
-    RE(ns['track_T'](interval=0, max_cycles=3, spots=(-0.2, 0, 0.2), spot_axis='sx'))
+    RE(ns['track_T'](interval=0, max_cycles=3))
     st = data()
     assert [s['user_hints']['frame_index'] for s in st] == [0, 1, 2]
-    assert [s['user_hints']['positions']['sx'] for s in st] == [12.3, 12.5, 12.7]
-    assert all(huber_tokens(s) in s['sample_name'] for s in st)
-    assert '_x12.30_y3.00_z0.00_' in st[0]['sample_name']
+    assert at_spots(st, [2, 3, 4])                                # the snake: +x row, then up, back
+    assert '_x12.70_y2.95_z0.00_' in st[0]['sample_name']
     assert all(s['user_hints']['detectors'] == ['pil900KW', 'pil2M'] for s in st)
     assert all(re.search(rf"^Murray_PbS-22B_000\d_\d+\.\ds_x.*_T-50\.0C_expt{ns['TRACK']['t']:g}s$",
                          s['sample_name']) for s in st)
@@ -910,10 +921,13 @@ def test_murray_linkam_flow(ns, capsys, monkeypatch):
     assert [re.search(r'_T(-?\d+\.\d)C_', n).group(1) for n in shown] == \
         ['-50.0', '-50.0', '0.0', '0.0', '50.0', '50.0']          # the target T, not the live one
     assert lk.temperature_setpoint.get() == -50.0 and ns['YZ_SERIES']['cycle'] == 3
+    assert ns['LK_SPOT']['next'] == 5                             # a dry run uses no spots up
     ns['_docs'].clear()
     RE(ns['run_T_list']([-50, 0, 50], interval=0, max_cycles=2, settle=0))
     st = data()
     assert [s['user_hints']['frame_index'] for s in st] == [3, 4, 5, 6, 7, 8]   # the clock runs on
+    assert at_spots(st, [5, 0, 1, 2, 3, 4])                       # the spots too; all used: again
+    assert 'WARNING: all 6 spots of POS_XY_LIST used' in capsys.readouterr().out
     assert [s['T_setpoint_C'] for s in st] == [-50, -50, 0, 0, 50, 50]
     assert [re.search(r'_T(-?\d+\.\d)C_', s['sample_name']).group(1) for s in st] == \
         ['-50.0', '-50.0', '0.0', '0.0', '50.0', '50.0']
@@ -923,6 +937,7 @@ def test_murray_linkam_flow(ns, capsys, monkeypatch):
     assert lk.temperature_setpoint.get() == ns['TSERIES']['end_T']           # end_T, not measured
     with pytest.raises(ValueError, match='not allowed'):
         RE(ns['measure_T'](arcs=(7,)))
+    assert ns['LK_SPOT']['next'] == 11                            # a refused arc uses no spot up
     assert ns['YZ']['name_xyz'] == ('x', 'y', 'z')                # piezo tokens back, also after errors
     assert moved and not [m for m in moved if m.startswith('piezo')]          # the piezo never moved
     assert (piezo.x.position, piezo.th.position) == (100.0, 0.4)
@@ -931,11 +946,26 @@ def test_murray_linkam_flow(ns, capsys, monkeypatch):
     load(ns, '2026C3_Murray.py')                                  # re-running keeps the sample
     s = ns['SAMPLES'][0]                                          # (file LINKAM_POS None: where it was)
     assert (s['name'], s['note'], s['sx'], s['sy']) == ('PbS-22B', 'film', 12.5, 3.0)
+    assert ns['LK_SPOT']['next'] == 11                            # and its spots
     ns['LINKAM_POS'].update(sx=None, sy=None)
     RE(ns['bps'].mv(huber.x, 7.0, huber.y, 1.0))                  # centered by hand
     ns['new_sample']('S2')                                        # takes the Huber position
     assert (ns['SAMPLES'][0]['sx'], ns['SAMPLES'][0]['sy']) == (7.0, 1.0)
     assert (ns['YZ_SERIES']['t0'], ns['YZ_SERIES']['cycle']) == (None, 0)     # clock reset
+    assert ns['LK_SPOT']['next'] == 0
+
+
+def test_murray_snake_xy(ns):
+    load(ns, '2026C3_Murray.py')
+    snake = ns['snake_xy']
+    assert snake(3, 2, 0.2, 0.1) == [(-0.2, -0.05), (0.0, -0.05), (0.2, -0.05),
+                                     (0.2, 0.05), (0.0, 0.05), (-0.2, 0.05)]
+    grid = snake(5, 5, 0.1, 0.1)
+    assert len(grid) == 25 and grid[12] == (0.0, 0.0) and len(set(grid)) == 25
+    assert all(abs(a[0] - b[0]) + abs(a[1] - b[1]) == pytest.approx(0.1) for a, b in zip(grid, grid[1:]))
+    assert all(x * x + y * y <= 0.2 ** 2 + 1e-9 for x, y in snake(5, 5, 0.1, 0.1, r_max=0.2))
+    assert len(snake(5, 5, 0.1, 0.1, r_max=0.2)) == 13
+    assert snake(1, 1, 0.2, 0.2) == [(0.0, 0.0)]
 
 
 def huber_tokens(start):
