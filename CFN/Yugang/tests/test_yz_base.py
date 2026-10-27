@@ -847,15 +847,19 @@ def test_murray_linkam_flow(ns, capsys):
     data = lambda: [s for s in starts(ns) if 'user_hints' in s]      # noqa: E731
     with pytest.raises(ValueError, match='new_sample'):
         RE(ns['measure_T']())
-    ns['LINKAM_POS'].update(x=1500.0, y=-200.0)                   # as edited at the beamline
-    RE(ns['bps'].mv(ns['piezo'].th, 0.4))                         # left tilted by a GI run
-    ns['new_sample']('PbS 22B', note='film')                      # moves there, resets the clock
-    assert [ns['piezo'].x.position, ns['piezo'].y.position, ns['piezo'].th.position] == [1500, -200, 0]
+    piezo, huber = ns['piezo'], ns['stage']
+    RE(ns['bps'].mv(piezo.x, 100.0, piezo.th, 0.4))
+    moved = []                                                    # every motor any plan commands
+    RE.msg_hook = lambda msg: moved.append(msg.obj.name) if msg.command == 'set' else None
+    ns['LINKAM_POS'].update(sx=12.5, sy=3.0)                      # as edited at the beamline
+    ns['new_sample']('PbS 22B', note='film')                      # Huber there, resets the clock
+    assert [huber.x.position, huber.y.position] == [12.5, 3.0]
 
     RE(ns['measure_T']())                                         # RT; the Linkam is only read
     st, meas = data(), ns['MEASURE']
     assert len(st) == len(meas['offsets']) * len(meas['arcs'])
     assert all(s['sample_name'].startswith('Murray_PbS-22B_x') for s in st)
+    assert all(huber_tokens(s) in s['sample_name'] for s in st)  # _x/_y/_z = Huber sx/sy/sz
     assert all(s['sample_name'].endswith(f"_T25.0C_expt{meas['t']:g}s") for s in st)
     assert_saxs_at_top_arc(st, meas['arcs'])
     assert all(s['experiment'] == 'Murray_Linkam' and s['holder'] == 'Linkam LN2 stage' for s in st)
@@ -874,10 +878,12 @@ def test_murray_linkam_flow(ns, capsys):
 
     ns['series_start']('-50 C')                                   # time track at -50 C
     ns['_docs'].clear()
-    RE(ns['track_T'](interval=0, max_cycles=3, spots=(-200, 0, 200), spot_axis='x'))
+    RE(ns['track_T'](interval=0, max_cycles=3, spots=(-0.2, 0, 0.2), spot_axis='sx'))
     st = data()
     assert [s['user_hints']['frame_index'] for s in st] == [0, 1, 2]
-    assert [s['user_hints']['positions']['x'] for s in st] == [1300, 1500, 1700]
+    assert [s['user_hints']['positions']['sx'] for s in st] == [12.3, 12.5, 12.7]
+    assert all(huber_tokens(s) in s['sample_name'] for s in st)
+    assert '_x12.30_y3.00_z0.00_' in st[0]['sample_name']
     assert all(s['user_hints']['detectors'] == ['pil900KW', 'pil2M'] for s in st)
     assert all(re.search(rf"^Murray_PbS-22B_000\d_\d+\.\ds_x.*_T-50\.0C_expt{ns['TRACK']['t']:g}s$",
                          s['sample_name']) for s in st)
@@ -899,13 +905,29 @@ def test_murray_linkam_flow(ns, capsys):
         ['-50.0', '-50.0', '0.0', '0.0', '50.0', '50.0']
     elapsed = [s['user_hints']['elapsed_s'] for s in st]
     assert elapsed == sorted(elapsed)
+    assert all(huber_tokens(s) in s['sample_name'] for s in st)
     assert lk.temperature_setpoint.get() == ns['TSERIES']['end_T']           # end_T, not measured
+    with pytest.raises(ValueError, match='not allowed'):
+        RE(ns['measure_T'](arcs=(7,)))
+    assert ns['YZ']['name_xyz'] == ('x', 'y', 'z')                # piezo tokens back, also after errors
+    assert moved and not [m for m in moved if m.startswith('piezo')]          # the piezo never moved
+    assert (piezo.x.position, piezo.th.position) == (100.0, 0.4)
+    RE.msg_hook = None
 
-    load(ns, '2026C3_Murray.py')                                  # re-running keeps the sample,
-    s = ns['SAMPLES'][0]                                          # at the file's LINKAM_POS
-    assert (s['name'], s['note'], s['x']) == ('PbS-22B', 'film', ns['LINKAM_POS']['x'])
-    ns['new_sample']('S2', move=False)                            # resets the clock
-    assert (ns['YZ_SERIES']['t0'], ns['YZ_SERIES']['cycle']) == (None, 0)
+    load(ns, '2026C3_Murray.py')                                  # re-running keeps the sample
+    s = ns['SAMPLES'][0]                                          # (file LINKAM_POS None: where it was)
+    assert (s['name'], s['note'], s['sx'], s['sy']) == ('PbS-22B', 'film', 12.5, 3.0)
+    ns['LINKAM_POS'].update(sx=None, sy=None)
+    RE(ns['bps'].mv(huber.x, 7.0, huber.y, 1.0))                  # centered by hand
+    ns['new_sample']('S2')                                        # takes the Huber position
+    assert (ns['SAMPLES'][0]['sx'], ns['SAMPLES'][0]['sy']) == (7.0, 1.0)
+    assert (ns['YZ_SERIES']['t0'], ns['YZ_SERIES']['cycle']) == (None, 0)     # clock reset
+
+
+def huber_tokens(start):
+    """_x.._y.._z.. of a run as the Huber sx/sy/sz (mm) it was taken at."""
+    p = start['user_hints']['positions']
+    return f"_x{p['sx']:.2f}_y{p['sy']:.2f}_z{p['sz']:.2f}_"
 
 
 def test_murray_rt_flow(ns):
@@ -930,3 +952,15 @@ def test_murray_rt_flow(ns):
     new = starts(ns)[len(data):]
     assert {s['user_hints']['sample'] for s in new} == {'Empty'}
     assert all(s['sample_name'].endswith('_expt5s') for s in new)
+
+
+def test_murray_collect_twsaxs(ns):
+    load(ns, '2026C3_Murray.py')
+    piezo, bps = ns['piezo'], ns['bps']
+    ns['RE'](bps.mv(piezo.x, 1234.0, piezo.y, -56.0, piezo.th, 0.3))   # moved there by hand
+    ns['collect_twsaxs']('AgBH')
+    st = starts(ns)
+    assert [s['user_hints']['waxs_arc_deg'] for s in st] == [0, 20, 40]
+    assert [s['user_hints']['detectors'] for s in st] == [['pil900KW'], ['pil900KW'], ['pil900KW', 'pil2M']]
+    assert all(s['sample_name'] == 'Murray_AgBH_x1234.00_y-56.00_z0.00_expt1s' for s in st)
+    assert (piezo.x.position, piezo.y.position, piezo.th.position) == (1234.0, -56.0, 0.3)

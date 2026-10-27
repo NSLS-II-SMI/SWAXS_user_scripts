@@ -1,11 +1,12 @@
 """
 2026C3_Murray.py -- Murray group (proposal 321244): transmission SAXS + WAXS.
 
-A) Linkam (LN2), one sample at a time, about -50 .. 50 C.  First T set by hand and measured
-   (measure_T, track_T), then an automatic T list (run_T_list).  Time track as in
-   2026C3_JMayer.py when the potential is applied: one clock per sample (series_start()),
-   frames named _<frame>_<s since series_start>s_..._T..C, the next spot every frame.
-B) Room temperature, the multi-sample transmission holder (~14 slots): run_rt.
+A) Linkam (LN2) on the Huber -- the piezo is not used -- one sample at a time, about
+   -50 .. 50 C.  First T set by hand and measured (measure_T, track_T), then an automatic T
+   list (run_T_list).  Time track as in 2026C3_JMayer.py when the potential is applied: one
+   clock per sample (series_start()), frames named _<frame>_<s since series_start>s_..._T..C,
+   the next spot every frame.  The _x/_y/_z name tokens are the Huber sx/sy/sz (mm).
+B) Room temperature, the multi-sample transmission holder (~14 slots) on the piezo: run_rt.
 
 SAXS (2M) and WAXS (900KW) in the same exposure at WAXS arc 20.  16.1 keV low divergence, SAXS
 2M at 5 m (EDIT YZ md below if the setup changes).
@@ -18,15 +19,18 @@ Run sheet
      %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C3_Murray.py
      preflight(); linkam_T()
    after closing the hutch: RE(shopen()); before opening it: RE(shclose())
-1) Calibrant: RE(measure_wsaxs('AgBH', t=1, arc=20))
+1) Calibrant: move it into the beam by hand, then
+     collect_twsaxs('AgBH')              # WAXS at arcs 0, 20, 40; SAXS at 40 only; nothing else moves
+     collect_twsaxs('AgBH', t=2)
 
 Linkam (A)
-2) Mount the Linkam, LN2 (README "Linkam + LN2 in vacuum"; restart the IOC if needed: CSS
-   XF:12ID-ES{LINKAM}:SysReset).  In air, purge the Linkam with dry N2 below ~5 C or the
-   windows frost.  Center the sample window with the camera, here('x', 'y') -> LINKAM_POS,
-   re-run this file.
+2) Mount the Linkam on the Huber, LN2 (README "Linkam + LN2 in vacuum"; restart the IOC if
+   needed: CSS XF:12ID-ES{LINKAM}:SysReset).  In air, purge the Linkam with dry N2 below ~5 C
+   or the windows frost.  Center the sample window with the camera by moving the Huber (sx, sy;
+   keep the LN2 lines free), here('sx', 'sy') -> LINKAM_POS, re-run this file -- or leave
+   LINKAM_POS at None: new_sample() then takes the Huber position as it is.
 3) Load a sample:
-     new_sample('PbS22B', note='...')    # moves to LINKAM_POS; resets the clock
+     new_sample('PbS22B', note='...')    # Huber to LINKAM_POS (None: stays); resets the clock
      RE(measure_wsaxs('test', 1))        # quick look at arc 20 ('test' is skipped by the analysis)
      preview(measure_T()); RE(measure_T())   # RT: SAXS + WAXS at arc 20, names ..._T24.9C_...
 4) T by hand: set it on the Linkam CSS screen, or
@@ -71,9 +75,10 @@ LINKAM_MD = {'experiment': 'Murray_Linkam', 'holder': 'Linkam LN2 stage',
 RT_MD = {'experiment': 'Murray_RT', 'holder': 'RT transmission holder',
          'environment': 'room temperature'}
 
-# EDIT: piezo x / y (um) of the sample in the Linkam window; th 0 = beam along the normal.
-# Add sx=..., sy=... (Huber, mm) to move the Huber there as well.
-LINKAM_POS = dict(x=0.0, y=0.0, th=0.0)
+# EDIT: Huber sx / sy (mm) of the sample in the Linkam window -- the Linkam is on the Huber and
+# the piezo is never moved for it.  None: the Huber position when new_sample() is called.
+LINKAM_POS = dict(sx=None, sy=None)
+LINKAM_XYZ = ('sx', 'sy', 'sz')     # Linkam names: _x/_y/_z = Huber sx/sy/sz (mm)
 
 # EDIT with the group: Linkam setpoints (degC) of run_T_list, in order
 TEMPS = [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
@@ -93,14 +98,15 @@ TRACK = dict(               # time track: track_T, and at every T of run_T_list
     t=1,
     interval=30,            # frame start-to-start (s); 0 = back-to-back
     duration=180,           # s per track_T call / per T of run_T_list
-    spots=(0,),             # offsets (um) on spot_axis, the next one every frame, e.g. (-200, 0, 200)
-    spot_axis='x',
+    spots=(0,),             # Huber offsets (mm) on spot_axis, the next one every frame, e.g. (-0.2, 0, 0.2)
+    spot_axis='sx',         # Huber x: the Huber y motor heats up when it moves a lot
 )
 
 MEASURE = dict(             # one set of frames at the present T: measure_T
     arcs=(20,), saxs='max', # 2M + 900KW in one exposure at arc 20
     t=1,
-    offsets=((0, 0),),      # (x, y) um spots, e.g. ((-200, 0), (0, 0), (200, 0))
+    offsets=((0, 0),),      # Huber (sx, sy) mm spots, e.g. ((-0.2, 0), (0, 0), (0.2, 0))
+    offset_axes=('sx', 'sy'),
 )
 
 # EDIT: RT transmission holder -- name and piezo x (um) of each slot; only the slots in RT_X
@@ -118,30 +124,26 @@ TRANS = dict(               # RT holder: run_rt
 )
 
 if globals().get('LK_SAMPLE') is None:      # re-running this file keeps the sample in the Linkam,
-    LK_SAMPLE = None                        # at the (edited) LINKAM_POS
+    LK_SAMPLE = None                        # at the edited LINKAM_POS (None: where it was)
 else:
-    LK_SAMPLE = dict({k: v for k, v in LK_SAMPLE.items() if k not in AXES}, **LINKAM_POS)
+    LK_SAMPLE = dict(LK_SAMPLE, **{a: v for a, v in LINKAM_POS.items() if v is not None})
 SAMPLES = [LK_SAMPLE] if LK_SAMPLE else []
-
-
-def goto_linkam():
-    """Console: move to LINKAM_POS."""
-    RE(move_to(LINKAM_POS))
-    here(*[a for a in LINKAM_POS if a in AXES])
 
 
 def new_sample(name, move=True, **info):
     """
-    Console: the sample just loaded in the Linkam -> files Murray_<name>_...
-    info = metadata of this sample (note=..., solvent=...).  Resets the clock (series_start()
-    or the first track starts it again); move=True also does goto_linkam().
+    Console: the sample just loaded in the Linkam -> files Murray_<name>_...  Its position is the
+    Huber sx / sy of LINKAM_POS (None: the Huber position now); move=True moves the Huber there
+    (mov_sam(1) does it later).  info = metadata of this sample (note=..., solvent=...).
+    Resets the clock (series_start() or the first track starts it again).
     """
     global LK_SAMPLE, SAMPLES
-    LK_SAMPLE = dict(make_samples({1: name}, {1: LINKAM_POS})[0], **info)
+    pos = {a: AXES[a].position if v is None else v for a, v in LINKAM_POS.items()}
+    LK_SAMPLE = dict(make_samples({1: name}, {1: pos})[0], **info)
     SAMPLES = [LK_SAMPLE]
     YZ_SERIES.update(t0=None, cycle=0)
     if move:
-        goto_linkam()
+        RE(move_to(LK_SAMPLE))
     show_samples()
 
 
@@ -159,7 +161,7 @@ def measure_T(settle=0, **kw):
     The T read at each frame is in its name (_T..C); no time index."""
     s = _sample()
     yield from _linkam_now(settle)
-    yield from run_trans([s], **_linkam_kw(MEASURE, kw))
+    yield from _huber_names(run_trans([s], **_linkam_kw(MEASURE, kw)))
 
 
 def track_T(**kw):
@@ -169,7 +171,7 @@ def track_T(**kw):
     starts at the first frame if it is not running).  The Linkam is only read."""
     s = _sample()
     yield from _linkam_now()
-    yield from run_series([s], **_linkam_kw(TRACK, kw))
+    yield from _huber_names(run_series([s], **_linkam_kw(TRACK, kw)))
 
 
 def run_T_list(temps=None, **kw):
@@ -199,7 +201,7 @@ def run_T_list(temps=None, **kw):
         yield from linkam_goto(T, tol=lk['tol'], settle=lk['settle'], timeout=lk['timeout'],
                                rate=lk['rate'], lnp=lk['lnp'])
         name_T = {'T': T} if _previewing() else {}        # a dry run never sets the Linkam
-        yield from run_series([s], **_linkam_kw(track, name_T, T_setpoint_C=T))
+        yield from _huber_names(run_series([s], **_linkam_kw(track, name_T, T_setpoint_C=T)))
     if lk['end_T'] is not None:
         yield from linkam_goto(lk['end_T'], tol=lk['tol'], settle=0, timeout=lk['timeout'],
                                rate=lk['rate'], lnp=lk['lnp'])
@@ -217,10 +219,28 @@ def run_rt(*which, **kw):
     return run_trans(select(RT_SAMPLES, *which) if which else RT_SAMPLES, **trans)
 
 
+def collect_twsaxs(sample_name, t=1, arcs=(0, 20, 40)):
+    """Console: transmission WAXS at every arc of `arcs` and SAXS (2M) with the highest only, of
+    the sample now in the beam (moved there by hand, e.g. the AgBH calibrant).  Only the WAXS
+    arc moves; names Murray_<sample_name>_x.._y.._z.._expt<t>s."""
+    RE(run_trans([{'name': clean_name(sample_name)}], t=t, arcs=arcs, saxs='max'))
+
+
 def _sample():
     if not LK_SAMPLE:
         raise ValueError("no sample in the Linkam: new_sample('name') first")
     return LK_SAMPLE
+
+
+def _huber_names(plan):
+    """Plan: `plan` with the Huber sx/sy/sz (mm) as the _x/_y/_z name tokens (LINKAM_XYZ); the
+    piezo tokens come back afterwards, also after RE.stop() / RE.abort()."""
+    keep = YZ['name_xyz']
+    YZ['name_xyz'] = LINKAM_XYZ
+    try:
+        return (yield from plan)
+    finally:
+        YZ['name_xyz'] = keep
 
 
 def _linkam_kw(defaults, kw, **md):
@@ -249,7 +269,7 @@ def _linkam_now(settle=0):
         yield from bps.sleep(settle)
 
 
-print(f'Murray: LINKAM_POS {LINKAM_POS}; '
+print(f'Murray: Linkam on the Huber, LINKAM_POS {LINKAM_POS}; '
       + (f'in the Linkam: {LK_SAMPLE["name"]}' if LK_SAMPLE else "new_sample(name) first"))
 if RT_SAMPLES:
     print('RT holder (RT_SAMPLES):')
