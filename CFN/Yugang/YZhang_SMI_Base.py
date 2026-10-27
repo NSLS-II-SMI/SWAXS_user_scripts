@@ -366,7 +366,8 @@ def _announce(what, n_exp, t, overhead=3.0):
 # Transmission SAXS/WAXS
 ###############################################################################################
 def run_trans(samples=None, t=1, arcs=(0, 20), saxs='max', waxs_det=True,
-              offsets=((0, 0),), offset_axes=('x', 'y'), extra=None, md=None, at_sample=None):
+              offsets=((0, 0),), offset_axes=('x', 'y'), extra=None, md=None, at_sample=None,
+              T=None, E=None, readings=()):
     """
     Plan: transmission SAXS/WAXS of every sample.
 
@@ -376,6 +377,8 @@ def run_trans(samples=None, t=1, arcs=(0, 20), saxs='max', waxs_det=True,
     offsets   relative spots per sample on offset_axes, e.g. ((0, -200), (0, 0), (0, 200))
     at_sample plan factory at_sample(sample, i_arc), run at each sample's center before its
               spots, e.g. an on-axis camera image on the first arc (i_arc == 0)
+    T, E      temperature / potential for names and metadata (number or signal), e.g.
+              T=LThermal.temperature_current
     Samples are visited in serpentine order (reversed on every other arc).
     """
     samples = _samples(samples)
@@ -397,7 +400,7 @@ def run_trans(samples=None, t=1, arcs=(0, 20), saxs='max', waxs_det=True,
             for off in offsets:
                 if len(offsets) > 1 or any(off):     # (0, 0) after another spot must move back
                     yield from bps.mv(*[v for a, d in zip(offset_axes, off) for v in (AXES[a], base[a] + d)])
-                yield from expose(s, dets, t, extra=extra, md=md)
+                yield from expose(s, dets, t, T=T, E=E, readings=readings, extra=extra, md=md)
 
 
 def measure_saxs(sample='test', t=1):
@@ -915,6 +918,8 @@ def run_series(samples=None, aligned=None, duration=600, interval=0, max_cycles=
             yield from bps.mv(waxs, arc)
         ser['cycle'] += 1
         n += 1
+        if max_cycles is not None and n >= max_cycles:
+            break                                    # no wait after the last cycle
         wait = interval - (time.time() - t_cycle)
         if wait > 0:
             if time.time() - t_start + wait >= duration:

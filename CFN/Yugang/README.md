@@ -11,10 +11,11 @@ holds that experiment's sample table, settings and run sheet. Old beamtime scrip
 | `2026C3_PGuo.py` | Mon 10-19 PM: P. Guo, vacuum, piezo: GIWAXS + GISAXS at RT on the Al bar without the Linkam (`LINKAM = False`, `run_gi_rt`), GIWAXS vs T on the Linkam + LN2, one sample (`LINKAM = True`; T set by hand: `run_gi_at_T`) |
 | `2026C3_TSAXS384.py` | Tue 10-20: RT TSAXS/TWAXS, 384-cell holder, 3–4 bars, Huber + piezo; UPenn B001 Au–Ag–Cu array after screening, 55 spots × 13-point cross + on-axis images (`run_holder_55after`); ORNL C. Liu powders, Box 1 384-well plate mapped from 4 corner wells (`run_cliu_box1`, one arc at a time, Huber y temperature guard; row P after pushing the plate down: `run_cliu_box1_P`); the as-prepared B001 piece, mapped from its photo through ≥ 3 centred spots (`run_holder_55before`); ORNL Box 2 suspensions + AgBH and two DNA superlattices (`run_cliu_box2`); W. Liu Au NP solutions, Box 3 (`run_wliu_box3`) — all plates and the as-prepared piece ordered for few Huber moves, one arc at a time |
 | `2026C3_JMayer.py` | Wed 10-21: J. Mayer (Yale), EC cell, one sample at a time: ex situ, then in-situ GISAXS + GIWAXS at arc 20 (`run_cell`, `run_insitu`); quick tests `snap_saxs/waxs/swaxs` |
+| `2026C3_Murray.py` | Murray group (321244), TSAXS + TWAXS at arc 20: Linkam (LN2) about −50 … 50 °C, one sample at a time (`new_sample`): T by hand (`set_T`, `measure_T`, time track `track_T`), then an automatic T list with the JMayer time track (`run_T_list`); RT multi-sample holder, ~14 slots (`run_rt`) |
 | `tests/` | Offline simulation tests (no beamline needed) |
 | `archive/` | 2024 – 2026C1 scripts and the old base |
 
-All four days use 16.1 keV low-divergence beam with the SAXS 2M at 5 m. Each experiment
+All of these use 16.1 keV low-divergence beam with the SAXS 2M at 5 m. Each experiment
 script's docstring is its run sheet: setup, calibrant, alignment, measurement and recovery,
 with copy-paste commands.
 
@@ -152,6 +153,9 @@ JMayer_S1_insitu_0.1500deg_0012_360.0s_x200.00_y-400.00_z-8400.00_E-0.500V_expt1
   `alignment_<experiment>_T<T>C_latest.json`.
 - The timeout counts only the time spent waiting for T; a pause or a beam-dump suspension
   does not use it up.
+- Transmission vs T: `run_trans(..., T=LThermal.temperature_current)` puts the T read at each
+  frame in its name; `run_series(..., T=LThermal.temperature_current)` adds the time track
+  (`2026C3_Murray.py`: `measure_T`, `track_T`, `run_T_list`).
 
 **In situ and EC.**
 
@@ -254,7 +258,7 @@ No parser reads the `_E..V` potential yet. It is in the name and in
 ## Tests
 
 The simulation tests use fake devices with the beamline names. They load the base and
-the four experiment scripts and run their flows; nothing touches EPICS:
+the experiment scripts and run their flows; nothing touches EPICS:
 
 ```
 cd CFN/Yugang

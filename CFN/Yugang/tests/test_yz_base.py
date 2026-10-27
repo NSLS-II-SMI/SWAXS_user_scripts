@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sys
+import time
 
 import numpy as np
 import pytest
@@ -202,6 +203,24 @@ def test_series_stops_instead_of_an_off_schedule_cycle(ns):
     assert len(starts(ns)) == 2
 
 
+def test_series_no_wait_after_the_last_cycle(ns):
+    sample = ns['make_samples'](['A'], [(0, 0)])
+    t0 = time.time()
+    ns['RE'](ns['run_series'](sample, interval=5, max_cycles=1, duration=60))
+    assert len(starts(ns)) == 1 and time.time() - t0 < 2
+
+
+def test_run_trans_with_linkam_T(ns):
+    lk = ns['LThermal']
+    lk.temperature_setpoint.put(-20.0)
+    ns['RE'](ns['run_trans'](three_samples(ns)[:2], arcs=(20,), T=lk.temperature_current))
+    st = starts(ns)
+    assert len(st) == 2
+    assert all('_z8000.00_T-20.0C_expt1s' in s['sample_name'] for s in st)
+    assert all(s['user_hints']['temperature_C'] == -20.0 for s in st)
+    assert 'LinkamThermal_temperature_current' in events(ns)[-1]['data']
+
+
 def test_gi_huber_stage(ns):
     samples = ns['make_samples'](['A', 'B'], [(-5.0, 1.0), (5.0, 1.0)], axes=('sx', 'sy'))
     ns['RE'](ns['run_gi'](samples, align=True, stage='huber', angles=(0.12,), arcs=(0,),
@@ -306,7 +325,8 @@ from sim_beamline import load  # noqa: E402
 
 
 def test_scripts_load_without_side_effects(ns):
-    for script in ('2026C3_HZheng.py', '2026C3_PGuo.py', '2026C3_TSAXS384.py', '2026C3_JMayer.py'):
+    for script in ('2026C3_HZheng.py', '2026C3_PGuo.py', '2026C3_TSAXS384.py', '2026C3_JMayer.py',
+                   '2026C3_Murray.py'):
         load(ns, script)
     assert starts(ns) == []                       # loading never takes data or moves motors
 
@@ -819,3 +839,94 @@ def test_preview_is_a_dry_run(ns, tmp_path):
                                       **ns['SERIES'])) == 2        # 2 cycles
     with pytest.raises(ValueError, match='not allowed'):
         ns['preview'](ns['run_trans'](arcs=(0, 10)))
+
+
+def test_murray_linkam_flow(ns, capsys):
+    load(ns, '2026C3_Murray.py')
+    RE, lk = ns['RE'], ns['LThermal']
+    data = lambda: [s for s in starts(ns) if 'user_hints' in s]      # noqa: E731
+    with pytest.raises(ValueError, match='new_sample'):
+        RE(ns['measure_T']())
+    ns['LINKAM_POS'].update(x=1500.0, y=-200.0)                   # as edited at the beamline
+    RE(ns['bps'].mv(ns['piezo'].th, 0.4))                         # left tilted by a GI run
+    ns['new_sample']('PbS 22B', note='film')                      # moves there, resets the clock
+    assert [ns['piezo'].x.position, ns['piezo'].y.position, ns['piezo'].th.position] == [1500, -200, 0]
+
+    RE(ns['measure_T']())                                         # RT; the Linkam is only read
+    st, meas = data(), ns['MEASURE']
+    assert len(st) == len(meas['offsets']) * len(meas['arcs'])
+    assert all(s['sample_name'].startswith('Murray_PbS-22B_x') for s in st)
+    assert all(s['sample_name'].endswith(f"_T25.0C_expt{meas['t']:g}s") for s in st)
+    assert_saxs_at_top_arc(st, meas['arcs'])
+    assert all(s['experiment'] == 'Murray_Linkam' and s['holder'] == 'Linkam LN2 stage' for s in st)
+    assert st[0]['user_hints']['sample_info']['note'] == 'film'
+    assert {'LinkamThermal_temperature_current', 'LinkamThermal_temperature_setpoint'} \
+        <= set(events(ns)[-1]['data'])
+    assert (lk.temperature_setpoint.get(), lk.cmd.get()) == (25.0, 0)
+
+    ns['set_T'](-50)                                              # T by hand: waits until there
+    assert (lk.temperature_setpoint.get(), lk.cmd.get(), lk.lnp_mode_set.get()) == (-50.0, 1, 'Auto')
+    lk.lag.put(3.0)                                               # still ramping: warns, measures
+    ns['_docs'].clear()
+    RE(ns['measure_T'](t=2))
+    assert data() and all('_T-47.0C_expt2s' in s['sample_name'] for s in data())
+    lk.lag.put(0.0)
+
+    ns['series_start']('-50 C')                                   # time track at -50 C
+    ns['_docs'].clear()
+    RE(ns['track_T'](interval=0, max_cycles=3, spots=(-200, 0, 200), spot_axis='x'))
+    st = data()
+    assert [s['user_hints']['frame_index'] for s in st] == [0, 1, 2]
+    assert [s['user_hints']['positions']['x'] for s in st] == [1300, 1500, 1700]
+    assert all(s['user_hints']['detectors'] == ['pil900KW', 'pil2M'] for s in st)
+    assert all(re.search(rf"^Murray_PbS-22B_000\d_\d+\.\ds_x.*_T-50\.0C_expt{ns['TRACK']['t']:g}s$",
+                         s['sample_name']) for s in st)
+    m = PYSCATTVIZ_INDEXED.search(st[2]['sample_name'] + BEAMLINE_SUFFIX)
+    assert m.group(1) == 'Murray_PbS-22B' and int(m.group(2)) == 2
+
+    capsys.readouterr()
+    assert ns['preview'](ns['run_T_list']([-50, 0, 50])) == 3 * 2   # dry run: 2 frames per T
+    shown = re.findall(r'^ +\d+  (\S+)$', capsys.readouterr().out, re.M)
+    assert [re.search(r'_T(-?\d+\.\d)C_', n).group(1) for n in shown] == \
+        ['-50.0', '-50.0', '0.0', '0.0', '50.0', '50.0']          # the target T, not the live one
+    assert lk.temperature_setpoint.get() == -50.0 and ns['YZ_SERIES']['cycle'] == 3
+    ns['_docs'].clear()
+    RE(ns['run_T_list']([-50, 0, 50], interval=0, max_cycles=2, settle=0))
+    st = data()
+    assert [s['user_hints']['frame_index'] for s in st] == [3, 4, 5, 6, 7, 8]   # the clock runs on
+    assert [s['T_setpoint_C'] for s in st] == [-50, -50, 0, 0, 50, 50]
+    assert [re.search(r'_T(-?\d+\.\d)C_', s['sample_name']).group(1) for s in st] == \
+        ['-50.0', '-50.0', '0.0', '0.0', '50.0', '50.0']
+    elapsed = [s['user_hints']['elapsed_s'] for s in st]
+    assert elapsed == sorted(elapsed)
+    assert lk.temperature_setpoint.get() == ns['TSERIES']['end_T']           # end_T, not measured
+
+    load(ns, '2026C3_Murray.py')                                  # re-running keeps the sample,
+    s = ns['SAMPLES'][0]                                          # at the file's LINKAM_POS
+    assert (s['name'], s['note'], s['x']) == ('PbS-22B', 'film', ns['LINKAM_POS']['x'])
+    ns['new_sample']('S2', move=False)                            # resets the clock
+    assert (ns['YZ_SERIES']['t0'], ns['YZ_SERIES']['cycle']) == (None, 0)
+
+
+def test_murray_rt_flow(ns):
+    load(ns, '2026C3_Murray.py')
+    ns['LThermal'] = None                                         # any Linkam access would raise
+    ns['RT_SAMPLES'] = []
+    with pytest.raises(ValueError, match='RT_X'):
+        ns['run_rt']()
+    pos = {1: (-42000, 500), 2: (-35500, 500), 14: (42000, 500)}
+    names = {**ns['RT_NAMES'], 14: 'Empty'}
+    ns['RT_SAMPLES'] = ns['make_samples']({k: names[k] for k in pos}, pos, th=0)
+    ns['RE'](ns['bps'].mv(ns['piezo'].th, 0.4))
+    ns['RE'](ns['run_rt']())
+    data, trans = starts(ns), ns['TRANS']
+    assert len(data) == 3 * len(trans['offsets']) * len(trans['arcs'])
+    assert all(s['sample_name'].startswith('Murray_') and '_T' not in s['sample_name'] for s in data)
+    assert all(s['experiment'] == 'Murray_RT' and s['holder'] == 'RT transmission holder' for s in data)
+    assert all('temperature_C' not in s['user_hints'] for s in data)
+    assert all(s['user_hints']['positions']['th'] == 0 for s in data)
+    assert_saxs_at_top_arc(data, trans['arcs'])
+    ns['RE'](ns['run_rt']('Empty', t=5))
+    new = starts(ns)[len(data):]
+    assert {s['user_hints']['sample'] for s in new} == {'Empty'}
+    assert all(s['sample_name'].endswith('_expt5s') for s in new)
