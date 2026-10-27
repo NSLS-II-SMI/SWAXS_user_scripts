@@ -96,6 +96,12 @@ Linkam (A)
      RE(run_T_list([0, 25, 50], duration=60, settle=0))
      RE(run_T_list(max_cycles=1))        # one frame per T
    after RE.stop(): RE(run_T_list([the remaining temperatures]))   (the spots run on)
+   Measured all the way through the ramps instead (no soak, no duration):
+     preview(run_T_ramp([-50, 50, -50, 50, -50, 50, 25], interval=5))   # estimate + names
+     RE(run_T_ramp([-50, 50, -50, 50, -50, 50, 25], interval=5))
+       # Linkam -> -50 at the TSERIES rate, a frame every 5 s from the start; at -50 (within
+       # tol) the setpoint goes to 50 at once, frames go on; ... ends when 25 is reached
+     RE(run_T_ramp([-50, 50, 25], interval=5, hold=60))   # + 1 min measured at each target
    Spots: LK_SPOT['next'] = frames taken on this sample so far (the next spot is
    POS_XY_LIST[next % len]); all used -> starts over (warning): use a larger grid.
    Watch the LN2 dewar: a T not reached within `timeout` is measured anyway (the names carry
@@ -315,6 +321,86 @@ def run_T_list(temps=None, **kw):
         yield from linkam_off()
 
 
+def run_T_ramp(temps=None, hold=0, **kw):
+    """
+    Plan: T ramps of the Linkam sample, measured all the way.  The Linkam goes to the first T of
+    `temps` (default TEMPS) at the TSERIES rate and the frames start at once: a SAXS + WAXS frame
+    every `interval` s (TRACK), each on the next spot of POS_XY_LIST.  As soon as the Linkam is
+    within tol of the target (checked after every frame) -- and `hold` s later, still measuring --
+    the next T is set; no soak, no duration.  The frames end when the last T is reached, then
+    the Linkam goes to end_T (not measured).  A T not reached within its ramp time + timeout is
+    left with a warning (the next T is set).  One clock and frame counter (started here unless it
+    is running): names _<frame>_<s since series_start()>s_..._T<T read at the frame>C; the target
+    is T_setpoint_C in the metadata.
+        RE(run_T_ramp([-50, 50, -50, 50, -50, 50, 25], interval=5))
+    kw override TSERIES and TRACK (duration is not used).
+    """
+    s = _sample()
+    temps = list(TEMPS if temps is None else temps)
+    if not temps:
+        raise ValueError('no temperatures')
+    lk = {k: kw.pop(k, v) for k, v in TSERIES.items()}
+    track = _linkam_kw(dict(TRACK, **kw), {}, T_ramp_C_per_min=lk['rate'])
+    track.update(duration=None, max_cycles=None)
+    md = track['md']                                 # T_setpoint_C: the target of each frame
+    dry = _previewing()
+    T_now = yield from bps.rd(LThermal.temperature_current)
+    if lk['rate']:
+        path = [T_now] + temps
+        minutes = sum(abs(b - a) for a, b in zip(path, path[1:])) / lk['rate'] + len(temps) * hold / 60
+        frames = minutes * 60 / max(track['interval'], track['t'] + 3)
+        print(f'run_T_ramp: {s["name"]}, {temps} C at {lk["rate"]:g} C/min, a frame every '
+              f'{track["interval"]} s all the way: ~{minutes:.0f} min, ~{frames:.0f} frames '
+              f'(~{frames / len(POS_XY_LIST or [0]):.0f} on each spot of POS_XY_LIST)')
+    if YZ_SERIES['t0'] is None and not dry:
+        series_start('(auto: run_T_ramp start)')
+    at = dict(i=-1)                                  # target index, set time, reached time, frames
+
+    def next_T():
+        at['i'] += 1
+        if at['i'] == len(temps):
+            return True
+        T = temps[at['i']]
+        T_from = yield from bps.rd(LThermal.temperature_current)
+        late = abs(T - T_from) / lk['rate'] * 60 if lk['rate'] else 0
+        at.update(T=T, since=time.time(), late=late + lk['timeout'], reached=None, n=0)
+        md['T_setpoint_C'] = T
+        print(f'\n##### {s["name"]}: Linkam -> {T} C ({at["i"] + 1}/{len(temps)}), from {T_from:.1f} C; '
+              f'measuring on the way #####')
+        yield from _put(LThermal.temperature_setpoint, round(float(T), 1))
+        return False
+
+    def step():
+        """Plan, after every frame: on to the next T once this one is reached (+ hold)."""
+        at['n'] += 1
+        T_now = yield from bps.rd(LThermal.temperature_current)
+        if at['reached'] is None:
+            if at['n'] >= 2 if dry else abs(T_now - at['T']) <= lk['tol']:   # a dry run: 2 frames per T
+                print(f'Linkam at {at["T"]} C ({T_now:.1f} C) after {time.time() - at["since"]:.0f} s')
+                at['reached'] = time.time()
+            elif time.time() - at['since'] > at['late']:
+                print(f'WARNING: Linkam did not reach {at["T"]} C in {at["late"]:.0f} s (now {T_now:.1f} C); '
+                      f'going on (the names carry the T read at each frame)')
+                at['reached'] = time.time() - hold
+        if at['reached'] is not None and (dry or time.time() - at['reached'] >= hold):
+            return (yield from next_T())
+        return False
+
+    track['after'] = step
+    if lk['rate'] is not None:
+        yield from _put(LThermal.temperature_rate_setpoint, lk['rate'])
+    if lk['lnp'] is not None:
+        yield from _put(LThermal.lnp_mode_set, lk['lnp'])
+    yield from next_T()
+    yield from _put(LThermal.cmd, 1)
+    yield from _huber_names(_track(s, _spot_counter(), **track))
+    if lk['end_T'] is not None:
+        yield from linkam_goto(lk['end_T'], tol=lk['tol'], settle=0, timeout=lk['timeout'],
+                               rate=lk['rate'], lnp=lk['lnp'])
+    if lk['off_at_end']:
+        yield from linkam_off()
+
+
 def run_rt(*which, **kw):
     """Plan: run_trans of RT_SAMPLES (or the given keys / names of it) with TRANS; kw override
     TRANS.  The Linkam is not read."""
@@ -359,9 +445,11 @@ def _next_spot(s, spots):
 
 
 def _track(s, spots, arc=20, saxs=True, waxs_det=True, t=1, interval=30, duration=180,
-           max_cycles=None, T=None, readings=(), extra=None, md=None):
+           max_cycles=None, T=None, readings=(), extra=None, md=None, after=None):
     """Plan: run_series of the one sample s in transmission (same clock, frame counter and
-    names), but every frame on the next spot of POS_XY_LIST (Huber sx and sy)."""
+    names), but every frame on the next spot of POS_XY_LIST (Huber sx and sy).  duration=None:
+    no time limit.  after: plan factory run after every frame; it returns True to end the track
+    (a dry run then ends only through it)."""
     check_arcs([arc])
     dets = [pil900KW] if waxs_det else []
     if saxs and arc >= YZ['saxs_min_arc']:
@@ -374,15 +462,17 @@ def _track(s, spots, arc=20, saxs=True, waxs_det=True, t=1, interval=30, duratio
             series_start('(auto: track start)')
         else:
             ser['t0'] = time.time()
-    if _previewing():
+    if _previewing() and after is None:
         max_cycles = min(max_cycles or 2, 2)
         print('(preview) showing 2 frames')
-    print(f'track: {s["name"]}, a frame every {interval or "back-to-back"} s for {duration} s, '
-          f'each on the next spot; t0 = {_iso(ser["t0"])}')
+    print(f'track: {s["name"]}, a frame every {interval or "back-to-back"} s'
+          + (f' for {duration} s' if duration is not None else '')
+          + f', each on the next spot; t0 = {_iso(ser["t0"])}')
     yield from bps.mv(waxs, arc)
     t_start = time.time()
     n = 0
-    while time.time() - t_start < duration and (max_cycles is None or n < max_cycles):
+    while ((duration is None or time.time() - t_start < duration)
+           and (max_cycles is None or n < max_cycles)):
         t_frame = time.time()
         at = _next_spot(s, spots)
         yield from move_to(at)
@@ -392,9 +482,11 @@ def _track(s, spots, arc=20, saxs=True, waxs_det=True, t=1, interval=30, duratio
         n += 1
         if max_cycles is not None and n >= max_cycles:
             break                                    # no wait after the last frame
+        if after is not None and (yield from after()):
+            break
         wait = interval - (time.time() - t_frame)
         if wait > 0:
-            if time.time() - t_start + wait >= duration:
+            if duration is not None and time.time() - t_start + wait >= duration:
                 break                                # the next frame would start after the end
             print(f'frame {ser["cycle"] - 1} done, next in {wait:.0f} s')
             yield from bps.sleep(wait)

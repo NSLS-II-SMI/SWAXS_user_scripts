@@ -884,12 +884,12 @@ def test_murray_linkam_flow(ns, capsys, monkeypatch):
     assert 'Linkam 25.0 C: setpoint 25.0 C (+0.0), ramp 10 C/min, OFF' in capsys.readouterr().out
     ns['set_T'](-50)                                              # T by hand: waits until there
     assert (lk.temperature_setpoint.get(), lk.cmd.get(), lk.lnp_mode_set.get()) == (-50.0, 1, 'Auto')
-    assert 'Linkam -50.0 C: setpoint -50.0 C (+0.0), ramp 10 C/min, on' in capsys.readouterr().out
+    assert f"Linkam -50.0 C: setpoint -50.0 C (+0.0), ramp {ns['TSERIES']['rate']:g} C/min, on" in capsys.readouterr().out
     lk.lag.put(3.0)                                               # still ramping: warns, measures
     lk.status_code.put(8 | 16)
     assert ns['get_T'](show=False) == -47.0 and not capsys.readouterr().out
     ns['get_T']()
-    assert 'Linkam -47.0 C: setpoint -50.0 C (+3.0), ramp 10 C/min, on, not at setpoint, ' \
+    assert f"Linkam -47.0 C: setpoint -50.0 C (+3.0), ramp {ns['TSERIES']['rate']:g} C/min, on, not at setpoint, " \
         'LN2 pump on (auto)' in capsys.readouterr().out
     def not_connected(**kw):
         raise TimeoutError('STATUS not connected')
@@ -908,7 +908,7 @@ def test_murray_linkam_flow(ns, capsys, monkeypatch):
     st = data()
     assert [s['user_hints']['frame_index'] for s in st] == [0, 1, 2]
     assert at_spots(st, [2, 3, 4])                                # the snake: +x row, then up, back
-    assert '_x12.70_y2.95_z0.00_' in st[0]['sample_name']
+    assert '_x12.70_y2.95_z' in st[0]['sample_name']
     assert all(s['user_hints']['detectors'] == ['pil900KW', 'pil2M'] for s in st)
     assert all(re.search(rf"^Murray_PbS-22B_000\d_\d+\.\ds_x.*_T-50\.0C_expt{ns['TRACK']['t']:g}s$",
                          s['sample_name']) for s in st)
@@ -953,6 +953,56 @@ def test_murray_linkam_flow(ns, capsys, monkeypatch):
     assert (ns['SAMPLES'][0]['sx'], ns['SAMPLES'][0]['sy']) == (7.0, 1.0)
     assert (ns['YZ_SERIES']['t0'], ns['YZ_SERIES']['cycle']) == (None, 0)     # clock reset
     assert ns['LK_SPOT']['next'] == 0
+
+
+def test_murray_T_ramp(ns, capsys, monkeypatch):
+    load(ns, '2026C3_Murray.py')
+    RE, lk = ns['RE'], ns['LThermal']
+    data = lambda: [s for s in starts(ns) if 'user_hints' in s]      # noqa: E731
+    T_name = lambda s: float(re.search(r'_T(-?\d+\.\d)C_', s['sample_name']).group(1))   # noqa: E731
+    ramp = dict(T=25.0, step=10.0)                                # the Linkam: 10 C per frame
+    monkeypatch.setattr(lk.temperature_current, 'get', lambda **kw: ramp['T'])
+
+    def linkam_moves(msg):                                        # toward the setpoint, at each frame's end
+        if msg.command == 'close_run':
+            d = lk.temperature_setpoint.get() - ramp['T']
+            ramp['T'] += max(-ramp['step'], min(ramp['step'], d))
+    RE.msg_hook = linkam_moves
+    ns['new_sample']('PbS 22B')
+
+    capsys.readouterr()
+    assert ns['preview'](ns['run_T_ramp']([-50, 50, 25], interval=0)) == 3 * 2   # dry run: 2 frames per T
+    assert '~' in capsys.readouterr().out                         # the time / frame estimate
+    assert (lk.temperature_setpoint.get(), lk.cmd.get()) == (25.0, 0)          # nothing set
+    assert (ns['LK_SPOT']['next'], ns['YZ_SERIES']['t0']) == (0, None)
+
+    RE(ns['run_T_ramp']([-50, 50, 25], interval=0))
+    st = data()                                                   # frames from the start, all the way
+    assert [T_name(s) for s in st] == [25, 15, 5, -5, -15, -25, -35, -45,             # -> -50
+                                       -50, -40, -30, -20, -10, 0, 10, 20, 30, 40,   # reached: -> 50
+                                       50, 40, 30]                                    # -> 25, ends there
+    assert [s['T_setpoint_C'] for s in st] == [-50] * 8 + [50] * 10 + [25] * 3
+    assert [s['user_hints']['frame_index'] for s in st] == list(range(21))
+    n = len(ns['POS_XY_LIST'])
+    assert [s['user_hints']['sample_info']['spot'] for s in st] == [i % n for i in range(21)]
+    assert all(s['T_ramp_C_per_min'] == ns['TSERIES']['rate'] for s in st)
+    assert all(huber_tokens(s) in s['sample_name'] for s in st)
+    assert (lk.temperature_setpoint.get(), lk.cmd.get(), lk.lnp_mode_set.get(),
+            lk.temperature_rate_setpoint.get()) == (25.0, 1, 'Auto', ns['TSERIES']['rate'])
+    out = capsys.readouterr().out
+    assert 'Linkam at -50 C' in out and 'Linkam at 50 C' in out and 'did not reach' not in out
+    assert ns['YZ']['name_xyz'] == ('x', 'y', 'z')
+
+    ramp['step'] = 0.0                                            # stuck (LN2 dewar empty)
+    ns['_docs'].clear()
+    RE(ns['run_T_ramp']([-50, 25], interval=0, rate=None, timeout=0))
+    assert [(T_name(s), s['T_setpoint_C']) for s in data()] == [(25, -50), (25, 25)]   # gives up, goes on
+    assert 'did not reach -50 C' in capsys.readouterr().out
+
+    ns['_docs'].clear()
+    RE(ns['run_T_ramp']([25], interval=0, hold=0.3))              # measured 0.3 s more at the target
+    assert len(data()) >= 2 and all(s['T_setpoint_C'] == 25 for s in data())
+    RE.msg_hook = None
 
 
 def test_murray_snake_xy(ns):
