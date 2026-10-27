@@ -1,17 +1,24 @@
 """
 1) load sample
 2) RE(pump_waxs())    #close the chamber and do pump chamber
+2.1) maually open the 2:GV-6
+2.5) use Huber Stage coordiates: X and Y to postion your sample
 3) RE(restartWAXS())  #start the waxs after doing pump
 4) RE(shopen())       #open the beamline photon shutter
 5) collect data
 6)  RE(shclose())     #close the shutter
 7)  RE(vent_waxs())  #vent the chamber
 
+8) new_sample('RR_85_OD2', note='...')    # Huber to LINKAM_POS (None: stays); resets clock + spots
+RE(measure_wsaxs('test', 1))        # for quick test
+RE(measure_T())   # RT: SAXS + WAXS at arc 20, names ..._T24.9C_...
 
 
 
+series_start('T list')              # t = 0 for the list (else the sample's clock runs on)
+RE(run_T_list(   [-50, 40, -50, 40, -50, 25] , duration=60, settle=0))
 
-
+ 
 
 NOTES:
 
@@ -23,6 +30,9 @@ Z: -15
 sample_id(user_name='test', sample_name=f'test')
 collect_twsaxs('AgBH', t=1, arcs=(0, 20, 40))
 data saved in: /nsls2/users/yuzhang/smi_proposals_link/2026-3/pass-321244/projects/Murray/user_data
+
+
+new_sample('RR_85_OD2', note='...') 
 
 
 
@@ -72,7 +82,7 @@ Linkam (A)
      get_T()                             # T now (returned), setpoint, ramp, on/off, LN2 pump
      set_T(-50)                          # TSERIES rate / LN2 pump / tol; waits until there
      RE(measure_T())                     # one frame, on the next spot; the Linkam is only read
-     RE(measure_T(settle=120, t=2))      # soak 2 min first, longer exposure
+     RE(measure_T(settle=120, t=1))      # soak 2 min first, longer exposure
      RE(measure_T(n_spots=3))            # 3 frames on the next 3 spots
    time track at this T (as run_insitu in 2026C3_JMayer.py):
      series_start('-50 C')               # t = 0 (else the clock of this sample runs on)
@@ -116,7 +126,7 @@ RT_MD = {'experiment': 'Murray_RT', 'holder': 'RT transmission holder',
 
 # EDIT: Huber sx / sy (mm) of the sample in the Linkam window -- the Linkam is on the Huber and
 # the piezo is never moved for it.  None: the Huber position when new_sample() is called.
-LINKAM_POS = dict(sx=None, sy=None)
+LINKAM_POS = dict(sx=None, sy=None, sz=-15)
 LINKAM_XYZ = ('sx', 'sy', 'sz')     # Linkam names: _x/_y/_z = Huber sx/sy/sz (mm)
 
 
@@ -140,16 +150,18 @@ def snake_xy(nx, ny, dx, dy, r_max=None):
 # used it starts over at the first (warning).  Keep the grid inside the window and the steps
 # larger than the beam.  Rows along sx: the Huber y motor heats up when it moves a lot.
 # Or a list: [(0, 0), (0.2, 0), (0.4, 0), (0.4, 0.1), ...]
-POS_XY_LIST = snake_xy(nx=5, ny=5, dx=0.2, dy=0.1)     # 25 spots over 0.8 x 0.4 mm
+POS_XY_LIST = snake_xy(nx=5, ny=1, dx=0.2, dy=0.1)     # 25 spots over 0.8 x 0.4 mm
 
 # EDIT with the group: Linkam setpoints (degC) of run_T_list, in order
-TEMPS = [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
+#TEMPS = [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
+TEMPS = [-50, 40, -50, 40, -50, 25]
+
 
 TSERIES = dict(             # how set_T / run_T_list drive the Linkam
-    rate=10,                # ramp (degC/min)
+    rate=3,                # ramp (degC/min)
     lnp='Auto',             # LN2 pump in auto (cooling)
     tol=1.0,                # degC
-    settle=60,              # s soak at each T of run_T_list before its track (0: track on arrival)
+    settle=0,              # s soak at each T of run_T_list before its track (0: track on arrival)
     timeout=1800,           # s to reach a T, then warn and measure anyway
     end_T=25,               # run_T_list: Linkam setpoint after the list (not measured); None = stay
     off_at_end=False,
@@ -158,7 +170,7 @@ TSERIES = dict(             # how set_T / run_T_list drive the Linkam
 TRACK = dict(               # time track: track_T, and at every T of run_T_list
     arc=20, saxs=True,      # 2M + 900KW in every frame
     t=1,
-    interval=30,            # frame start-to-start (s); 0 = back-to-back
+    interval=5,            # frame start-to-start (s); 0 = back-to-back
     duration=180,           # s per track_T call / per T of run_T_list
 )                           # every frame on the next spot of POS_XY_LIST
 
