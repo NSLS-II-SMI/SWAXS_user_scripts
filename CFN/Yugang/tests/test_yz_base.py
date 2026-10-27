@@ -1002,6 +1002,15 @@ def test_murray_T_ramp(ns, capsys, monkeypatch):
     ns['_docs'].clear()
     RE(ns['run_T_ramp']([25], interval=0, hold=0.3))              # measured 0.3 s more at the target
     assert len(data()) >= 2 and all(s['T_setpoint_C'] == 25 for s in data())
+
+    monkeypatch.undo()                                            # the sim Linkam: at its setpoint at once
+    ns['_docs'].clear()
+    RE(ns['run_T_ramp']([50], interval=0))
+    assert [s['T_setpoint_C'] for s in data()] == [50]
+    assert lk.temperature_setpoint.get() == 50.0                  # stays at the last T
+    RE(ns['run_T_ramp']([50], interval=0, return_RT=True))
+    assert lk.temperature_setpoint.get() == ns['TSERIES']['end_T'] == 25    # back to RT, not measured
+    assert len(data()) == 2
     RE.msg_hook = None
 
 

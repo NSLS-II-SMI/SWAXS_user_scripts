@@ -118,6 +118,7 @@ Linkam (A)
        # Linkam -> -50 at the TSERIES rate, a frame every 5 s from the start; at -50 (within
        # tol) the setpoint goes to 50 at once, frames go on; ... ends when 25 is reached
      RE(run_T_ramp([-50, 50, 25], interval=5, hold=60))   # + 1 min measured at each target
+     RE(run_T_ramp([50], interval=15))   # stays at 50 at the end; return_RT=True: then to 25
    Spots: LK_SPOT['next'] = frames taken on this sample so far (the next spot is
    POS_XY_LIST[next % len]); all used -> starts over (warning): use a larger grid.
    Watch the LN2 dewar: a T not reached within `timeout` is measured anyway (the names carry
@@ -185,7 +186,8 @@ TSERIES = dict(             # how set_T / run_T_list drive the Linkam
     tol=1.0,                # degC
     settle=0,              # s soak at each T of run_T_list before its track (0: track on arrival)
     timeout=1800,           # s to reach a T, then warn and measure anyway
-    end_T=25,               # run_T_list: Linkam setpoint after the list (not measured); None = stay
+    end_T=25,               # run_T_list (and run_T_ramp with return_RT=True): Linkam setpoint after
+                            # the list (not measured); None = stay (run_T_ramp: 25)
     off_at_end=False,
 )
 
@@ -337,18 +339,21 @@ def run_T_list(temps=None, **kw):
         yield from linkam_off()
 
 
-def run_T_ramp(temps=None, hold=0, **kw):
+def run_T_ramp(temps=None, hold=0, return_RT=False, **kw):
     """
     Plan: T ramps of the Linkam sample, measured all the way.  The Linkam goes to the first T of
     `temps` (default TEMPS) at the TSERIES rate and the frames start at once: a SAXS + WAXS frame
     every `interval` s (TRACK), each on the next spot of POS_XY_LIST.  As soon as the Linkam is
     within tol of the target (checked after every frame) -- and `hold` s later, still measuring --
-    the next T is set; no soak, no duration.  The frames end when the last T is reached, then
-    the Linkam goes to end_T (not measured).  A T not reached within its ramp time + timeout is
-    left with a warning (the next T is set).  One clock and frame counter (started here unless it
-    is running): names _<frame>_<s since series_start()>s_..._T<T read at the frame>C; the target
-    is T_setpoint_C in the metadata.
+    the next T is set; no soak, no duration.  The frames end when the last T is reached; the
+    Linkam stays there (return_RT=True: then to end_T, 25 C, not measured).  A T not reached
+    within its ramp time + timeout is left with a warning (the next T is set).  One clock and
+    frame counter (started here unless it is running): names
+    _<frame>_<s since series_start()>s_..._T<T read at the frame>C; the target is T_setpoint_C
+    in the metadata.
         RE(run_T_ramp([-50, 50, -50, 50, -50, 50, 25], interval=5))
+        RE(run_T_ramp([50], interval=15))                    # to 50, stays at 50
+        RE(run_T_ramp([50], interval=15, return_RT=True))    # then back to 25
     kw override TSERIES and TRACK (duration is not used).
     """
     s = _sample()
@@ -410,8 +415,10 @@ def run_T_ramp(temps=None, hold=0, **kw):
     yield from next_T()
     yield from _put(LThermal.cmd, 1)
     yield from _huber_names(_track(s, _spot_counter(), **track))
-    if lk['end_T'] is not None:
-        yield from linkam_goto(lk['end_T'], tol=lk['tol'], settle=0, timeout=lk['timeout'],
+    if return_RT:
+        T_RT = 25 if lk['end_T'] is None else lk['end_T']
+        print(f'return_RT: Linkam -> {T_RT} C (not measured)')
+        yield from linkam_goto(T_RT, tol=lk['tol'], settle=0, timeout=lk['timeout'],
                                rate=lk['rate'], lnp=lk['lnp'])
     #if lk['off_at_end']:
     #    yield from linkam_off()
