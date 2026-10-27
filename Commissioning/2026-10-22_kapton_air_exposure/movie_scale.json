@@ -1,0 +1,9 @@
+{
+  "cmap": "yellowhot (black-red-orange-yellow-white)",
+  "normalization": "log",
+  "vmin": 496.0,
+  "vmax": 18068.518000000156,
+  "method": "global sampled positive-pixel 1st / 99.8th percentiles",
+  "fps": 5,
+  "frames": 62
+}

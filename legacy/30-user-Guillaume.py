@@ -1,3 +1,5 @@
+import numpy as np
+
 def guigui(meas_t=0.3):
     det = [pil2M]
     """
@@ -8348,3 +8350,349 @@ def xrr_Pedge_insitu_2026_1(t=0.5):
                                         att2_9, attenuator9)
                 
     LThermal.off()
+
+
+
+def giwaxs_Gu_2026_3(t=1, name="Test", ai_list: list[int]|None = None, xstep=10, waxs_arc = (0, 20)):
+    # Bar 01
+    # names = ['bo1_01', 'bo1_02', 'bo1_03', 'bo1_04', 'bo1_05', 'bo1_06', 'bo1_07', 'bo1_08', 'bo1_09', 'bo1_10', 'bo1_11', 'bo1_12',
+    #          'bo1_13', 'bo1_14', 'bo1_15', 'bo1_16', 'bo1_17', 'bo1_18', 'bo1_19', 'bo1_20', 'bo1_21', 'bo1_22', 'bo1_23', 'bo1_24']
+    # x_piezo = [ 50000,    50000,    40000,    29000,    16000,     3000,   -10000,   -22000,   -34000,   -46000,   -50000,   -50000, 
+    #             50000,    50000,    40000,    29000,    16000,     3000,   -10000,   -22000,   -34000,   -46000,   -50000,   -50000]
+    # x_hexa = [     10,        0,        0,        0,        0,        0,        0,        0,        0,        0,      -7,       -19,
+    #                10,        0,        0,        0,        0,        0,        0,        0,        0,        0,      -7,       -19]    
+    # y_piezo = [  6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,
+    #             -2000,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0]
+    # y_hexa = [      0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,
+    #                 0,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2]
+    # ai0s =   [   -0.5,     -0.5,     -0.5,     -0.5,     -0.5,     -0.5,     -0.5,     -0.5,     -0.5,     -0.5,     -0.5,     -0.5,
+    #              -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2]
+
+    # Bar 02
+    # names = ['bo2_01', 'bo2_02', 'bo2_03', 'bo2_04', 'bo2_05', 'bo2_06', 'bo2_07', 'bo2_08', 'bo2_09', 'bo2_10', 'bo2_11', 'bo2_12',
+    #          'bo2_13', 'bo2_14', 'bo2_15', 'bo2_16', 'bo2_17', 'bo2_18', 'bo2_19', 'bo2_20', 'bo2_21', 'bo2_22', 'bo2_23', 'bo2_24']
+    # x_piezo = [ 50000,    48000,    36000,    24000,    11000,    -1000,   -13000,   -24000,   -35000,   -46000,   -50000,   -50000, 
+    #             50000,    48000,    36000,    24000,    11000,    -1000,   -13000,   -24000,   -35000,   -46000,   -50000,   -50000]
+    # x_hexa = [      8,        0,        0,        0,        0,        0,        0,        0,        0,        0,      -7,       -19,
+    #                 8,        0,        0,        0,        0,        0,        0,        0,        0,        0,      -7,       -19]    
+    # y_piezo = [  6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,
+    #             -2000,        0,        0,        0,        0,        0,        0,        0,        0,        0,    -2000,    -2000]
+    # y_hexa = [      0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,
+    #                 0,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,        0,        0]
+    # ai0s =   [   -0.5,     -0.8,     -0.8,     -0.8,     -0.8,     -0.8,     -0.8,     -0.8,     -0.8,     -0.8,     -0.8,     -0.8,
+    #              -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2]
+
+    # Bar 03
+    # names = ['bo3_01', 'bo3_02', 'bo3_03', 'bo3_04', 'bo3_05', 'bo3_06', 'bo3_07', 'bo3_08', 'bo3_09', 'bo3_10', 'bo3_11',
+    #          'bo3_12', 'bo3_13', 'bo3_14', 'bo3_15', 'bo3_16', 'bo3_17', 'bo3_18', 'bo3_19', 'bo3_20', 'bo3_21', 'bo3_22']
+    # x_piezo = [ 50000,    43000,    32000,    21000,    10000,    -1000,   -12000,   -23000,   -34000,   -45000,   -50000, 
+    #             50000,    43000,    32000,    21000,    10000,    -1000,   -12000,   -23000,   -34000,   -45000,   -50000]
+    # x_hexa = [      3,        0,        0,        0,        0,        0,        0,        0,        0,        0,       -5,
+    #                 3,        0,        0,        0,        0,        0,        0,        0,        0,        0,       -5]    
+    # y_piezo = [  6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,
+    #             -2000,        0,        0,        0,        0,        0,        0,        0,        0,        0,    -2000]
+    # y_hexa = [      0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,
+    #                 0,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,        0]
+    # ai0s =   [     -1,     -0.9,     -0.9,     -0.9,     -0.9,     -0.9,     -0.9,     -0.9,     -0.9,     -0.9,     -0.9,
+    #              -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2]
+
+    # Bar 04
+    # names = [ 'bo3_23', 'bo3_24', 'bo4_01', 'bo4_02', 'bo4_03', 'bo4_04', 'bo4_05', 'bo4_06', 'bo4_07', 'bo4_08', 'bo4_09',
+    #           'bo4_10', 'bo4_11', 'bo4_12', 'bo4_13', 'bo4_14', 'bo4_15', 'bo4_16', 'bo4_17', 'bo4_18', 'bo4_19', 'bo4_20']
+    # x_piezo = [  50000,    42000,    31000,    20000,     9000,    -2000,   -13000,   -25000,   -36000,   -47000,   -50000, 
+    #              50000,    42000,    31000,    20000,     9000,    -2000,   -13000,   -25000,   -36000,   -47000,   -50000]
+    # x_hexa = [       2,        0,        0,        0,        0,        0,        0,        0,        0,        0,       -8,
+    #                  2,        0,        0,        0,        0,        0,        0,        0,        0,        0,       -8]    
+    # y_piezo = [   6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,
+    #              -2000,        0,        0,        0,        0,        0,        0,        0,        0,        0,    -2000]
+    # y_hexa = [       0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,
+    #                  0,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,        0]
+    # ai0s =   [    -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,
+    #               -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2]
+
+    # Bar 05
+    names = [ 'bo4_21', 'bo4_22', 'bo4_23', 'bo4_24', 'bo5_01', 'bo5_02', 'bo5_03', 'bo5_04', 'bo5_05', 'bo5_06', 'bo5_07',
+              'bo5_08', 'bo5_09', 'bo5_10', 'bo5_11', 'bo5_12', 'bo5_13', 'bo5_14', 'bo5_15', 'bo5_16', 'bo5_17', 'bo5_18']
+    x_piezo = [  50000,    40000,    29000,    17000,     5000,    -5000,   -16000,   -27000,   -39000,   -50000,   -50000, 
+                 50000,    40000,    29000,    17000,     5000,    -5000,   -16000,   -27000,   -39000,   -50000,   -50000]
+    x_hexa = [       1,        0,        0,        0,        0,        0,        0,        0,        0,        0,      -11,
+                     1,        0,        0,        0,        0,        0,        0,        0,        0,        0,      -11]    
+    y_piezo = [   6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,
+                 -2000,        0,        0,        0,        0,        0,        0,        0,        0,        0,    -2000]
+    y_hexa = [       0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,
+                     0,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2,        0]
+    ai0s =   [    -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,
+                  -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2]
+
+
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
+    assert len(x_piezo) == len(x_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
+    assert len(x_piezo) == len(y_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_hexa)})"
+
+    waxs_arc = [0, 20]
+    ai_list = [0.10, 0.12, 0.15, 0.20]
+    xstep = 300
+    dets = [pil2M, pil900KW]
+
+    for name, xs, ys, xs_hexa, ys_hexa, ai0 in zip(names, x_piezo, y_piezo, x_hexa, y_hexa, ai0s):
+        yield from bps.mv(stage.x, xs_hexa,
+                          stage.y, ys_hexa,
+                          piezo.x, xs,
+                          piezo.y, ys,
+                          piezo.th, ai0)
+
+        try:
+            yield from alignement_gisaxs_doblestack(0.1)
+
+            ai0 = piezo.th.position
+            yield from det_exposure_time(t, t)
+
+            s = Signal(name='target_file_name', value='')
+            @bpp.stage_decorator(dets)
+            @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+            def inner():
+                for i, wa in enumerate(waxs_arc):
+                    yield from bps.mv(waxs, wa)
+
+                    counter = 0
+                    for k, ais in enumerate(ai_list):
+                        yield from bps.mv(piezo.th, ai0 + ais)
+
+                        name_fmt = "{sample}_{energy}eV_ai{ai}_wa{wax}"
+                        
+                        yield from bps.mv(piezo.x, xs - counter * xstep)
+                        counter += 1
+                        e=energy.energy.position
+                        sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        s.put(sample_name)
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, piezo.th, piezo.x] + [s])
+                yield from bps.mv(piezo.th, ai0)
+
+            (yield from inner())
+        except:
+            print('sample', name, 'did not aligned')
+
+
+
+def giwaxs_guilhem_2026_3(t=1, name="Test", ai_list: list[int]|None = None, xstep=10, waxs_arc = (0, 20)):
+    # Bar 01
+    names = ['bo1_01_thr14keV', 'PVK25-031_thr14keV']
+    x_piezo = [ 50000,    25000] 
+    x_hexa = [      1,        0]
+    y_piezo = [  6500,     6500]
+    y_hexa = [      0,        0]
+    ai0s =   [   -0.5,     -0.5]
+
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
+    assert len(x_piezo) == len(x_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
+    assert len(x_piezo) == len(y_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_hexa)})"
+
+    waxs_arc = [0, 20]
+    ai_list = [1, 2, 3, 4, 5]
+    xstep = 300
+    dets = [pil2M, pil900KW]
+
+    for name, xs, ys, xs_hexa, ys_hexa, ai0 in zip(names, x_piezo, y_piezo, x_hexa, y_hexa, ai0s):
+        yield from bps.mv(stage.x, xs_hexa,
+                          stage.y, ys_hexa,
+                          piezo.x, xs,
+                          piezo.y, ys,
+                          piezo.th, ai0)
+
+        try:
+            yield from alignement_gisaxs_short(0.1)
+
+            ai0 = piezo.th.position
+            yield from det_exposure_time(t, t)
+
+            s = Signal(name='target_file_name', value='')
+            @bpp.stage_decorator(dets)
+            @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+            def inner():
+                for i, wa in enumerate(waxs_arc):
+                    yield from bps.mv(waxs, wa)
+
+                    counter = 0
+                    for k, ais in enumerate(ai_list):
+                        yield from bps.mv(piezo.th, ai0 + ais)
+
+                        name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}"
+                        yield from bps.mv(piezo.x, xs - counter * xstep)
+                        counter += 1
+                        e=energy.energy.position
+                        sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        s.put(sample_name)
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, piezo.th, piezo.x] + [s])
+
+                        name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}"
+                        yield from bps.mv(piezo.x, -1500 + xs - counter * xstep)
+                        counter += 1
+                        e=energy.energy.position
+                        sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        s.put(sample_name)
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, piezo.th, piezo.x] + [s])
+                yield from bps.mv(piezo.th, ai0)
+
+            (yield from inner())
+        except:
+            print('sample', name, 'did not aligned')
+
+
+def giwaxs_milo_2026_3(t=1, name="Test", ai_list: list[int]|None = None, xstep=10, waxs_arc = (0, 20)):
+    # Bar 01
+    names = [   'ref',     'C6',     'C8',     '12']
+    x_piezo = [-15000,   -29000,   -44000,   -50000]
+    x_hexa = [      0,        0,        0,       -8]    
+    y_piezo = [  5500,     5500,     5500,     5500]
+    y_hexa = [      0,        0,        0,        0]
+    ai0s =   [   -1.0,     -1.0,     -1.0,     -1.0]
+
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
+    assert len(x_piezo) == len(x_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
+    assert len(x_piezo) == len(y_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_hexa)})"
+
+    waxs_arc = [0, 20]
+    ai_list = [0.10, 0.16, 0.20]
+    xstep = 300
+    dets = [pil2M, pil900KW]
+
+    for name, xs, ys, xs_hexa, ys_hexa, ai0 in zip(names, x_piezo, y_piezo, x_hexa, y_hexa, ai0s):
+        yield from bps.mv(stage.x, xs_hexa,
+                          stage.y, ys_hexa,
+                          piezo.x, xs,
+                          piezo.y, ys,
+                          piezo.th, ai0)
+
+        try:
+            yield from alignement_gisaxs_doblestack(0.1)
+
+            ai0 = piezo.th.position
+            yield from det_exposure_time(t, t)
+
+            s = Signal(name='target_file_name', value='')
+            @bpp.stage_decorator(dets)
+            @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+            def inner():
+                for i, wa in enumerate(waxs_arc):
+                    yield from bps.mv(waxs, wa)
+
+                    counter = 0
+                    for k, ais in enumerate(ai_list):
+                        yield from bps.mv(piezo.th, ai0 + ais)
+
+                        name_fmt = "{sample}_{energy}eV_ai{ai}_wa{wax}"
+                        
+                        yield from bps.mv(piezo.x, xs - counter * xstep)
+                        counter += 1
+                        e=energy.energy.position
+                        sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        s.put(sample_name)
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, piezo.th, piezo.x] + [s])
+                yield from bps.mv(piezo.th, ai0)
+
+            (yield from inner())
+        except:
+            print('sample', name, 'did not aligned')
+
+
+def giwaxs_wenkai_2026_3(t=1, name="Test", ai_list: list[int]|None = None, xstep=10, waxs_arc = (0, 20)):
+    # Bar 01
+    # names = [ 'YZY_1',  'YZY_2',  'YZY_3',  'YZY_4',  'YZY_5',  'YZY_6',  'YZY_7',  'NHB_1',
+    #           'NHB_2',  'LXL_1',  'LXL_3',  'LXL_5',  'LXL_7',  'LXL_9',   'YL_1',   'YL_3']
+    # x_piezo = [ 50000,    35000,    20000,     5000,   -12000,   -27000,   -42000,   -50000, 
+    #             50000,    35000,    20000,     5000,   -12000,   -27000,   -42000,   -50000]
+    # x_hexa = [      0,        0,        0,        0,        0,        0,        0,        0,
+    #                 0,        0,        0,        0,        0,        0,        0,        0]    
+    # y_piezo = [  6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,
+    #             -2000,        0,        0,        0,        0,        0,        0,        0]
+    # y_hexa = [      0,        0,        0,        0,        0,        0,        0,        0,
+    #                 0,       -2,       -2,       -2,       -2,       -2,       -2,       -2]
+    # ai0s =   [   -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,
+    #              -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2]
+
+    # Bar 02
+    # names = [  'YL_5',   'YL_7',   'YL_9',  'YL_11',  'YL_13',  'LYY_1',  'LYY_2',  'LYY_3',
+    #           'LYY_4',  'LYY_5',  'LYY_6',  'LYY_7',  'LYY_8',  'LYY_9', 'LYY_10',     'A1']
+    # x_piezo = [ 50000,    34000,    19000,     4000,   -11000,   -27000,   -42000,   -50000, 
+    #             50000,    34000,    19000,     4000,   -11000,   -27000,   -42000,   -50000]
+    # x_hexa = [      0,        0,        0,        0,        0,        0,        0,       -8,
+    #                 0,        0,        0,        0,        0,        0,        0,       -8]    
+    # y_piezo = [  6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,
+    #             -2000,        0,        0,        0,        0,        0,        0,        0]
+    # y_hexa = [      0,        0,        0,        0,        0,        0,        0,        0,
+    #                 0,       -2,       -2,       -2,       -2,       -2,       -2,       -2]
+    # ai0s =   [   -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,
+    #              -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2]
+
+    # Bar 03
+    names = [    'A3',     'A5',     'B1',     'B3',     'B5',     'C1',     'C3','XXH_1_per','XXH_2_ukn',
+          'XXH_3_per','XXH_4_par','XXH_5_per','XXH_6_par','XXH_7_per','XXH_8_par','XXH_9_per','XXH_10_par','XXH_11_per']
+    x_piezo = [ 50000,    38000,    23000,     8000,    -7000,   -20000,   -37000,   -50000,   -50000, 
+                50000,    38000,    23000,     8000,    -7000,   -22000,   -37000,   -50000,    -50000]
+    x_hexa = [      3,        0,        0,        0,        0,        0,        0,       -2,      -15,
+                    3,        0,        0,        0,        0,        0,        0,       -2,      -15]    
+    y_piezo = [  6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,     6500,
+                -2000,        0,        0,        0,        0,        0,        0,        0,        0]
+    y_hexa = [      0,        0,        0,        0,        0,        0,        0,        0,        0,
+                    0,       -2,       -2,       -2,       -2,       -2,       -2,       -2,       -2]
+    ai0s =   [   -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,     -1.0,
+                 -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2,     -2.2]
+
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of y piezo ({len(y_piezo)})"
+    assert len(x_piezo) == len(x_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of x hexa ({len(x_hexa)})"
+    assert len(x_piezo) == len(y_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of y hexa ({len(y_hexa)})"
+
+    waxs_arc = [0, 20]
+    ai_list = [0.05, 0.12, 0.16, 0.20]
+    xstep = 300
+    dets = [pil2M, pil900KW]
+
+    for name, xs, ys, xs_hexa, ys_hexa, ai0 in zip(names, x_piezo, y_piezo, x_hexa, y_hexa, ai0s):
+        yield from bps.mv(stage.x, xs_hexa,
+                          stage.y, ys_hexa,
+                          piezo.x, xs,
+                          piezo.y, ys,
+                          piezo.th, ai0)
+
+        try:
+            yield from alignement_gisaxs_doblestack(0.1)
+
+            ai0 = piezo.th.position
+            yield from det_exposure_time(t, t)
+
+            s = Signal(name='target_file_name', value='')
+            @bpp.stage_decorator(dets)
+            @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+            def inner():
+                for i, wa in enumerate(waxs_arc):
+                    yield from bps.mv(waxs, wa)
+
+                    counter = 0
+                    for k, ais in enumerate(ai_list):
+                        yield from bps.mv(piezo.th, ai0 + ais)
+
+                        name_fmt = "{sample}_{energy}eV_ai{ai}_wa{wax}"
+                        
+                        yield from bps.mv(piezo.x, xs - counter * xstep)
+                        counter += 1
+                        e=energy.energy.position
+                        sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        s.put(sample_name)
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, piezo.th, piezo.x] + [s])
+                yield from bps.mv(piezo.th, ai0)
+
+            (yield from inner())
+        except:
+            print('sample', name, 'did not aligned')
+
+
+

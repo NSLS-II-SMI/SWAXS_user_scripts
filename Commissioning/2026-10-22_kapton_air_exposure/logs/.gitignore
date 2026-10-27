@@ -1,0 +1,4 @@
+# Keep the logging directory, but not generated experiment data, in git.
+*
+!.gitignore
+!README.md

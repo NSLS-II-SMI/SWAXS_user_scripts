@@ -1,0 +1,165 @@
+{
+  "timezone": "America/New_York (EDT, UTC-04:00)",
+  "samples": 57135,
+  "first_sample": "Oct 22, 17:01:14",
+  "last_sample": "Oct 23, 08:58:10",
+  "final_close_first_closed_sample": "Oct 22, 22:57:33",
+  "final_close_bracket_epoch": [
+    1792724252.284496,
+    1792724253.2848358
+  ],
+  "final_close_estimate_epoch": 1792724252.6001456,
+  "beam_counter_s": 17846.29573118966,
+  "minor_alarm_correction_s": 116.02907729661092,
+  "early_correction_flux_band": [
+    45,
+    55
+  ],
+  "best_estimate_beam_s": 17962.32480848627,
+  "fast_open_s": 20463.208022584207,
+  "shutter_open_without_beam_s": 2500.8832140979357,
+  "unknown_beam_counter_s": 485.0532513028011,
+  "unobserved_s": 282.5112564563751,
+  "outage_start": "Oct 22, 17:49:15",
+  "outage_end": "Oct 22, 18:30:56",
+  "outage_sample_duration_s": 2501.001849412918,
+  "pressure_trip_sample": "Oct 22, 22:57:32",
+  "pressure_trip_waxs_torr": 0.054,
+  "image_attempts": 63,
+  "image_runs_returned": 62,
+  "image_outcomes": {
+    "failed": 1,
+    "interrupted": 62
+  },
+  "first_returned_image": "Oct 22, 17:16:26",
+  "last_returned_image": "Oct 22, 22:56:27",
+  "median_image_spacing_s": 299.9380407333374,
+  "bpm3_beam_weighted_mean": 49.640688893123205,
+  "bpm3_beam_weighted_sd": 0.26365577607667656,
+  "bpm3_beam_weighted_cv_percent": 0.5311283585212315,
+  "bpm3_integral_signal_seconds": 891662.1776152959,
+  "bpm3_weighted_coverage_s": 17962.32480848627,
+  "pressure_beam_on_stats_torr": {
+    "waxs_pressure": {
+      "median": 0.047,
+      "p95": 0.048,
+      "max": 0.054
+    },
+    "maxs_pressure": {
+      "median": 0.043,
+      "p95": 0.045,
+      "max": 0.045
+    }
+  },
+  "gaps_over_3s": [
+    {
+      "before": "Oct 22, 17:03:02",
+      "after": "Oct 22, 17:07:31",
+      "seconds": 269.36147475242615
+    },
+    {
+      "before": "Oct 22, 17:13:49",
+      "after": "Oct 22, 17:14:02",
+      "seconds": 12.779434204101562
+    }
+  ],
+  "post_closure_drift": {
+    "start": "Oct 22, 23:00:00",
+    "stop": "Oct 23, 06:30:00",
+    "fit": "OLS on 5-minute medians; no independent-point error bars",
+    "pressures": {
+      "waxs_pressure": {
+        "first_15min_median_torr": 0.049,
+        "last_15min_median_torr": 0.052,
+        "change_torr": 0.0029999999999999957,
+        "change_percent": 6.122448979591821,
+        "slope_torr_per_hour": 0.0003734288752307274,
+        "intercept_torr": 0.04963855279230308
+      },
+      "maxs_pressure": {
+        "first_15min_median_torr": 0.045,
+        "last_15min_median_torr": 0.048,
+        "change_torr": 0.0030000000000000027,
+        "change_percent": 6.666666666666665,
+        "slope_torr_per_hour": 0.0003503642968064956,
+        "intercept_torr": 0.04569726581334216
+      }
+    }
+  },
+  "database_sha256": "74b1a2976cbc8f9dc849fbb6edcc70ad2326f9f5594a53d00805d3124af9732a",
+  "identity": {
+    "photon_closed": "Not Open",
+    "photon_open": "Open",
+    "settings": {
+      "beam_threshold": 10.0,
+      "detector_timeout_s": 30.0,
+      "exposure_s": 1.0,
+      "image_period_s": 300.0,
+      "pressure_limits": {
+        "maxs_pressure": 0.05,
+        "saxs_pressure": 0.05,
+        "waxs_pressure": 0.05
+      },
+      "pressure_units": {
+        "maxs_pressure": "Torr",
+        "saxs_pressure": "Torr",
+        "waxs_pressure": "Torr"
+      },
+      "read_timeout_s": 0.2,
+      "recovery_timeout_s": 120.0,
+      "sample_period_s": 1.0,
+      "stale_s": 3.0
+    },
+    "signals": {
+      "bpm": "XF:12IDA-BI:2{EM:BPM2}SumX:MeanValue_RBV",
+      "fast": "XF:12IDA-BI:2{EM:BPM1}DAC3",
+      "fe": "XF:12ID-PPS{Sh:FE}Sts:Cls-Sts",
+      "incident_flux": "XF:12IDB-BI:2{EM:BPM3}SumX:MeanValue_RBV",
+      "maxs_pressure": "XF:12IDC-VA:2{B1:WAXS-TCG:9}P:Raw-I",
+      "photon": "XF:12IDA-PPS:2{PSh}Pos-Sts",
+      "saxs_pressure": "XF:12IDC-VA:2{Det:1M-TCG:8}P-I",
+      "waxs_pressure": "XF:12IDC-VA:2{Det:300KW-TCG:7}P:Raw-I"
+    },
+    "specimen": "kapton_air_holder_01"
+  },
+  "recovery": [
+    {
+      "fe_openings": 1,
+      "target_eV": 6000,
+      "status": "started",
+      "audit_wall": 1792703437.6664858
+    },
+    {
+      "fe_openings": 1,
+      "target_eV": 6000,
+      "status": "failed",
+      "audit_wall": 1792703553.676169
+    },
+    {
+      "fe_openings": 1,
+      "target_eV": 6000,
+      "status": "started",
+      "audit_wall": 1792703653.526412
+    },
+    {
+      "fe_openings": 1,
+      "target_eV": 6000,
+      "status": "complete",
+      "beam_s": 0.022292052395641804,
+      "audit_wall": 1792703653.547449
+    },
+    {
+      "fe_openings": 1,
+      "target_eV": 6000,
+      "status": "started",
+      "audit_wall": 1792703785.7607164
+    },
+    {
+      "fe_openings": 1,
+      "target_eV": 6000,
+      "status": "complete",
+      "beam_s": 24.323146772570908,
+      "audit_wall": 1792703785.7806048
+    }
+  ]
+}

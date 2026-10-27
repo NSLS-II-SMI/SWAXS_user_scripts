@@ -1,0 +1,21 @@
+[workspace]
+name = "kapton-commissioning-report"
+version = "0.1.0"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.12.*"
+tiled-client = "0.2.20.*"
+numpy = "2.5.4.*"
+matplotlib = "3.11.2.*"
+pillow = "13.0.0.*"
+httpx = "0.28.1.*"
+pymupdf = "2.*"
+ffmpeg = "*"
+
+[tasks]
+preview-report = "python overnight_report.py"
+report = "python overnight_report.py --apply --replace-existing"
+images = "python tiled_images.py --apply"
+movies = "python tiled_images.py --apply --render"
