@@ -841,7 +841,7 @@ def test_preview_is_a_dry_run(ns, tmp_path):
         ns['preview'](ns['run_trans'](arcs=(0, 10)))
 
 
-def test_murray_linkam_flow(ns, capsys):
+def test_murray_linkam_flow(ns, capsys, monkeypatch):
     load(ns, '2026C3_Murray.py')
     RE, lk = ns['RE'], ns['LThermal']
     data = lambda: [s for s in starts(ns) if 'user_hints' in s]      # noqa: E731
@@ -868,9 +868,23 @@ def test_murray_linkam_flow(ns, capsys):
         <= set(events(ns)[-1]['data'])
     assert (lk.temperature_setpoint.get(), lk.cmd.get()) == (25.0, 0)
 
+    capsys.readouterr()
+    assert ns['get_T']() == 25.0                                  # read only
+    assert 'Linkam 25.0 C: setpoint 25.0 C (+0.0), ramp 10 C/min, OFF' in capsys.readouterr().out
     ns['set_T'](-50)                                              # T by hand: waits until there
     assert (lk.temperature_setpoint.get(), lk.cmd.get(), lk.lnp_mode_set.get()) == (-50.0, 1, 'Auto')
+    assert 'Linkam -50.0 C: setpoint -50.0 C (+0.0), ramp 10 C/min, on' in capsys.readouterr().out
     lk.lag.put(3.0)                                               # still ramping: warns, measures
+    lk.status_code.put(8 | 16)
+    assert ns['get_T'](show=False) == -47.0 and not capsys.readouterr().out
+    ns['get_T']()
+    assert 'Linkam -47.0 C: setpoint -50.0 C (+3.0), ramp 10 C/min, on, not at setpoint, ' \
+        'LN2 pump on (auto)' in capsys.readouterr().out
+    def not_connected(**kw):
+        raise TimeoutError('STATUS not connected')
+    monkeypatch.setattr(lk.status_code, 'get', not_connected)
+    assert ns['get_T']() == -47.0                                 # status PV not connected: T still read
+    assert 'on\n' in capsys.readouterr().out
     ns['_docs'].clear()
     RE(ns['measure_T'](t=2))
     assert data() and all('_T-47.0C_expt2s' in s['sample_name'] for s in data())

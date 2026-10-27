@@ -17,7 +17,7 @@ Run sheet
      proposal_swap(321244); project_set('Murray')
      %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/YZhang_SMI_Base.py
      %run -i /home/xf12id/SWAXS_user_scripts/CFN/Yugang/2026C3_Murray.py
-     preflight(); linkam_T()
+     preflight(); get_T()                # Linkam T, setpoint, on/off, LN2 pump
    after closing the hutch: RE(shopen()); before opening it: RE(shclose())
 1) Calibrant: move it into the beam by hand, then
      collect_twsaxs('AgBH')              # WAXS at arcs 0, 20, 40; SAXS at 40 only; nothing else moves
@@ -34,6 +34,7 @@ Linkam (A)
      RE(measure_wsaxs('test', 1))        # quick look at arc 20 ('test' is skipped by the analysis)
      preview(measure_T()); RE(measure_T())   # RT: SAXS + WAXS at arc 20, names ..._T24.9C_...
 4) T by hand: set it on the Linkam CSS screen, or
+     get_T()                             # T now (returned), setpoint, ramp, on/off, LN2 pump
      set_T(-50)                          # TSERIES rate / LN2 pump / tol; waits until there
      RE(measure_T())                     # one frame per spot at this T; the Linkam is only read
      RE(measure_T(settle=120, t=2))      # soak 2 min first, longer exposure
@@ -152,7 +153,31 @@ def set_T(T, settle=0, **kw):
     override); waits until it is there, then soaks `settle` s."""
     lk = dict(TSERIES, settle=settle, **kw)
     RE(linkam_goto(T, **{k: lk[k] for k in ('tol', 'settle', 'timeout', 'rate', 'lnp')}))
-    print(f'Linkam {linkam_T():.1f} C')
+    get_T()
+
+
+def get_T(show=True):
+    """Console: the Linkam T now (degC), returned (T = get_T()).  show=True also prints the
+    setpoint, ramp rate, heating/cooling on or off and the controller status (at setpoint,
+    LN2 pump, error).  Only reads the Linkam; no RE."""
+    T = linkam_T()
+    if not show:
+        return T
+    T_set = LThermal.temperature_setpoint.get()
+    info = [f'setpoint {T_set:.1f} C ({T - T_set:+.1f})',
+            f'ramp {LThermal.temperature_rate_setpoint.get():g} C/min',
+            'on' if LThermal.cmd.get() else 'OFF (not heating/cooling)']
+    try:
+        code = int(LThermal.status_code.get())     # bits: 1 error, 2 at setpoint, 8 pump, 16 pump auto
+    except Exception:                               # no status PV / not connected: the T is enough
+        code = None
+    if code is not None:
+        info += ['at setpoint' if code & 2 else 'not at setpoint',
+                 'LN2 pump ' + ('on' if code & 8 else 'off') + (' (auto)' if code & 16 else '')]
+        if code & 1:
+            info.append('CONTROLLER ERROR')
+    print(f'Linkam {T:.1f} C: ' + ', '.join(info))
+    return T
 
 
 def measure_T(settle=0, **kw):

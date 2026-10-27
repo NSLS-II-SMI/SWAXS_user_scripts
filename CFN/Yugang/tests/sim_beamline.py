@@ -82,6 +82,7 @@ class Linkam(Device):
     temperature_setpoint = Cpt(Signal, value=25.0)
     temperature_rate_setpoint = Cpt(Signal, value=10.0)
     lnp_mode_set = Cpt(Signal, value='Manual')
+    status_code = Cpt(Signal, value=0)          # bits: 1 error, 2 at setpoint, 8 pump, 16 pump auto
     lag = Cpt(Signal, value=0.0, kind='omitted')
     temperature_current = Cpt(FollowSignal, value=25.0)
 
