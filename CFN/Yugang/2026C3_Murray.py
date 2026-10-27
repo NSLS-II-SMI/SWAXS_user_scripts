@@ -16,9 +16,12 @@ RE(measure_T())   # RT: SAXS + WAXS at arc 20, names ..._T24.9C_...
 
 
 series_start('T list')              # t = 0 for the list (else the sample's clock runs on)
-RE(run_T_list(   [-50, 40, -50, 40, -50, 25] , duration=60, settle=0))
+RE(run_T_list(   [-50, 50, -50, 50, -50, 50,  25] , duration=60, settle=0))
 
- 
+RE(run_T_ramp([-50, 50, -50, 50, -50, 50, 25], interval=5))
+
+
+
 
 NOTES:
 
@@ -33,11 +36,24 @@ data saved in: /nsls2/users/yuzhang/smi_proposals_link/2026-3/pass-321244/projec
 
 
 new_sample('RR_85_OD2', note='...') 
+new_sample('RR_85_OD2_TCycling', note='')
+series_start('T list')  
+RE(run_T_ramp([-50, 50, -50, 50, -50, 50, 25], interval=5))
 
 
+new_sample('RR_85_OD2_TCycling2', note='')
+series_start('T list')  
+RE(run_T_ramp([ -50  ], interval=15)) # from 25 to -26, got motor waming up problem,
+wait for the motor X cooling down
+RE(run_T_ramp([ 50  ], interval=15))
 
+RE(run_T_ramp([ -50  ], interval=15)) # from 25 to -26, got motor waming up problem,
+wait for the motor X cooling down
+RE(run_T_ramp([ 50  ], interval=15))
 
-
+RE(run_T_ramp([ -50  ], interval=15)) # from 25 to -26, got motor waming up problem,
+wait for the motor X cooling down
+RE(run_T_ramp([ 50  ], interval=15))
 
 
 
@@ -161,10 +177,10 @@ POS_XY_LIST = snake_xy(nx=5, ny=1, dx=0.2, dy=0.1)     # 25 spots over 0.8 x 0.4
 # EDIT with the group: Linkam setpoints (degC) of run_T_list, in order
 #TEMPS = [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
 TEMPS = [-50, 40, -50, 40, -50, 25]
-
+TEMPS = [-50, 40, -50, 40, -50, 25]
 
 TSERIES = dict(             # how set_T / run_T_list drive the Linkam
-    rate=3,                # ramp (degC/min)
+    rate=2,                # ramp (degC/min)
     lnp='Auto',             # LN2 pump in auto (cooling)
     tol=1.0,                # degC
     settle=0,              # s soak at each T of run_T_list before its track (0: track on arrival)
@@ -397,8 +413,8 @@ def run_T_ramp(temps=None, hold=0, **kw):
     if lk['end_T'] is not None:
         yield from linkam_goto(lk['end_T'], tol=lk['tol'], settle=0, timeout=lk['timeout'],
                                rate=lk['rate'], lnp=lk['lnp'])
-    if lk['off_at_end']:
-        yield from linkam_off()
+    #if lk['off_at_end']:
+    #    yield from linkam_off()
 
 
 def run_rt(*which, **kw):
