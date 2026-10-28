@@ -1070,6 +1070,24 @@ def test_murray_ova(ns, capsys):
     assert len(cam.written) == 1 and cam.written[0].startswith(ova_dir + 'Murray_AgBH_x')
 
 
+def test_murray_T_list_durations(ns, capsys):
+    load(ns, '2026C3_Murray.py')
+    RE, lk = ns['RE'], ns['LThermal']
+    data = lambda: [s for s in starts(ns) if 'user_hints' in s]      # noqa: E731
+    ns['new_sample']('S1')
+    plan = lambda **kw: ns['run_T_list']([5, 10], interval=0.2, settle=0, **kw)   # noqa: E731
+    with pytest.raises(ValueError, match='3 durations for 2 temperatures'):
+        RE(plan(duration=[1, 2, 3]))
+    capsys.readouterr()
+    assert ns['preview'](plan(duration=[7200, 3600])) == 2 * 2
+    assert 'tracks [7200, 3600] s' in capsys.readouterr().out
+    RE(plan(duration=[1.0, 0.4]))                                 # longer at 5 C than at 10 C
+    sp = [s['T_setpoint_C'] for s in data()]
+    assert sp == sorted(sp) and sp.count(5) > sp.count(10) >= 1
+    assert [s['user_hints']['frame_index'] for s in data()] == list(range(len(sp)))   # one clock
+    assert lk.temperature_setpoint.get() == ns['TSERIES']['end_T']
+
+
 def test_murray_snake_xy(ns):
     load(ns, '2026C3_Murray.py')
     snake = ns['snake_xy']

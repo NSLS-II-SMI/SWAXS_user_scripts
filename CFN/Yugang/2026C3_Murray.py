@@ -130,6 +130,7 @@ Linkam (A)
      RE(run_T_list())                    # per T: ramp, soak, track; Linkam to end_T at the end
      RE(run_T_list([0, 25, 50], duration=60, settle=0))
      RE(run_T_list(max_cycles=1))        # one frame per T
+     RE(run_T_list([5, 10], interval=30, duration=[7200, 3600], settle=0))   # 2 h at 5 C, 1 h at 10 C
    after RE.stop(): RE(run_T_list([the remaining temperatures]))   (the spots run on)
    Measured all the way through the ramps instead (no soak, no duration):
      preview(run_T_ramp([-50, 50, -50, 50, -50, 50, 25], interval=5))   # estimate + names
@@ -337,33 +338,40 @@ def run_T_list(temps=None, ova=None, **kw):
     """
     Plan: automatic T series of the Linkam sample.  For each T of `temps` (default TEMPS):
     Linkam to T (TSERIES: rate, LN2 pump, tol, timeout), soak `settle` s, then the time track
-    at that T (TRACK: a frame every `interval` s for `duration` s; max_cycles=N: N frames), each
-    frame on the next spot of POS_XY_LIST.  One clock and frame counter for the whole list --
+    at that T (TRACK: a frame every `interval` s for `duration` s -- one value, or a list with
+    one per T; max_cycles=N: N frames), each frame on the next spot of POS_XY_LIST.  One clock and frame counter for the whole list --
     started here unless it is running -- so the names _<frame>_<s since series_start()>s_..._T..C
     run on across the temperatures, and so do the spots.  At the end the Linkam goes to end_T
     (not measured) and, with off_at_end, is switched off.  ova (None: OVA): True = an on-axis
     camera image before every frame, N = before every N-th.
-    kw override TSERIES and TRACK, e.g. run_T_list([0, 25], duration=60, settle=0).
+    kw override TSERIES and TRACK, e.g. run_T_list([0, 25], duration=60, settle=0),
+    run_T_list([5, 10], interval=30, duration=[7200, 3600], settle=0)   # 2 h at 5 C, 1 h at 10 C
     """
     s = _sample()
     temps = list(TEMPS if temps is None else temps)
     lk = {k: kw.pop(k, v) for k, v in TSERIES.items()}
     track = dict(TRACK, ova=_ova_opt(ova), **kw)
+    durations = track.pop('duration')
+    if not isinstance(durations, (list, tuple, np.ndarray)):
+        durations = [durations] * len(temps)
+    if len(durations) != len(temps):
+        raise ValueError(f'{len(durations)} durations for {len(temps)} temperatures {temps}')
     T_now = yield from bps.rd(LThermal.temperature_current)
     path = [T_now] + temps
     ramp = sum(abs(b - a) for a, b in zip(path, path[1:])) / lk['rate'] if lk['rate'] else 0
-    per_T = (lk['settle'] + track['duration']) / 60
-    print(f'run_T_list: {s["name"]}, {len(temps)} temperatures {temps} C, ~{ramp + len(temps) * per_T:.0f} '
-          f'min (ramps ~{ramp:.0f} min + {per_T:.1f} min soak and track per T)')
+    at_T = (len(temps) * lk['settle'] + sum(durations)) / 60
+    print(f'run_T_list: {s["name"]}, {len(temps)} temperatures {temps} C, tracks {list(durations)} s, '
+          f'~{ramp + at_T:.0f} min (ramps ~{ramp:.0f} min + {at_T:.0f} min soak and track)')
     if YZ_SERIES['t0'] is None and not _previewing():
         series_start('(auto: run_T_list start)')
     spots = _spot_counter()
     for i, T in enumerate(temps):
-        print(f'\n##### {s["name"]}: T {i + 1}/{len(temps)} = {T} C #####')
+        print(f'\n##### {s["name"]}: T {i + 1}/{len(temps)} = {T} C, track {durations[i]} s #####')
         yield from linkam_goto(T, tol=lk['tol'], settle=lk['settle'], timeout=lk['timeout'],
                                rate=lk['rate'], lnp=lk['lnp'])
         name_T = {'T': T} if _previewing() else {}        # a dry run never sets the Linkam
-        yield from _huber_names(_track(s, spots, **_linkam_kw(track, name_T, T_setpoint_C=T)))
+        opts = _linkam_kw(dict(track, duration=durations[i]), name_T, T_setpoint_C=T)
+        yield from _huber_names(_track(s, spots, **opts))
     if lk['end_T'] is not None:
         yield from linkam_goto(lk['end_T'], tol=lk['tol'], settle=0, timeout=lk['timeout'],
                                rate=lk['rate'], lnp=lk['lnp'])
