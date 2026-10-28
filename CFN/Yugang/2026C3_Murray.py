@@ -11,6 +11,7 @@
 
 8) new_sample('RR_85_OD2', note='...')    # Huber to LINKAM_POS (None: stays); resets clock + spots
 RE(measure_wsaxs('test', 1))        # for quick test
+
 RE(measure_T())   # RT: SAXS + WAXS at arc 20, names ..._T24.9C_...
 
 
@@ -20,6 +21,10 @@ RE(run_T_list(   [-50, 50, -50, 50, -50, 50,  25] , duration=60, settle=0))
 
 RE(run_T_ramp([-50, 50, -50, 50, -50, 50, 25], interval=5))
 
+
+
+new_sample('test', note='')
+RE(measure_T())
 
 
 
@@ -54,6 +59,13 @@ RE(run_T_ramp([ 50  ], interval=15))
 RE(run_T_ramp([ -50  ], interval=15)) # from 25 to -26, got motor waming up problem,
 wait for the motor X cooling down
 RE(run_T_ramp([ 50  ], interval=15))
+
+RE(run_T_ramp([ 15  ], interval=30))
+
+
+
+
+new_sample('BR_CISZnS_TChange', note='')
 
 
 
@@ -149,7 +161,7 @@ RT_MD = {'experiment': 'Murray_RT', 'holder': 'RT transmission holder',
 
 # EDIT: Huber sx / sy (mm) of the sample in the Linkam window -- the Linkam is on the Huber and
 # the piezo is never moved for it.  None: the Huber position when new_sample() is called.
-LINKAM_POS = dict(sx=None, sy=None, sz=-15)
+LINKAM_POS = dict(sx=None, sy=None, sz=-18)
 LINKAM_XYZ = ('sx', 'sy', 'sz')     # Linkam names: _x/_y/_z = Huber sx/sy/sz (mm)
 
 
@@ -173,7 +185,7 @@ def snake_xy(nx, ny, dx, dy, r_max=None):
 # used it starts over at the first (warning).  Keep the grid inside the window and the steps
 # larger than the beam.  Rows along sx: the Huber y motor heats up when it moves a lot.
 # Or a list: [(0, 0), (0.2, 0), (0.4, 0), (0.4, 0.1), ...]
-POS_XY_LIST = snake_xy(nx=5, ny=1, dx=0.2, dy=0.1)     # 25 spots over 0.8 x 0.4 mm
+POS_XY_LIST = snake_xy(nx=3, ny=3, dx=0.2, dy=0.1)     # 25 spots over 0.8 x 0.4 mm
 
 # EDIT with the group: Linkam setpoints (degC) of run_T_list, in order
 #TEMPS = [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]
