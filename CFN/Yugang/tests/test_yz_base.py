@@ -326,7 +326,7 @@ from sim_beamline import load  # noqa: E402
 
 def test_scripts_load_without_side_effects(ns):
     for script in ('2026C3_HZheng.py', '2026C3_PGuo.py', '2026C3_TSAXS384.py', '2026C3_JMayer.py',
-                   '2026C3_Murray.py'):
+                   '2026C3_Murray.py', '2026C3_OGang.py'):
         load(ns, script)
     assert starts(ns) == []                       # loading never takes data or moves motors
 
@@ -1141,3 +1141,104 @@ def test_murray_collect_twsaxs(ns):
     assert [s['user_hints']['detectors'] for s in st] == [['pil900KW'], ['pil900KW'], ['pil900KW', 'pil2M']]
     assert all(s['sample_name'] == 'Murray_AgBH_x1234.00_y-56.00_z0.00_expt1s' for s in st)
     assert (piezo.x.position, piezo.y.position, piezo.th.position) == (1234.0, -56.0, 0.3)
+
+
+def test_ogang_t_steps_and_spot_map(ns):
+    load(ns, '2026C3_OGang.py')
+    T = ns['t_steps'](49, 41.5, 0.1)
+    assert len(T) == 76 and (T[0], T[1], T[-1]) == (49.0, 48.9, 41.5) == tuple(ns['TEMPS'][i] for i in (0, 1, -1))
+    assert ns['t_steps'](41.5, 42, 0.1) == [41.5, 41.6, 41.7, 41.8, 41.9, 42.0]
+    m = ns['spot_map'](3, 4, 0.2, 0.05)                           # Y first, then the next X column
+    assert m[:5] == [(-0.2, -0.075), (-0.2, -0.025), (-0.2, 0.025), (-0.2, 0.075), (0.0, 0.075)]
+    assert len(m) == len(set(m)) == 12 and m[-1] == (0.2, 0.075)
+    steps = {(round(abs(a[0] - b[0]), 4), round(abs(a[1] - b[1]), 4)) for a, b in zip(m, m[1:])}
+    assert steps == {(0.0, 0.05), (0.2, 0.0)}                     # one short move between spots
+    assert len(ns['SPOT_MAP']) >= 228                             # the default program fits the map
+
+
+def test_ogang_flow(ns, capsys, monkeypatch):
+    load(ns, '2026C3_OGang.py')
+    RE, lk, piezo, huber = ns['RE'], ns['LThermal'], ns['piezo'], ns['stage']
+    data = lambda: [s for s in starts(ns) if 'user_hints' in s]      # noqa: E731
+    with pytest.raises(ValueError, match='new_sample'):
+        RE(ns['measure_T']())
+    RE(ns['bps'].mv(piezo.x, 100.0, piezo.y, 50.0, huber.x, 1.0, huber.y, 2.0))
+    moved = []
+    RE.msg_hook = lambda msg: moved.append(msg.obj.name) if msg.command == 'set' else None
+    ns['new_sample']('NP SL1', note='cap 1')                      # here: the Huber position
+    ns['SPOT_MAP'] = ns['spot_map'](2, 3, 0.2, 0.05)              # 6 spots
+
+    RE(ns['measure_T'](n=2))                                      # test frames, T as it is
+    st = data()
+    assert [s['user_hints']['detectors'] for s in st] == [['pil2M'], ['pil2M']]   # SAXS only
+    assert all(s['user_hints']['waxs_arc_deg'] == 20 for s in st)
+    assert [s['sample_name'] for s in st] == ['OGang_NP-SL1_x0.90_y1.95_z0.00_T25.0C_expt0.1s',
+                                              'OGang_NP-SL1_x0.90_y2.00_z0.00_T25.0C_expt0.1s']
+    assert [s['user_hints']['sample_info']['spot'] for s in st] == [0, 1]
+    assert [(s['user_hints']['positions']['sx'], s['user_hints']['positions']['sy']) for s in st] == \
+        [(pytest.approx(0.9), pytest.approx(1.95)), (pytest.approx(0.9), pytest.approx(2.0))]
+    assert 'frame_index' not in st[0]['user_hints']
+
+    capsys.readouterr()
+    assert ns['preview'](ns['run_T_steps']()) == 6                # dry run: first 2 steps, 3 frames each
+    out = capsys.readouterr().out
+    assert 'run_T_steps: NP-SL1, 76 T 49.0 -> 41.5 C' in out and '228 frames' in out
+    assert 'WARNING: SPOT_MAP runs out after 4 of 228 frames' in out
+    shown = re.findall(r'^ +\d+  (\S+)$', out, re.M)              # the dry run's list of names
+    assert [re.search(r'_T(\d+\.\d)C_', n).group(1) for n in shown] == ['49.0'] * 3 + ['48.9'] * 3
+    assert ns['SPOT'] == dict(i=1, used=1) and lk.temperature_setpoint.get() == 25.0   # nothing used / set
+
+    ns['SPOT_MAP'] = ns['spot_map'](4, 3, 0.2, 0.05)              # 12 spots
+    ns['_docs'].clear()
+    RE(ns['run_T_steps']([49.0, 48.9, 48.8], dwell=0.6, interval=0.2, offset=0.1))
+    st = data()                                                   # frames at 0.1, 0.3, 0.5 | 0.7 ...
+    assert [s['T_setpoint_C'] for s in st] == [49.0] * 3 + [48.9] * 3 + [48.8] * 3
+    assert [s['T_step'] for s in st] == [0] * 3 + [1] * 3 + [2] * 3
+    assert [float(re.search(r'_T(\d+\.\d)C_', s['sample_name']).group(1)) for s in st] == \
+        [49.0] * 3 + [48.9] * 3 + [48.8] * 3
+    assert [s['user_hints']['frame_index'] for s in st] == list(range(9))
+    assert [s['user_hints']['sample_info']['spot'] for s in st] == list(range(2, 11))   # fresh spots
+    el = [s['user_hints']['elapsed_s'] for s in st]
+    assert el == sorted(el) and el[-1] == pytest.approx(1.7, abs=0.15)   # on the clock
+    assert all(s['sample_name'].endswith('_expt0.1s') for s in st)
+    assert lk.temperature_setpoint.get() == 48.8 and lk.cmd.get() == 1  # stays at the last T
+
+    ns['_docs'].clear()
+    RE(ns['run_T_steps']([48.7], dwell=0.8, interval=0.2, offset=0, per_spot=2, end_T=25))
+    st = data()
+    assert [s['user_hints']['sample_info']['spot'] for s in st] == [11, 11, 0, 0]   # twice each; wraps
+    assert [s['user_hints']['sample_info']['spot_use'] for s in st] == [1, 2, 3, 4]
+    assert 'WARNING: all 12 spots of SPOT_MAP used' in capsys.readouterr().out
+    assert lk.temperature_setpoint.get() == 25.0                   # end_T, not measured
+    assert ns['YZ']['name_xyz'] == ('x', 'y', 'z')
+    assert not [m for m in moved if m.startswith('piezo')]        # the piezo never moved
+    RE.msg_hook = None
+
+    ns['new_sample']('NP SL2')                                    # hot Huber y motor: waits
+    temps = iter([50.0, 47.0, 44.0])
+    monkeypatch.setattr(ns['huber_y_T'], 'get', lambda **kw: next(temps, 44.0))
+    ns['MOTOR_T_WAIT'] = 0.01
+    capsys.readouterr()
+    RE(ns['measure_T'](n=2))                                      # spot 0: sx, sy move; spot 1: sy
+    out = capsys.readouterr().out
+    assert 'sy motor 50.0 C > 48 C' in out and 'sy motor 44.0 C' in out
+
+    cam = ns['ova_cam']
+    ns['_docs'].clear()
+    RE(ns['run_T_steps']([49.0], dwell=0.6, interval=0.2, offset=0.1, ova=2))   # camera, every 2nd frame
+    assert len(data()) == 3 and len(cam.written) == 2
+    assert all(w.startswith(ns['YZ']['ova_dir'] + 'OGang_NP-SL2_00') and '_T49.0C_' in w for w in cam.written)
+
+    ns['STAGE'] = 'piezo'                                         # spots on the piezo (um)
+    ns['new_sample']('NP SL3')
+    ns['_docs'].clear()
+    RE(ns['measure_T'](n=2))
+    st = data()
+    assert [(s['user_hints']['positions']['x'], s['user_hints']['positions']['y']) for s in st] == \
+        [(pytest.approx(-200.0), pytest.approx(0.0)), (pytest.approx(-200.0), pytest.approx(50.0))]
+    assert '_x-200.00_y0.00_' in st[0]['sample_name']             # center (100, 50) um + spot 0 in um
+
+    ns['collect_saxs']('AgBH')
+    st = data()[2:]
+    assert [s['user_hints']['detectors'] for s in st] == [['pil2M']]
+    assert st[0]['sample_name'].startswith('OGang_AgBH_x')
