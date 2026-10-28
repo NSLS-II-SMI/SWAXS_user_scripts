@@ -24,9 +24,12 @@ RE(run_T_ramp([-50, 50, -50, 50, -50, 50, 25], interval=5))
 
 
 new_sample('test', note='')
-RE(measure_T())
++
+RE(run_T_ramp([ 50 ], interval=30))
 
+new_sample('BR_CIS_ZnS_3_1_1wp', note='')
 
+RE(run_T_list(   [5] , duration=60, settle=0))
 
 NOTES:
 
