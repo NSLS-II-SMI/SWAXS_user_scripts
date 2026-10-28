@@ -96,6 +96,10 @@ Run sheet
 1) Calibrant: move it into the beam by hand, then
      collect_twsaxs('AgBH')              # WAXS at arcs 0, 20, 40; SAXS at 40 only; nothing else moves
      collect_twsaxs('AgBH', t=2)
+     collect_twsaxs('AgBH', ova=True)    # + an on-axis camera image first
+   On-axis camera (OVA) images: the camera must be acquiring; RE(ova_snap('test')) to check.
+   Every plan below takes ova=True (an image at each spot / before every frame), ova=N (every
+   N-th frame of a track) or ova=False; the default is OVA (False) below.
 
 Linkam (A)
 2) Mount the Linkam on the Huber, LN2 (README "Linkam + LN2 in vacuum"; restart the IOC if
@@ -134,6 +138,7 @@ Linkam (A)
        # tol) the setpoint goes to 50 at once, frames go on; ... ends when 25 is reached
      RE(run_T_ramp([-50, 50, 25], interval=5, hold=60))   # + 1 min measured at each target
      RE(run_T_ramp([50], interval=15))   # stays at 50 at the end; return_RT=True: then to 25
+     RE(run_T_ramp([50], interval=15, ova=4))   # + a camera image before every 4th frame
    Spots: LK_SPOT['next'] = frames taken on this sample so far (the next spot is
    POS_XY_LIST[next % len]); all used -> starts over (warning): use a larger grid.
    Watch the LN2 dewar: a T not reached within `timeout` is measured anyway (the names carry
@@ -155,7 +160,15 @@ YZ.update(
     user='Murray',
     experiment='Murray',
     md={'beam': '16.1 keV, low divergence', 'saxs_sdd_m': 5},
+    ova_dir='/nsls2/auto-storage/smi/proposals/2026-3/pass-321244/projects/Murray/user_data/OVA/',
 )
+
+# EDIT: on-axis camera (OVA) images, as in 2026C3_TSAXS384.py (ova_snap) -- the default of the
+# ova= option of every plan here.  True: an image at every spot, before its exposure (on the first
+# arc; tracks: every frame); N: every N-th frame of a track (track_T, run_T_list, run_T_ramp);
+# False: none.  The camera must be acquiring.  Images -> YZ['ova_dir'], one logbook row each:
+# Murray_<sample>[_<frame>_<s>s][_T..C]_x.._y.._sx.._sy.._OVA_NNN.jpg (frame / T as the SAXS frame)
+OVA = False
 
 LINKAM_MD = {'experiment': 'Murray_Linkam', 'holder': 'Linkam LN2 stage',
              'environment': 'Linkam, LN2'}           # EDIT: + air / N2 purge / vacuum
@@ -292,32 +305,35 @@ def get_T(show=True):
     return T
 
 
-def measure_T(settle=0, **kw):
+def measure_T(settle=0, ova=None, **kw):
     """Plan: SAXS + WAXS (MEASURE; kw override) of the Linkam sample at the Linkam T as it is
     now (set by hand or with set_T; the Linkam is only read), after a soak of `settle` s:
     n_spots frames, each on the next spot of POS_XY_LIST (all arcs of a frame on its spot).
-    The T read at each frame is in its name (_T..C); no time index."""
+    The T read at each frame is in its name (_T..C); no time index.  ova (None: OVA): an
+    on-axis camera image at each spot first."""
     s = _sample()
     yield from _linkam_now(settle)
     opts = _linkam_kw(MEASURE, kw)
     check_arcs(opts['arcs'])                        # a refused arc uses no spot up
     spots = _spot_counter()
     at = [_next_spot(s, spots) for _ in range(opts.pop('n_spots'))]
+    opts['at_sample'] = _ova_first_arc(opts['T']) if _ova_opt(ova) else None
     yield from _huber_names(run_trans(at, **opts))
 
 
-def track_T(**kw):
+def track_T(ova=None, **kw):
     """Plan: time track of the Linkam sample at the present T (TRACK; kw override), as
     run_insitu in 2026C3_JMayer.py: a SAXS + WAXS frame every `interval` s for `duration` s
     (max_cycles=N: N frames), each on the next spot of POS_XY_LIST; names
     _<frame>_<s since series_start()>s_..._T..C (the clock starts at the first frame if it is
-    not running).  The Linkam is only read."""
+    not running).  The Linkam is only read.  ova (None: OVA): True = an on-axis camera image
+    before every frame, N = before every N-th."""
     s = _sample()
     yield from _linkam_now()
-    yield from _huber_names(_track(s, _spot_counter(), **_linkam_kw(TRACK, kw)))
+    yield from _huber_names(_track(s, _spot_counter(), ova=_ova_opt(ova), **_linkam_kw(TRACK, kw)))
 
 
-def run_T_list(temps=None, **kw):
+def run_T_list(temps=None, ova=None, **kw):
     """
     Plan: automatic T series of the Linkam sample.  For each T of `temps` (default TEMPS):
     Linkam to T (TSERIES: rate, LN2 pump, tol, timeout), soak `settle` s, then the time track
@@ -325,13 +341,14 @@ def run_T_list(temps=None, **kw):
     frame on the next spot of POS_XY_LIST.  One clock and frame counter for the whole list --
     started here unless it is running -- so the names _<frame>_<s since series_start()>s_..._T..C
     run on across the temperatures, and so do the spots.  At the end the Linkam goes to end_T
-    (not measured) and, with off_at_end, is switched off.
+    (not measured) and, with off_at_end, is switched off.  ova (None: OVA): True = an on-axis
+    camera image before every frame, N = before every N-th.
     kw override TSERIES and TRACK, e.g. run_T_list([0, 25], duration=60, settle=0).
     """
     s = _sample()
     temps = list(TEMPS if temps is None else temps)
     lk = {k: kw.pop(k, v) for k, v in TSERIES.items()}
-    track = dict(TRACK, **kw)
+    track = dict(TRACK, ova=_ova_opt(ova), **kw)
     T_now = yield from bps.rd(LThermal.temperature_current)
     path = [T_now] + temps
     ramp = sum(abs(b - a) for a, b in zip(path, path[1:])) / lk['rate'] if lk['rate'] else 0
@@ -354,7 +371,7 @@ def run_T_list(temps=None, **kw):
         yield from linkam_off()
 
 
-def run_T_ramp(temps=None, hold=0, return_RT=False, **kw):
+def run_T_ramp(temps=None, hold=0, return_RT=False, ova=None, **kw):
     """
     Plan: T ramps of the Linkam sample, measured all the way.  The Linkam goes to the first T of
     `temps` (default TEMPS) at the TSERIES rate and the frames start at once: a SAXS + WAXS frame
@@ -369,6 +386,8 @@ def run_T_ramp(temps=None, hold=0, return_RT=False, **kw):
         RE(run_T_ramp([-50, 50, -50, 50, -50, 50, 25], interval=5))
         RE(run_T_ramp([50], interval=15))                    # to 50, stays at 50
         RE(run_T_ramp([50], interval=15, return_RT=True))    # then back to 25
+        RE(run_T_ramp([50], interval=15, ova=4))             # + a camera image every 4th frame
+    ova (None: OVA): True = an on-axis camera image before every frame, N = before every N-th.
     kw override TSERIES and TRACK (duration is not used).
     """
     s = _sample()
@@ -376,7 +395,7 @@ def run_T_ramp(temps=None, hold=0, return_RT=False, **kw):
     if not temps:
         raise ValueError('no temperatures')
     lk = {k: kw.pop(k, v) for k, v in TSERIES.items()}
-    track = _linkam_kw(dict(TRACK, **kw), {}, T_ramp_C_per_min=lk['rate'])
+    track = _linkam_kw(dict(TRACK, ova=_ova_opt(ova), **kw), {}, T_ramp_C_per_min=lk['rate'])
     track.update(duration=None, max_cycles=None)
     md = track['md']                                 # T_setpoint_C: the target of each frame
     dry = _previewing()
@@ -439,21 +458,25 @@ def run_T_ramp(temps=None, hold=0, return_RT=False, **kw):
     #    yield from linkam_off()
 
 
-def run_rt(*which, **kw):
+def run_rt(*which, ova=None, **kw):
     """Plan: run_trans of RT_SAMPLES (or the given keys / names of it) with TRANS; kw override
-    TRANS.  The Linkam is not read."""
+    TRANS.  The Linkam is not read.  ova (None: OVA): an on-axis camera image of each slot
+    first (on the first arc)."""
     if not RT_SAMPLES:
         raise ValueError('no RT holder positions: fill RT_X and re-run this file')
     trans = dict(TRANS, **kw)
     trans['md'] = dict(RT_MD, **(trans.get('md') or {}))
+    trans['at_sample'] = _ova_first_arc() if _ova_opt(ova) else None
     return run_trans(select(RT_SAMPLES, *which) if which else RT_SAMPLES, **trans)
 
 
-def collect_twsaxs(sample_name, t=1, arcs=(0, 20, 40)):
+def collect_twsaxs(sample_name, t=1, arcs=(0, 20, 40), ova=None):
     """Console: transmission WAXS at every arc of `arcs` and SAXS (2M) with the highest only, of
     the sample now in the beam (moved there by hand, e.g. the AgBH calibrant).  Only the WAXS
-    arc moves; names Murray_<sample_name>_x.._y.._z.._expt<t>s."""
-    RE(run_trans([{'name': clean_name(sample_name)}], t=t, arcs=arcs, saxs='max'))
+    arc moves; names Murray_<sample_name>_x.._y.._z.._expt<t>s.  ova (None: OVA): an on-axis
+    camera image first."""
+    RE(run_trans([{'name': clean_name(sample_name)}], t=t, arcs=arcs, saxs='max',
+                 at_sample=_ova_first_arc() if _ova_opt(ova) else None))
 
 
 def _sample():
@@ -482,12 +505,39 @@ def _next_spot(s, spots):
     return dict(s, sx=s['sx'] + dx, sy=s['sy'] + dy, spot=i)
 
 
+def _ova_opt(ova):
+    """The ova= option of a plan: None -> the OVA default."""
+    return OVA if ova is None else ova
+
+
+def _ova(sample, idx=None, elapsed=None, T=None):
+    """Plan: ova_snap of `sample` here, its name + _<frame>_<s>s and _T..C (T: number or signal,
+    read now) like its SAXS / WAXS frame."""
+    name = sample['name']
+    if idx is not None:
+        name += f'_{int(idx):04d}_{max(float(elapsed or 0), 0.0):.1f}s'
+    T_val = yield from _value(T, [])
+    if T_val is not None and np.isfinite(T_val):
+        name += f'_T{T_val:.1f}C'
+    yield from ova_snap(dict(sample, name=name))
+
+
+def _ova_first_arc(T=None):
+    """at_sample for run_trans (as in 2026C3_TSAXS384.py): an OVA image of each sample / spot
+    on the first arc."""
+    def snap(sample, i_arc):
+        if i_arc == 0:
+            yield from _ova(sample, T=T)
+    return snap
+
+
 def _track(s, spots, arc=20, saxs=True, waxs_det=True, t=1, interval=30, duration=180,
-           max_cycles=None, T=None, readings=(), extra=None, md=None, after=None):
+           max_cycles=None, T=None, readings=(), extra=None, md=None, after=None, ova=False):
     """Plan: run_series of the one sample s in transmission (same clock, frame counter and
     names), but every frame on the next spot of POS_XY_LIST (Huber sx and sy).  duration=None:
     no time limit.  after: plan factory run after every frame; it returns True to end the track
-    (a dry run then ends only through it)."""
+    (a dry run then ends only through it).  ova: True = an OVA image before every frame, N =
+    before every N-th (frame index a multiple of N)."""
     check_arcs([arc])
     dets = [pil900KW] if waxs_det else []
     if saxs and arc >= YZ['saxs_min_arc']:
@@ -514,6 +564,8 @@ def _track(s, spots, arc=20, saxs=True, waxs_det=True, t=1, interval=30, duratio
         t_frame = time.time()
         at = _next_spot(s, spots)
         yield from move_to(at)
+        if ova and ser['cycle'] % int(ova) == 0:
+            yield from _ova(at, idx=ser['cycle'], elapsed=time.time() - ser['t0'], T=T)
         yield from expose(at, dets, t, idx=ser['cycle'], elapsed=time.time() - ser['t0'],
                           T=T, readings=readings, extra=extra, md=md)
         ser['cycle'] += 1

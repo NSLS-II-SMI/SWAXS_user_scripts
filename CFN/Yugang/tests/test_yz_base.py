@@ -1014,6 +1014,62 @@ def test_murray_T_ramp(ns, capsys, monkeypatch):
     RE.msg_hook = None
 
 
+def test_murray_ova(ns, capsys):
+    load(ns, '2026C3_Murray.py')
+    RE, cam = ns['RE'], ns['ova_cam']
+    data = lambda: [s for s in starts(ns) if 'user_hints' in s]      # noqa: E731
+    ova_dir = ns['YZ']['ova_dir']
+    assert ova_dir.endswith('/pass-321244/projects/Murray/user_data/OVA/')
+    ns['LINKAM_POS'].update(sx=12.5, sy=3.0)
+    ns['new_sample']('PbS 22B')
+
+    RE(ns['measure_T']()); RE(ns['track_T'](interval=0, max_cycles=2))      # default OVA: none
+    assert cam.written == [] and ns['OVA'] is False
+
+    ns['_docs'].clear()
+    RE(ns['measure_T'](ova=True, n_spots=2))                     # one image per spot, before it
+    assert len(cam.written) == 2 and len(data()) == 2
+    for w, st in zip(cam.written, data()):
+        p = st['user_hints']['positions']
+        assert w.startswith(ova_dir + 'Murray_PbS-22B_T25.0C_x') and w.endswith('_OVA')
+        assert f"_sx{p['sx']:.3f}_sy{p['sy']:.3f}_" in w            # at the spot of its frame
+
+    del cam.written[:]
+    ns['_docs'].clear()
+    RE(ns['track_T'](interval=0, max_cycles=4, ova=2))           # every 2nd frame
+    idx = [s['user_hints']['frame_index'] for s in data()]
+    assert [re.search(r'_(\d{4})_\d+\.\ds_T25\.0C_', w).group(1) for w in cam.written] == \
+        [f'{i:04d}' for i in idx if i % 2 == 0]
+
+    del cam.written[:]
+    ns['_docs'].clear()
+    RE(ns['run_T_ramp']([30], interval=0, ova=True))             # every frame (sim Linkam: there at once)
+    assert len(cam.written) == len(data()) == 1 and '_T30.0C_' in cam.written[0]
+    del cam.written[:]
+    ns['_docs'].clear()
+    RE(ns['run_T_list']([25, 30], interval=0, max_cycles=2, settle=0, ova=True))
+    assert len(cam.written) == len(data()) == 4
+    assert ['_T25.0C_' in w for w in cam.written] == [True, True, False, False]
+
+    del cam.written[:]
+    ns['OVA'] = True                                             # the default of every plan
+    assert ns['preview'](ns['measure_T']()) == 1 and cam.written == []      # a dry run saves none
+    RE(ns['measure_T']())
+    assert len(cam.written) == 1
+    RE(ns['measure_T'](ova=False))
+    assert len(cam.written) == 1
+
+    del cam.written[:]
+    ns['RT_SAMPLES'] = ns['make_samples']({1: 'S1', 14: 'Empty'}, {1: (-42000, 500), 14: (42000, 500)})
+    ns['_docs'].clear()
+    RE(ns['run_rt'](arcs=(0, 20)))                               # one per slot, on the first arc
+    assert len(data()) == 4 and len(cam.written) == 2
+    assert [w.split('/')[-1].split('_x')[0] for w in cam.written] == ['Murray_S1', 'Murray_Empty']
+    del cam.written[:]
+    ns['collect_twsaxs']('AgBH', ova=True)                       # first arc only
+    assert len(cam.written) == 1 and cam.written[0].startswith(ova_dir + 'Murray_AgBH_x')
+
+
 def test_murray_snake_xy(ns):
     load(ns, '2026C3_Murray.py')
     snake = ns['snake_xy']
