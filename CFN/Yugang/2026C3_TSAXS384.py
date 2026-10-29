@@ -151,15 +151,13 @@ W. Liu Au nanoparticles, Box 4: rows J .. L of the Box 3 plate, 41 samples S56 .
 and SiO2 in L3 (WLIU4_BOX, WLIU4_REFS), named WL_Au_S56 ..; photo and map:
 Transfer/Project_CLEAR/Data/WH_Au_55_Box3_solution_OpticalImage_mark_position2.*  The Huber x, y stay
 at one position, only the piezo moves from well to well.
-W3) Move the Huber once so the middle of rows J .. L is in the beam; center the four corners L3, L22,
-    J3, J22 with the piezo only, here('sx', 'sy', 'x', 'y') -> CAL_WLIU4, re-run this file.  It prints
-    the fit and the one Huber position (moved from the corners' only if a well's 3 spots are past the
-    piezo travel), or a WARNING if the wells span more than the piezo travel (then the Huber y moves
-    between a few bands, as Box 3).  Check:
-      mov_sam('L22', PLATE_WLIU4); mov_sam('K4', PLATE_WLIU4); RE(ova_snap('test'))
-W4) Arc 20 (SAXS + WAXS) over all wells first, then arc 0 (WAXS only) in the reverse order; 3 spots per
-    well (centre, y -500, 500), one camera image per well:
-      preview(run_wliu_box4())                 # 42 wells x 3 x 2 = 252 exposures
+W3) Wells centered with the piezo only at Huber y -28 -> CAL_WLIU4 (done 10-29: L3, J3, J5, L22, K22;
+    the Huber x as it was, None: never moved).  Re-running this file prints the fit and the Huber
+    position (moved from the corners' only if a well's spots are past the piezo travel).  Check:
+      mov_sam('K4', PLATE_WLIU4); RE(ova_snap('test')); mov_sam('L12', PLATE_WLIU4); RE(ova_snap('test'))
+W4) Arc 20 (SAXS + WAXS) over all wells first, then arc 0 (WAXS only) in the reverse order; 5 spots per
+    well (CROSS_WLIU4: centre, x -500, 500, y -500, 500), one camera image per well:
+      preview(run_wliu_box4())                 # 42 wells x 5 x 2 = 420 exposures, ~28 min
       RE(run_wliu_box4())
       RE(run_wliu_box4(arcs=(0,)))             # e.g. after an error during the arc-0 pass
 """
@@ -552,13 +550,14 @@ def _travel(axis, lim=None):
 
 
 def check_holder55(samples=None, offsets=CROSS55, lim=None):
-    """Raise (before anything moves) if a spot of a cross is out of travel (lim, default LIM55)."""
+    """Raise (before anything moves) if a spot of a cross is out of travel (lim, default LIM55);
+    a Huber axis None is not moved."""
     bad = []
     for s in (HOLDER55 if samples is None else samples):
         for dx, dy in offsets:
             for a, v in (('sx', s['sx']), ('sy', s['sy']), ('x', s['x'] + dx), ('y', s['y'] + dy)):
                 lo, hi = _travel(a, lim)
-                if not lo <= v <= hi:
+                if v is not None and not lo <= v <= hi:
                     bad.append(f"{s['key']} {a}={v:g} not in [{lo:g}, {hi:g}]")
     if bad:
         raise ValueError('out of travel: ' + '; '.join(sorted(set(bad))[:10]))
@@ -765,10 +764,10 @@ def huber_y_mv(target):
 
 
 def _huber_to(s):
-    """Plan: Huber sx, sy of a sample (sy through huber_y_mv)."""
-    if abs((yield from bps.rd(AXES['sx'])) - s['sx']) > 1e-3:
+    """Plan: Huber sx, sy of a sample (sy through huber_y_mv); None: not moved."""
+    if s['sx'] is not None and abs((yield from bps.rd(AXES['sx'])) - s['sx']) > 1e-3:
         yield from bps.mv(AXES['sx'], s['sx'])
-    if abs((yield from bps.rd(AXES['sy'])) - s['sy']) > 1e-3:
+    if s['sy'] is not None and abs((yield from bps.rd(AXES['sy'])) - s['sy']) > 1e-3:
         yield from huber_y_mv(s['sy'])
 
 
@@ -1013,8 +1012,9 @@ def _plate_summary(label, plate, off=CROSS_CLIU):
     xs = [s['x'] + dx for s in plate for dx, _ in off]
     ys = [s['y'] + dy for s in plate for _, dy in off]
     stops = list(dict.fromkeys((s['sx'], s['sy']) for s in plate))
+    mm = lambda v: 'as is' if v is None else f'{v:g}'
     print(f'{label}: {len(plate)} wells in rows {"".join(dict.fromkeys(s["plate_row"] for s in plate))}; '
-          f'Huber (sx, sy) {", ".join(f"({a:g}, {b:g})" for a, b in stops)} mm; '
+          f'Huber (sx, sy) {", ".join(f"({mm(a)}, {mm(b)})" for a, b in stops)} mm; '
           f'piezo x {min(xs):.0f}..{max(xs):.0f} um, y {min(ys):.0f}..{max(ys):.0f} um (crosses included)')
 
 
@@ -1350,12 +1350,16 @@ WLIU4_BOX = {
     'K22': 'S27r', 'J3': 'S88', 'J4': 'S89', 'J5': 'S90',
 }
 WLIU4_REFS = {'L3': 'SiO2'}     # well -> 'SiO2' / 'Water' (named WL_<ref>_<well>; Water = blank)
-# EDIT: the four corners, L3, L22, J3, J22 (J22 is empty, but still a well to center on), centered
-# with the piezo only (the Huber where it is), here('sx', 'sy', 'x', 'y')
-CAL_WLIU4 = {}
+# Wells centered with the piezo only (the Huber where it is): (Huber sx mm, Huber sy mm, piezo x um,
+# piezo y um); Huber sx None: not moved (left where it was while centering)
+CAL_WLIU4 = {                       # 2026-10-29
+    'L3': (None, -28, -44900, 600), 'J3': (None, -28, -44900, 9600), 'J5': (None, -28, -36100, 9600),
+    'L22': (None, -28, 40600, 600), 'K22': (None, -28, 40600, 5100),
+}
 SX_WLIU4 = SY_WLIU4 = None  # Huber (mm) for the whole box; None: where the corners were centered
+CROSS_WLIU4 = ((0, 0), (-500, 0), (500, 0), (0, -500), (0, 500))   # 5 spots per well (piezo x, y um)
 
-TRANS_WLIU4 = dict(TRANS_CLIU, arcs=(20, 0), md={       # arc 20 (SAXS + WAXS) first, then 0 (WAXS)
+TRANS_WLIU4 = dict(TRANS_CLIU, arcs=(20, 0), offsets=CROSS_WLIU4, md={   # arc 20 (SAXS + WAXS), then 0
     'holder': 'W. Liu Box 4: rows J .. L of the Box 3 384-well plate, Kapton over the wells (piezo only)',
     'batch': 'WH_Au_Box4', 'form': 'solution'})
 
@@ -1365,8 +1369,9 @@ def one_stop_samples(names, cal, offsets, extra=None, sx=None, sy=None, lim=None
     The wells names {well: sample name} of a 384-well plate (plate_positions) with the Huber at one
     position for all of them, so only the piezo moves from well to well: the Huber sx, sy nearest
     (sx, sy) (default: the calibration's) from which the piezo x, y reach every well and its offsets
-    (lim: travel table, default LIM55).  Rows from the top, each in a serpentine.  None if the wells
-    span more than the piezo travel.
+    (lim: travel table, default LIM55).  The calibration's Huber sx None (all its wells): the Huber x
+    is not moved (sx None in the samples).  Rows from the top, each in a serpentine.  None if the
+    wells span more than the piezo travel.
     """
     extra = extra or {}
     pos = plate_positions(list(names), cal)
@@ -1378,24 +1383,30 @@ def one_stop_samples(names, cal, offsets, extra=None, sx=None, sy=None, lim=None
     x_max = x_hi - MARGIN55 - max(dx for dx, _ in offsets)
     y_min = y_lo + MARGIN55 - min(dy for _, dy in offsets)
     y_max = y_hi - MARGIN55 - max(dy for _, dy in offsets)
-    # piezo x = X - SXDIR55 (sx - SX55) 1000, piezo y = PY0 + (V - sy) 1000
+    # piezo x = X - SXDIR55 (sx - SX55) 1000, piezo y = PY0 + (V - sy) 1000; Huber sx None: the
+    # calibration's piezo x as they are (_xv55 takes it as SX55)
     u = sorted(SX55 + SXDIR55 * np.array([X.max() - x_max, X.min() - x_min]) / 1000)
     sx_lo, sx_hi = _travel('sx', lim)
     sy_lo, sy_hi = _travel('sy', lim)
-    sx0 = float(np.median([c[0] for c in cal.values()])) if sx is None else sx
+    keep_sx = sx is None and None in [c[0] for c in cal.values()]
+    sx0 = float(np.median([c[0] for c in cal.values()])) if sx is None and not keep_sx else sx
     sy0 = float(np.median([c[1] for c in cal.values()])) if sy is None else sy
-    hx = _nearest(sx0, max(u[0], sx_lo), min(u[1], sx_hi))
+    if keep_sx:
+        hx = SX55 if u[0] <= SX55 <= u[1] else None
+    else:
+        hx = _nearest(sx0, max(u[0], sx_lo), min(u[1], sx_hi))
     hy = _nearest(sy0, max(V.max() - (y_max - PY0) / 1000, sy_lo), min(V.min() - (y_min - PY0) / 1000, sy_hi))
     if hx is None or hy is None:
         print(f'WARNING {label}: the wells span {np.ptp(X) / 1000:.1f} mm in x, {np.ptp(V):.1f} mm in y; '
               f'the piezo reaches {(x_max - x_min) / 1000:.1f}, {(y_max - y_min) / 1000:.1f} mm '
               f'(offsets included) -- not one Huber position')
         return None
-    moved = ', '.join(f'{a} {h0:g} -> {h:g}' for a, h0, h in (('sx', sx0, hx), ('sy', sy0, hy)) if h != h0)
-    print(f'{label}: the Huber at (sx, sy) = ({hx:g}, {hy:g}) mm for all {len(names)} wells'
-          + (f' (moved {moved} mm so the piezo reaches every well)' if moved else ''))
+    moved = ', '.join(f'{a} {h0:g} -> {h:g}' for a, h0, h in (('sx', sx0, hx), ('sy', sy0, hy))
+                      if h0 is not None and h != h0)
+    print(f'{label}: the Huber at (sx, sy) = ({"as is" if keep_sx else f"{hx:g}"}, {hy:g}) mm for all '
+          f'{len(names)} wells' + (f' (moved {moved} mm so the piezo reaches every well)' if moved else ''))
     cells = [dict(key=w, name=clean_name(names[w]), well=w, plate_row=w[0].upper(),
-                  plate_col=_well(w)[1] + 1, sx=hx, sy=hy,
+                  plate_col=_well(w)[1] + 1, sx=None if keep_sx else hx, sy=hy,
                   x=round(pos[w][0] * 1000 - SXDIR55 * (hx - SX55) * 1000),
                   y=round(PY0 + (pos[w][1] - hy) * 1000), **extra.get(w, {})) for w in names]
     rows = sorted({_well(c['well'])[0] for c in cells}, reverse=True)
@@ -1438,6 +1449,9 @@ def wliu_box4_samples(cal=None):
     off = TRANS_WLIU4['offsets']
     samples = one_stop_samples(names, cal, off, extra, SX_WLIU4, SY_WLIU4, LIM_CLIU, 'WLiu Box 4')
     if samples is None:
+        if SX_WLIU4 is None and None in [c[0] for c in cal.values()]:
+            print('WARNING WLiu Box 4: the Huber has to move -- give its x (CAL_WLIU4 or SX_WLIU4)')
+            return []
         print('WARNING WLiu Box 4: the Huber y moves between bands (as Box 3)')
         samples = plate_samples(names, cal, off, extra, sx=SX_WLIU4, lim=LIM_CLIU, label='WLiu Box 4')
     return samples
