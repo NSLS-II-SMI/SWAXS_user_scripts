@@ -694,6 +694,48 @@ def test_tsaxs384_wliu_box3(ns):
     ns['RE'](ns['run_wliu_box3']('H8', 'C17', arcs=(20,)))
     assert [d['user_hints']['sample_info']['key'] for d in starts(ns)][::3] == ['H8', 'C17']
 
+
+def test_tsaxs384_wliu_box4(ns, capsys):
+    load(ns, '2026C3_TSAXS384.py')
+    assert ns['PLATE_WLIU4'] == []                                 # not calibrated yet
+    with pytest.raises(ValueError, match='CAL_WLIU4'):
+        ns['run_wliu_box4']()
+    cal = {'C7': (-2, 2.7, -28062, 11000), 'C17': (-2, 2.7, 16637, 10200),   # rows C .. G, centered
+           'G7': (-2, 2.7, -28862, -6760), 'G17': (-2, 2.7, 16437, -7560)}  # with the piezo only
+    ns['CAL_WLIU4'], ns['WLIU4_REFS'] = cal, {'E7': 'Water'}
+    P = ns['PLATE_WLIU4'] = ns['wliu_box4_samples']()
+    assert len(P) == 5 * 11 and {(s['sx'], s['sy']) for s in P} == {(-2, 2.7)}  # one Huber position
+    for w, (sx, sy, x, y) in cal.items():                          # the corners as centered
+        assert (ns['select'](P, w)[0]['x'], ns['select'](P, w)[0]['y']) == (x, y)
+    name = {s['well']: s['name'] for s in P}
+    assert name['C7'] == 'WL_Au_Box4_C7' and name['E7'] == 'WL_Water_E7'
+    assert ns['select'](P, 'E7')[0]['role'] == 'blank'
+    assert [s['well'] for s in P[:2]] + [P[11]['well']] == ['G7', 'G8', 'F17']   # from the top, serpentine
+    ns['check_holder55'](P, ns['CROSS_CLIU'], ns['LIM_CLIU'])
+    assert ns['preview'](ns['run_wliu_box4']()) == 55 * 3 * 2
+
+    ns['RE'](ns['bps'].mv(ns['stage'].x, -2, ns['stage'].y, 2.7))
+    msgs = []
+    ns['RE'].msg_hook = msgs.append
+    ns['RE'](ns['run_wliu_box4']('G7', 'C17'))
+    assert not [m for m in msgs if m.command == 'set' and m.obj in (ns['stage'].x, ns['stage'].y)]
+    data = starts(ns)
+    assert [d['user_hints']['waxs_arc_deg'] for d in data] == [20] * 6 + [0] * 6   # SAXS pass first
+    assert [d['user_hints']['sample_info']['key'] for d in data][::3] == ['G7', 'C17', 'C17', 'G7']
+    assert_saxs_at_top_arc(data, (0, 20))
+    assert len(ns['ova_cam'].written) == 2
+
+    ns['CAL_WLIU4'] = dict(cal, C7=(-2, 2.7, -28062, 12300))      # C7 + 500 um past the piezo y travel
+    P = ns['wliu_box4_samples']()
+    assert {(s['sx'], s['sy']) for s in P} == {(-2, 3.2)} and ns['select'](P, 'C7')[0]['y'] == 11800
+    ns['WLIU4_BOX'] = {'C8': 'S1', 'G17': 'S2'}
+    assert [s['name'] for s in ns['wliu_box4_samples']()] == ['WL_Au_S2', 'WL_Water_E7', 'WL_Au_S1']
+    capsys.readouterr()
+    ns['CAL_WLIU4'], ns['WLIU4_BOX'] = ns['CAL_WLIU'], {}         # rows C .. H: taller than the piezo y
+    P = ns['wliu_box4_samples']()
+    assert 'the Huber y moves between bands' in capsys.readouterr().out
+    assert len({(s['sx'], s['sy']) for s in P}) == 2
+
 def test_huber_y_waits_while_hot(ns):
     load(ns, '2026C3_TSAXS384.py')
     readings = iter([50.0, 47.0, 44.0] + [40.0] * 50)              # hot, then cooling
