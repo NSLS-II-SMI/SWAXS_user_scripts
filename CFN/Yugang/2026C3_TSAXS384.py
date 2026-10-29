@@ -147,18 +147,19 @@ W2) As Box 1 (3 spots per well, arcs 0, 20, 40, SAXS at 40, one camera image per
       preview(run_wliu_box3())                 # 56 x 3 x 3 = 504 exposures
       RE(run_wliu_box3())
 
-W. Liu Au nanoparticles, Box 4 (~50 solutions, 384-well plate): the Huber x, y stay at one position,
-only the piezo moves from well to well.  Names: WLIU4_BOX (well -> sample, named WL_Au_<sample>) and
-WLIU4_REFS; WLIU4_BOX empty: every well inside the corners, named WL_Au_Box4_<well>.
-W3) Move the Huber once so the middle of the box is in the beam; center the four corners of the wells
-    used with the piezo only, here('sx', 'sy', 'x', 'y') -> CAL_WLIU4, re-run this file.  It prints the
-    fit and the one Huber position (moved from the corners' only if a well's 3 spots are past the piezo
-    travel), or a WARNING if the wells span more than the piezo travel (then the Huber y moves between
-    a few bands, as Box 3).  Check:
-      mov_sam('<a corner>', PLATE_WLIU4); RE(ova_snap('test'))
+W. Liu Au nanoparticles, Box 4: rows J .. L of the Box 3 plate, 41 samples S56 .. S90 (+ repeats 'r')
+and SiO2 in L3 (WLIU4_BOX, WLIU4_REFS), named WL_Au_S56 ..; photo and map:
+Transfer/Project_CLEAR/Data/WH_Au_55_Box3_solution_OpticalImage_mark_position2.*  The Huber x, y stay
+at one position, only the piezo moves from well to well.
+W3) Move the Huber once so the middle of rows J .. L is in the beam; center the four corners L3, L22,
+    J3, J22 with the piezo only, here('sx', 'sy', 'x', 'y') -> CAL_WLIU4, re-run this file.  It prints
+    the fit and the one Huber position (moved from the corners' only if a well's 3 spots are past the
+    piezo travel), or a WARNING if the wells span more than the piezo travel (then the Huber y moves
+    between a few bands, as Box 3).  Check:
+      mov_sam('L22', PLATE_WLIU4); mov_sam('K4', PLATE_WLIU4); RE(ova_snap('test'))
 W4) Arc 20 (SAXS + WAXS) over all wells first, then arc 0 (WAXS only) in the reverse order; 3 spots per
     well (centre, y -500, 500), one camera image per well:
-      preview(run_wliu_box4())                 # 55 wells x 3 x 2 = 330 exposures
+      preview(run_wliu_box4())                 # 42 wells x 3 x 2 = 252 exposures
       RE(run_wliu_box4())
       RE(run_wliu_box4(arcs=(0,)))             # e.g. after an error during the arc-0 pass
 """
@@ -1336,21 +1337,27 @@ if PLATE_WLIU:
 
 
 ###############################################################################################
-# W. Liu Au nanoparticles, Box 4: ~50 solutions in a 384-well plate, the Huber at one position
+# W. Liu Au nanoparticles, Box 4: rows J .. L of the Box 3 plate, the Huber at one position
 ###############################################################################################
-# EDIT: well -> sample (named WL_Au_<sample>), e.g. laid out as Box 3:
-#   WLIU4_BOX = {f'{r}{8 + i}': f'S{n + i}' for r, n in {'H': 56, 'G': 66}.items() for i in range(10)}
-# Empty: every well inside the corners of CAL_WLIU4 is measured, named WL_Au_Box4_<well>.
-WLIU4_BOX = {}
-WLIU4_REFS = {}             # EDIT: well -> 'SiO2' / 'Water' (named WL_<ref>_<well>; Water = blank)
-# EDIT: the four corners of the wells used, centered with the piezo only (the Huber where it is),
-# here('sx', 'sy', 'x', 'y')
+# Transfer/Project_CLEAR/Data/WH_Au_55_Box3_solution_OpticalImage_mark_position2.jpg and .xlsx
+# (A bottom, columns 1 .. 24 left to right): 41 samples + SiO2 in L3 .. L22, K4 .. K22, J3 .. J5;
+# 'r' = a second well of the sample.  well -> sample, named WL_Au_<sample>.
+WLIU4_BOX = {
+    **{f'L{4 + i}': f'S{56 + i}r' for i in range(5)},            # L4 .. L8:   S56r .. S60r
+    **{f'L{9 + i}': f'S{56 + i}' for i in range(14)},            # L9 .. L22:  S56 .. S69
+    **{f'K{4 + i}': f'S{70 + i}' for i in range(16)},            # K4 .. K19:  S70 .. S85
+    'K20': 'S85r_K20', 'K21': 'S85r_K21',                        # both "S85r" on the sheet and photo
+    'K22': 'S27r', 'J3': 'S88', 'J4': 'S89', 'J5': 'S90',
+}
+WLIU4_REFS = {'L3': 'SiO2'}     # well -> 'SiO2' / 'Water' (named WL_<ref>_<well>; Water = blank)
+# EDIT: the four corners, L3, L22, J3, J22 (J22 is empty, but still a well to center on), centered
+# with the piezo only (the Huber where it is), here('sx', 'sy', 'x', 'y')
 CAL_WLIU4 = {}
 SX_WLIU4 = SY_WLIU4 = None  # Huber (mm) for the whole box; None: where the corners were centered
 
 TRANS_WLIU4 = dict(TRANS_CLIU, arcs=(20, 0), md={       # arc 20 (SAXS + WAXS) first, then 0 (WAXS)
-    'holder': 'W. Liu Box 4, 384-well plate, Kapton over the wells (piezo only)',
-    'batch': 'WL_Au_Box4', 'form': 'solution'})
+    'holder': 'W. Liu Box 4: rows J .. L of the Box 3 384-well plate, Kapton over the wells (piezo only)',
+    'batch': 'WH_Au_Box4', 'form': 'solution'})
 
 
 def one_stop_samples(names, cal, offsets, extra=None, sx=None, sy=None, lim=None, label='plate'):
@@ -1407,19 +1414,12 @@ def _nearest(h0, lo, hi):
     return float(min(max(h0, lo), hi))
 
 
-def _wliu4_names(cal):
-    """({well: name}, {well: metadata}) of Box 4: WLIU4_BOX and WLIU4_REFS, or (WLIU4_BOX empty) every
-    well inside the corners of cal, named by its well."""
-    box = WLIU4_BOX
-    if not box:
-        rs, cs = zip(*(_well(w) for w in cal))
-        box = {f'{PLATE_ROWS[r]}{c + 1}': f'Box4_{PLATE_ROWS[r]}{c + 1}'
-               for r in range(min(rs), max(rs) + 1) for c in range(min(cs), max(cs) + 1)}
+def _wliu4_names():
+    """({well: name}, {well: metadata}) of Box 4: WLIU4_BOX and WLIU4_REFS."""
     names, extra = {}, {}
-    for w, n in box.items():
-        if w not in WLIU4_REFS:
-            names[w] = f'{WLIU_PREFIX}_Au_{n}'
-            extra[w] = dict(sample=n, form='solution', box='box4')
+    for w, n in WLIU4_BOX.items():
+        names[w] = f'{WLIU_PREFIX}_Au_{n}'
+        extra[w] = dict(sample=n, form='solution', box='box4')
     for w, ref in WLIU4_REFS.items():
         names[w] = f'{WLIU_PREFIX}_{ref}_{w}'
         extra[w] = dict(role='blank' if ref == 'Water' else 'reference', form='solution', box='box4')
@@ -1434,7 +1434,7 @@ def wliu_box4_samples(cal=None):
     if len(cal) < 3:
         print('WLiu Box 4: not calibrated yet (CAL_WLIU4 needs 3+ wells, best the four corners)')
         return []
-    names, extra = _wliu4_names(cal)
+    names, extra = _wliu4_names()
     off = TRANS_WLIU4['offsets']
     samples = one_stop_samples(names, cal, off, extra, SX_WLIU4, SY_WLIU4, LIM_CLIU, 'WLiu Box 4')
     if samples is None:
