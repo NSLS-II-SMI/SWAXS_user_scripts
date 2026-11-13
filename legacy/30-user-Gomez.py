@@ -1641,3 +1641,335 @@ def changetoGI():
     # If this is not working, shoot me a msg
 
     # Make sure piezo.y is correct: i.e. on the on axis camera, you should see the surface of your sample
+
+
+
+
+
+def saxs_2026_3(t=1):
+    """
+    Take WAXS and SAXS at nine sample positions for averaging
+
+    Specify central positions on the samples with xlocs and ylocs,
+    then offsets from central positions with x_off and y_off. Run
+    WAXS arc as the slowest motor. SAXS sdd 9.2 m.
+    """
+
+    names   = ['BDOD75_11keV', 'BDOD50_11keV']
+    x = [-41000, -33000]
+    y = [12000, 12000]
+    z = [-2000, -2000]
+
+    names   = ['nosample_redo']
+    x = [-37000]
+    y = [12000]
+    z = [-2000]
+
+
+    # Offsets for taking a few points per sample
+    y_off = [-400, 0,400]
+    user = "GF"
+    waxs_arc = [0, 20]
+
+    # Check if the length of xlocs, ylocs and names are the same
+    assert len(x) == len(names), f"Number of X coordinates ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(y) == len(names), f"Number of X coordinates ({len(y)}) is different from number of samples ({len(names)})"
+
+    dets = [pil2M, pil900KW]
+    yield from det_exposure_time(t, t)
+
+    s = Signal(name='target_file_name', value='')
+    @bpp.stage_decorator(dets)
+    @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+    def inner():
+
+        # Detectors, disable SAXS when WAXS in the way
+        for i, wa in enumerate(waxs_arc):
+            yield from bps.mv(waxs, wa)
+            
+            for name, xs, ys in zip(names, x, y):
+                yield from bps.mv(piezo.x, xs, 
+                                  piezo.y, ys)
+
+                for yy, y_of in enumerate(y_off):
+                    yield from bps.mv(piezo.y, ys + y_of)
+                    yield from bps.sleep(2)
+
+                    loc = f'{yy}'
+                    sample_name = f'{name}{get_scan_md()}_wa{wa}_loc{loc}'
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    s.put(sample_name)
+                    yield from bps.trigger_and_read(dets + [energy, xbpm2, xbpm3, piezo.x, piezo.y] + [s])
+
+    (yield from inner())
+
+    sample_id(user_name="test", sample_name="test")
+    det_exposure_time(0.3, 0.3)
+
+
+    '''
+    bar6
+    names   = ['gel50XtraThick', 'window40XtraThick', 'window30XtraThick']
+    x = [-41800, -7000, 33000]
+    y = [12100, 12900, 12900]
+    z = [500, 0, -500]
+
+    bar4
+    names   = ['window50Thin', 'window40Thin', 'gel30Thin']
+    x = [-43000, -7000, 30000]
+    y = [13000, 13000, 14000]
+    z = [-500, -500, -500]
+
+    bar3
+        names   = ['gel50thickNew', 'gel40thickNew', 'window30thin']
+    x = [-37000, -2000, 33000]
+    y = [12700, 12700, 12700]
+    z = [500, 0, -1000]
+
+    bar2
+    names   = ['window50thickNew', 'window40thickNew', 'gel30thick', 'bkgd']
+    x = [-41000, -6000, 31000, 13000]
+    y = [12700, 12700, 12700, -300]
+    z = [1000, 0, -1000, 1000]
+
+    bar1
+    mes   = ['DB_9_ctr', 'DB_7_ctr', 'DB_6_ctr', 'DB_4_ctr', 'DB_3_ctr', 'DB_3_end', 'DB_4_end', 'DB_6_end', 'DB_7_end', 'DB_9_end']
+    x = [ -44000, -29000, -9000, 9000, 30200, 36200, 14200, -10800, -29800, -43800,  ]
+    y = [ -3300, -3300, -3300, -3100, -3100, 9900, 9900, 9900, 9900, 9900]
+    z = [-3000, -3000, -3000, -3000, -3000, -3000, -3000, -3000, -3000, -3000, ]
+
+    names=['ITIC_tol_final','ITIC_ani_final','ITIC_ver_final', 'PBDBT_cb_final', 'PBDBT_tol_final','PBDBT_ox_final', 'ITIC_cb_final', 'ITIC_ox_final', 'ITIC_dcb_final',   'ox_final', 'dcb_final', 'tol_final', 'ver_final', 'ani_final','blank_final']
+    x = [      -50900,    -44600,    -38200,     -31900,      -25600,    -19000,    -12800,     -6550,       -200,   6200, 12350, 18950, 25250, 31650,  37950]
+    y = [        -400,      -400,      -400,       -400,        -400,      -400,      -400,      -400,       -400,   -400,  -400,  -400,  -400,  -400,   -400]
+    z = [       -2000,     -2000,     -2000,      -2000,       -2000,     -1700,     -1700,     -1700,      -1700,  -1700, -1700, -1700, -1700, -1700,  -1700]
+
+    '''
+
+
+
+
+
+def giwaxs_2026_3(t=1, name="Test", ai_list: list[int]|None = None, xstep=10, waxs_arc = (0, 20)):
+
+    
+    names = ['MA_141H','MA_141K','MA_141L','MA_141M']
+    x_piezo = [-43000, -24000, -11000, 3000]
+    y_piezo = [7300, 7300, 7300, 7300]
+
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
+
+    waxs_arc = [0, 20]
+
+    ai0_all = 0
+
+    #ai_list = [0.14, 0.16] # remove after para2 trial
+    # ai_list = [0.065, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17]
+    # UNCOMMENT BELOW ai_list FOR AGATHA SAMPLES
+    ai_list = [0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.14, 0.16, 0.84, 0.95, 1.05, 1.16, 1.26]
+    # UNCOMMENT BELOW ai_list FOR LOUIS SAMPLES
+    # ai_list = [0.065, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.84, 0.91, 0.98, 1.05, 1.12]
+    
+    np.linspace(0.07, 0.3, 24)
+    xstep = 200
+
+    dets = [pil2M, pil900KW]
+    
+    for name, xs, ys in zip(names, x_piezo, y_piezo):
+        yield from bps.mv(piezo.x, xs,
+                          piezo.th, ai0_all)
+        
+        yield from alignement_gisaxs_rough(0.1)
+        print('alignement done')
+
+        ai0 = piezo.th.position
+        yield from det_exposure_time(t, t)
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+
+                counter = 0
+                for k, ais in enumerate(ai_list):
+                    yield from bps.mv(piezo.th, ai0 + ais)
+                    yield from bps.sleep(1)
+
+                    name_fmt = "{sample}_16.1keV_9.2m_ai{ai}_wa{wax}"
+                    
+                    yield from bps.mv(piezo.x, xs + counter * xstep)
+                    counter += 1
+
+                    e=energy.energy.position
+                    sample_name = name_fmt.format(sample=name, ai="%3.2f"%ais, wax=wa)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    s.put(sample_name)
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, piezo.th, piezo.x] + [s])
+            yield from bps.mv(piezo.th, ai0)
+
+        (yield from inner())
+
+
+
+
+def saxs_cap_2026_3(t=1, temp=25, y_offset=0):
+    """
+    Take WAXS and SAXS at nine sample positions for averaging
+
+    Specify central positions on the samples with xlocs and ylocs,
+    then offsets from central positions with x_off and y_off. Run
+    WAXS arc as the slowest motor. SAXS sdd 4.0 m.
+    """
+
+    names= ['PBDBT_dcb', 'cb', 'blank2']
+    x = [-27350, 29850,  36150]
+    y = [-1000,  -1000,  -1000]
+    z = [-1700,  -1700,  -1700]
+
+    # Offsets for taking a few points per sample
+    y_off = [-200, 0,200]
+    user = "GF"
+    waxs_arc = [20, 0]
+
+    # Check if the length of xlocs, ylocs and names are the same
+    assert len(x) == len(names), f"Number of X coordinates ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(y) == len(names), f"Number of X coordinates ({len(y)}) is different from number of samples ({len(names)})"
+
+    dets = [pil2M, pil900KW]
+    yield from det_exposure_time(t, t)
+
+    s = Signal(name='target_file_name', value='')
+    @bpp.stage_decorator(dets)
+    @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+    def inner():
+
+        # Detectors, disable SAXS when WAXS in the way
+        for i, wa in enumerate(waxs_arc):
+            yield from bps.mv(waxs, wa)
+            
+            for name, xs, ys in zip(names, x, y):
+                yield from bps.mv(piezo.x, xs, 
+                                  piezo.y, ys+y_offset)
+
+                for yy, y_of in enumerate(y_off):
+                    yield from bps.mv(piezo.y, ys + y_of + y_offset)
+                    yield from bps.sleep(2)
+
+                    loc = f'{yy}'
+                    sample_name = f'{name}{get_scan_md()}_tem{temp}C_wa{wa}_loc{loc}'
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    s.put(sample_name)
+                    yield from bps.trigger_and_read(dets + [energy, xbpm2, xbpm3, piezo.x, piezo.y] + [s])
+
+    (yield from inner())
+
+    sample_id(user_name="test", sample_name="test")
+
+
+def temp_run(t=1):
+    temps = [50, 75, 100, 75, 50, 25]
+    # temps = [25]
+
+    offset = 100
+    for i, temp in enumerate(temps):
+        if i !=0:
+            t_kelvin = temp + 273.15
+            yield from ls.output1.mv_temp(t_kelvin)
+            t0 = time.time()
+            while abs(ls.input_A_celsius.get()-temp)>0.5:
+                t1 = time.time()
+                print('heating for, ', t1-t0, 'delta_T is :', abs(ls.input_A_celsius.get()-temp))
+                yield from bps.sleep(10)
+
+            yield from bps.sleep(20*60)
+        yield from saxs_cap_2026_3(t=t, temp=temp, y_offset=(i+1)*offset)
+
+
+
+
+
+def S_edge_measurments_2026_3(t=1):
+    dets = [pil900KW, pil2M]
+    yield from det_exposure_time(t, t)
+
+    names = ['CHH_A2', 'CHH_B2', 'CHH_C2', 'CHH_D2', 'CHH_E2', 'CHH_F2']
+    x_piezo = [-62000,   -54000,   -32000,   -12000,    10000,    31000]
+    x_hexa = [     -7,        0,        0,        0,        0,        0]
+    y_piezo = [  7500,      300,      500,     1000,     -800,     -900]
+
+    names = ['CHH_B2', 'CHH_C2', 'CHH_D2', 'CHH_E2', 'CHH_F2']
+    x_piezo = [-54000,   -32000,   -12000,    10000,    31000]
+    x_hexa = [      0,        0,        0,        0,        0]
+    y_piezo = [   300,      500,     1000,     -800,     -900]
+
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
+    assert len(x_piezo) == len(x_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
+
+    energies = (np.arange(2445, 2470, 5).tolist()+ np.arange(2470, 2480, 0.25).tolist()+ np.arange(2480, 2490, 1).tolist()
+                + np.arange(2490, 2500, 5).tolist()+ np.arange(2500, 2560, 10).tolist())
+
+    waxs_arc = [0, 20]
+    ai0_all = -1
+    ai_list = [1.6, 3.2]
+
+    for name, xs, ys, xs_hexa in zip(names, x_piezo, y_piezo, x_hexa):               
+        x_step = 20
+
+        yield from bps.mv(stage.x, xs_hexa,
+                        piezo.x, xs,
+                        piezo.y, ys)
+
+        yield from bps.mv(piezo.th, ai0_all)
+
+        try:
+            yield from alignement_gisaxs_doblestack(0.4)
+
+            ai0 = piezo.th.position
+            det_exposure_time(t, t)
+
+            s = Signal(name='target_file_name', value='')
+
+            @bpp.stage_decorator(dets)
+            @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+            def inner():
+                for i, wa in enumerate(waxs_arc):
+                    yield from bps.mv(waxs, wa)
+                    yield from bps.mv(piezo.x, xs)
+                    counter = 0
+
+                    for k, ais in enumerate(ai_list):
+                        yield from bps.mv(piezo.th, ai0 + ais)
+
+                        name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
+                        for e in energies:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(2)
+
+                            yield from bps.mv(piezo.x, xs + counter * x_step)
+                            counter += 1
+                            
+                            bpm = xbpm3.sumX.get()
+                            sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                            print(f"\n\t=== Sample: {sample_name} ===\n")
+                            s.put(sample_name)
+                            yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                        yield from bps.mv(energy, 2500)
+                        yield from bps.sleep(2)
+                        yield from bps.mv(energy, 2480)
+                        yield from bps.sleep(2)
+                        yield from bps.mv(energy, 2445)
+                    yield from bps.mv(piezo.th, ai0)
+
+            (yield from inner())
+        except:
+            print('sample', name, 'did not aligned')
+
+
+
+
+# To szwitch to GIWAXS
+# RE(pil2M.insert_beamstop('rod'))

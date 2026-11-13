@@ -3812,3 +3812,250 @@ def vert_sequence_scan_25_03():
                                                          ai_list = ai_list,
                                                          ystep=20,
                                                          waxs_arc=wa) # steps 63 energies
+
+
+
+
+
+def swaxs_S_edge_2026_3(t=1):
+    """
+    """
+
+    dets = [pil900KW, pil2M]
+
+    # names = [ 'sample01', 'sample02', 'sample03', 'sample04', 'sample05', 'sample06', 'empty']
+    # x =     [      37000,      25400,      15000,      -8000,     -18800,     -29800,  -37000]
+    # y =     [      -2400,      -2400,      -2800,      -2500,      -2100,      -2500,   -2500]
+    # z =     [      -2000,      -2000,      -2000,      -2000,       -2000,     -2000,   -2000]
+
+    # names = ['s1_01_per','s2_01_per','s3_01_per','s4_01_per', 's5_01_per','s6_01_per','s7_01_per','s7_01_per']
+    # x =     [      -3300,      -9300,     -14300,     -20000,      -25000,     -31000,     -35900,     -41900]
+    # y =     [      -2000,      -1800,      -2100,      -2100,       -2000,      -1800,      -1800,      -1800]
+    # z =     [      -2000,      -2000,      -2000,      -2000,       -2000,      -2000,      -2000,      -2000]
+
+    # names = ['s1_01_par','s2_01_par','s3_01_par','s4_01_par', 's5_01_par','s6_01_par','s7_01_par','s8_01_par',
+    #          's1_01_per','s2_01_per','s3_01_per','s4_01_per', 's5_01_per','s6_01_per','s7_01_per','s8_01_per']
+    # x =     [      27300,      22100,      16300,      11300,        5550,      -1400,      -7200,     -12500,
+    #               -18100,     -23300,     -30100,     -34700,      -40100,     -46100,     -51100,     -57000]
+    # y =     [       3760,       3960,       3960,       3960,        4160,       3760,       3760,       3960, 
+    #                 3960,       4260,       3860,       3860,        3960,       3960,       4060,       3860]
+    # z =     [      -2000,      -2000,      -2000,      -2000,       -2000,      -2000,      -2000,      -2000,
+    #                -2000,      -2000,      -2000,      -2000,       -2000,      -2000,      -2000,      -2000]
+
+    names = ['Si3N4_redo']
+    x =     [ -53700]
+    y =     [  8200]
+
+
+    assert len(x) == len(names), f"Number of X coordinates ({len(piezo_x)}) is different from number of samples ({len(names)})"
+    assert len(x) == len(y), f"Number of X coordinates ({len(piezo_x)}) is different from number of Y ({len(piezo_y)})"
+
+
+    energies = (np.arange(2445, 2470, 5).tolist()+ np.arange(2470, 2480, 0.25).tolist()+ np.arange(2480, 2490, 1).tolist()
+                + np.arange(2490, 2500, 5).tolist()+ np.arange(2500, 2560, 10).tolist())
+    
+    waxs_arc = [0, 20]
+
+    for name, xs, ys in zip(names, x, y):
+        yield from det_exposure_time(t, t)
+
+        # changing ys to allow for more room during dense energy scan
+        yield from bps.mv(piezo.x, xs,
+                          piezo.y, ys)
+
+        yss = np.linspace(ys, ys + 1200, len(energies))
+        xss = np.array([xs])
+
+        yss, xss = np.meshgrid(yss, xss)
+        yss = yss.ravel()
+        xss = xss.ravel()
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+
+                name_fmt = "{sample}_3.0m_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e, xsss, ysss in zip(energies, xss, yss):
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+                    if xbpm2.sumX.get() < 20:
+                        yield from bps.sleep(2)
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(2)
+                    
+                    # yield from bps.mv(piezo.y, ysss,
+                    #                   piezo.x, xsss)
+
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+                
+                yield from bps.mv(energy, 2500)
+                yield from bps.sleep(2)
+                yield from bps.mv(energy, 2480)
+                yield from bps.sleep(2)
+                yield from bps.mv(energy, 2445)
+
+        (yield from inner())
+
+
+def morning():
+    project_set('Freychet_21')
+    yield from swaxs_MoL3_edge_2026_3(t=2)
+
+    project_set('Freychet_20')
+    yield from swaxs_S_edge_2026_3(t=1.5)
+
+
+def swaxs_MoL3_edge_2026_3(t=1):
+    """
+    """
+
+    dets = [pil2M]
+
+    names = [  'ba2_sa1',  'ba2_sa2',  'ba2_sa3',  'ba2_sa4',  'ba2_sa5', 
+              'sample01', 'sample02', 'sample03', 'sample04', 'sample05', 'sample06']
+    x =     [      22300,      11000,       -400,     -23400,     -34000, 
+                   21600,      10500,       -200,     -23000,     -33500,     -44500]
+    y =     [      -6100,     -5700,       -5700,      -6000,      -6000, 
+                    8200,      8400,        8000,       8400,       8700,      8300]
+    #-8
+
+    names = [  'sample06']
+    x =     [      -44500]
+    y =     [      8300]
+
+    # names = [ 'sample01', 'sample02', 'sample03', 'sample04', 'sample05', 'sample06', 'empty']
+    # x =     [      36600,      25700,      15600,      -7700,     -17800,     -30200,  -37000]
+    # y =     [      -2400,      -2300,      -2700,      -2400,      -2100,      -2600,   -2500]
+    # z =     [      -2000,      -2000,      -2000,      -2000,       -2000,     -2000,   -2000]
+
+    energies = (np.arange(2510, 2521, 5).tolist()+ np.arange(2521, 2526, 1).tolist() + 
+                np.arange(2526, 2534, 0.25).tolist()+ np.arange(2534, 2540, 1).tolist()
+                + np.arange(2540, 2580, 5).tolist())
+    
+    waxs_arc = [20]
+
+    for name, xs, ys in zip(names, x, y):
+        yield from det_exposure_time(t, t)
+
+        # changing ys to allow for more room during dense energy scan
+        yield from bps.mv(piezo.x, xs,
+                          piezo.y, ys)
+
+        yss = np.linspace(ys, ys + 1200, len(energies))
+        xss = np.array([xs])
+
+        yss, xss = np.meshgrid(yss, xss)
+        yss = yss.ravel()
+        xss = xss.ravel()
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+
+                name_fmt = "{sample}_2.0m_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e, xsss, ysss in zip(energies, xss, yss):
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+                    if xbpm2.sumX.get() < 20:
+                        yield from bps.sleep(2)
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(2)
+                    
+                    yield from bps.mv(piezo.y, ysss,
+                                      piezo.x, xsss)
+
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+                
+                yield from bps.mv(energy, 2500)
+                yield from bps.sleep(2)
+                yield from bps.mv(energy, 2480)
+                yield from bps.sleep(2)
+                yield from bps.mv(energy, 2445)
+
+        (yield from inner())
+
+
+
+
+
+def Mo_Ledge_absorptiontest():
+    dets = [pil900KW]
+
+    name='sample2_nexafs_Mo'
+    energies = np.linspace(2536, 2551, 16)
+
+    waxs_arc = [20]
+
+    s = Signal(name='target_file_name', value='')
+
+    @bpp.stage_decorator(dets)
+    @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+    def inner():
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+
+            for i, e in enumerate(energies):
+                yield from bps.mv(energy, e)
+                yield from bps.sleep(2)
+                
+                # Sample name
+                bpm = xbpm3.sumX.get()
+                name_fmt = "{sample}_{energy}eV_wa{wax}_bpm{xbpm}"
+                sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                s.put(sample_name)
+                
+                yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+            yield from bps.sleep(2)
+    (yield from inner()) 
+
+
+
+
+def bpmvspindiode_Sedge_2026_3(t=1):
+    dets = [pil2M]
+    det_exposure_time(t, t)
+
+    name = 'direct_beam_Sedge_scannormal'
+    energies = (np.arange(2445, 2470, 5).tolist()+ np.arange(2470, 2480, 0.25).tolist()+ np.arange(2480, 2490, 1).tolist()
+                + np.arange(2490, 2500, 5).tolist()+ np.arange(2500, 2560, 10).tolist())
+    
+    for e in energies:
+        yield from bps.mv(energy, e)
+        yield from bps.sleep(2)
+
+        fs.open()
+        yield from bps.sleep(2)
+        bpm2 = xbpm2.sumX.get()
+        bpm3 = xbpm3.sumX.get()
+        pdc = pdcurrent2.get()
+        fs.close()
+
+        name_fmt = "{sample}_{energy}eV_bpm2_{xbpm2}_bpm3_{xbpm3}_pd_{pd}"
+
+        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, xbpm2="%4.3f"%bpm2, xbpm3="%4.3f"%bpm3, pd="%4.3f"%pdc)
+        sample_id(user_name="GF", sample_name=sample_name)
+        print(f"\n\t=== Sample: {sample_name} ===\n")
+
+        yield from bp.count([pil2M], num=1)
+
+    yield from bps.mv(energy, 2500)
+    yield from bps.sleep(2)
+    yield from bps.mv(energy, 2480)
+    yield from bps.sleep(2)
+    yield from bps.mv(energy, 2445)

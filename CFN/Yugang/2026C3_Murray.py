@@ -40,6 +40,12 @@ Z: -15
 
 sample_id(user_name='test', sample_name=f'test')
 collect_twsaxs('AgBH', t=1, arcs=(0, 20, 40))
+
+collect_twsaxs('AgBH', t=1, arcs=(0, 20, 40))
+
+collect_twsaxs('AgBH', t=1, arcs=(20))
+collect_twsaxs('BR_CdS5', t=1, arcs=(20))
+
 data saved in: /nsls2/users/yuzhang/smi_proposals_link/2026-3/pass-321244/projects/Murray/user_data
 
 
@@ -237,12 +243,14 @@ MEASURE = dict(             # one set of frames at the present T: measure_T
 # are measured.  Evenly spaced: RT_X = {k: X1 + (k - 1) * PITCH for k in RT_NAMES}
 RT_NAMES = {1: 'S1', 2: 'S2', 3: 'S3', 4: 'S4', 5: 'S5', 6: 'S6', 7: 'S7',
             8: 'S8', 9: 'S9', 10: 'S10', 11: 'S11', 12: 'S12', 13: 'S13', 14: 'S14'}
-RT_X = {}                   # e.g. {1: -42000, 2: -35500, ...}
+
+
+RT_X = {       }                   # e.g. {1: -42000, 2: -35500, ...}
 RT_Y = 0.0                  # piezo y (um) of the slot centers
 RT_SAMPLES = make_samples({k: RT_NAMES[k] for k in RT_X}, {k: (RT_X[k], RT_Y) for k in RT_X}, th=0)
 
 TRANS = dict(               # RT holder: run_rt
-    arcs=(20,), saxs='max', # 2M + 900KW in one exposure at arc 20
+    arcs=(0, 20,), saxs='max', # 2M + 900KW in one exposure at arc 20
     t=1,
     offsets=((0, 0),),      # (x, y) um spots per slot, e.g. ((0, -500), (0, 0), (0, 500))
 )

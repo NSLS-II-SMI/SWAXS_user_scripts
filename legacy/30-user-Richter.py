@@ -4524,15 +4524,22 @@ def flatfield_Cl_scan(t=1):
 
 
 
+
 def bpmvspindiode_Sedge(t=1):
     dets = [pil2M]
     det_exposure_time(t, t)
 
-    name = 'direct_beam_Sedge_scannormal'
+    name = 'direct_beam_Sedge_scannormal_att2_9'
 
 
-    energies = [2450.0,2455.0,2460.0,2465.0,2470.0,2473.0,2475.0,2475.5,2476.0,2476.5,2477.0,2477.5,2478.0,2478.5,2479.0,2479.5,
-    2480.0,2480.5,2481.0,2482.0,2483.0,2484.0,2485.0,2486.0, 2487.0,2488.0,2489.0,2490.0,2492.5,2495.0,2500.0,2510.0,2515.0]
+    # energies = [2450.0,2455.0,2460.0,2465.0,2470.0,2473.0,2475.0,2475.5,2476.0,2476.5,2477.0,2477.5,2478.0,2478.5,2479.0,2479.5,
+    # 2480.0,2480.5,2481.0,2482.0,2483.0,2484.0,2485.0,2486.0, 2487.0,2488.0,2489.0,2490.0,2492.5,2495.0,2500.0,2510.0,2515.0]
+    
+    #TFSI
+    energies = [2450.0,2455.0,2460.0,2465.0,2470.0,2472.0,2472.5,2473.0,2473.5,2474.0,2474.5,2475.0,2475.5,2476.0,2476.5,2477.0,2477.5,2478.0,2478.5,2479.0,2479.5,
+    2480.0,2480.5,2481.0,2481.5,2482.0,2482.5,2483.0,2483.5,2484.0,2484.5,2485.0,2485.5,2486.0,2486.5,2487.0,2487.5,2488.0,2488.5,2489.0,2490.0,2490.5,2491.0,
+    2491.5,2492.0,2493,2495.0,2500.0,2510.0,2515.0]
+    
     
     list_ener = energies + energies[::-1]
 
@@ -4541,10 +4548,6 @@ def bpmvspindiode_Sedge(t=1):
     for e in energies:
         yield from bps.mv(energy, e)
         yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
-            yield from bps.sleep(2)
-            yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
 
         fs.open()
         yield from bps.sleep(2)
@@ -4565,10 +4568,6 @@ def bpmvspindiode_Sedge(t=1):
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
         yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
-            yield from bps.sleep(2)
-            yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
 
         fs.open()
         yield from bps.sleep(2)
@@ -4603,10 +4602,6 @@ def bpmvspindiode_Cledge(t=1):
     for e in energies:
         yield from bps.mv(energy, e)
         yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
-            yield from bps.sleep(2)
-            yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
 
         fs.open()
         yield from bps.sleep(2)
@@ -4627,10 +4622,6 @@ def bpmvspindiode_Cledge(t=1):
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
         yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
-            yield from bps.sleep(2)
-            yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
 
         fs.open()
         yield from bps.sleep(2)
@@ -4652,7 +4643,7 @@ def bpmvspindiode_Kedge(t=1):
     dets = [pil2M]
     det_exposure_time(t, t)
 
-    name = 'direct_beam_Kedge_scannormal'
+    name = 'direct_beam_Kedge_scannormal_att2_9'
 
     energies = np.asarray(np.arange(3580, 3611, 5).tolist() + 
                           np.arange(3612, 3629, 1).tolist() + 
@@ -4666,10 +4657,6 @@ def bpmvspindiode_Kedge(t=1):
     for e in energies:
         yield from bps.mv(energy, e)
         yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
-            yield from bps.sleep(2)
-            yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
 
         fs.open()
         yield from bps.sleep(2)
@@ -4690,10 +4677,6 @@ def bpmvspindiode_Kedge(t=1):
     for e in energies[::-1]:
         yield from bps.mv(energy, e)
         yield from bps.sleep(2)
-        if xbpm2.sumX.get() < 50:
-            yield from bps.sleep(2)
-            yield from bps.mv(energy, e)
-            yield from bps.sleep(2)
 
         fs.open()
         yield from bps.sleep(2)
@@ -10413,3 +10396,1518 @@ def night_03March2026(t=1):
     
     project_set('314483_Freychet_42')
     yield from In_edge_measurments_2026_1_mondaynight(t=t)
+
+
+
+
+
+
+
+def swaxs_S_edge_2026_3(t=1):
+    """
+    """
+    dets = [pil900KW, pil2M]
+
+    names = [ 'Tropp_01', 'Tropp_02', 'Tropp_03', 'Tropp_04', 'sample05', 'sample06']
+    x =     [      40200,      33400,      26500,      20800,      15200,       9200]
+    y =     [      -2100,      -2300,      -1500,      -2100,      -1300,      -1800]
+    z =     [      -2000,      -2000,      -2000,      -2000,      -2000,      -2000]
+
+    energies = [2450.0,2455.0,2460.0,2465.0,2470.0,2472.0,2472.5,2473.0,2473.5,2474.0,2474.5,2475.0,2475.5,2476.0,2476.5,2477.0,2477.5,2478.0,2478.5,2479.0,2479.5,
+    2480.0,2480.5,2481.0,2481.5,2482.0,2482.5,2483.0,2483.5,2484.0,2484.5,2485.0,2485.5,2486.0,2486.5,2487.0,2487.5,2488.0,2488.5,2489.0,2490.0,2490.5,2491.0,
+    2491.5,2492.0,2493,2495.0,2500.0,2510.0,2515.0]
+
+    waxs_arc = [0, 20]
+
+    for name, xs, ys in zip(names, x, y):
+        det_exposure_time(t, t)
+
+        # changing ys to allow for more room during dense energy scan
+        yield from bps.mv(piezo.x, xs,
+                          piezo.y, ys)
+
+        yss = np.linspace(ys, ys + 500, len(energies))
+        xss = np.array([xs])
+
+        yss, xss = np.meshgrid(yss, xss)
+        yss = yss.ravel()
+        xss = xss.ravel()
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+
+                name_fmt = "{sample}__pos1_2.0m_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e, xsss, ysss in zip(energies, xss, yss):
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+                    if xbpm2.sumX.get() < 20:
+                        yield from bps.sleep(2)
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(2)
+                    
+                    yield from bps.mv(piezo.y, ysss,
+                                      piezo.x, xsss)
+
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+                name_fmt = "{sample}__pos2_2.0m_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e, xsss, ysss in zip(energies[::-1], xss, yss):
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+                    if xbpm2.sumX.get() < 20:
+                        yield from bps.sleep(2)
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(2)
+                    
+                    yield from bps.mv(piezo.y, ysss,
+                                      piezo.x, xsss+300)
+
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+        (yield from inner())
+
+
+
+
+
+
+
+def S_edge_measurments_2026_3_wednesdaynight(t=1):
+    dets = [pil900KW, pil2M]
+    det_exposure_time(t, t)
+
+    names = ['ladder_lpbt',  'ladder_ltbt',  'ladder_lpbt-me',   'MoS2_ref', 'MoS2_tbab-ac',   'MoS2_tbab-dc', 'MoS2_tbabpvp-ac', ' tropp_f', 'tropp_e',
+             'MoS2_tbab-ac_gold',  'igzo_211-1',  'igzo_211-2',   'igzo_211-5', 'igzo_211-10', 'igzo_811-1', 'igzo_811-2', 'igzo_811-5a', 'igzo_811-5b']
+    x_piezo = [      -52000, -50000, -35000,  -17000,  -6000, 8000, 19000, 33000, 50000]
+    x_hexa = [          -14,      0,      0,       0,      0,    0,     0,     0,     3]
+    y_piezo = [         300,    300,    500,    1000,   -800, -900,  -700,  -300,  -100]
+
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
+    assert len(x_piezo) == len(x_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
+
+    energies = [2450.0,2455.0,2460.0,2465.0,2470.0,2472.0,2472.5,2473.0,2473.5,2474.0,2474.5,2475.0,2475.5,2476.0,2476.5,2477.0,2477.5,2478.0,2478.5,2479.0,2479.5,
+    2480.0,2480.5,2481.0,2481.5,2482.0,2482.5,2483.0,2483.5,2484.0,2484.5,2485.0,2485.5,2486.0,2486.5,2487.0,2487.5,2488.0,2488.5,2489.0,2490.0,2490.5,2491.0,
+    2491.5,2492.0,2493,2495.0,2500.0,2510.0,2515.0]
+
+    waxs_arc = [7, 20]
+    ai0_all = -0.5
+    ai_list = [1.6, 3.2]
+
+    for name, xs, ys, xs_hexa in zip(names, x_piezo, y_piezo, x_hexa):
+        if 'igzo' in name:
+            waxs_arc = [20]
+            ai_list = [1.6]
+        else:
+            waxs_arc = [7, 20]
+            ai_list = [1.6, 3.2]
+                
+        x_step = 30
+
+        yield from bps.mv(stage.x, xs_hexa,
+                          piezo.x, xs,
+                          piezo.y, ys)
+
+        yield from bps.mv(piezo.th, ai0_all)
+
+        try:
+            yield from alignement_gisaxs_doblestack(0.5)
+
+            yield from bps.mv(att2_9.open_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(att2_9.open_cmd, 1)
+            yield from bps.sleep(1)
+
+            ai0 = piezo.th.position
+            det_exposure_time(t, t)
+
+            s = Signal(name='target_file_name', value='')
+
+            @bpp.stage_decorator(dets)
+            @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+            def inner():
+                for i, wa in enumerate(waxs_arc):
+                    yield from bps.mv(waxs, wa)
+                    yield from bps.mv(piezo.x, xs)
+                    counter = 0
+
+                    for k, ais in enumerate(ai_list):
+                        yield from bps.mv(piezo.th, ai0 + ais)
+
+                        name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
+                        for e in energies:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(2)
+                            if xbpm3.sumX.get() < 50:
+                                yield from bps.sleep(2)
+                                yield from bps.mv(energy, e)
+                                yield from bps.sleep(1)
+                            yield from bps.mv(piezo.x, xs + counter * x_step)
+                            counter += 1
+                            
+                            bpm = xbpm3.sumX.get()
+                            sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                            print(f"\n\t=== Sample: {sample_name} ===\n")
+                            s.put(sample_name)
+                            yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+
+                        name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
+                        for e in energies[::-1]:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(2)
+                            if xbpm3.sumX.get() < 50:
+                                yield from bps.sleep(2)
+                                yield from bps.mv(energy, e)
+                                yield from bps.sleep(1)
+                            yield from bps.mv(piezo.x, xs + counter * x_step)
+                            counter += 1
+
+                            bpm = xbpm3.sumX.get()
+                            sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                            print(f"\n\t=== Sample: {sample_name} ===\n")
+                            s.put(sample_name)
+                            yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                    yield from bps.mv(piezo.th, ai0)
+
+            (yield from inner())
+        except:
+            print('sample not aligned', name)
+
+
+
+
+def S_edge_measurments_2026_3_sva_night(t=1, humidity=0, x_off=0, ais=None, ys=None):
+    dets = [pil900KW]
+
+    if humidity==0:
+        names = ['pgBTTT_n300','pgBTTT_n100','pgBTTT_200','pgBTTT_500', 'pgBTTT_as', 'tropp_7', 'tropp_8', 'tropp_9'] 
+        x_hexa = [         -49.5,          -38,         -24,          -8,           9,        19,        30,        39]
+    
+    else:
+        # names = ['pgBTTT_n300','pgBTTT_n100','pgBTTT_200','pgBTTT_500', 'pgBTTT_as'] 
+        # x_hexa = [       -49.5,          -38,         -24,          -8,           9]
+        names = ['pgBTTT_200','pgBTTT_500', 'pgBTTT_as'] 
+        x_hexa = [        -24,          -8,           9]
+    
+    #5mm
+    assert len(x_hexa) == len(names), f"Number of X coordinates ({len(x_hexa)}) is different from number of samples ({len(names)})"
+
+    energies = [2450.0,2455.0,2460.0,2465.0,2470.0,2472.0,2472.5,2473.0,2473.5,2474.0,2474.5,2475.0,2475.5,2476.0,2476.5,2477.0,2477.5,2478.0,2478.5,2479.0,2479.5,
+    2480.0,2480.5,2481.0,2481.5,2482.0,2482.5,2483.0,2483.5,2484.0,2484.5,2485.0,2485.5,2486.0,2486.5,2487.0,2487.5,2488.0,2488.5,2489.0,2490.0,2490.5,2491.0,
+    2491.5,2492.0,2493,2495.0,2500.0,2510.0,2515.0]
+    
+    waxs_arc = [0]
+
+    
+    ai_list = [0.8, 1.6]
+    ai_ini=-0.5
+
+    for l, (name, xs_hexa) in enumerate(zip(names, x_hexa)):
+        try:
+            yield from bps.mv(stage.th, ai_ini, 
+                            stage.x, xs_hexa+x_off)
+
+            yield from bps.mv(GV7.open_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(GV7.open_cmd, 1)
+            yield from bps.sleep(1)
+
+            yield from alignement_gisaxs_hex(angle = 0.4)
+
+            yield from bps.mv(GV7.close_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(GV7.close_cmd, 1)
+            yield from bps.sleep(1)
+
+            ai0 = stage.theta.position
+
+            yield from det_exposure_time(t, t)
+
+            s = Signal(name='target_file_name', value='')
+            @bpp.stage_decorator(dets)
+            @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+            def inner():
+
+                for i, wa in enumerate(waxs_arc):
+                    yield from bps.mv(waxs, wa)
+                    counter = 0
+
+                    for k, incidentangle in enumerate(ai_list):
+                        yield from bps.mv(stage.th, ai0 + incidentangle)
+
+                        name_fmt = "{sample}_hum{humidity}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                        for e in energies:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(3)
+                            yield from bps.mv(stage.x, xs_hexa + x_off + counter * 0.012)
+                            counter += 1
+                            
+                            bpm = xbpm3.sumX.get()
+                            sample_name = name_fmt.format(sample=name, humidity="%1f"%humidity, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%incidentangle, wax=wa, xbpm="%4.3f"%bpm)
+                            s.put(sample_name)
+                            print(f"\n\t=== Sample: {sample_name} ===\n")
+                            yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                        name_fmt = "{sample}_hum{humidity}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                        for e in energies[::-1]:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(3)
+                            yield from bps.mv(stage.x, xs_hexa + x_off + counter * 0.012)
+                            counter += 1
+
+                            bpm = xbpm3.sumX.get()
+                            sample_name = name_fmt.format(sample=name, humidity="%1f"%humidity, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%incidentangle, wax=wa, xbpm="%4.3f"%bpm)
+                            s.put(sample_name)
+                            print(f"\n\t=== Sample: {sample_name} ===\n")
+                            yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+            (yield from inner())
+            yield from bps.mv(stage.x, xs_hexa)
+            yield from bps.mv(stage.th, ai0)
+        except:
+            print('Did not aligned for sample', name)
+
+def S_sva_night(t=1):
+    # setDryFlow(5)
+    # yield from S_edge_measurments_2026_3_sva_night(humidity=0, 
+    #                                                 x_off=0,
+    #                                                 t=t)
+    
+    # setDryFlow(2)
+    # setWetFlow(5)
+    # print('Turn humidity on, waiting for 1h' )
+    # yield from bps.sleep(3600)
+    yield from S_edge_measurments_2026_3_sva_night(humidity=100, 
+                                                   x_off=2.5,
+                                                   t=t)
+
+
+def scan_nexafs_Sedge():
+    dets = [pil900KW]
+
+    name='nexafs_Sedge_pgBTTT_500'
+    energies = np.linspace(2465, 2495, 31)
+    #     energies = [2450.0,2455.0,2460.0,2465.0,2470.0,2472.0,2472.5,2473.0,2473.5,2474.0,2474.5,2475.0,2475.5,2476.0,2476.5,2477.0,2477.5,2478.0,2478.5,2479.0,2479.5,
+    # 2480.0,2480.5,2481.0,2481.5,2482.0,2482.5,2483.0,2483.5,2484.0,2484.5,2485.0,2485.5,2486.0,2486.5,2487.0,2487.5,2488.0,2488.5,2489.0,2490.0,2490.5,2491.0,
+    # 2491.5,2492.0,2493,2495.0,2500.0,2510.0,2515.0]
+
+    y = piezo.y.position
+    waxs_arc = [20]
+
+    s = Signal(name='target_file_name', value='')
+
+    @bpp.stage_decorator(dets)
+    @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+    def inner():
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+
+            for i, e in enumerate(energies):
+                yield from bps.mv(energy, e)
+                yield from bps.sleep(3)
+
+                if xbpm3.sumX.get() < 10:
+                    yield from bps.mv(energy, e)
+                
+                # Metadata
+                wa = str(np.round(float(wa), 1)).zfill(4)
+
+                # Sample name
+                name_fmt = ("{sample}_{energy}eV_wa{wax}_ai1.6deg")
+                sample_name = name_fmt.format(sample = name,energy = "%.2f" % e , wax = wa)
+                sample_name = sample_name.translate({ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ =, "})
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                s.put(sample_name)
+                
+                yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+            yield from bps.sleep(2)
+    (yield from inner())
+
+
+def S_edge_measurments_2026_3_sva(t=1):
+    dets = [pil900KW]
+    det_exposure_time(t, t)
+
+    names = ['pgBTTT_kTFSI_n300_ann']
+    x_hexa = [-25.63]
+
+    assert len(x_hexa) == len(names), f"Number of X coordinates ({len(x_hexa)}) is different from number of samples ({len(names)})"
+
+    energies = [2450.0,2455.0,2460.0,2465.0,2470.0,2472.0,2472.5,2473.0,2473.5,2474.0,2474.5,2475.0,2475.5,2476.0,2476.5,2477.0,2477.5,2478.0,2478.5,2479.0,2479.5,
+    2480.0,2480.5,2481.0,2481.5,2482.0,2482.5,2483.0,2483.5,2484.0,2484.5,2485.0,2485.5,2486.0,2486.5,2487.0,2487.5,2488.0,2488.5,2489.0,2490.0,2490.5,2491.0,
+    2491.5,2492.0,2493,2495.0,2500.0,2510.0,2515.0]
+
+    waxs_arc = [0]
+    ai_list = [0.80]
+
+    for name, xs_hexa in zip(names, x_hexa):
+        yield from bps.mv(stage.x, xs_hexa)
+
+        ai0 = stage.th.position
+        det_exposure_time(t, t)
+
+        s = Signal(name='target_file_name', value='')
+
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+                counter = 0
+
+                for k, ais in enumerate(ai_list):
+                    # yield from bps.mv(stage.th, ai0 + ais)
+
+                    name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                    for e in energies:
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(3)
+                        yield from bps.mv(stage.x, xs_hexa + counter * 0.010)
+                        counter += 1
+                        
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        s.put(sample_name)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                    name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                    for e in energies[::-1]:
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(3)
+                        yield from bps.mv(stage.x, xs_hexa + counter * 0.010)
+                        counter += 1
+
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        s.put(sample_name)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+        (yield from inner())
+        # yield from bps.mv(stage.th, ai0)
+
+
+def K_edge_measurments_2026_3_sva(t=1):
+    dets = [pil900KW]
+    yield from det_exposure_time(t, t)
+
+    names = ['pgBTTT_kTFSI_p600_ann_att1']
+    x_hexa = [-21.715]
+
+    assert len(x_hexa) == len(names), f"Number of X coordinates ({len(x_hexa)}) is different from number of samples ({len(names)})"
+    energies = np.asarray(np.arange(3580, 3611, 5).tolist() + 
+                          np.arange(3612, 3629, 1).tolist() + 
+                          np.arange(3630, 3700, 5).tolist()) 
+    waxs_arc = [0]
+    ai_list = [0.8]
+    for name, xs_hexa in zip(names, x_hexa):
+        yield from bps.mv(stage.x, xs_hexa)
+        ai0 = stage.th.position
+
+        s = Signal(name='target_file_name', value='')
+
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+                counter = 0
+                for k, ais in enumerate(ai_list):
+                    # yield from bps.mv(stage.th, ai0 + ais)
+                    name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                    for e in energies:
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(2)
+                        if xbpm2.sumX.get() < 10:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(2)
+                        yield from bps.mv(stage.x, xs_hexa + counter * 0.013)
+                        counter += 1
+                        
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        s.put(sample_name)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                    name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                    for e in energies[::-1]:
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(2)
+                        if xbpm2.sumX.get() < 10:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(2)
+                        yield from bps.mv(stage.x, xs_hexa + counter * 0.013)
+                        counter += 1
+
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        s.put(sample_name)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+        (yield from inner())
+        # yield from bps.mv(stage.th, ai0)
+
+
+
+
+def scan_nexafs_Sb_edge():
+    dets = [pil900KW]
+
+    name='nexafs_SbLIII_test'
+    energies = np.linspace(4120, 4180, 31)
+    energies = [4120, 4125, 4130, 4139, 4140, 4141, 4142, 4143, 4145, 4146, 4147, 4148, 4149, 
+                4150, 4151, 4152, 4152.5, 4153, 4153.5, 4154, 4154.5, 4155, 4155.5, 4156, 4156.5,
+                4157, 4157.5, 4158, 4158.5, 4159, 4159.5, 4160, 4161, 4162, 4163, 4164,
+                4165, 4166, 4167, 4168, 4169, 4170, 4172, 4174, 4176, 4178, 4180, 4185, 
+                4190, 4195, 4200, 4210, 4220]   
+    
+    y = piezo.y.position
+    waxs_arc = [20]
+
+    s = Signal(name='target_file_name', value='')
+
+    @bpp.stage_decorator(dets)
+    @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+    def inner():
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+
+            for i, e in enumerate(energies):
+                yield from bps.mv(energy, e)
+                yield from bps.sleep(3)
+
+                if xbpm3.sumX.get() < 10:
+                    yield from bps.mv(energy, e)
+                
+                # Metadata
+                wa = str(np.round(float(wa), 1)).zfill(4)
+
+                # Sample name
+                name_fmt = ("{sample}_{energy}eV_wa{wax}_ai1.6deg")
+                sample_name = name_fmt.format(sample = name,energy = "%.2f" % e , wax = wa)
+                sample_name = sample_name.translate({ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ =, "})
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                s.put(sample_name)
+                
+                yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+            yield from bps.sleep(2)
+    (yield from inner())
+
+
+
+
+
+def Sb_edge_measurments_2026_3_wednesdaynight(t=1):
+    dets = [pil900KW, pil2M]
+    det_exposure_time(t, t)
+
+    names = ['p3ht_sbf6_3',  'p3ht_sbf6_10',  'p3ht_sbf6_30',   'p3ht_sbf6_100', 'p3ht_sbf6_300']
+    x_piezo = [     -50000,          -50000,          -34000,            -18000,           -1000]
+    x_hexa = [         -17,               0,               0,                 0,               0]
+    y_piezo = [       6100,            6100,            6100,               6100,           6100]
+
+    names = ['p3ht_sbf6_30',   'p3ht_sbf6_300', 'p3ht_sbf6_10']
+    x_piezo = [      -34000,             -1000,         -50000]
+    x_hexa = [            0,                 0,              0]
+    y_piezo = [        6100,              6100,           6100]
+
+
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
+    assert len(x_piezo) == len(x_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
+
+    energies = [4120, 4125, 4130, 4139, 4140, 4141, 4142, 4143, 4145, 4146, 4147, 4148, 4149, 
+                4150, 4151, 4152, 4152.5, 4153, 4153.5, 4154, 4154.5, 4155, 4155.5, 4156, 4156.5,
+                4157, 4157.5, 4158, 4158.5, 4159, 4159.5, 4160, 4161, 4162, 4163, 4164,
+                4165, 4166, 4167, 4168, 4169, 4170, 4172, 4174, 4176, 4178, 4180, 4185, 
+                4190, 4195, 4200, 4210, 4220]
+
+    waxs_arc = [0, 46]
+    ai0_all = -0.5
+    ai_list = [0.8, 1.6]
+
+    for name, xs, ys, xs_hexa in zip(names, x_piezo, y_piezo, x_hexa):           
+        x_step = 30
+
+        yield from bps.mv(stage.x, xs_hexa,
+                          piezo.x, xs,
+                          piezo.y, ys)
+
+        yield from bps.mv(piezo.th, ai0_all)
+
+        try:
+            yield from bps.mv(GV7.open_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(GV7.open_cmd, 1)
+            yield from bps.sleep(1)
+
+            yield from alignement_gisaxs_doblestack(0.5)
+
+            yield from bps.mv(GV7.close_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(GV7.close_cmd, 1)
+            yield from bps.sleep(1)
+            
+            yield from bps.mv(att2_9.open_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(att2_9.open_cmd, 1)
+            yield from bps.sleep(1)
+            
+            ai0 = piezo.th.position
+            yield from det_exposure_time(t, t)
+
+            s = Signal(name='target_file_name', value='')
+
+            @bpp.stage_decorator(dets)
+            @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+            def inner():
+                for i, wa in enumerate(waxs_arc):
+                    if wa==46:
+                        yield from bps.mv(att2_9.close_cmd, 1)
+                        yield from bps.sleep(1)
+                        yield from bps.mv(att2_9.close_cmd, 1)
+                        yield from bps.sleep(1)
+                    yield from bps.mv(waxs, wa)
+                    yield from bps.mv(piezo.x, xs)
+                    counter = 0
+
+                    for k, ais in enumerate(ai_list):
+                        yield from bps.mv(piezo.th, ai0 + ais)
+
+                        name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
+                        for e in energies:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(2)
+                            if xbpm3.sumX.get() < 10:
+                                yield from bps.sleep(2)
+                                yield from bps.mv(energy, e)
+                                yield from bps.sleep(1)
+                            yield from bps.mv(piezo.x, xs + counter * x_step)
+                            counter += 1
+                            
+                            bpm = xbpm3.sumX.get()
+                            sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                            print(f"\n\t=== Sample: {sample_name} ===\n")
+                            s.put(sample_name)
+                            yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+
+                        name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
+                        for e in energies[::-1]:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(2)
+                            if xbpm3.sumX.get() < 10:
+                                yield from bps.sleep(2)
+                                yield from bps.mv(energy, e)
+                                yield from bps.sleep(1)
+                            yield from bps.mv(piezo.x, xs + counter * x_step)
+                            counter += 1
+
+                            bpm = xbpm3.sumX.get()
+                            sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                            print(f"\n\t=== Sample: {sample_name} ===\n")
+                            s.put(sample_name)
+                            yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                    yield from bps.mv(piezo.th, ai0)
+
+            (yield from inner())
+        except:
+            print('sample not aligned', name)
+
+
+
+
+def Cl_edge_measurments_2026_3_sva(t=1):
+    """
+    Motion of stage_th is commented out so the sample shoulld be at the correct ai for the measurments
+    """
+    dets = [pil900KW]
+    det_exposure_time(t, t)
+
+    names = ['gdpp_edot_sa2_p300']
+    x_hexa = [10.25]
+
+    assert len(x_hexa) == len(names), f"Number of X coordinates ({len(x_hexa)}) is different from number of samples ({len(names)})"
+    
+    energies = np.asarray([2810.0, 2820.0, 2828.0, 2829.0, 2830.0, 2831.0, 2832.0, 2833.0, 2834.0, 2834.5, 2835.0, 2835.5, 2836.0, 2836.5, 2837.0, 2837.5, 2838.0, 2838.5, 2839.0,
+    2839.5, 2840.0, 2840.5, 2841.0, 2841.5, 2845.0, 2850.0, 2855.0, 2860.0, 2865.0, 2870.0, 2875.0, 2880.0, 2890.0])
+
+    waxs_arc = [0]
+    ai_list = [0.8]
+
+    for name, xs_hexa in zip(names, x_hexa):
+        yield from bps.mv(stage.x, xs_hexa)
+
+        ai0 = stage.th.position
+        yield from det_exposure_time(t, t)
+
+        s = Signal(name='target_file_name', value='')
+
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+                counter = 0
+
+                for k, ais in enumerate(ai_list):
+                    # yield from bps.mv(stage.th, ai0 + ais)
+
+                    name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                    for e in energies:
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(3)
+                        yield from bps.mv(stage.x, xs_hexa + counter * 0.020)
+                        counter += 1
+                        
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        s.put(sample_name)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                    name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                    for e in energies[::-1]:
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(3)
+                        yield from bps.mv(stage.x, xs_hexa + counter * 0.020)
+                        counter += 1
+
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        s.put(sample_name)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+        (yield from inner())
+        # yield from bps.mv(stage.th, ai0)
+
+
+
+def Ca_edge_measurments_2026_3_sva(t=1):
+    """
+    Motion of stage_th is commented out so the sample shoulld be at the correct ai for the measurments
+    """
+    dets = [pil900KW]
+    det_exposure_time(t, t)
+
+    names = ['p90_CaCl2_n600']
+    x_hexa = [8.041]
+
+
+    assert len(x_hexa) == len(names), f"Number of X coordinates ({len(x_hexa)}) is different from number of samples ({len(names)})"
+
+    energies = ([4030, 4040, 4045, 4046, 4047, 4048, 4049, 4050, 4051, 4052, 4053, 4053.5, 4054, 4054.5, 4055, 4055.5, 4056, 4056.5,
+    4057, 4057.5, 4058, 4058.5, 4059, 4060, 4061, 4062, 4063, 4064, 4065, 4070, 4080])
+    
+    waxs_arc = [0]
+    ai_list = [0.80]
+
+    for name, xs_hexa in zip(names, x_hexa):
+        yield from bps.mv(stage.x, xs_hexa)
+
+        ai0 = stage.th.position
+        yield from det_exposure_time(t, t)
+
+        s = Signal(name='target_file_name', value='')
+
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+                counter = 0
+
+                for k, ais in enumerate(ai_list):
+                    # yield from bps.mv(stage.th, ai0 + ais)
+
+                    name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                    for e in energies:
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(2)
+                        yield from bps.mv(stage.x, xs_hexa + counter * 0.014)
+                        counter += 1
+                        
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        s.put(sample_name)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                    name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                    for e in energies[::-1]:
+                        yield from bps.mv(energy, e)
+                        yield from bps.sleep(2)
+                        yield from bps.mv(stage.x, xs_hexa + counter * 0.014)
+                        counter += 1
+
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        s.put(sample_name)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+        (yield from inner())
+        # yield from bps.mv(stage.th, ai0)
+
+
+
+
+
+
+def vert_Sedge_2026_3(t=0.5):
+    """
+    Measuring samples mounted vertically:
+    - Alignement in the vertical orientation
+    - Take a direct and reflected beam at ai = 3 deg to verify the alignement precision
+    - Take few energies without translation for an energy variation reference (no sample inhomogemetiy)
+    - Scan the incident angle at 2450 eV
+    - Fine energy scan at 0.4, 0.8, 4 and 8 deg incident angles
+    """
+    dets = [pil900KW]
+
+    energies = [2450.0,2455.0,2460.0,2465.0,2470.0,2472.0,2472.5,2473.0,2473.5,2474.0,2474.5,2475.0,2475.5,2476.0,2476.5,2477.0,2477.5,2478.0,2478.5,2479.0,2479.5,
+    2480.0,2480.5,2481.0,2481.5,2482.0,2482.5,2483.0,2483.5,2484.0,2484.5,2485.0,2485.5,2486.0,2486.5,2487.0,2487.5,2488.0,2488.5,2489.0,2490.0,2490.5,2491.0,
+    2491.5,2492.0,2493,2495.0,2500.0,2510.0,2515.0]
+
+    waxs_arc = [22]
+    ai_list = [0.80]
+
+    samples = ['pgBTTT_n300','pgBTTT_n100','pgBTTT_200','pgBTTT_500', 'pgBTTT_as']
+    ys =      [     0,      0,      0,     0,     0]
+    xs =      [-44000, -38500, -14500, 12250, 37500]
+    xshexa =   [-18.9,      0,      0,     0,     0]
+
+    assert len(samples) == len(ys), f"Number of X coordinates ({len(samples)}) is different from number of samples ({len(y)})"
+    assert len(samples) == len(xs), f"Number of X coordinates ({len(samples)}) is different from number of samples ({len(names)})"
+    assert len(samples) == len(xshexa), f"Number of X coordinates ({len(samples)}) is different from number of samples ({len(names)})"
+
+    yield from det_exposure_time(t, t)
+
+    for i, (name, y, x, xhexa) in enumerate(zip(samples, ys, xs, xshexa)):
+        if name != 'pgBTTT_n300':
+            # Setup measurement for sample
+            yield from bps.mv(piezo.y, y, 
+                            piezo.x, x, 
+                            stage.x, xhexa)
+
+            yield from bps.mv(GV7.open_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(GV7.open_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(GV7.open_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(GV7.open_cmd, 1)
+            yield from bps.sleep(1)
+
+            yield from alignement_xrr_xmotor(angle=0.1)
+
+            yield from bps.mv(GV7.close_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(GV7.close_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(GV7.close_cmd, 1)
+            yield from bps.sleep(1)
+            yield from bps.mv(GV7.close_cmd, 1)
+            yield from bps.sleep(1)
+
+            ai0 = stage.phi.position
+            print('ai is', stage.phi.position)
+
+            s = Signal(name='target_file_name', value='')
+            @bpp.stage_decorator(dets)
+            @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+            def inner():
+                for i, wa in enumerate(waxs_arc):
+                    yield from bps.mv(waxs, wa)
+                    counter = 0
+
+                    for k, ais in enumerate(ai_list):
+                        yield from bps.mv(stage.phi, ai0 + ais)
+
+                        name_fmt = "{sample}_pos1_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                        for e in energies:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(3)
+                            yield from bps.mv(piezo.y, y + counter * 20)
+                            counter += 1
+                            
+                            bpm = xbpm3.sumX.get()
+                            sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                            s.put(sample_name)
+                            print(f"\n\t=== Sample: {sample_name} ===\n")
+                            yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                        name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                        for e in energies[::-1]:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(3)
+                            yield from bps.mv(piezo.y, y + counter * 20)
+                            counter += 1
+
+                            bpm = xbpm3.sumX.get()
+                            sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                            s.put(sample_name)
+                            print(f"\n\t=== Sample: {sample_name} ===\n")
+                            yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+            (yield from inner())
+
+        else:
+            ai0 = stage.phi.position
+            print('ai is', stage.phi.position)
+
+            s = Signal(name='target_file_name', value='')
+            @bpp.stage_decorator(dets)
+            @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+            def inner():
+                for i, wa in enumerate(waxs_arc):
+                    yield from bps.mv(waxs, wa)
+                    counter = 0
+
+                    for k, ais in enumerate(ai_list):
+                        yield from bps.mv(stage.phi, ai0 + ais)
+
+                        name_fmt = "{sample}_pos2_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+                        for e in energies[::-1]:
+                            yield from bps.mv(energy, e)
+                            yield from bps.sleep(3)
+                            yield from bps.mv(piezo.y, y + counter * 20)
+                            counter += 1
+
+                            bpm = xbpm3.sumX.get()
+                            sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                            s.put(sample_name)
+                            print(f"\n\t=== Sample: {sample_name} ===\n")
+                            yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+            (yield from inner())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def S_sva_night(t=1):
+    setDryFlow(5)
+    # yield from bps.mv(energy, 2450)
+    # yield from pil2M.apply_threshold(2.45, 1.6, gain='uhighg')
+    # yield from pil900KW.apply_threshold(2.45, 1.6, gain='uhighg')
+
+    # print('moved to 2450 eV, will sleep for 30s')
+    # yield from bps.sleep(30)
+
+    # yield from S_edge_transmission_2026_3_sva(humidity=0, 
+    #                                           x_off=0,
+    #                                           t=t)
+
+
+    # yield from bps.mv(energy, 3600)
+    # yield from pil2M.apply_threshold(3.6, 1.8, gain='uhighg')
+    # yield from pil900KW.apply_threshold(3.6, 1.8, gain='uhighg')
+
+    # print('moved to 3600 eV, will sleep for 30s')
+    # yield from bps.sleep(30)
+
+    yield from K_edge_transmission_2026_3(humidity=0, 
+                                              x_off=0,
+                                              t=t)
+    
+    setDryFlow(2)
+    setWetFlow(5)
+    print('Turn humidity on, waiting for 1h' )
+    yield from bps.sleep(3600)
+
+    # yield from bps.mv(energy, 2450)
+    # yield from pil2M.apply_threshold(2.45, 1.6, gain='uhighg')
+    # yield from pil900KW.apply_threshold(2.45, 1.6, gain='uhighg')
+
+    # print('moved to 2450 eV, will sleep for 30s')
+    # yield from bps.sleep(30)
+
+    # yield from S_edge_transmission_2026_3_sva(humidity=100, 
+    #                                           x_off=0.3,
+    #                                           t=t)
+
+
+    # yield from bps.mv(energy, 3600)
+    # yield from pil2M.apply_threshold(3.6, 1.8, gain='uhighg')
+    # yield from pil900KW.apply_threshold(3.6, 1.8, gain='uhighg')
+
+    # print('moved to 3600 eV, will sleep for 30s')
+    # yield from bps.sleep(30)
+
+    yield from K_edge_transmission_2026_3(humidity=100, 
+                                              x_off=0.3,
+                                              t=t)
+
+
+def S_edge_transmission_2026_3(t=1, humidity=0, x_off=0):
+    dets = [pil900KW]
+
+    names = ['pgBTTT_p700','pgBTTT_p500','pgBTTT_p200','pgBTTT_n100', 'pgBTTT_n300', 'pgBTTT_as'] 
+    x_hexa = [       33300,       26200,         19100,        10900,          3900,       -2800]
+    y_hexa = [       -6900,       -6900,         -7200,        -6900,         -6900,       -7000]
+
+    #5mm
+    assert len(x_hexa) == len(names), f"Number of X coordinates ({len(x_hexa)}) is different from number of samples ({len(names)})"
+    assert len(x_hexa) == len(names), f"Number of X coordinates ({len(y_hexa)}) is different from number of samples ({len(names)})"
+
+    energies = [2450.0,2455.0,2460.0,2465.0,2470.0,2472.0,2472.5,2473.0,2473.5,2474.0,2474.5,2475.0,2475.5,2476.0,2476.5,2477.0,2477.5,2478.0,2478.5,2479.0,2479.5,
+    2480.0,2480.5,2481.0,2481.5,2482.0,2482.5,2483.0,2483.5,2484.0,2484.5,2485.0,2485.5,2486.0,2486.5,2487.0,2487.5,2488.0,2488.5,2489.0,2490.0,2490.5,2491.0,
+    2491.5,2492.0,2493,2495.0,2500.0,2510.0,2515.0]
+    
+    waxs_arc = [0]
+    
+    yield from det_exposure_time(t, t)
+    
+    for l, (name, xs_hexa, ys_hexa) in enumerate(zip(names, x_hexa, y_hexa)):
+        print(xs_hexa, ys_hexa)
+        yield from bps.mv(piezo.x, xs_hexa+x_off,
+                          piezo.y, ys_hexa)
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+                counter = 0
+                name_fmt = "{sample}_hum{humidity}_pos1_{energy}eV_x{x}_wa{wax}_bpm{xbpm}"
+                for e in energies:
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(3)
+                    yield from bps.mv(piezo.y, ys_hexa + counter * 10)
+                    counter += 1
+                    
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name, humidity="%1f"%humidity, energy="%6.2f"%e, x="%1.2f"%stage.x.position, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                name_fmt = "{sample}_hum{humidity}_pos2_{energy}eV_x{x}_wa{wax}_bpm{xbpm}"
+                for e in energies[::-1]:
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(3)
+                    yield from bps.mv(piezo.y, ys_hexa + counter * 10)
+                    counter += 1
+
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name, humidity="%1f"%humidity, energy="%6.2f"%e, x="%1.2f"%stage.x.position, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+        (yield from inner())
+
+
+
+def K_edge_transmission_2026_3(t=1, humidity=0, x_off=0):
+    dets = [pil900KW]
+   
+    names = [    'p90_p600',   'p90_n600', 'p90_n800', 'p90_n800_2layer', 'p90_as_2layer'] 
+    x_hexa = [       -11800,       -24800,     -30100,       -36600,        -43100]
+    y_hexa = [        -7300,        -7000,      -7500,        -7500,         -7300]
+
+    #5mm
+    assert len(x_hexa) == len(names), f"Number of X coordinates ({len(x_hexa)}) is different from number of samples ({len(names)})"
+
+    energies = np.asarray(np.arange(3580, 3611, 5).tolist() + 
+                          np.arange(3612, 3629, 1).tolist() + 
+                          np.arange(3630, 3700, 5).tolist())
+    
+    waxs_arc = [0, 20]
+    
+    yield from det_exposure_time(t, t)
+    
+    for l, (name, xs_hexa, ys_hexa) in enumerate(zip(names, x_hexa, y_hexa)):
+        yield from bps.mv(piezo.x, xs_hexa+x_off,
+                          piezo.y, ys_hexa)
+
+        s = Signal(name='target_file_name', value='')
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+                counter = 0
+                name_fmt = "{sample}_hum{humidity}_pos1_{energy}eV_x{x}_wa{wax}_bpm{xbpm}"
+                for e in energies:
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(3)
+                    yield from bps.mv(piezo.y, ys_hexa + counter * 10)
+                    counter += 1
+                    
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name, humidity="%1f"%humidity, energy="%6.2f"%e, x="%1.2f"%stage.x.position, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                name_fmt = "{sample}_hum{humidity}_pos2_{energy}eV_x{x}_wa{wax}_bpm{xbpm}"
+                for e in energies[::-1]:
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(3)
+                    yield from bps.mv(piezo.y, ys_hexa + counter * 10)
+                    counter += 1
+
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name, humidity="%1f"%humidity, energy="%6.2f"%e, x="%1.2f"%stage.x.position, wax=wa, xbpm="%4.3f"%bpm)
+                    s.put(sample_name)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+        (yield from inner())
+
+
+def K_edge_measurments_2026_3_scanx_sva(t=1):
+    dets = [pil900KW]
+    det_exposure_time(t, t)
+
+    names = ['gdpp_edot_sa2_xscan_after']
+    x_range = [3.4, 12]
+
+    x_list = np.linspace(x_range[0], x_range[1], 40)
+
+    waxs_arc = [0]
+    ai_list = [0.8]
+    e=energy.energy.position
+
+    for name in names:
+        ai0 = stage.th.position
+        yield from det_exposure_time(t, t)
+
+        s = Signal(name='target_file_name', value='')
+
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+                counter = 0
+
+                for k, ais in enumerate(ai_list):
+                    # yield from bps.mv(stage.th, ai0 + ais)
+
+                    name_fmt = "{sample}_xscan_{energy}eV_x{x}_ai{ai}_wa{wax}_bpm{xbpm}"
+
+                    for xs in x_list:
+                        yield from bps.mv(stage.x, xs)                        
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, x="%1.2f"%stage.x.position, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        s.put(sample_name)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+                    yield from bps.mv(stage.x, x_range[0])
+
+        (yield from inner())
+        # yield from bps.mv(stage.th, ai0)
+
+
+
+
+
+
+
+
+def P_edge_measurments_2026_3_day(t=1):
+    dets = [pil900KW]
+
+    names = ['p3ht_pf6_3', 'p3ht_pf6_10','p3ht_pf6_30', 'p3ht_pf6_100', 'p3ht_pf6_300']             
+    x_piezo = [  -49000,    -41000,     -21000,       5000,      25000]
+    x_hexa = [      -15,         0,          0,          0,          0]      
+    y_hexa = [        2,         2,          2,          2,          2]
+    y_piezo = [    7000,      7000,       7000,       7000,       7000]
+
+    names = ['p3ht_pf6_3', 'p3ht_pf6_10','p3ht_pf6_30', 'p3ht_pf6_100']             
+    x_piezo = [  -49000,    -41000,     -21000,       5000]
+    x_hexa = [      -15,         0,          0,          0]      
+    y_hexa = [        2,         2,          2,          2]
+    y_piezo = [    7000,      7000,       7000,       7000]
+    
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
+    assert len(x_piezo) == len(x_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(x_hexa)})"
+    assert len(x_piezo) == len(y_hexa), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_hexa)})"
+
+    energies = np.asarray([2130.0, 2140.0, 2145.0, 2150.0, 2155.0, 2157.0, 2157.5, 2158.0, 2158.5, 2159.0, 2159.5, 2160.0, 2160.5, 2161.0,
+    2161.5, 2162.0, 2162.5, 2163.0, 2163.5, 2164.0, 2164.5, 2165.0, 2165.5, 2166.0, 2170.0, 2175.0, 2180.0, 2185.0, 2190.0, 2195.0, 2200.0, 2210.0])
+
+    waxs_arc = [0]
+    ai0_all = 0
+    ai_list = [1.6]
+
+    for name, xs, ys, xs_hexa, ys_hexa in zip(names[::-1], x_piezo[::-1], y_piezo[::-1], x_hexa[::-1], y_hexa[::-1]):
+        x_step = 50
+
+        yield from bps.mv(stage.x, xs_hexa,
+                        stage.y, ys_hexa,
+                        piezo.x, xs,
+                        piezo.y, ys,
+                        piezo.th, ai0_all)
+
+        yield from bps.mv(GV7.open_cmd, 1)
+        yield from bps.sleep(1)
+        yield from bps.mv(GV7.open_cmd, 1)
+        yield from bps.sleep(1)
+        yield from bps.mv(GV7.open_cmd, 1)
+        yield from bps.sleep(1)
+        yield from bps.mv(GV7.open_cmd, 1)
+        yield from bps.sleep(1)
+
+        yield from alignement_gisaxs_doblestack(0.4)
+
+        yield from bps.mv(GV7.close_cmd, 1)
+        yield from bps.sleep(1)
+        yield from bps.mv(GV7.close_cmd, 1)
+        yield from bps.sleep(1)
+        yield from bps.mv(GV7.close_cmd, 1)
+        yield from bps.sleep(1)
+        yield from bps.mv(GV7.close_cmd, 1)
+        yield from bps.sleep(1)
+
+                    
+        yield from bps.mv(att2_9.open_cmd, 1)
+        yield from bps.sleep(1)
+        yield from bps.mv(att2_9.open_cmd, 1)
+        yield from bps.sleep(1)
+        yield from bps.mv(att2_9.open_cmd, 1)
+        yield from bps.sleep(1)
+
+        ai0 = piezo.th.position
+        yield from det_exposure_time(t, t)
+
+        s = Signal(name='target_file_name', value='')
+
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+                yield from bps.mv(piezo.x, xs)
+                counter = 0
+
+                for k, ais in enumerate(ai_list):
+                    yield from bps.mv(piezo.th, ai0 + ais)
+
+                    name_fmt = "{sample}_pos1_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
+                    for e in energies:
+                        try:
+                            yield from bps.mv(energy, e)
+                        except:
+                            yield from bps.sleep(3)
+                            yield from bps.mv(energy, e)
+                        yield from bps.sleep(3)
+
+                        yield from bps.mv(piezo.x, xs + counter * x_step)
+                        counter += 1
+                        
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        s.put(sample_name)
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+
+                    name_fmt = "{sample}_pos2_{energy}eV_ai{ai}_wa{wax}_bpm{xbpm}"
+                    for e in energies[::-1]:
+                        try:
+                            yield from bps.mv(energy, e)
+                        except:
+                            yield from bps.sleep(3)
+                            yield from bps.mv(energy, e)
+                        yield from bps.sleep(3)
+
+                        yield from bps.mv(piezo.x, xs + counter * x_step)
+                        counter += 1
+
+                        bpm = xbpm3.sumX.get()
+                        sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, ai="%3.2f"%ais, wax=wa, xbpm="%4.3f"%bpm)
+                        print(f"\n\t=== Sample: {sample_name} ===\n")
+                        s.put(sample_name)
+                        yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+                yield from bps.mv(piezo.th, ai0)
+
+        (yield from inner())
+
+
+
+def scan_nexafs_Fe_edge():
+    dets = [pil900KW]
+
+    name='nexafs_SbLIII_test'
+    energies = np.linspace(7121, 7161, 41)
+
+    energies = [7100, 7110, 7120, 7127, 7128, 7129, 7130, 7131, 7132, 7133, 7134, 7135, 7136, 7137, 
+                7138, 7139, 7140, 7141, 7142, 7143, 7144, 7145, 7146, 7147, 7148, 7149, 7150, 7155,
+                7160, 7165, 7170, 7180, 7190, 7200]   
+    
+    waxs_arc = [20]
+
+    s = Signal(name='target_file_name', value='')
+
+    @bpp.stage_decorator(dets)
+    @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+    def inner():
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+
+            for i, e in enumerate(energies):
+                yield from bps.mv(energy, e)
+                yield from bps.sleep(3)
+                
+                # Metadata
+                wa = str(np.round(float(wa), 1)).zfill(4)
+
+                # Sample name
+                name_fmt = ("{sample}_{energy}eV_wa{wax}_ai1.6deg")
+                sample_name = name_fmt.format(sample = name,energy = "%.2f" % e , wax = wa)
+                sample_name = sample_name.translate({ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ =, "})
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                s.put(sample_name)
+                
+                yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+            yield from bps.sleep(2)
+    (yield from inner())
+
+
+def scan_nexafs_Cu_edge():
+    dets = [pil900KW]
+
+    name='nexafs_Cu_test'
+    energies = np.linspace(8980, 9020, 41)
+
+    energies = [8960, 8970, 8980, 8993, 8994, 8995, 8996, 8997, 8998, 8999, 9000, 9001, 9002, 9003, 
+                9004, 9005, 9006, 9007, 9008, 9009, 9010, 9011, 9012, 9013, 9014, 9015, 9016, 9017,
+                9018, 9023, 9028, 9040, 9050, 9060]   
+    
+    waxs_arc = [20]
+
+    s = Signal(name='target_file_name', value='')
+
+    @bpp.stage_decorator(dets)
+    @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+    def inner():
+        for wa in waxs_arc:
+            yield from bps.mv(waxs, wa)
+
+            for i, e in enumerate(energies):
+                yield from bps.mv(energy, e)
+                yield from bps.sleep(3)
+                
+                # Metadata
+                wa = str(np.round(float(wa), 1)).zfill(4)
+
+                # Sample name
+                name_fmt = ("{sample}_{energy}eV_wa{wax}_ai1.6deg")
+                sample_name = name_fmt.format(sample = name,energy = "%.2f" % e , wax = wa)
+                sample_name = sample_name.translate({ord(c): "_" for c in "!@#$%^&*{}:/<>?\|`~+ =, "})
+                print(f"\n\n\n\t=== Sample: {sample_name} ===")
+                s.put(sample_name)
+                
+                yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3] + [s])
+
+            yield from bps.sleep(2)
+    (yield from inner())
+
+
+def swaxs_capillaries_Fe_edge(t=1):
+    dets = [pil900KW, pil2M]
+
+    energies = [7100, 7110, 7120, 7127, 7128, 7129, 7130, 7131, 7132, 7133, 7134, 7135, 7136, 7137, 
+                7138, 7139, 7140, 7141, 7142, 7143, 7144, 7145, 7146, 7147, 7148, 7149, 7150, 7155,
+                7160, 7165, 7170, 7180, 7190, 7200]   
+    
+    waxs_arc = [0, 20]
+
+    names = [    'Fe_a', 'Fe_b', 'Fe_c', 'Fe_d', 'Fe_e','Fe_f','Fe_g','Fe_h','Na_a','Na_b','Na_c','Na_d','Na_e','Na_f','Na_g','Na_h', 'H2O']             
+    x_piezo = [  -18700, -15850, -12600,  -9450,  -6550, -2750,   250,  3950,  6850,  9450, 12950, 15950, 19650, 22250, 25800, 29250, 32400]
+    y_piezo = [    8000,   6400,   6800,   6400,   7800,  6400,  7800,  6400,  6400,  6400,  6400,  6400,  6400,  6400,  6400,  6400, 6400]
+    z_piezo = [    7500,   -900,   7500,   -900,   9500,  -700,  9500, -2500,  9500, -2500, 10700,  -900, 10700,  -900, 10700,  -900, 10700]
+
+    
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
+    assert len(x_piezo) == len(z_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(z_piezo)})"
+
+    y_step = 10
+
+    for name, xs, ys, zs in zip(names, x_piezo, y_piezo, z_piezo):
+        yield from bps.mv(piezo.x, xs,
+                          piezo.y, ys,
+                          piezo.z, zs)
+
+        yield from det_exposure_time(t, t)
+
+        s = Signal(name='target_file_name', value='')
+
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+                counter = 0
+
+                name_fmt = "{sample}_pos1_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e in energies:
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+
+                    yield from bps.mv(piezo.y, ys + counter * y_step)
+                    counter += 1
+                    
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    s.put(sample_name)
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+
+                name_fmt = "{sample}_pos2_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e in energies[::-1]:
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+
+                    yield from bps.mv(piezo.y, ys + counter * y_step)
+                    counter += 1
+
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    s.put(sample_name)
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+        (yield from inner())
+
+
+
+
+def swaxs_capillaries_Cu_edge(t=1):
+    dets = [pil900KW, pil2M]
+
+    energies = [8960, 8970, 8980, 8993, 8994, 8995, 8996, 8997, 8998, 8999, 9000, 9001, 9002, 9003, 
+                9004, 9005, 9006, 9007, 9008, 9009, 9010, 9011, 9012, 9013, 9014, 9015, 9016, 9017,
+                9018, 9023, 9028, 9040, 9050, 9060]    
+    
+    waxs_arc = [0, 20]
+
+    names = [    'Cu_a',    'Cu_b',     'Cu_c',     'Cu_d',     'Cu_e', 'Cu_f','Cu_g']             
+    x_piezo = [  -40900,    -37750,     -34850,     -31250,     -27650, -24950,-21950]
+    y_piezo = [    6400,      6400,       6400,       6400,       7800,   6400,  7800]
+    z_piezo = [    -400,      9500,       -400,       9500,        100,   9500,   100]
+
+    
+    assert len(x_piezo) == len(names), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(names)})"
+    assert len(x_piezo) == len(y_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(y_piezo)})"
+    assert len(x_piezo) == len(z_piezo), f"Number of X coordinates ({len(x_piezo)}) is different from number of samples ({len(z_piezo)})"
+
+    y_step = 10
+
+    for name, xs, ys, zs in zip(names, x_piezo, y_piezo, z_piezo):
+        yield from bps.mv(piezo.x, xs,
+                        piezo.y, ys,
+                        piezo.z, zs)
+
+        yield from det_exposure_time(t, t)
+
+        s = Signal(name='target_file_name', value='')
+
+        @bpp.stage_decorator(dets)
+        @bpp.run_decorator(md={'sample_name' :'{target_file_name}'})
+        def inner():
+
+            for i, wa in enumerate(waxs_arc):
+                yield from bps.mv(waxs, wa)
+                counter = 0
+
+                name_fmt = "{sample}_pos1_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e in energies:
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+
+                    yield from bps.mv(piezo.y, ys + counter * y_step)
+                    counter += 1
+                    
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name, energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    s.put(sample_name)
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+
+                name_fmt = "{sample}_pos2_{energy}eV_wa{wax}_bpm{xbpm}"
+                for e in energies[::-1]:
+                    yield from bps.mv(energy, e)
+                    yield from bps.sleep(2)
+
+                    yield from bps.mv(piezo.y, ys + counter * y_step)
+                    counter += 1
+
+                    bpm = xbpm3.sumX.get()
+                    sample_name = name_fmt.format(sample=name,energy="%6.2f"%e, wax=wa, xbpm="%4.3f"%bpm)
+                    print(f"\n\t=== Sample: {sample_name} ===\n")
+                    s.put(sample_name)
+                    yield from bps.trigger_and_read(dets + [energy, waxs, xbpm2, xbpm3, att2_9] + [s])
+
+        (yield from inner())
+
+
+
+
+def capillaries_night(t=1):
+    # yield from bps.mv(energy, 7000)
+
+    # yield from pil2M.apply_threshold(7.0, 3.5)
+    # yield from pil900KW.apply_threshold(7.0, 3.5)
+
+    # print('moved to 7000 eV, will sleep for 30s')
+    # yield from bps.sleep(30)
+
+    yield from swaxs_capillaries_Fe_edge(t=t)
+
+
+    yield from bps.mv(energy, 8950)
+    yield from pil2M.apply_threshold(8.9, 4.45)
+    yield from pil900KW.apply_threshold(8.9, 4.45)
+
+    print('moved to 8950 eV, will sleep for 30s')
+    yield from bps.sleep(30)
+
+    yield from swaxs_capillaries_Cu_edge(t=t)

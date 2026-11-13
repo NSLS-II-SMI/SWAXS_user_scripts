@@ -1346,7 +1346,7 @@ WLIU4_BOX = {
     **{f'L{4 + i}': f'S{56 + i}r' for i in range(5)},            # L4 .. L8:   S56r .. S60r
     **{f'L{9 + i}': f'S{56 + i}' for i in range(14)},            # L9 .. L22:  S56 .. S69
     **{f'K{4 + i}': f'S{70 + i}' for i in range(16)},            # K4 .. K19:  S70 .. S85
-    'K20': 'S85r_K20', 'K21': 'S85r_K21',                        # both "S85r" on the sheet and photo
+    'K20': 'S84r_K20', 'K21': 'S85r_K21',                        # both "S85r" on the sheet and photo
     'K22': 'S27r', 'J3': 'S88', 'J4': 'S89', 'J5': 'S90',
 }
 WLIU4_REFS = {'L3': 'SiO2'}     # well -> 'SiO2' / 'Water' (named WL_<ref>_<well>; Water = blank)

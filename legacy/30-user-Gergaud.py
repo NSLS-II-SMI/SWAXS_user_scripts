@@ -2631,3 +2631,338 @@ def scanning_chiandth(t=1):
         sample_name = name_fmt.format(sample=name)
         sample_id(sample_name=sample_name)
         yield from bp.list_scan([pil2M], prs, phi)
+
+
+
+
+def cd_saxs_modern(th_ini, th_fin, th_st, exp_t=1, user_name='CW', sample='test', nume=1, repeats=1, det=[pil2M]):
+
+    for num, theta in enumerate(np.linspace(th_ini, th_fin, th_st)):
+        yield from bps.mv(stage.phi, theta)
+        name_fmt = "{sample}_9.3m_16.1keV_num{num}_{th}deg_bpm{bpm}"
+        sample_name = name_fmt.format(sample=sample, num="%2.2d"%num, th="%2.2d"%theta, bpm="%1.3f"%xbpm3.sumX.get())
+        sample_id(sample_name=sample_name)
+
+        print(f"\n\t=== Sample: {sample_name} ===\n")
+        yield from bp.count(det, num=nume)
+
+
+def cdsaxs_May2026_srm_j5(t=1):
+    """
+    If you need to restart this sample set at a sample other than the
+    first one, change the 'start_at' variable. 
+    Samples are indexed starting at 0, so if 'start_at' is equal to 0,
+    all samples in this set will be run with this function call.
+
+    The repeats parameter is used to collect multiple
+    images each with an expsoure time of t at each position during
+    the cd-saxs scan.
+    """
+
+    phi_offset = -0.425
+    start_phi = -60
+    stop_phi = 60
+    phi_steps = int(abs(start_phi-stop_phi) + 1)
+
+    start_at = 0
+    repeats = 1
+
+    names = ['c01']    
+    x =     [75730]   
+    y =     [ 9000]   
+    z =     [-3330]  
+    chi=    [-1.65]   
+    th =    [-0.01] 
+
+    names = ['bkg']    
+    x =     [35730]   
+    y =     [ 5000]   
+    z =     [-3330]  
+    chi=    [-1.65]   
+    th =    [-0.01]   
+    nume=1
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+    
+    for (name, xs, ys, zs, chis, ths) in zip(names, x, y, z, chi, th):
+
+        print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
+        print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
+        yield from bps.mv(piezo.ch, chis)
+        yield from bps.mv(piezo.th, ths)
+        yield from bps.mv(piezo.z, zs)
+        yield from bps.mv(piezo.x, xs)
+        yield from bps.mv(piezo.y, ys)
+
+        # yield from bp
+        yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, sample=name+'_measure_ref-A%s'%(i+1), nume=1)
+        yield from cd_saxs_modern(start_phi+phi_offset, stop_phi+phi_offset, phi_steps, exp_t=t, sample=name+'_measure%s'%(i+1), nume=nume)
+        yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, sample=name+'_measure_ref-B%s'%(i+1), nume=1)
+
+
+        yield from bps.mv(stage.phi, phi_offset)
+        yield from det_exposure_time(2, 2)
+
+        xss = np.linspace(20000, 40000, 21)
+        name_fmt = "{sample}_scanX_rugo_up_sdd9p30_16.1keV"
+        sample_name = name_fmt.format(sample=name)
+        sample_id(sample_name=sample_name)
+        yield from bp.list_scan([pil2M], piezo.x, xss)
+
+        yield from bps.mvr(pil2m_pos.y, -4.3)
+        name_fmt = "{sample}_scanX_rugo_dn_sdd9p30_16.1keV"
+        sample_name = name_fmt.format(sample=name)
+        sample_id(sample_name=sample_name)
+        yield from bp.list_scan([pil2M], piezo.x, xss)
+        yield from bps.mvr(pil2m_pos.y, 4.3)
+
+
+def cdsaxs_Ulysse_2026_3(t=1):
+    """
+    If you need to restart this sample set at a sample other than the
+    first one, change the 'start_at' variable. 
+    Samples are indexed starting at 0, so if 'start_at' is equal to 0,
+    all samples in this set will be run with this function call.
+
+    The repeats parameter is used to collect multiple
+    images each with an expsoure time of t at each position during
+    the cd-saxs scan.
+    """
+
+    phi_offset = 1.0
+    start_phi = -60
+    stop_phi = 60
+    phi_steps = int(0.5*abs(start_phi-stop_phi) + 1)
+
+    start_at = 0
+    repeats = 1
+
+    # names = [  'A9',   'B9',   'C9',   'D9',   'E9',   'E8',   'E7',   'E6',   'E5',   'E4',   'E3',   'E2',   'E1']    
+    # x =     100 + np.asarray([-27850, -27850, -27850, -27850, -27850, -27600, -27350, -27100, -26850, -26600, -26350, -26100, -25850])
+    # y =     [  3587,   3837,   4087,   4337,   4587,   4587,   4587,   4587,   4587,   4587,   4587,   4587,   4587]   
+    # z =     [ -2405,  -2405,  -2405,  -2405,  -2405,  -2405,  -2405,  -2405,  -2405,  -2405,  -2405,  -2405,  -2405]  
+    # chi=    [ -0.95,  -0.95,  -0.95,  -0.95,  -0.95,  -0.95,  -0.95,  -0.95,  -0.95,  -0.95,  -0.95,  -0.95,  -0.95]   
+    # th =    [ -0.11,  -0.11,  -0.11,  -0.11,  -0.11,  -0.11,  -0.11,  -0.11,  -0.11,  -0.11,  -0.11,  -0.11,  -0.11]   
+
+    # names = [  'bkg']    
+    # x =     100 + np.asarray([-25850])
+    # y =     [  3587]   
+    # z =     [ -2405]  
+    # chi=    [ -0.95]   
+    # th =    [ -0.11]   
+
+    # names = [  'A1',   'B1',   'C1',   'D1',   'E1',   'E2',   'E3',   'E4',   'E5',   'E6',   'E7',   'E8',   'E9', 'bkg']    
+    # x =     [ 25650,  25650,  25650,  25650,  25900,  26150,  26400,  26750,  26900,  27150,  27400,  27650,  27900, 25400]
+    # y =     [  4660,   4910,   5160,   5410,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,  5660]   
+    # z =     [ -2480,  -2480,  -2480,  -2480,  -2480,  -2480,  -2480,  -2480,  -2480,  -2480,  -2480,  -2480,  -2480, -2480]  
+    # chi=    [ -2.50,  -2.50,  -2.50,  -2.50,  -2.50,  -2.50,  -2.50,  -2.50,  -2.50,  -2.50,  -2.50,  -2.50,  -2.50, -2.50]   
+    # th =    [ -0.133, -0.133, -0.133, -0.133,-0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133,-0.133]   
+
+    # assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    # assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    # assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    # assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    # assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+
+    # # val_cx = 2.35
+    # # stage.cx_theta.put(val_cx)
+    # # stage.cx_phi.put(val_cx)
+    # # stage.cx_chi.put(val_cx)
+    # for (name, xs, ys, zs, chis, ths) in zip(names, x, y, z, chi, th):
+    #     name = 'WS_' + name
+
+
+    #     print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
+    #     print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
+    #     yield from bps.mv(piezo.ch, chis)
+    #     yield from bps.mv(piezo.th, ths)
+    #     yield from bps.mv(piezo.z, zs)
+    #     yield from bps.mv(piezo.x, xs)
+    #     yield from bps.mv(piezo.y, ys)
+
+    #     # yield from bp
+    #     yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, sample='WS_'+name+'_measure_ref-A%s'%(i+1), nume=1)
+    #     yield from cd_saxs_modern(start_phi+phi_offset, stop_phi+phi_offset, phi_steps, exp_t=t, sample=name+'_measure%s'%(i+1), nume=1)
+    #     yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, sample=name+'_measure_ref-B%s'%(i+1), nume=1)
+    
+    
+    # for (name, xs, ys, zs, chis, ths) in zip(names, x, y, z, chi, th):
+    #     name = 'WS_' + name
+
+    #     print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
+    #     print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
+    #     yield from bps.mv(piezo.ch, chis)
+    #     yield from bps.mv(piezo.th, ths)
+    #     yield from bps.mv(piezo.z, zs)
+    #     yield from bps.mv(piezo.x, xs)
+    #     yield from bps.mv(piezo.y, ys)
+
+    #     yield from bps.mv(stage.phi, phi_offset)
+    #     yield from det_exposure_time(2, 2)
+
+    #     name_fmt = "{sample}_rugo_up_sdd9p30_16.1keV"
+    #     sample_name = name_fmt.format(sample=name)
+    #     sample_id(sample_name=sample_name)
+    #     yield from bp.count([pil2M, pin_diode, xbpm3], num=10)
+
+    #     yield from bps.mvr(pil2m_pos.y, -4.3)
+    #     name_fmt = "{sample}_scanX_rugo_dn_sdd9p30_16.1keV"
+    #     sample_name = name_fmt.format(sample=name)
+    #     sample_id(sample_name=sample_name)
+    #     yield from bp.count([pil2M, pin_diode, xbpm3], num=10)
+    #     yield from bps.mvr(pil2m_pos.y, 4.3)
+
+
+
+    # names = [  'A1',   'B1',   'C1',   'D1',   'E1',   'E2',   'E3',   'E4',   'E5',   'E6',   'E7',   'E8',   'E9', 'bkg']    
+    # x =     [  5700,   5700,   5700,   5700,   5700,   6050,   6300,   6550,   6800,   7050,   7300,   7550,   7800,  5300]
+    # y =     [  4660,   4910,   5160,   5410,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,  5660]   
+    # z =     [ -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580, -2580]  
+    # chi=    [ -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20, -1.20]   
+    # th =    [ -0.133, -0.133, -0.133, -0.133,-0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133,-0.133]   
+
+
+    # names = [  'E1',   'E2',   'E3',   'E4',   'E5',   'E6',   'E7',   'E8',   'E9', 'bkg']    
+    # x =     [  5700,   6050,   6300,   6550,   6800,   7050,   7300,   7550,   7800,  5300]
+    # y =     [  5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,  5660]   
+    # z =     [ -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580, -2580]  
+    # chi=    [ -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20, -1.20]   
+    # th =    [-0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133,-0.133]   
+
+
+    # assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    # assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    # assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    # assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    # assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+    
+    # for (name, xs, ys, zs, chis, ths) in zip(names, x, y, z, chi, th):
+    #     name = 'Imp_' + name
+
+    #     print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
+    #     print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
+    #     yield from bps.mv(piezo.ch, chis)
+    #     yield from bps.mv(piezo.th, ths)
+    #     yield from bps.mv(piezo.z, zs)
+    #     yield from bps.mv(piezo.x, xs)
+    #     yield from bps.mv(piezo.y, ys)
+
+    #     # yield from bp
+    #     yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, sample=name+'_measure_ref-A%s'%(i+1), nume=1)
+    #     yield from cd_saxs_modern(start_phi+phi_offset, stop_phi+phi_offset, phi_steps, exp_t=t, sample=name+'_measure%s'%(i+1), nume=1)
+    #     yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, sample=name+'_measure_ref-B%s'%(i+1), nume=1)
+    
+
+    # names = [  'A1',   'B1',   'C1',   'D1',   'E1',   'E2',   'E3',   'E4',   'E5',   'E6',   'E7',   'E8',   'E9', 'bkg']    
+    # x =     [  5700,   5700,   5700,   5700,   5700,   6050,   6300,   6550,   6800,   7050,   7300,   7550,   7800,  5300]
+    # y =     [  4660,   4910,   5160,   5410,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,  5660]   
+    # z =     [ -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580,  -2580, -2580]  
+    # chi=    [ -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20,  -1.20, -1.20]   
+    # th =    [ -0.133, -0.133, -0.133, -0.133,-0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133,-0.133]   
+
+    
+    # for (name, xs, ys, zs, chis, ths) in zip(names, x, y, z, chi, th):
+    #     name = 'Imp_' + name
+
+    #     print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
+    #     print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
+    #     yield from bps.mv(piezo.ch, chis)
+    #     yield from bps.mv(piezo.th, ths)
+    #     yield from bps.mv(piezo.z, zs)
+    #     yield from bps.mv(piezo.x, xs)
+    #     yield from bps.mv(piezo.y, ys)
+
+    #     yield from bps.mv(stage.phi, phi_offset)
+    #     yield from det_exposure_time(2, 2)
+
+    #     name_fmt = "{sample}_rugo_up_sdd9p30_16.1keV"
+    #     sample_name = name_fmt.format(sample=name)
+    #     sample_id(sample_name=sample_name)
+    #     yield from bp.count([pil2M, pin_diode, xbpm3], num=10)
+
+    #     yield from bps.mvr(pil2m_pos.y, -4.3)
+    #     name_fmt = "{sample}_scanX_rugo_dn_sdd9p30_16.1keV"
+    #     sample_name = name_fmt.format(sample=name)
+    #     sample_id(sample_name=sample_name)
+    #     yield from bp.count([pil2M, pin_diode, xbpm3], num=10)
+    #     yield from bps.mvr(pil2m_pos.y, 4.3)
+
+
+
+
+
+    names = [  'A1',   'B1',   'C1',   'D1',   'E1',   'E2',   'E3',   'E4',   'E5',   'E6',   'E7',   'E8',   'E9', 'bkg']    
+    x =     [-19550, -19550, -19550, -19550, -19550, -19800, -20050, -20300, -20550, -21050, -21300, -21550, -21800,-22050]
+    y =     [  4660,   4910,   5160,   5410,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,  5660]   
+    z =     [ -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655, -2655]  
+    chi=    [ -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70, -1.70]   
+    th =    [ -0.133, -0.133, -0.133, -0.133,-0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133,-0.133]   
+
+
+    names = [     'E8',   'E9', 'bkg']    
+    x =     [   -21550, -21800,-22050]
+    y =     [    5660,   5660,  5660]   
+    z =     [  -2655,  -2655, -2655]  
+    chi=    [   -1.70,  -1.70, -1.70]   
+    th =    [  -0.133, -0.133,-0.133]   
+
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+    
+    for (name, xs, ys, zs, chis, ths) in zip(names, x, y, z, chi, th):
+        name = 'Glass_' + name
+
+        print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
+        print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
+        yield from bps.mv(piezo.ch, chis)
+        yield from bps.mv(piezo.th, ths)
+        yield from bps.mv(piezo.z, zs)
+        yield from bps.mv(piezo.x, xs)
+        yield from bps.mv(piezo.y, ys)
+
+        # yield from bp
+        yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, sample=name+'_measure_ref-A%s'%(i+1), nume=1)
+        yield from cd_saxs_modern(start_phi+phi_offset, stop_phi+phi_offset, phi_steps, exp_t=t, sample=name+'_measure%s'%(i+1), nume=1)
+        yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, sample=name+'_measure_ref-B%s'%(i+1), nume=1)
+    
+    
+    names = [  'A1',   'B1',   'C1',   'D1',   'E1',   'E2',   'E3',   'E4',   'E5',   'E6',   'E7',   'E8',   'E9', 'bkg']    
+    x =     [-19550, -19550, -19550, -19550, -19550, -19800, -20050, -20300, -20550, -21050, -21300, -21550, -21800,-22050]
+    y =     [  4660,   4910,   5160,   5410,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,   5660,  5660]   
+    z =     [ -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655,  -2655, -2655]  
+    chi=    [ -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70,  -1.70, -1.70]   
+    th =    [ -0.133, -0.133, -0.133, -0.133,-0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133, -0.133,-0.133]   
+
+    for (name, xs, ys, zs, chis, ths) in zip(names, x, y, z, chi, th):
+        name = 'Glass_' + name
+
+        print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
+        print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
+        yield from bps.mv(piezo.ch, chis)
+        yield from bps.mv(piezo.th, ths)
+        yield from bps.mv(piezo.z, zs)
+        yield from bps.mv(piezo.x, xs)
+        yield from bps.mv(piezo.y, ys)
+
+        yield from bps.mv(stage.phi, phi_offset)
+        yield from det_exposure_time(2, 2)
+
+        name_fmt = "{sample}_rugo_up_sdd9p30_16.1keV"
+        sample_name = name_fmt.format(sample=name)
+        sample_id(sample_name=sample_name)
+        yield from bp.count([pil2M, pin_diode, xbpm3], num=10)
+
+        yield from bps.mvr(pil2m_pos.y, -4.3)
+        name_fmt = "{sample}_scanX_rugo_dn_sdd9p30_16.1keV"
+        sample_name = name_fmt.format(sample=name)
+        sample_id(sample_name=sample_name)
+        yield from bp.count([pil2M, pin_diode, xbpm3], num=10)
+        yield from bps.mvr(pil2m_pos.y, 4.3)

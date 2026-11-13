@@ -1446,3 +1446,173 @@ def cdsaxsstd_2025September_Philipp1(t=1):
             #     yield from cd_saxs_new(-60+phi_offest, 60+phi_offest, 121, exp_t=t, sample=name+'measure%s'%(i+1), nume=1)
 
     print("====== Done with CD-SAXS scan")
+
+
+
+
+def cd_saxs_modern(th_ini, th_fin, th_st, exp_t=1, user_name='PAW', samplename='test', nume=1, repeats=1, det=[pil2M]):
+
+    dets = det + [piezo.x, piezo.y, piezo.z,pil2M.sample_distance_mm, stage.phi, xbpm3.sumX,pin_diode]
+    name_fmt = "{sample}_sdd_cm_{sdd_cm}_energy_ev_16100_exposure_time_s_{et}_num_{repeat}_phi_{{stage_phi_real}}"
+    sdd_cm = pil2M.sample_distance_mm.get()/10
+    for rep in range(repeats):
+        sample_name = name_fmt.format(
+                sample=samplename, 
+                et = "%2.2f"%exp_t,
+                sdd_cm = "%.2f"%sdd_cm,
+                repeat = rep+1)
+        print(f"\n\t=== Sample: {sample_name} ===\n")
+        
+        sample_id(user_name=user_name, sample_name=sample_name)
+        yield from bp.list_scan(dets,stage.phi,np.linspace(th_ini, th_fin, th_st))
+
+
+def cdsaxs_Philipp_2026_3(t=1):
+    """
+    If you need to restart this sample set at a sample other than the
+    first one, change the 'start_at' variable. 
+    Samples are indexed starting at 0, so if 'start_at' is equal to 0,
+    all samples in this set will be run with this function call.
+
+    The repeats parameter is used to collect multiple
+    images each with an expsoure time of t at each position during
+    the cd-saxs scan.
+    """
+
+    phi_offset = -0.5
+    start_phi = -60
+    stop_phi = 60
+    phi_steps = int(abs(start_phi-stop_phi) + 1)
+
+    # names = [ 'Si1_a']    
+    # x =     np.asarray([7700])
+    # y =     [  6000]   
+    # z =     [ -2680]  
+    # chi=    [ -2.05]   
+    # th =     [ 0.49]   
+    
+    #names = [ 'Zep1_a', 'Zep1_b', 'Zep1_c', 'Zep1_d']    
+    #x =     np.asarray([-1250, -4300, -7300, -10300])
+    ##y =     [  5500, 5500, 5500, 5500]
+    #y =     [  6000, 6000, 6000, 6000]   
+    #z =     [ -2680, -2680, -2680, -2680]  
+    #chi=    [ -0.1, -0.1, -0.1, -0.1]   
+    #th =     [ 0.79, 0.79, 0.79, 0.79]  
+    
+    #names = [ 'Zep1n_a', 'Zep1n_b', 'Zep1n_c', 'Zep1n_d',    'Si1n_a', 'Si1n_b', 'Si1n_c', 'Si1n_d']    
+    #x =     np.asarray([-1250, -4300, -7300, -10300,       7700,  10700, 13700, 16700])
+    ##y =     [  5500, 5500, 5500, 5500]
+    ##y =     [  6000, 6000, 6000, 6000]   
+    #y =     [  6500, 6500, 6500, 6500,                     6500,    6500,   6500,    6500] 
+    #z =     [ -2680, -2680, -2680, -2680,                 -2680,   -2680,  -2680,   -2680]  
+    #chi=    [ -0.1, -0.1, -0.1, -0.1,                     -2.05,    -2.05, -2.05,   -2.05]   
+    #th =     [ 0.79, 0.79, 0.79, 0.79,                     0.49,    0.49,   0.49,    0.49]  
+    
+    # names =          [    'Si1na_a', 'Si1na_b', 'Si1na_c', 'Si1na_d']    
+    # x =     np.asarray([7700,        10700,    13700,    16700])
+    # y =                [6500,         6500,     6500,     6500] 
+    # z =                [-2680,        -2680,    -2680,   -2680]  
+    # chi=               [-2.05,        -2.05,    -2.05,   -2.05]   
+    # th =               [0.49,          0.49,    0.49,     0.49]  
+
+    names = ['zep2_a', 'zep2_b', 'zep2_c', 'zep2_d', 'zep3_d', 'zep3_c', 'zep3_b', 'zep3_a', 'zep4_d']    
+    x =     [  -12000,    -9000,    -6000,    -3000,     6000,     9000,    12000,    15000,    30500]
+    y =       [  8407,     8407,     8407,     8407,     8407,     8407,     8407,     8407,     8000] 
+    z =        [-2655,    -2655,    -2655,    -2655,    -2655,    -2655,    -2655,    -2655,    -2655]  
+    chi=       [-0.60,    -0.60,    -0.60,    -0.60,     -3.0,     -3.0,     -3.0,     -3.0,      0.2]   
+    th =       [-0.33,    -0.33,    -0.33,    -0.33,    -0.76,    -0.76,    -0.76,    -0.76,    -0.56] 
+
+    i=0
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+    
+    for (name, xs, ys, zs, chis, ths) in zip(names, x, y, z, chi, th):
+        print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
+        print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
+        yield from bps.mv(piezo.ch, chis)
+        yield from bps.mv(piezo.th, ths)
+        yield from bps.mv(piezo.z, zs)
+        yield from bps.mv(piezo.x, xs)
+        yield from bps.mv(piezo.y, ys)
+
+        # yield from bp
+        yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, samplename=name+'_measure_ref-A%s'%(i+1), nume=1)
+        yield from cd_saxs_modern(start_phi+phi_offset, stop_phi+phi_offset, phi_steps, exp_t=t, samplename=name+'_measure%s'%(i+1), nume=1)
+        yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, samplename=name+'_measure_ref-B%s'%(i+1), nume=1)
+
+
+def cdsaxs_Philipp_2026_3rep(t=1):
+    """
+    If you need to restart this sample set at a sample other than the
+    first one, change the 'start_at' variable. 
+    Samples are indexed starting at 0, so if 'start_at' is equal to 0,
+    all samples in this set will be run with this function call.
+
+    The repeats parameter is used to collect multiple
+    images each with an expsoure time of t at each position during
+    the cd-saxs scan.
+    """
+
+    phi_offset = -0.5
+    start_phi = -60
+    stop_phi = 60
+    phi_steps = int(abs(start_phi-stop_phi) + 1)
+
+    # names = [ 'Si1_a']    
+    # x =     np.asarray([7700])
+    # y =     [  6000]   
+    # z =     [ -2680]  
+    # chi=    [ -2.05]   
+    # th =     [ 0.49]   
+    
+    #names = [ 'Zep1_a', 'Zep1_b', 'Zep1_c', 'Zep1_d']    
+    #x =     np.asarray([-1250, -4300, -7300, -10300])
+    ##y =     [  5500, 5500, 5500, 5500]
+    #y =     [  6000, 6000, 6000, 6000]   
+    #z =     [ -2680, -2680, -2680, -2680]  
+    #chi=    [ -0.1, -0.1, -0.1, -0.1]   
+    #th =     [ 0.79, 0.79, 0.79, 0.79]  
+    
+    #names = [ 'Zep1n_a', 'Zep1n_b', 'Zep1n_c', 'Zep1n_d',    'Si1n_a', 'Si1n_b', 'Si1n_c', 'Si1n_d']    
+    #x =     np.asarray([-1250, -4300, -7300, -10300,       7700,  10700, 13700, 16700])
+    ##y =     [  5500, 5500, 5500, 5500]
+    ##y =     [  6000, 6000, 6000, 6000]   
+    #y =     [  6500, 6500, 6500, 6500,                     6500,    6500,   6500,    6500] 
+    #z =     [ -2680, -2680, -2680, -2680,                 -2680,   -2680,  -2680,   -2680]  
+    #chi=    [ -0.1, -0.1, -0.1, -0.1,                     -2.05,    -2.05, -2.05,   -2.05]   
+    #th =     [ 0.79, 0.79, 0.79, 0.79,                     0.49,    0.49,   0.49,    0.49]  
+    
+    names =          [   'Si1nr_d']    
+    x =     np.asarray([ 16700])
+    y =                [  6500] 
+    z =                [ -2680]  
+    chi=               [ -2.05]   
+    th =               [  0.49]  
+    repeats=10
+
+    i=0
+
+    assert len(names) == len(x), f"len of x ({len(x)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(y), f"len of y ({len(y)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(z), f"len of z ({len(z)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(chi), f"len of chi ({len(chi)}) is different from number of samples ({len(names)})"
+    assert len(names) == len(th), f"len of th ({len(th)}) is different from number of samples ({len(names)})"
+
+    #for i in range(10):
+    for (name, xs, ys, zs, chis, ths) in zip(names, x, y, z, chi, th):
+        print(f'====== SCANNING {name} WITH EXPOSURE TIME {t}=======')
+        print(f'moving to phi {phi_offset}, chi {chis}, th {ths}, z {zs}, x {xs}, y {ys}')
+        yield from bps.mv(piezo.ch, chis)
+        yield from bps.mv(piezo.th, ths)
+        yield from bps.mv(piezo.z, zs)
+        yield from bps.mv(piezo.x, xs)
+        yield from bps.mv(piezo.y, ys)
+
+        # yield from bp
+        yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, samplename=name+'_measure_ref-A%s'%(i+1), nume=1)
+        yield from cd_saxs_modern(start_phi+phi_offset, stop_phi+phi_offset, phi_steps, exp_t=t, samplename=name+'_measure%s'%(i+1), nume=1, repeats=repeats)
+        yield from cd_saxs_modern(phi_offset, phi_offset, 1, exp_t=t, samplename=name+'_measure_ref-B%s'%(i+1), nume=1)

@@ -71,7 +71,7 @@ STAGE = 'huber'
 
 # EDIT: center of the spot map on STAGE, e.g. {'sx': -3.3, 'sy': -12.6, 'sz': -18} (piezo: {'x': ..,
 # 'y': ..}); a spot axis left out: its position when new_sample() is called.
-LINKAM_POS = {}
+LINKAM_POS = {   'sx': -18.05, 'sy': -15.76, 'sz': -18 }
 
 
 def spot_map(nx, ny, dx, dy):
@@ -93,17 +93,19 @@ def t_steps(start, stop, step=0.1):
 # EDIT: spots -- beam 200 um (H) x 30 um (V): X step 0.2 mm, Y step 0.05 mm.  Capillary along X:
 # Y across its 1 mm, keep |y| <= ~0.3 mm (thick middle); X along the filled length.  (Capillary
 # along Y: swap, e.g. spot_map(3, 80, 0.2, 0.05).)  At least as many spots as frames.
-SPOT_MAP = spot_map(nx=20, ny=13, dx=0.2, dy=0.05)     # 260 spots over 3.8 x 0.6 mm
+SPOT_MAP = spot_map(nx= 3, ny=25, dx=0.2, dy=0.04)     # 260 spots over 3.8 x 0.6 mm
 
 # EDIT with the group: the T program of run_T_steps, in order (C)
-TEMPS = t_steps(49.0, 41.5, 0.1)                        # 76 steps, cooling from the melt
+#TEMPS = t_steps(49.0, 41.5, 0.1)                        # 76 steps, cooling from the melt
+TEMPS = t_steps(50, 42.0, 0.2)  
+#TEMPS = t_steps(40, 38, 1) 
 
 TSTEPS = dict(              # run_T_steps (and measure_T: t, per_spot, arc)
-    dwell=180,              # s per T step, setpoint to setpoint
-    interval=60,            # s between frames, start to start (60+: fewer moves, cooler motors)
-    offset=30,              # s from a step to the first frame after it (T settled), < dwell
+    dwell=300,              # s per T step, setpoint to setpoint
+    interval=60*2.5,       # s between frames, start to start (60+: fewer moves, cooler motors)
+    offset=0,              # s from a step to the first frame after it (T settled), < dwell
     t=0.1,                  # exposure (s): a spot survives ~0.1-0.2 s
-    per_spot=1,             # frames on one spot before the next: 1, or 2
+    per_spot=2,             # frames on one spot before the next: 1, or 2
     pre_soak=0,             # s at the first T (melt) before the program starts, not measured
     arc=20,                 # WAXS arc (deg, >= 16: 2M not shadowed); only the 2M is read
 )
@@ -124,8 +126,8 @@ OVA = False
 # Motor temperatures: a spot move of an axis listed here waits while its motor is above MOTOR_T_MAX,
 # until it is below MOTOR_T_OK (as huber_y_mv in 2026C3_TSAXS384.py).
 MOTOR_T_MAX = 48.0          # degC
-MOTOR_T_OK = 45.0           # degC
-MOTOR_T_WAIT = 60           # s between readings while waiting
+MOTOR_T_OK = 48.0           # degC
+MOTOR_T_WAIT = 120           # s between readings while waiting
 if 'huber_y_T' not in globals():
     huber_y_T = EpicsSignalRO('XF:12ID:m65.VAL', name='huber_y_T')
 MOTOR_T = {'sy': huber_y_T}  # EDIT: + 'sx': EpicsSignalRO('<PV>', name='huber_x_T') once known
